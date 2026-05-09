@@ -91,25 +91,6 @@ body {
   h1 {
     margin: 0;
   }
-
-  .btn-logout {
-    position: absolute;
-    right: 0;
-    &:hover {
-      opacity: 1;
-    }
-
-    padding: .3rem;
-    background: linear-gradient(135deg, #4200f8, #882c2c);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: .92rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .2s, transform .15s;
-    margin-top: .2rem;
-  }
 }
 
 /* DAY TABS */
@@ -704,6 +685,21 @@ footer {
     padding: 0rem 1rem 1rem;
     font-size: 0.72rem;
     color: var(--text3);
+    .btn-logout {
+    &:hover {
+      opacity: 1;
+    }
+    padding: .3rem;
+    background: linear-gradient(135deg, #4200f8, #882c2c);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: .92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .2s, transform .15s;
+    margin-top: .2rem;
+  }
 }
 
 /* PRINT */
