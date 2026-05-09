@@ -1,7 +1,6 @@
 import { Component, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { Activity } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
-import { StorageService } from '../../../core/services/storage.service';
 
 @Component({
   selector: 'app-activity',
@@ -11,16 +10,11 @@ import { StorageService } from '../../../core/services/storage.service';
 })
 export class ActivityComponent {
   private readonly travel = inject(TabService);
-  private readonly storageService = inject(StorageService);
-
   readonly activity = input.required<Activity>();
   readonly idSlot = input.required<number>();
 
   // activity.component.ts
   readonly uploading = signal(false);
-  // pour le delete
-  private fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
-
   readonly notesValue = signal('');
 
   constructor() {

@@ -106,4 +106,24 @@ export class TabService {
 
     await setDoc(doc(this.db, 'tabs', dayId), { 'content.slots': newSlots }, { merge: true });
   }
+
+    async updateElement(
+    items: string[],
+  ): Promise<void> {
+    const dayId = this._activeDayId();
+    const days = this._days();
+    const day = days.find(d => d.id === dayId);
+    if (!day) return;
+
+    const elements = day.content.elements?.map(e => e.id !== 1 ? e : {
+      ...e,
+      items
+    });
+
+    this._days.set(days.map(d => d.id !== dayId ? d : {
+      ...d, content: { ...d.content, elements: elements }
+    }));
+
+    await setDoc(doc(this.db, 'tabs', dayId), { content: { elements: elements } }, { merge: true });
+  }
 }
