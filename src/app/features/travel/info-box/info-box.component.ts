@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
-import { InfoElement } from '../../../../core/models/travel.models';
-import { SafeHtmlPipe } from '../../../../shared/pipes/safe-html.pipe';
+import { InfoElement } from '../../../core/models/travel.models';
+import { SafeHtmlPipe } from '../../../shared/pipes/safe-html.pipe';
 
 @Component({
   selector: 'app-info-box',

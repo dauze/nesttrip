@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { Day } from '../../../../core/models/travel.models';
+import { Day } from '../../../core/models/travel.models';
 import { HeroComponent } from '../hero/hero.component';
 import { AlertBoxComponent } from '../alert-box/alert-box.component';
 import { TimelineComponent } from '../timeline/timeline.component';

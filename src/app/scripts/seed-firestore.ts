@@ -1,37 +1,29 @@
 // scripts/seed-firestore.ts
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
-
-export interface Day {
-  id: string;
-  idVoyage: string;
-  order: number;
-  navLabel: string;
-  content: DayContent;
-}
-
-export interface Badge {
+interface Badge {
   text: string;
   class:  "badge-zone" | "badge-new" | "badge-duration" | "badge-tobook" | "badge-free";
 }
 
-export interface TimelineItem {
+interface TimelineItem {
   time: string;
   color: 'orange' | 'blue' | 'green' | 'gray'| "yellow"| "red"| "purple";
   content: string;
 }
 
-export interface GridItem {
+interface GridItem {
   label: string;
   value: string;
 }
 
-export interface Transport {
+interface Transport {
   icon: string;
   text: string;
 }
 
-export interface Activity {
+interface Activity {
+  id: number;
   name: string;
   badges: Badge[];
   grid?: GridItem[];
@@ -40,7 +32,8 @@ export interface Activity {
   notes?: String;
 }
 
-export interface Slot {
+interface Slot {
+  id:number;
   type: 'morning' | 'afternoon' | 'evening' | 'meal' | 'transit';
   icon: string;
   time: string;
@@ -49,17 +42,17 @@ export interface Slot {
   meal?: string;
 }
 
-export interface Alerts {
+interface Alerts {
   title: string;
   points: string[];
 }
 
-export interface InfoElement {
+interface InfoElement {
   title: string;
   items: string[];
 }
 
-export interface DayContent {
+interface DayContent {
   title: string;
   subtitle: string;
   badges?: Badge[];
@@ -69,6 +62,15 @@ export interface DayContent {
   // Info tab specific
   elements?: InfoElement[];
 }
+
+interface Day {
+  id: string;
+  idVoyage: string;
+  order: number;
+  navLabel: string;
+  content: DayContent;
+}
+
 
 const app = initializeApp({
   apiKey: "AIzaSyBkknHakNu9wgl8peo5lC5Xf_D7Aqy8t34",
@@ -88,7 +90,7 @@ const db = getFirestore(app);
 const DAYS_DATA: Day[] = [
     {
       id: "j1",
-      order: 1,
+      order:1,
       idVoyage: 'chine',
       navLabel: "Ven. 15 mai",
       content: {
@@ -109,12 +111,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:1,
             type: "morning",
             icon: "✈️",
             time: "10h50",
             name: "Arrivée Pudong Airport",
             activities: [
               {
+                id:1,
                 name: "Arrivée + Immigration + Transfer vers hôtel",
                 badges: [
                   { text: "~2h", class: "badge-duration" }
@@ -127,6 +131,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:2,
             type: "meal",
             icon: "🍜",
             time: "13h00 – 15h30",
@@ -134,12 +139,14 @@ const DAYS_DATA: Day[] = [
             meal: "Déjeuner léger avec LM à proximité. Profitez-en pour recharger les téléphones, vérifier les billets de train, configurer <em>VPN</em>, <em>Didi</em> et <em>Alipay</em>. Aucun effort touristique aujourd'hui — l'objectif est d'être frais pour Pékin."
           },
           {
+            id:3,
             type: "transit",
             icon: "🚄",
             time: "17h00",
             name: "Train Shanghai Hongqiao → Beijing Nan",
             activities: [
               {
+                 id:2,
                 name: "Train G (haute vitesse) Shanghai Hongqiao → Beijing South",
                 badges: [],
                 grid: [
@@ -190,12 +197,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:4,
             type: "morning",
             icon: "🌅",
             time: "7h00 – 13h00",
             name: "Matin – Grande Muraille de Chine (Mutianyu)",
             activities: [
               {
+                id:4,
                 name: "Grande Muraille – Section Mutianyu",
                 badges: [
                   { text: "4h sur place", class: "badge-duration" },
@@ -218,6 +227,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:5,
             type: "meal",
             icon: "🍜",
             time: "13h00 – 15h00",
@@ -225,12 +235,14 @@ const DAYS_DATA: Day[] = [
             meal: "Déjeuner rapide à Huairou ou en route. Arrivée centre Pékin vers 14h30–15h00. Budget : 50–80 CNY/pers."
           },
           {
+            id:6,
             type: "afternoon",
             icon: "☀️",
             time: "15h00 – 17h00",
             name: "Après-midi – Wangfujing Street",
             activities: [
               {
+                id:5,
                 name: "Wangfujing Street et Snack Street (Donghuamen)",
                 badges: [
                   { text: "2h", class: "badge-duration" },
@@ -251,12 +263,14 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:7,
             type: "meal",
             icon: "🍽️",
             time: "19h30 – 21h30",
             name: "Dîner d'anniversaire – 3 options",
             activities: [
               {
+                id:7,
                 name: "Dali Courtyard (大理云南菜)",
                 badges: [
                   { text: "⭐ Recommandé", class: "badge-new" }
@@ -297,8 +311,8 @@ const DAYS_DATA: Day[] = [
                 tip:
                   "Parfait pour LM fatigué : menu fixe = zéro effort de commande. Cuisine légère et nourrissante. Cour intérieure = calme absolu. Meilleure option pour la situation."
               },
-
               {
+                id:8,
                 name: "Da Dong Peking Duck – branche Jinbao Street",
                 badges: [
                   { text: "Option 2", class: "badge-free" }
@@ -338,8 +352,8 @@ const DAYS_DATA: Day[] = [
                 tip:
                   "Canard pékinois = expérience gastronomique emblématique de Pékin. Les bols de soupe de canard sont excellents pour la récupération après un effort."
               },
-
               {
+                id:9,
                 name: "King's Joy (京兆尹) – Végétarien Michelin",
                 badges: [
                   { text: "Option 3", class: "badge-free" }
@@ -382,12 +396,14 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:8,
             type: "evening",
             icon: "🌙",
             time: "21h30 – 23h00",
             name: "Après dîner – 3 idées chill",
             activities: [
               {
+                id:10,
                 name: "Option A – Verre au bord de Houhai Lake",
                 badges: [
                   { text: "Chill", class: "badge-free" }
@@ -410,12 +426,11 @@ const DAYS_DATA: Day[] = [
               },
 
               {
+                id:11,
                 name: "Option B – Bar à cocktails / Baijiu tasting en hutong",
-
                 badges: [
                   { text: "Chill", class: "badge-free" }
                 ],
-
                 grid: [
                   {
                     label: "Recommandation",
@@ -431,6 +446,7 @@ const DAYS_DATA: Day[] = [
                   "Dégustation guidée de baijiu (alcool de sorgho) — expérience unique à Pékin. Ambiance intime et assise. Bar de niche fréquenté par les expats. Parfait pour 3 personnes."
               },
               {
+                id:12,
                 name: "Option C – Retour hôtel + gâteau surprise en chambre",
                 badges: [
                   { text: "Ultra chill", class: "badge-free" }
@@ -468,19 +484,19 @@ const DAYS_DATA: Day[] = [
           subtitle: "Temple du Ciel · Hutongs · 798 Art District · Houhai Lakes · Soiree libre",
           slots: [
             {
+              id:9,
               type: "morning",
               icon: "🌅",
               time: "9h00 – 12h00",
               name: "Matin – Temple du Ciel et Hutongs",
               activities: [
                 {
+                  id:14,
                   name: "Temple of Heaven (Temple du Ciel)",
-
                   badges: [
                     { text: "2h", class: "badge-duration" },
                     { text: "Sans reservation", class: "badge-free" }
                   ],
-
                   grid: [
                     {
                       label: "Horaires",
@@ -510,10 +526,9 @@ const DAYS_DATA: Day[] = [
                   tip:
                     "Arriver tot (9h) pour voir les retraites faire du tai-chi dans le parc. Le Hall of Prayer for Good Harvests est l'edifice le plus photogenique de Pekin. Site UNESCO, cadre grandiose."
                 },
-
                 {
+                  id:15,
                   name: "Hutong Streets – balade libre",
-
                   badges: [
                     { text: "1h", class: "badge-duration" },
                     { text: "Gratuit", class: "badge-free" }
@@ -545,6 +560,7 @@ const DAYS_DATA: Day[] = [
             },
 
             {
+              id:10,
               type: "meal",
               icon: "🍜",
               time: "12h00 – 14h00",
@@ -552,6 +568,7 @@ const DAYS_DATA: Day[] = [
               meal: "Excellents restaurants locaux dans les hutongs. Essayez le <strong>zha jiang mian</strong> (nouilles au soja brun) ou le <strong>jian bing</strong> (crepe pekinoise). Nombreux cafes avec cour interieure. Budget : 40–80 CNY/pers."
             },
             {
+              id:11,
               type: "afternoon",
               icon: "☀️",
               time: "14h00 – 18h00",
@@ -559,6 +576,7 @@ const DAYS_DATA: Day[] = [
 
               activities: [
                 {
+                  id:16,
                   name: "798 Art District",
 
                   badges: [
@@ -600,6 +618,7 @@ const DAYS_DATA: Day[] = [
                 },
 
                 {
+                  id:17,
                   name: "Houhai Lakes (Shichahai) – promenade",
 
                   badges: [
@@ -643,6 +662,7 @@ const DAYS_DATA: Day[] = [
             },
 
             {
+              id:12,
               type: "meal",
               icon: "🍽️",
               time: "18h00 – 20h00",
@@ -651,6 +671,7 @@ const DAYS_DATA: Day[] = [
             },
 
             {
+              id:13,
               type: "evening",
               icon: "🌙",
               time: "20h00 – 23h00",
@@ -658,6 +679,7 @@ const DAYS_DATA: Day[] = [
 
               activities: [
                 {
+                  id:18,
                   name:
                     "Soiree libre – Bars Houhai ou retour a l'hotel",
 
@@ -707,12 +729,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:14,
             type: "morning",
             icon: "🌅",
             time: "8h00 – 12h00",
             name: "Matin – Summer Palace (Palais d'Été)",
             activities: [
               {
+                id:19,
                 name: "Summer Palace (Yiheyuan) – UNESCO",
                 badges: [
                   { text: "3h–3h30", class: "badge-duration" },
@@ -735,6 +759,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:15,
             type: "meal",
             icon: "🍜",
             time: "12h00 – 13h30",
@@ -742,12 +767,14 @@ const DAYS_DATA: Day[] = [
             meal: "Déjeuner léger dans le quartier ou cafétéria du Palais d'Été. Trajet métro vers Tiananmen : ~30 min (L4 → L1 Tiananmen East). Partir à 12h30 pour être sur place à 13h30."
           },
           {
+            id:16,
             type: "afternoon",
             icon: "☀️",
             time: "13h30 – 16h15",
             name: "Après-midi – Tiananmen + Cité Interdite + Jingshan",
             activities: [
               {
+                id:20,
                 name: "Place Tiananmen",
                 badges: [
                   { text: "30 min", class: "badge-duration" },
@@ -764,6 +791,7 @@ const DAYS_DATA: Day[] = [
                 tip: "Passage rapide pour la photo emblématique face au portrait de Mao. Traverser vers le nord pour rejoindre la Porte du Méridien (entrée sud de la Cité Interdite)."
               },
               {
+                id:21,
                 name: "Cité Interdite (Forbidden City / Palace Museum)",
                 badges: [
                   { text: "2h–2h30", class: "badge-duration" },
@@ -784,6 +812,7 @@ const DAYS_DATA: Day[] = [
                 tip: "Parcours recommandé : Meridian Gate → Cour des Lions → Grandes Salles du Trône → Palais Intérieurs → Porte Shenwu (sortie nord vers Jingshan). Si fermé le lundi : remplacer par Lama Temple (ouvert tous les jours, entrée 25 CNY)."
               },
               {
+                id:22,
                 name: "Jingshan Park – Panorama sur la Cité Interdite",
                 badges: [
                   { text: "45 min", class: "badge-duration" },
@@ -804,12 +833,14 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:17,
             type: "transit",
             icon: "🚄",
             time: "17h30 – 22h30",
             name: "Train retour Beijing Nan → Shanghai Hongqiao",
             activities: [
               {
+                id:23,
                 name: "Train G (haute vitesse) Beijing South → Shanghai Hongqiao",
                 badges: [
                   { text: "À RÉSERVER DÈS QUE POSSIBLE", class: "badge-tobook" }
@@ -863,12 +894,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:18,
             type: "morning",
             icon: "🌅",
             time: "9h00 – 12h00",
             name: "Matin",
             activities: [
               {
+                id:24,
                 name: "M50 Art District",
                 badges: [
                   { text: "1h", class: "badge-duration" },
@@ -887,6 +920,7 @@ const DAYS_DATA: Day[] = [
                 tip: "Vérifier sur WeChat/Instagram les expos en cours. Café dans la vieille tour d'eau (Building 8)."
               },
               {
+                id:25,
                 name: "1000 Trees (Tian An 1000 Trees)",
                 badges: [
                   { text: "30–45 min", class: "badge-duration" },
@@ -907,6 +941,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:19,
             type: "meal",
             icon: "🍜",
             time: "12h00 – 14h00",
@@ -914,12 +949,14 @@ const DAYS_DATA: Day[] = [
             meal: "Nombreux restaurants autour de Jing'an Temple et Jing'an Kerry Centre. Essayez le <em>shengjianbao</em> (bao frit croustillant). Budget : 50–100 CNY/pers."
           },
           {
+            id:20,
             type: "afternoon",
             icon: "☀️",
             time: "14h00 – 18h00",
             name: "Après-midi",
             activities: [
               {
+                id:26,
                 name: "Temple du Bouddha de Jade (Jade Buddha Temple)",
                 badges: [
                   { text: "1h30–2h", class: "badge-duration" },
@@ -938,6 +975,7 @@ const DAYS_DATA: Day[] = [
                 tip: "Arriver dès 8h30 pour éviter les groupes de pèlerins. Tenues couvrantes recommandées (épaules + genoux couverts). Pas de trépied ni selfie stick autorisé."
               },
               {
+                id:27,
                 name: "Shanghai Tower – Observation deck 118e étage (Top of Shanghai)",
                 badges: [
                   { text: "1h30–2h", class: "badge-duration" },
@@ -958,6 +996,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:21,
             type: "meal",
             icon: "🍽️",
             time: "18h00 – 20h00",
@@ -965,12 +1004,14 @@ const DAYS_DATA: Day[] = [
             meal: "Retour au quartier Jing'an. Restaurant végétarien du Temple Jing'an (Suzhai, ouvert 17h–20h30) ou restaurants modernes Kerry Centre / Réel Mall."
           },
           {
+            id:22,
             type: "evening",
             icon: "🌙",
             time: "20h00 – 23h00",
             name: "Soirée",
             activities: [
               {
+                id:28,
                 name: "Musée d'Histoire Naturelle – extérieur illuminé + Jing'an Sculpture Park",
                 badges: [
                   { text: "1h promenade", class: "badge-duration" },
@@ -1012,12 +1053,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:23,
             type: "morning",
             icon: "🌅",
             time: "9h00 – 12h00",
             name: "Matin",
             activities: [
               {
+                id:29,
                 name: "Musée d'Histoire Naturelle de Shanghai",
                 badges: [
                   { text: "2h30–3h", class: "badge-duration" },
@@ -1038,6 +1081,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:24,
             type: "meal",
             icon: "🍜",
             time: "12h00 – 14h00",
@@ -1045,12 +1089,14 @@ const DAYS_DATA: Day[] = [
             meal: "Trajet ~15 min vers People's Square (L13 → L1). Déjeuner dans la galerie marchande de Raffles City ou rues autour de People's Square. Budget : 50–80 CNY/pers."
           },
           {
+            id:25,
             type: "afternoon",
             icon: "☀️",
             time: "14h00 – 18h00",
             name: "Après-midi",
             activities: [
               {
+                id:30,
                 name: "Zoo ?",
                 badges: [
                   { text: "4h ??", class: "badge-duration" },
@@ -1069,6 +1115,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:26,
             type: "meal",
             icon: "🍽️",
             time: "18h00 – 20h00",
@@ -1076,12 +1123,14 @@ const DAYS_DATA: Day[] = [
             meal: "Restaurants avec vue : <em>The House of Roosevelt</em>, <em>New Heights</em>, <em>M on the Bund</em>. Réservation recommandée pour tables vue. Budget : 200–400 CNY/pers. Alternative économique : ruelles derrière Nanjing Road."
           },
           {
+            id:27,
             type: "evening",
             icon: "🌙",
             time: "20h00 – 23h00",
             name: "Soirée",
             activities: [
               {
+                id:31,
                 name: "Nanjing Road (promenade vers le Bund)",
                 badges: [
                   { text: "45 min–1h", class: "badge-duration" },
@@ -1098,6 +1147,7 @@ const DAYS_DATA: Day[] = [
                 tip: "\"China's No.1 Commercial Street\". Idéal pour shopping fin d'après-midi. Foule intense à partir de 17h — prévoir d'arriver au Bund vers 18h30."
               },
               {
+                id:32,
                 name: "The Bund – coucher de soleil & lumières nocturnes",
                 badges: [
                   { text: "2h–2h30", class: "badge-duration" },
@@ -1141,12 +1191,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:28,
             type: "morning",
             icon: "🌅",
             time: "9h00 – 12h00",
             name: "Matin",
             activities: [
               {
+                id:33,
                 name: "Yu Garden + Bazar de Yuyuan",
                 badges: [
                   { text: "2h–2h30", class: "badge-duration" },
@@ -1167,6 +1219,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id: 60,
             type: "meal",
             icon: "🍜",
             time: "12h00 – 14h00",
@@ -1174,12 +1227,14 @@ const DAYS_DATA: Day[] = [
             meal: "Déjeuner dans le bazar : xiaolongbao au restaurant <em>Nanxiang</em>, dim sum traditionnels. Street food authentique dans les ruelles. Budget : 60–100 CNY/pers."
           },
           {
+            id: 61,
             type: "afternoon",
             icon: "☀️",
             time: "14h00 – 18h00",
             name: "Après-midi",
             activities: [
               {
+                id:34,
                 name: "Tianzifang",
                 badges: [
                   { text: "1h–1h30", class: "badge-duration" },
@@ -1198,6 +1253,7 @@ const DAYS_DATA: Day[] = [
                 tip: "Labyrinthe de maisons shikumen converties en galeries, cafés et boutiques artisanales. Idéal l'après-midi avant la foule du soir. Souvenirs originaux : laque, gravure, porcelaine."
               },
               {
+                id:35,
                 name: "Xintiandi + Fuxing Park",
                 badges: [
                   { text: "1h–1h30", class: "badge-duration" },
@@ -1218,6 +1274,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id: 62,
             type: "meal",
             icon: "🍽️",
             time: "18h00 – 20h00",
@@ -1225,12 +1282,14 @@ const DAYS_DATA: Day[] = [
             meal: "Meilleure zone gastronomique de Shanghai. Restaurants français, fusion, shanghaïens sur Huaihai Road et Wukang Road. Budget : 100–200 CNY/pers. Réservation conseillée."
           },
           {
+            id: 63,
             type: "evening",
             icon: "🌙",
             time: "20h00 – 23h00",
             name: "Soirée",
             activities: [
               {
+                id:36,
                 name: "Xintiandi by night + Wukang Road",
                 badges: [
                   { text: "2h–3h", class: "badge-duration" },
@@ -1347,12 +1406,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:29,
             type: "morning",
             icon: "🌅",
             time: "9h45 – 12h30",
             name: "Matin à Luzhi",
             activities: [
               {
+                id:37,
                 name:
                   "Luzhi Ancient Town – 41 ponts de pierre, canaux, ruelles, balade en bateau",
                 badges: [
@@ -1392,6 +1453,7 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:30,
             type: "meal",
             icon: "🍜",
             time: "12h30 – 14h00",
@@ -1400,12 +1462,14 @@ const DAYS_DATA: Day[] = [
               "Spécialités de Luzhi : <em>Jarret de porc Fulitang</em> (pied de porc braisé, plat signature de la ville), <em>Canard Fuli</em>, <em>Aozao Mian</em> (nouilles en bouillon — incontournable local). Restaurants sur Xihui Shangtang Street et Xihui Xiatang Street le long des canaux. Budget : 50–80 CNY/pers. Éviter les devantures trop touristiques en façade de rue principale."
           },
           {
+            id:31,
             type: "afternoon",
             icon: "☀️",
             time: "14h00 – 15h45",
             name: "Après-midi à Luzhi",
             activities: [
               {
+                id:38,
                 name:
                   "Baosheng Temple – Temple bouddhiste du VIe siècle, Arhats de la dynastie Tang",
                 badges: [
@@ -1436,6 +1500,7 @@ const DAYS_DATA: Day[] = [
                   "Joyau absolu de Luzhi. Les statues d'Arhats en argile de Yang Huizhi (Tang) sont considérées comme un trésor national unique en Jiangnan. Moins bondé qu'un jardin UNESCO, l'atmosphère y est recueillie et authentique."
               },
               {
+                id:39,
                 name: "Shen Residence + Women's Costume Museum + Wansheng Rice Shop + ponts libres",
                 badges: [
                   { text: "45 min–1h", class: "badge-duration" },
@@ -1465,6 +1530,7 @@ const DAYS_DATA: Day[] = [
                 }
               },
               {
+                id:40,
                 name: "Retour vers Shanghai",
                 badges: [
                   { text: "Billet à réserver", class: "badge-tobook" },
@@ -1490,12 +1556,14 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:32,
             type: "evening",
             icon: "🌙",
             time: "20h30 – 22h00",
             name: "Soirée – LV The Boat (extérieur)",
             activities: [
               {
+                id: 60,
                 name: "LV The Boat – Louis Vuitton Maison Shanghai",
                 badges: [
                   { text: "45 min–1h", class: "badge-duration" },
@@ -1545,12 +1613,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:33,
             type: "morning",
             icon: "🌅",
             time: "10h50 – 12h00",
             name: "Running",
             activities: [
               {
+                id:40,
                 name: "Running – Jing'an / Suzhou Creek",
                 badges: [
                   { text: "1h", class: "badge-duration" },
@@ -1567,12 +1637,14 @@ const DAYS_DATA: Day[] = [
             ]
           },
           {
+            id:34,
             type: "afternoon",
             icon: "☀️",
             time: "14h00 – 18h00",
             name: "Après-midi libre",
             activities: [
               {
+                id:41,
                 name: "Chill – programme au choix",
                 badges: [
                   { text: "Jour libre", class: "badge-free" }
@@ -1609,12 +1681,14 @@ const DAYS_DATA: Day[] = [
         ],
         slots: [
           {
+            id:35,
             type: "transit",
             icon: "✈️",
             time: "Samedi soir – Dimanche",
             name: "Transports Shanghai → Paris",
             activities: [
               {
+                id:42,
                 name: "Didi LM → Pudong International Airport (PVG)",
                 badges: [],
                 grid: [
@@ -1624,6 +1698,7 @@ const DAYS_DATA: Day[] = [
                 tip: "🚗 Prévoir ~1h depuis Jing'an selon trafic, partir au plus tard 22h00 pour un départ 1h10"
               },
               {
+                id:43,
                 name: "Shanghai Pudong (PVG) → Athènes",
                 badges: [],
                 grid: [
@@ -1635,6 +1710,7 @@ const DAYS_DATA: Day[] = [
                 tip: "✈️ Embarquement Pudong Terminal – vérifier terminal exact sur billet Juneyao"
               },
               {
+                id:44,
                 name: "Athènes → Roissy CDG",
                 badges: [],
                 grid: [
