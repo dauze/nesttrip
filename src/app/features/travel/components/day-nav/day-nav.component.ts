@@ -1,5 +1,5 @@
 import { Component, inject, output } from '@angular/core';
-import { TravelService } from '../../../../core/models/travel.service';
+import { TabService } from '../../../../core/services/tab.service';
 
 @Component({
   selector: 'app-day-nav',
@@ -19,7 +19,7 @@ import { TravelService } from '../../../../core/models/travel.service';
   `,
 })
 export class DayNavComponent {
-  protected readonly service = inject(TravelService);
+  protected readonly service = inject(TabService);
 
   readonly daySelected = output<string>();
 

@@ -1,8 +1,8 @@
 import { Component, inject } from '@angular/core';
-import { TravelService } from '../../../../core/models/travel.service';
 import { DayNavComponent } from '../../components/day-nav/day-nav.component';
 import { DayPanelComponent } from '../../components/day-panel/day-panel.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { TabService } from '../../../../core/services/tab.service';
 
 @Component({
   selector: 'app-travel-page',
@@ -30,7 +30,7 @@ import { AuthService } from '../../../../core/services/auth.service';
   `,
 })
 export class TravelPageComponent {
-  protected readonly service = inject(TravelService);
+  protected readonly service = inject(TabService);
   protected readonly authService = inject(AuthService);
 
   logout() {
