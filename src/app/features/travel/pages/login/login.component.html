@@ -33,15 +33,26 @@
         </div>
 
         <div class="field">
-        <label>Mot de passe</label>
-        <input
-            type="password"
-            [(ngModel)]="password"
-            placeholder="••••••••"
-            [class.error]="!!errorMsg()"
-            autocomplete="current-password"
-        />
-        </div>
+            <label>Mot de passe</label>
+            <div class="input-wrapper" [class.error]="!!errorMsg()">
+                <input
+                class="psw-input"
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                />
+                <button
+                type="button"
+                class="toggle-password"
+                (click)="showPassword = !showPassword"
+                [disabled]="!password"
+                [attr.aria-label]="showPassword ? 'Masquer' : 'Afficher'"
+                >
+                {{ showPassword ? '🙈' : '👁️' }}
+                </button>
+            </div>
+            </div>
 
         @if (errorMsg()) {
         <div class="error-banner">{{ errorMsg() }}</div>

@@ -18,6 +18,7 @@ export class LoginComponent {
   password = '';
   isRegister = signal(false);
   loading = signal(false);
+  showPassword = false;
   errorMsg = signal('');
 
   toggleMode() {
