@@ -17,9 +17,9 @@ import { InfoBoxComponent } from '../info-box/info-box.component';
     InfoBoxComponent,
   ],
   template: `
-    @if (day().id === 'infos') {
       <!-- Onglet infos pratiques -->
       <app-hero [day]="day().content" />
+    @if (day().id === 'infos') {
       @for (element of day().content.elements; track element.title) {
         <app-info-box [element]="element" />
       }
@@ -28,7 +28,6 @@ import { InfoBoxComponent } from '../info-box/info-box.component';
       @if (day().content.alerts) {
         <app-alert-box [alerts]="day().content.alerts!" />
       }
-      <app-hero [day]="day().content" />
       @if (day().content.timeline) {
         <app-timeline [items]="day().content.timeline!" />
       }

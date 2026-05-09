@@ -25,6 +25,7 @@ export interface Activity {
   grid?: GridItem[];
   transport?: Transport;
   tip?: string;
+  notes?: String;
 }
 
 export interface Slot {
@@ -59,6 +60,8 @@ export interface DayContent {
 
 export interface Day {
   id: string;
+  idVoyage: string;
+  order: number;
   navLabel: string;
   content: DayContent;
 }

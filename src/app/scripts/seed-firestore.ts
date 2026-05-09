@@ -1,12 +1,95 @@
-import { Day } from '../models/travel.models';
+// scripts/seed-firestore.ts
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
+
+export interface Day {
+  id: string;
+  idVoyage: string;
+  order: number;
+  navLabel: string;
+  content: DayContent;
+}
+
+export interface Badge {
+  text: string;
+  class:  "badge-zone" | "badge-new" | "badge-duration" | "badge-tobook" | "badge-free";
+}
+
+export interface TimelineItem {
+  time: string;
+  color: 'orange' | 'blue' | 'green' | 'gray'| "yellow"| "red"| "purple";
+  content: string;
+}
+
+export interface GridItem {
+  label: string;
+  value: string;
+}
+
+export interface Transport {
+  icon: string;
+  text: string;
+}
+
+export interface Activity {
+  name: string;
+  badges: Badge[];
+  grid?: GridItem[];
+  transport?: Transport;
+  tip?: string;
+  notes?: String;
+}
+
+export interface Slot {
+  type: 'morning' | 'afternoon' | 'evening' | 'meal' | 'transit';
+  icon: string;
+  time: string;
+  name: string;
+  activities?: Activity[];
+  meal?: string;
+}
+
+export interface Alerts {
+  title: string;
+  points: string[];
+}
+
+export interface InfoElement {
+  title: string;
+  items: string[];
+}
+
+export interface DayContent {
+  title: string;
+  subtitle: string;
+  badges?: Badge[];
+  timeline?: TimelineItem[];
+  slots?: Slot[];
+  alerts?: Alerts;
+  // Info tab specific
+  elements?: InfoElement[];
+}
+
+const app = initializeApp({
+  apiKey: "AIzaSyBkknHakNu9wgl8peo5lC5Xf_D7Aqy8t34",
+  authDomain: "nesttrip-2e34b.firebaseapp.com",
+  projectId: "nesttrip-2e34b",
+  storageBucket: "nesttrip-2e34b.firebasestorage.app",
+  messagingSenderId: "717386228762",
+  appId: "1:717386228762:web:28ef39cf442510b9eb1da3",
+  measurementId: "G-ZHQJ9E5ZK0"
+});
+const db = getFirestore(app);
 
 /**
  * Données de voyage – compléter les jours manquants.
  * Structure identique à l'original data-days.js.
  */
-export const DAYS_DATA: Day[] = [
+const DAYS_DATA: Day[] = [
     {
       id: "j1",
+      order: 1,
+      idVoyage: 'chine',
       navLabel: "Ven. 15 mai",
       content: {
         title: "Vendredi 15 mai – Arrivée Shanghai → Train pour Pékin",
@@ -86,6 +169,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j2",
+      order: 2,
+      idVoyage: 'chine',
       navLabel: "Sam. 16 mai",
       content: {
         title: "Samedi 16 mai – Grande Muraille + Wangfujing",
@@ -374,6 +459,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
         id: "j3",
+        order: 3,
+        idVoyage: 'chine',
         navLabel: "Dim. 17 mai",
         content: {
           title: "Dimanche 17 mai – Temples, Hutongs et Art",
@@ -599,6 +686,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j4",
+      order: 4,
+      idVoyage: 'chine',
       navLabel: "Lun. 18 mai",
       content: {
         title: "Lundi 18 mai – Palais d'Été → Cité Interdite → Train retour",
@@ -755,6 +844,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j5",
+      order: 5,
+      idVoyage: 'chine',
       navLabel: "Mar. 19 mai",
       content: {
         title: "Mardi 19 mai – Jing'an & Suzhou Creek",
@@ -902,6 +993,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j6",
+      order: 6,
+      idVoyage: 'chine',
       navLabel: "Mer. 20 mai",
       content: {
         title: "Mercredi 20 mai – Centre & Bund",
@@ -1029,6 +1122,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j7",
+      order: 7,
+      idVoyage: 'chine',
       navLabel: "Jeu. 21 mai",
       content: {
         title: "Jeudi 21 mai – Concession française & Vieille Ville",
@@ -1160,6 +1255,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j8",
+      order: 8,
+      idVoyage: 'chine',
       navLabel: "Ven. 22 mai",
       content: {
         title: "Vendredi 22 mai – Excursion Luzhi + LV The Boat le soir",
@@ -1432,6 +1529,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j9",
+      order: 9,
+      idVoyage: 'chine',
       navLabel: "Sam. 23 mai",
       content: {
         title: "Samedi 23 mai – Journée Chill",
@@ -1494,6 +1593,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
       id: "j10",
+      order: 10,
+      idVoyage: 'chine',
       navLabel: "Dim. 24 mai",
       content: {
         title: "Dimanche 24 mai – Départ Shanghai → Retour à Paris",
@@ -1551,6 +1652,8 @@ export const DAYS_DATA: Day[] = [
     },
     {
         id: "infos",
+        order:11,
+        idVoyage:'Chine',
         navLabel: "Infos pratiques",
         content: {
           title: "Informations pratiques",
@@ -1606,3 +1709,15 @@ export const DAYS_DATA: Day[] = [
       }
     }
 ];
+
+
+async function seed() {
+  console.log(`Debut import`);
+  for (const day of DAYS_DATA) {
+    const { id, ...rest } = day;
+    await setDoc(doc(db, 'tabs', id), rest);
+    console.log(`✅ Importé : ${id}`);
+  }
+}
+
+seed().catch(console.error);
