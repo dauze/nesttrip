@@ -40,7 +40,7 @@ export class ActivityComponent {
     }
   }
   async removeFile(){
-    this.storageService.deleteFile(this.activity().fileUrl ?? '');
+    this.travel.removeActivityFile(this.idSlot(), this.activity().id, '');
   }
 
   onNotesBlur(): void {
