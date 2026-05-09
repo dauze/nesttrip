@@ -1,5 +1,5 @@
 import { Component, inject, output } from '@angular/core';
-import { TabService } from '../../../../core/services/tab.service';
+import { TabService } from '../../../core/services/tab.service';
 
 @Component({
   selector: 'app-day-nav',

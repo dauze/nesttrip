@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { TimelineItem } from '../../../../core/models/travel.models';
+import { TimelineItem } from '../../../core/models/travel.models';
 
 @Component({
   selector: 'app-timeline',

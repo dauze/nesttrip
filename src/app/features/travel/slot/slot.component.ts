@@ -1,7 +1,7 @@
 import { Component, input } from '@angular/core';
-import { Slot } from '../../../../core/models/travel.models';
+import { Slot } from '../../../core/models/travel.models';
 import { ActivityComponent } from '../activity/activity.component';
-import { SafeHtmlPipe } from '../../../../shared/pipes/safe-html.pipe';
+import { SafeHtmlPipe } from '../../../shared/pipes/safe-html.pipe';
 
 @Component({
   selector: 'app-slot',
@@ -16,7 +16,7 @@ import { SafeHtmlPipe } from '../../../../shared/pipes/safe-html.pipe';
       </div>
       <div class="slot-body">
         @for (activity of slot().activities; track activity.name) {
-          <app-activity [activity]="activity" />
+          <app-activity [activity]="activity" [idSlot]="slot().id" />
         }
         @if (slot().meal) {
           <div class="meal-block" [innerHTML]="slot().meal! | safeHtml"></div>

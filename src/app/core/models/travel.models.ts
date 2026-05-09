@@ -20,6 +20,7 @@ export interface Transport {
 }
 
 export interface Activity {
+  id: number;
   name: string;
   badges: Badge[];
   grid?: GridItem[];
@@ -29,6 +30,7 @@ export interface Activity {
 }
 
 export interface Slot {
+  id:number;
   type: 'morning' | 'afternoon' | 'evening' | 'meal' | 'transit';
   icon: string;
   time: string;

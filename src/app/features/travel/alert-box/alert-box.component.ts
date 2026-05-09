@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
-import { Alerts } from '../../../../core/models/travel.models';
-import { SafeHtmlPipe } from '../../../../shared/pipes/safe-html.pipe';
+import { Alerts } from '../../../core/models/travel.models';
+import { SafeHtmlPipe } from '../../../shared/pipes/safe-html.pipe';
 
 @Component({
   selector: 'app-alert-box',

@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { DayContent } from '../../../../core/models/travel.models';
+import { DayContent } from '../../../core/models/travel.models';
 
 @Component({
   selector: 'app-hero',
