@@ -49,7 +49,12 @@ export interface Alerts {
 export interface InfoElement {
   id?:number;
   title: string;
-  items: string[];
+  items: string[] | TodoItem[];
+}
+
+export interface TodoItem {
+  text: string;
+  checked: boolean;
 }
 
 export interface DayContent {

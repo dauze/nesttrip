@@ -1,6 +1,6 @@
 // src/app/core/travel.service.ts
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Activity, Day } from '../models/travel.models';
+import { Activity, Day, TodoItem } from '../models/travel.models';
 import { FirebaseService } from './firebase.service';
 import {
   collection,
@@ -108,7 +108,7 @@ export class TabService {
   }
 
     async updateElement(
-    items: string[],
+    items: TodoItem[],
   ): Promise<void> {
     const dayId = this._activeDayId();
     const days = this._days();
