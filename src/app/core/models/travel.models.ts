@@ -26,7 +26,9 @@ export interface Activity {
   grid?: GridItem[];
   transport?: Transport;
   tip?: string;
-  notes?: string;
+  notes?: string; //Notes manuelles
+  fileUrl?: string;    // URL de téléchargement Firebase
+  fileName?: string;  // Nom affiché
 }
 
 export interface Slot {

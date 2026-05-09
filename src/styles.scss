@@ -187,6 +187,14 @@ body {
     border: 1px solid var(--gold-mid);
 }
 
+.badge-file {
+    cursor: pointer;
+    background: var(--gold-light);
+    color: var(--gold);
+    border: 1px solid var(--gold-mid);
+    height: 100%;
+}
+
 /* SLOTS */
 .slot {
     margin-bottom: 0.85rem;

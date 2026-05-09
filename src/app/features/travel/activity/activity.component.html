@@ -2,6 +2,37 @@
   <div class="act-header">
     <span class="act-name">{{ activity().name }}</span>
     <div class="act-badges">
+      <!-- Bouton "Ajouter" caché derrière un input file -->
+      <div class="act-files pill">
+        <input #fileInput type="file" style="display:none" (change)="onFileSelected($event)" />
+
+        @if (activity().fileUrl) {
+          <div class="act-file-pill">
+            <i class="ti ti-paperclip"></i>
+            <a [href]="activity().fileUrl" target="_blank" rel="noopener">
+              {{ activity().fileName }}
+            </a>
+            <button class="act-file-remove" (click)="removeFile()">
+              <i class="ti ti-x"></i>
+            </button>
+          </div>
+        }
+
+        @if (!activity().fileUrl) {
+          <button
+            class="pill badge-file act-file-add"
+            [disabled]="uploading()"
+            (click)="fileInput.click()"
+          >
+            @if (uploading()) {
+              <i class="ti ti-loader-2 spin"></i>
+            } @else {
+              <i class="ti ti-plus"></i>
+            }
+            Ajouter un fichier
+          </button>
+        }
+      </div>
       @for (badge of activity().badges; track badge.text) {
         <span class="pill {{ badge.class }}">{{ badge.text }}</span>
       }
@@ -26,8 +57,7 @@
   }
   <div style="margin-top: 6px; position: relative;">
     <div class="act-notes-placeholder" [style.opacity]="notesValue() ? 0 : 1">
-      <i class="ti ti-pencil"></i>
-      Ajouter une note personnelle...
+      Ajouter une note...
     </div>
     <textarea
       class="act-notes"

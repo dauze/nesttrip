@@ -1,6 +1,6 @@
 // src/app/core/travel.service.ts
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Day } from '../models/travel.models';
+import { Activity, Day } from '../models/travel.models';
 import { FirebaseService } from './firebase.service';
 import {
   collection,
@@ -9,10 +9,15 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { doc, updateDoc } from 'firebase/firestore';
+import { StorageService } from './storage.service';
+
 
 
 @Injectable({ providedIn: 'root' })
 export class TabService {
+
+  private readonly storageService = inject(StorageService);
+
   private readonly db = inject(FirebaseService).db;
 
   private readonly _days = signal<Day[]>([]);
@@ -62,50 +67,43 @@ export class TabService {
     this._activeDayId.set(id);
   }
 
-  async updateActivityNotes(
+  async uploadActivityFile(
     slotId: number,
     activityId: number,
-    notes: string
+    file: File
+  ): Promise<void> {
+    const dayId = this._activeDayId();
+    // Chemin : tabs/day1/slot-id/activity-id/nom-du-fichier
+    const path = `tabs/${dayId}/${slotId}/${activityId}/${file.name}`;
+
+    const { url, name } = await this.storageService.uploadFile(file, path);
+    await this.updateActivityField(slotId, activityId, { fileUrl: url, fileName: name });
+  }
+
+  async removeActivityFile(slotId: number, activityId: number, path: string): Promise<void> {
+    await this.storageService.deleteFile(path);
+    await this.updateActivityField(slotId, activityId, { fileUrl: '', fileName: '' });
+  }
+
+  async updateActivityField(
+    slotId: number,
+    activityId: number,
+    patch: Partial<Activity>
   ): Promise<void> {
     const dayId = this._activeDayId();
     const days = this._days();
     const day = days.find(d => d.id === dayId);
     if (!day) return;
 
-    // 1. Copie profonde du slot concerné
-    const slot = day.content.slots?.find(s => s.id === slotId);
-    const activity = slot?.activities?.find(a => a.id === activityId);
-    if (!activity) return;
+    const newSlots = day.content.slots?.map(s => s.id !== slotId ? s : {
+      ...s,
+      activities: s.activities?.map(a => a.id !== activityId ? a : { ...a, ...patch })
+    });
 
-    // 2. Mise à jour locale du signal (UI réactive immédiatement)
+    this._days.set(days.map(d => d.id !== dayId ? d : {
+      ...d, content: { ...d.content, slots: newSlots }
+    }));
 
-    const newSlot = day.content?.slots?.map(s => s.id !== slotId ? s : {
-          ...s,
-          activities: s.activities?.map(a => a.id !== activityId ? a : {
-            ...a,
-            notes
-          })
-        })
-
-    this._days.set(
-    days.map(d => d.id !== dayId ? d : {
-      ...d,
-      content: {
-        ...d.content,
-        slots: newSlot
-      }
-    })
-  );
-
-    // 3. Écriture Firestore — on réécrit uniquement content.slots
-    try {
-      await updateDoc(
-        doc(this.db, 'tabs', dayId),
-        { 'content.slots': newSlot }
-      );
-    } catch (e) {
-      console.error('Erreur mise à jour notes :', e);
-      // Optionnel : rollback du signal si l'écriture échoue
-    }
+    await setDoc(doc(this.db, 'tabs', dayId), { 'content.slots': newSlots }, { merge: true });
   }
 }
