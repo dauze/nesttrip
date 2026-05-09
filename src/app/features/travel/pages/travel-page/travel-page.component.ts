@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { TravelService } from '../../../../core/models/travel.service';
 import { DayNavComponent } from '../../components/day-nav/day-nav.component';
 import { DayPanelComponent } from '../../components/day-panel/day-panel.component';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-travel-page',
@@ -9,7 +10,10 @@ import { DayPanelComponent } from '../../components/day-panel/day-panel.componen
   imports: [DayNavComponent, DayPanelComponent],
   template: `
     <header class="site-header">
-      <h1>🇨🇳 Pekin/Shanghai – Programme de voyage</h1>
+      <div class="header-top">
+        <h1>🇨🇳 Pekin/Shanghai – Programme de voyage</h1>
+        <button type="button" class="btn-logout" (click)="logout()">Log out</button>
+      </div>
       <p>15–22 mai 2026 · 2 personnes · Logement district de Jing'an</p>
     </header>
 
@@ -27,4 +31,9 @@ import { DayPanelComponent } from '../../components/day-panel/day-panel.componen
 })
 export class TravelPageComponent {
   protected readonly service = inject(TravelService);
+  protected readonly authService = inject(AuthService);
+
+  logout() {
+    this.authService.logout().subscribe();
+  }
 }
