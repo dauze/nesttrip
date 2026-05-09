@@ -24,10 +24,16 @@
   @if (activity().tip) {
     <div class="act-tip">{{ activity().tip }}</div>
   }
-  <textarea
-    class="act-notes"
-    placeholder="Ajouter une note..."
-    [value]="activity().notes ?? ''"
-    (blur)="onNotesBlur($event)"
-  ></textarea>
+  <div style="margin-top: 6px; position: relative;">
+    <div class="act-notes-placeholder" [style.opacity]="notesValue() ? 0 : 1">
+      <i class="ti ti-pencil"></i>
+      Ajouter une note personnelle...
+    </div>
+    <textarea
+      class="act-notes"
+      [value]="notesValue()"
+      (input)="notesValue.set($any($event.target).value)"
+      (blur)="onNotesBlur()"
+    ></textarea>
+  </div>
 </div>

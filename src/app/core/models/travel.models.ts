@@ -26,7 +26,7 @@ export interface Activity {
   grid?: GridItem[];
   transport?: Transport;
   tip?: string;
-  notes?: String;
+  notes?: string;
 }
 
 export interface Slot {

@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, effect, inject, input, signal } from '@angular/core';
 import { Activity } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
 
@@ -13,8 +13,15 @@ export class ActivityComponent {
   readonly activity = input.required<Activity>();
   readonly idSlot = input.required<number>();
 
-  onNotesBlur(event: FocusEvent): void {
-    const notes = (event.target as HTMLTextAreaElement).value;
-    this.travel.updateActivityNotes(this.idSlot(), this.activity().id, notes);
+  readonly notesValue = signal('');
+
+  constructor() {
+    effect(() => {
+      this.notesValue.set(this.activity().notes ?? '');
+    });
+  }
+
+  onNotesBlur(): void {
+    this.travel.updateActivityNotes(this.idSlot(), this.activity().id, this.notesValue());
   }
 }

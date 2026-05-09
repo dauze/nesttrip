@@ -29,3 +29,42 @@
     flex-wrap: wrap;
     flex-shrink: 0;
 }
+
+.act-notes {
+  width: 100%;
+  padding: 10px 12px 10px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: #FFF9ED;
+  border: 0.5px solid #EFC97A;
+  border-left: 3px solid #EF9F27;
+  border-radius: 0 8px 8px 0;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+  transition: background 0.15s, border-color 0.15s;
+  resize: none;
+
+  // Auto-hauteur selon contenu (Chrome 123+, Firefox 128+)
+  field-sizing: content;
+  min-height: 40px;
+
+  &:focus {
+    background: #FFF4D6;
+    border-color: #BA7517;
+  }
+}
+
+.act-notes-placeholder {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  transition: opacity 0.2s;
+}
