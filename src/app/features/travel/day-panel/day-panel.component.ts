@@ -39,4 +39,6 @@ import { InfoBoxComponent } from '../info-box/info-box.component';
 })
 export class DayPanelComponent {
   readonly day = input.required<Day>();
+
+  
 }

@@ -47,6 +47,7 @@ export interface Alerts {
 }
 
 export interface InfoElement {
+  id?:number;
   title: string;
   items: string[];
 }

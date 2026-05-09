@@ -1,0 +1,26 @@
+
+<div class="info-box">
+  <div class="info-box-title">{{ element().title }}</div>
+  <div class="info-box-body">
+    @if(element().id === 1){
+      <div style="margin-top: 6px; position: relative;">
+        <div class="act-notes-placeholder" [style.opacity]="todoCustom().length ? 0 : 1">
+          Ajouter une note...
+        </div>
+      <textarea
+          class="act-notes"
+          [value]="todoCustom()"
+          (input)="todoCustom.set($any($event.target).value)"
+          (blur)="onElementsBlur()"
+          ></textarea>
+      </div>
+
+    } @else {
+      <ul>
+        @for (item of element().items; track $index) {
+          <li [innerHTML]="item | safeHtml"></li>
+        }
+      </ul>
+    }
+  </div>
+</div>
