@@ -171,11 +171,17 @@
     font-weight: 600;
     width: 160px;
     flex-shrink: 0;
+    resize: none;
+    field-sizing: content;
+    border: none;
   }
 
   .act-grid-value {
     flex: 1;
     min-width: 120px;
+    field-sizing: content;
+    resize: none;
+    border: none;
   }
 
   input {

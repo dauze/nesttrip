@@ -34,27 +34,27 @@
   </div>
 
   <!-- Grid items -->
-  @for (item of gridItems(); track $index; let i = $index) {
-    <div class="act-item act-item--edit">
-      <input
-        class="act-grid-label"
-        [value]="item.label"
-        placeholder="Libellé"
-        (blur)="updateGridItem(i, 'label', $any($event.target).value)"
-        (keydown.enter)="onEnter($any($event), i)"
-        (keydown.backspace)="onBackspace($any($event), i, 'label')"
-      />
-      <span class="act-item-sep">:</span>
-      <input
-        class="act-grid-value"
-        [value]="item.value"
-        placeholder="Valeur"
-        (blur)="updateGridItem(i, 'value', $any($event.target).value)"
-        (keydown.enter)="onEnter($any($event), i)"
-        (keydown.backspace)="onBackspace($any($event), i, 'value')"
-      />
-    </div>
-  }
+    @for (item of gridItems(); track $index; let i = $index) {
+      <div class="act-item act-item--edit">
+        <textarea
+          class="act-grid-label"
+          placeholder="Libellé"
+          rows="1"
+          (blur)="updateGridItem(i, 'label', $any($event.target).value)"
+          (keydown.enter)="onEnter($any($event), i)"
+          (keydown.backspace)="onBackspace($any($event), i, 'label')"
+        >{{ item.label }}</textarea>
+        <span class="act-item-sep">:</span>
+        <textarea
+          class="act-grid-value"
+          placeholder="Valeur"
+          rows="1"
+          (blur)="updateGridItem(i, 'value', $any($event.target).value)"
+          (keydown.enter)="onEnter($any($event), i)"
+          (keydown.backspace)="onBackspace($any($event), i, 'value')"
+        >{{ item.value }}</textarea>
+      </div>
+    }
 
   <!-- Transport -->
   <div class="act-transport act-transport--edit">
