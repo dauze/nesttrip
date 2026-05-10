@@ -13,6 +13,8 @@ export class ActivityComponent {
   readonly activity = input.required<Activity>();
   readonly idSlot = input.required<number>();
 
+  private el = inject<ElementRef<HTMLElement>>(ElementRef);
+
   // activity.component.ts
   readonly uploading = signal(false);
   readonly notesValue = signal('');
@@ -41,12 +43,12 @@ export class ActivityComponent {
     this.patch({ grid });
   }
 
-  onEnter(event: KeyboardEvent, index: number): void {
+onEnter(event: KeyboardEvent, index: number): void {
   event.preventDefault();
   const grid = [...(this.activity().grid ?? [])];
   grid.splice(index + 1, 0, { label: '', value: '' });
   this.patch({ grid });
-
+  // Le setTimeout laisse Angular finir le re-render
   setTimeout(() => this.focusField(index + 1, 'label'));
 }
 
@@ -71,7 +73,8 @@ onBackspace(event: KeyboardEvent, index: number, key: 'label' | 'value'): void {
 
 private focusField(index: number, key: 'label' | 'value'): void {
   const selector = key === 'label' ? '.act-grid-label' : '.act-grid-value';
-  const input = document.querySelectorAll<HTMLInputElement>(selector)[index];
+  const inputs = this.el.nativeElement.querySelectorAll<HTMLInputElement>(selector);
+  const input = inputs[index];
   if (!input) return;
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
