@@ -1,9 +1,17 @@
 <div class="slot slot-{{ slot().type }}">
   <div class="slot-header">
-    <span class="slot-icon">{{ slot().icon }}</span>
-    <span class="slot-time">{{ slot().time }}</span>
-    <span class="slot-name">{{ slot().name }}</span>
-  </div>
+  <span class="slot-icon">{{ slot().icon }}</span>
+
+  <span class="slot-time" contenteditable="true"
+        (blur)="save('time', $any($event.target).innerText.trim())">
+    {{ slot().time }}
+  </span>
+
+  <span class="slot-name" contenteditable="true"
+        (blur)="save('name', $any($event.target).innerText.trim())">
+    {{ slot().name }}
+  </span>
+</div>
   <div class="slot-body">
     @for (activity of slot().activities; track activity.name) {
       <app-activity [activity]="activity" [idSlot]="slot().id" />
