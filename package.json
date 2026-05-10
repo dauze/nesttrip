@@ -19,6 +19,7 @@
     "@angular/router": "^21.2.0",
     "@primeuix/themes": "^2.0.3",
     "firebase": "^12.13.0",
+    "primeflex": "^4.0.0",
     "primeng": "^21.1.6",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
