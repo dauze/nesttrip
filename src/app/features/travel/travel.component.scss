@@ -1,0 +1,73 @@
+/* HEADER */
+.site-header {
+    background: var(--red);
+    color: #fff;
+    padding: 1.5rem 1rem 1.25rem;
+    text-align: center;
+    position: static;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.site-header h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: .01em;
+}
+
+.site-header p {
+    font-size: 0.8rem;
+    opacity: .85;
+    margin-top: 2px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+
+  h1 {
+    margin: 0;
+  }
+}
+
+/* PANELS */
+.day-panel {
+    display: none;
+    padding: 1rem;
+    max-width: 100rem;
+    margin: 0 auto;
+}
+
+.day-panel.active {
+    display: block;
+}
+
+/* FOOTER */
+footer {
+    text-align: center;
+    padding: 0rem 1rem 1rem;
+    font-size: 0.72rem;
+    color: var(--text3);
+}
+
+.btn-logout {
+  padding: 0.3rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text3);
+  font-size: 0.72rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: 0.4rem;
+
+  &:hover {
+    border-color: var(--text3);
+    color: var(--text2);
+  }
+}

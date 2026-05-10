@@ -1,0 +1,30 @@
+/* ALERT BOX */
+.alert-box {
+    border-radius: var(--radius);
+    border: 1px solid var(--gold-mid);
+    background: var(--gold-light);
+    padding: 0.8rem 1rem;
+    box-shadow: var(--shadow);
+}
+
+.alert-box h3 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 0.4rem;
+}
+
+.alert-box ul {
+    padding-left: 1.1rem;
+}
+
+.alert-box li {
+    font-size: 0.78rem;
+    color: #78350f;
+    line-height: 1.55;
+    margin-bottom: 3px;
+}
+
+.alert-box li strong {
+    font-weight: 700;
+}

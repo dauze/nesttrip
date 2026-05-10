@@ -4,6 +4,7 @@ import { TabService } from '../../../core/services/tab.service';
 @Component({
   selector: 'app-day-nav',
   standalone: true,
+  styleUrl: 'day-nav.component.scss',
   template: `
     <nav class="day-nav">
       @for (day of service.days(); track day.id) {

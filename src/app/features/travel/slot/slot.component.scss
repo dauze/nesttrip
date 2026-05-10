@@ -1,7 +1,28 @@
-// slot.component.scss
 :host {
   display: block;
 }
+
+.add-activity-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+/* MEAL / TRANSIT BLOCKS */
+.meal-block,
+.transit-block {
+    padding: 0.7rem 0.9rem;
+    font-size: 0.8rem;
+    color: var(--text2);
+    line-height: 1.6;
+}
+
+.meal-block em,
+.transit-block em {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 600;
+}
+
 /* SLOTS */
 .slot-body {
   border-bottom-left-radius: var(--radius);
