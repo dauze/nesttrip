@@ -1,6 +1,6 @@
 // src/app/core/travel.service.ts
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Activity, Day, Slot, TodoItem } from '../models/travel.models';
+import { Activity, Day, DayContent, Slot, TodoItem } from '../models/travel.models';
 import { FirebaseService } from './firebase.service';
 import {
   collection,
@@ -165,5 +165,18 @@ async updateSlotField(
     }));
 
     await setDoc(doc(this.db, 'tabs', dayId), { content: { elements: elements } }, { merge: true });
+  }
+
+  async updateDayField(patch: Partial<DayContent>): Promise<void> {
+    const dayId = this._activeDayId();
+    const days = this._days();
+
+    this._days.set(days.map(d =>
+      d.id !== dayId ? d : { ...d, content: { ...d.content, ...patch } }
+    ));
+
+    await updateDoc(doc(this.db, 'tabs', dayId), {
+      content: { ...days.find(d => d.id === dayId)!.content, ...patch }
+    });
   }
 }
