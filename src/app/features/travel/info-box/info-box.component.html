@@ -1,6 +1,10 @@
 
 <div class="info-box">
-  <div class="info-box-title">{{ element().title }}</div>
+  <div class="info-box-title"
+     contenteditable="true"
+     (blur)="updateTitle($any($event.target).innerText.trim())">
+    {{ element().title }}
+  </div>
   <div class="info-box-body">
     @if(element().id === 1){
       <div class="todo-list" style="margin-top: 6px;">
@@ -18,17 +22,22 @@
               rows="1"
               [value]="item.text"
               (input)="onTextChange($index, $any($event.target).value)"
-              (keydown.enter)="onEnter($index, $event)"
-              (keydown.backspace)="onBackspace($index, $any($event.target).value, $event)"
+              (keydown.enter)="onEnterTodo($index, $event)"
+              (keydown.backspace)="onBackspaceTodo($index, $any($event.target).value, $event)"
               [attr.data-index]="$index"
             ></textarea>
           </div>
         }
       </div>
     } @else {
-      <ul>
+      <ul #listRef>
         @for (item of stringItems; track $index) {
-          <li [innerHTML]="item | safeHtml"></li>
+          <li contenteditable="true"
+              [innerHTML]="item | safeHtml"
+              (blur)="updateItem($index, $any($event.target).innerHTML)"
+              (keydown.enter)="onEnter($any($event), $index)"
+              (keydown.backspace)="onBackspace($any($event), $index)">
+          </li>
         }
       </ul>
     }

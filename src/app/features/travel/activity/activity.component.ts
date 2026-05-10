@@ -34,11 +34,6 @@ export class ActivityComponent {
     this.patch({ transport: transport.text || transport.icon ? transport : undefined });
   }
 
-  addGridItem(): void {
-    const grid = [...(this.activity().grid ?? []), { label: '', value: '' }];
-    this.patch({ grid });
-  }
-
   updateGridItem(index: number, key: 'label' | 'value', value: string): void {
     const grid = (this.activity().grid ?? []).map((item, i) =>
       i === index ? { ...item, [key]: value } : item
@@ -46,10 +41,41 @@ export class ActivityComponent {
     this.patch({ grid });
   }
 
-  removeGridItem(index: number): void {
-    const grid = (this.activity().grid ?? []).filter((_, i) => i !== index);
-    this.patch({ grid });
+  onEnter(event: KeyboardEvent, index: number): void {
+  event.preventDefault();
+  const grid = [...(this.activity().grid ?? [])];
+  grid.splice(index + 1, 0, { label: '', value: '' });
+  this.patch({ grid });
+
+  setTimeout(() => this.focusField(index + 1, 'label'));
+}
+
+onBackspace(event: KeyboardEvent, index: number, key: 'label' | 'value'): void {
+  const el = event.target as HTMLInputElement;
+  if (el.value.trim() !== '') return;
+
+  event.preventDefault();
+
+  if (key === 'value') {
+    this.focusField(index, 'label');
+    return;
   }
+
+  // key === 'label' : supprimer la ligne si les deux champs sont vides
+  const grid = this.activity().grid ?? [];
+  if (grid.length === 1) return;
+
+  this.patch({ grid: grid.filter((_, i) => i !== index) });
+  setTimeout(() => this.focusField(index - 1, 'value'));
+}
+
+private focusField(index: number, key: 'label' | 'value'): void {
+  const selector = key === 'label' ? '.act-grid-label' : '.act-grid-value';
+  const input = document.querySelectorAll<HTMLInputElement>(selector)[index];
+  if (!input) return;
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+}
 
 
   async onFileSelected(event: Event): Promise<void> {

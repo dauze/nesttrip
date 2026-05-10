@@ -17,7 +17,11 @@
       <app-activity [activity]="activity" [idSlot]="slot().id" />
     }
     @if (slot().meal) {
-      <div class="meal-block" [innerHTML]="slot().meal! | safeHtml"></div>
+      <div class="meal-block"
+          contenteditable="true"
+          [innerHTML]="slot().meal! | safeHtml"
+          (blur)="save('meal', $any($event.target).innerHTML)">
+      </div>
     }
     @if (slot().type !== 'meal') {
       <div class="add-activity-btn-wrapper">

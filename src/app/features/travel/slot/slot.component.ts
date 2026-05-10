@@ -17,7 +17,7 @@ export class SlotComponent {
 
   readonly editingField = signal<'time' | 'name' | null>(null);
 
-  save(field: 'time' | 'name', value: string): void {
+  save(field: 'time' | 'name'|'meal', value: string): void {
     this.travel.updateSlotField(this.slot().id, { [field]: value });
     this.editingField.set(null);
   }

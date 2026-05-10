@@ -1,0 +1,18 @@
+<div class="timeline">
+  <div class="timeline-title">Vue d'ensemble de la journée</div>
+  @for (item of items(); track item.time) {
+    <div class="tl-row">
+      <span class="tl-time" contenteditable="true"
+            (blur)="updateItem(item, { time: $any($event.target).innerText.trim() })">
+        {{ item.time }}
+      </span>
+      <div class="tl-dot {{ item.color }}"></div>
+      <div class="tl-content" contenteditable="true"
+           (blur)="updateItem(item, { content: $any($event.target).innerText.trim() })"
+           (keydown.enter)="onEnter($any($event), $index)"
+           (keydown.backspace)="onBackspace($any($event), $index)">
+        {{ item.content }}
+      </div>
+    </div>
+  }
+</div>

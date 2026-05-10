@@ -1,8 +1,8 @@
 <div class="activity">
+  <button class="btn-primary rounded-btn" (click)="removeActivite()">
+    <span>✕</span>
+  </button>
   <div class="act-header">
-      <button class="btn-primary rounded-btn" (click)="removeActivite()">
-        <span>x</span>
-      </button>
     <div class="act-name-input" contenteditable="true"
     (blur)="patch({ name: $any($event.target).innerText.trim() })" >{{ activity().name }}
     </div>
@@ -36,14 +36,13 @@
   <!-- Grid items -->
   @for (item of gridItems(); track $index; let i = $index) {
     <div class="act-item act-item--edit">
-      <button class="btn-primary rounded-btn" (click)="removeGridItem(i)">
-        <span>x</span>
-      </button>
       <input
         class="act-grid-label"
         [value]="item.label"
         placeholder="Label"
         (blur)="updateGridItem(i, 'label', $any($event.target).value)"
+        (keydown.enter)="onEnter($any($event), i)"
+        (keydown.backspace)="onBackspace($any($event), i, 'label')"
       />
       <span class="act-item-sep">:</span>
       <input
@@ -51,13 +50,11 @@
         [value]="item.value"
         placeholder="Valeur"
         (blur)="updateGridItem(i, 'value', $any($event.target).value)"
+        (keydown.enter)="onEnter($any($event), i)"
+        (keydown.backspace)="onBackspace($any($event), i, 'value')"
       />
-      
     </div>
   }
-  <div class="act-add-row-btn">
-    <button class="btn-primary rounded-btn" (click)="addGridItem()">+</button>
-  </div>
 
   <!-- Transport -->
   <div class="act-transport act-transport--edit">
