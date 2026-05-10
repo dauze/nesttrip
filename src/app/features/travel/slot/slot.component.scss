@@ -102,16 +102,10 @@
 .slot-transit .slot-name {
     color: var(--text2);
 }
-
 .add-activity-btn-wrapper {
   display: flex;
   justify-content: center;
-  padding: 0.5rem 0;
-}
-.add-activity-btn-wrapper {
-  display: flex;
-  justify-content: center;
-  padding: 0.5rem 0;
+  padding: 0;
 
   .btn-primary.rounded-btn {
     position: static;        // pas de positionnement absolu ici

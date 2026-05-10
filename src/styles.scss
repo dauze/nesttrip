@@ -588,21 +588,6 @@ footer {
     padding: 0rem 1rem 1rem;
     font-size: 0.72rem;
     color: var(--text3);
-    .btn-logout {
-    &:hover {
-      opacity: 1;
-    }
-    padding: .3rem;
-    background: linear-gradient(135deg, #4200f8, #882c2c);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: .92rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .2s, transform .15s;
-    margin-top: .2rem;
-  }
 }
 
 /* PRINT */
@@ -689,5 +674,22 @@ input, textarea, div, span, li,h3 {
 .add-activity-btn-wrapper {
   display: flex;
   justify-content: center;
-  padding: 0.5rem 0;
+  padding: 0;
+}
+.btn-logout {
+  padding: 0.3rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text3);
+  font-size: 0.72rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: 0.4rem;
+
+  &:hover {
+    border-color: var(--text3);
+    color: var(--text2);
+  }
 }
