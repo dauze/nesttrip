@@ -35,24 +35,25 @@
   </div>
 
   <!-- Grid items -->
-    @for (item of gridItems(); track $index; let i = $index) {
+    @for (item of gridItems(); track item.id) {
       <div class="act-item act-item--edit">
         <textarea
           class="act-grid-label"
           placeholder="Libellé"
+          [value]="item.label"
+          (blur)="updateGridItem(item.id ?? '', 'label', $any($event.target).value)"
+          (keydown.enter)="onEnter($any($event), item.id ?? '')"
+          (keydown.backspace)="onBackspace($any($event), item.id ?? '', 'label')"
           rows="1"
-          (blur)="updateGridItem(i, 'label', $any($event.target).value)"
-          (keydown.enter)="onEnter($any($event), i)"
-          (keydown.backspace)="onBackspace($any($event), i, 'label')"
-        >{{ item.label }}</textarea>
+        ></textarea>
         <span class="act-item-sep">:</span>
         <textarea
           class="act-grid-value"
           placeholder="Valeur"
           rows="1"
-          (blur)="updateGridItem(i, 'value', $any($event.target).value)"
-          (keydown.enter)="onEnter($any($event), i)"
-          (keydown.backspace)="onBackspace($any($event), i, 'value')"
+          (blur)="updateGridItem(item.id ?? '', 'value', $any($event.target).value)"
+          (keydown.enter)="onEnter($any($event), item.id ?? '')"
+          (keydown.backspace)="onBackspace($any($event), item.id ?? '', 'value')"
         >{{ item.value }}</textarea>
       </div>
     }
@@ -76,7 +77,7 @@
     class="act-tip-edit"
     [value]="activity().tip ?? ''"
     placeholder="Astuce / conseil..."
-    (blur)="patch({ tip: $any($event.target).value || undefined })"
+    (blur)="patch({ tip: $any($event.target).value || '' })"
   ></textarea>
 
   <!-- Notes -->

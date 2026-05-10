@@ -27,7 +27,11 @@ export class SlotComponent {
     id: Date.now(), // ou un uuid, selon ton modèle
     name: 'Nouvelle activité',
     badges: [],
-    grid: [],
+    grid: [{
+      id: Date.now().toString(),
+      label: '',
+      value: '',
+    }],
     notes: '',
   };
 
