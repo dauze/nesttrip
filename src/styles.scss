@@ -784,7 +784,7 @@ footer {
   padding-top: 0.1rem;
   padding-bottom: 0.1rem;
 }
-input, textarea {
+input, textarea, div, span {
   &:focus {
     outline: none;
     box-shadow: none;
