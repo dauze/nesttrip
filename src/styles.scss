@@ -234,26 +234,6 @@ body {
     }
 }
 
-.act-item {
-    font-size: 0.78rem;
-    color: var(--text2);
-    line-height: 1.45;
-}
-
-.act-item strong {
-    color: var(--text);
-    font-weight: 600;
-}
-
-.act-item a {
-    color: var(--blue);
-    text-decoration: none;
-}
-
-.act-item a:hover {
-    text-decoration: underline;
-}
-
 .act-transport {
     display: flex;
     align-items: flex-start;

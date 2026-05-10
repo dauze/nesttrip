@@ -1,4 +1,4 @@
-import { Component, computed, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { afterNextRender, Component, computed, effect, ElementRef, inject, input, signal  } from '@angular/core';
 import { Activity } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
 
