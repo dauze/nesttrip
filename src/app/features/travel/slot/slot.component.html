@@ -1,0 +1,18 @@
+<div class="slot slot-{{ slot().type }}">
+  <div class="slot-header">
+    <span class="slot-icon">{{ slot().icon }}</span>
+    <span class="slot-time">{{ slot().time }}</span>
+    <span class="slot-name">{{ slot().name }}</span>
+  </div>
+  <div class="slot-body">
+    @for (activity of slot().activities; track activity.name) {
+      <app-activity [activity]="activity" [idSlot]="slot().id" />
+    }
+    @if (slot().meal) {
+      <div class="meal-block" [innerHTML]="slot().meal! | safeHtml"></div>
+    }
+    <div class="add-activity-btn-wrapper">
+      <button class="btn-primary rounded-btn" (click)="addActivity()">+</button>
+    </div>
+  </div>
+</div>

@@ -1,9 +1,10 @@
 // src/app/core/travel.service.ts
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Activity, Day, TodoItem } from '../models/travel.models';
+import { Activity, Day, Slot, TodoItem } from '../models/travel.models';
 import { FirebaseService } from './firebase.service';
 import {
   collection,
+  FieldPath,
   getDocs,
   query,
   setDoc
@@ -104,8 +105,30 @@ export class TabService {
       ...d, content: { ...d.content, slots: newSlots }
     }));
 
-    await setDoc(doc(this.db, 'tabs', dayId), { 'content.slots': newSlots }, { merge: true });
+
+  await updateDoc(doc(this.db, 'tabs', dayId),new FieldPath('content', 'slots'), newSlots);
   }
+
+  
+async updateSlotField(
+  slotId: number,
+  patch: Partial<Slot>
+): Promise<void> {
+  const dayId = this._activeDayId();
+  const days = this._days();
+  const day = days.find(d => d.id === dayId);
+  if (!day) return;
+
+  const newSlots = day.content.slots?.map(s =>
+    s.id !== slotId ? s : { ...s, ...patch }
+  );
+
+  this._days.set(days.map(d =>
+    d.id !== dayId ? d : { ...d, content: { ...d.content, slots: newSlots } }
+  ));
+
+  await updateDoc(doc(this.db, 'tabs', dayId),new FieldPath('content', 'slots'), newSlots);
+}
 
     async updateElement(
     items: TodoItem[],
