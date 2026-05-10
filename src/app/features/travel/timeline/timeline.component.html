@@ -3,10 +3,29 @@
   @for (item of items(); track item.time) {
     <div class="tl-row">
       <span class="tl-time" contenteditable="true"
+            (keydown.backspace)="onBackspace($any($event), $index)"
             (blur)="updateItem(item, { time: $any($event.target).innerText.trim() })">
         {{ item.time }}
       </span>
-      <div class="tl-dot {{ item.color }}"></div>
+      <div class="tl-dot-wrapper">
+        <p-select
+        [panelStyle]="{ transform: 'translateX(-15px)' }"
+        [options]="colors"
+        [ngModel]="item.color"
+        (ngModelChange)="onColorChange(item, $event)"
+        [showClear]="false"
+        styleClass="color-picker-select"
+        appendTo="body"
+        >
+          <ng-template pTemplate="selectedItem" let-color>
+            <span class="tl-dot" [ngClass]="color"></span>
+          </ng-template>
+
+          <ng-template pTemplate="item" let-color>
+            <span class="tl-dot" [ngClass]="color"></span>
+          </ng-template>
+        </p-select>
+      </div>
       <div class="tl-content" contenteditable="true"
            (blur)="updateItem(item, { content: $any($event.target).innerText.trim() })"
            (keydown.enter)="onEnter($any($event), $index)"

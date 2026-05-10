@@ -1,16 +1,30 @@
 import { Component, ElementRef, inject, input, ViewChild } from '@angular/core';
 import { TimelineItem } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
+import { SelectModule } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
+import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'app-timeline',
   standalone: true,
+  imports: [SelectModule, FormsModule, NgClass],
   templateUrl: 'timeline.component.html',
+  styleUrl: 'timeline.component.scss',
 })
 export class TimelineComponent {
   private readonly travel = inject(TabService);
   readonly items = input.required<TimelineItem[]>();
   @ViewChild('listRef') listRef!: ElementRef<HTMLElement>;
+
+  colors: TimelineItem['color'][] = [
+  'orange','blue','green',
+  'gray','yellow','red','purple'
+  ];
+
+  onColorChange(item: TimelineItem, color: unknown): void {
+    this.updateItem(item, { color: color as TimelineItem['color'] });
+  }
 
   onEnter(event: KeyboardEvent, index: number): void {
     event.preventDefault();
