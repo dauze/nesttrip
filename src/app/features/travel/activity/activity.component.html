@@ -39,7 +39,7 @@
       <input
         class="act-grid-label"
         [value]="item.label"
-        placeholder="Label"
+        placeholder="Libellé"
         (blur)="updateGridItem(i, 'label', $any($event.target).value)"
         (keydown.enter)="onEnter($any($event), i)"
         (keydown.backspace)="onBackspace($any($event), i, 'label')"
