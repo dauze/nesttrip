@@ -1,37 +1,37 @@
 <div class="timeline">
   <div class="timeline-title">Vue d'ensemble de la journée</div>
-  @for (item of items(); track item.time) {
+  @for (item of localItems(); track item.id) {
     <div class="tl-row">
       <span class="tl-time" contenteditable="true"
-            (keydown.backspace)="onBackspace($any($event), $index)"
-            (blur)="updateItem(item, { time: $any($event.target).innerText.trim() })">
-        {{ item.time }}
+      [initContent]="item.time"
+      (blur)="persistItem(item.id!)"
+      (keydown.backspace)="onBackspace($any($event), item.id!)">
       </span>
+
+
       <div class="tl-dot-wrapper">
         <p-select
-        [panelStyle]="{ transform: 'translateX(-15px)' }"
-        [options]="colors"
-        [ngModel]="item.color"
-        (ngModelChange)="onColorChange(item, $event)"
-        [showClear]="false"
-        styleClass="color-picker-select"
-        appendTo="body"
-        >
+          [panelStyle]="{ transform: 'translateX(-15px)' }"
+          [options]="colors"
+          [ngModel]="item.color"
+          (ngModelChange)="onColorChange(item.id!, $event)"
+          [showClear]="false"
+          styleClass="color-picker-select"
+          appendTo="body">
           <ng-template pTemplate="selectedItem" let-color>
             <span class="tl-dot" [ngClass]="color"></span>
           </ng-template>
-
           <ng-template pTemplate="item" let-color>
             <span class="tl-dot" [ngClass]="color"></span>
           </ng-template>
         </p-select>
       </div>
       <div class="tl-content" contenteditable="true"
-           (blur)="updateItem(item, { content: $any($event.target).innerText.trim() })"
-           (keydown.enter)="onEnter($any($event), $index)"
-           (keydown.backspace)="onBackspace($any($event), $index)">
-        {{ item.content }}
-      </div>
+     [initContent]="item.content"
+     (blur)="persistItem(item.id!)"
+     (keydown.enter)="onEnter($any($event), item.id!)"
+     (keydown.backspace)="onBackspace($any($event), item.id!)">
+    </div>
     </div>
   }
 </div>

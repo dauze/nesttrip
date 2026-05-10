@@ -106,7 +106,13 @@ export class TabService {
     }));
 
 
-  await updateDoc(doc(this.db, 'tabs', dayId),new FieldPath('content', 'slots'), newSlots);
+    try {
+ await updateDoc(doc(this.db, 'tabs', dayId),new FieldPath('content', 'slots'), newSlots);
+    }
+    catch{
+      console.log('erreur avec l\'objet  :' + newSlots);
+    }
+ 
   }
 
   async removeActivity(slotId: number,activityId: number){

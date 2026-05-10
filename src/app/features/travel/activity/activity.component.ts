@@ -1,5 +1,5 @@
-import { Component, computed, effect, ElementRef, inject, input, signal  } from '@angular/core';
-import { Activity } from '../../../core/models/travel.models';
+import { afterNextRender, Component, computed, effect, ElementRef, inject, input, signal  } from '@angular/core';
+import { Activity, GridItem } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
 import { ButtonModule } from 'primeng/button';
 
@@ -15,77 +15,96 @@ export class ActivityComponent {
   readonly activity = input.required<Activity>();
   readonly idSlot = input.required<number>();
 
-  private el = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly gridItems = signal<GridItem[]>([]);
 
+  private el = inject<ElementRef<HTMLElement>>(ElementRef);
+  private suppressBlur = false;
   // activity.component.ts
   readonly uploading = signal(false);
   readonly notesValue = signal('');
 
-   // Copie locale du grid pour l'édition
-  readonly gridItems = computed(() => [...(this.activity().grid ?? [])]);
+  constructor() {
+ // S'exécute une seule fois à l'init
+  afterNextRender(() => {
+    const grid = this.activity().grid ?? [];
+    this.gridItems.set(this.normalizeGrid(grid));
+  });
+  effect(() => {
+      this.notesValue.set(this.activity().notes ?? '');
+    });
+}
 
   private removeTimeout: ReturnType<typeof setTimeout> | null = null;
   isPendingRemove = signal(false);
 
-  countdown = signal(3);
+  countdown = signal(5);
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor() {
-    effect(() => {
-      this.notesValue.set(this.activity().notes ?? '');
-    });
-  }
+
    patch(partial: Partial<Activity>): void {
     this.travel.updateActivityField(this.idSlot(), this.activity().id, partial);
   }
 
   patchTransport(key: 'icon' | 'text', value: string): void {
     const transport = { ...(this.activity().transport ?? { icon: '', text: '' }), [key]: value };
-    this.patch({ transport: transport.text || transport.icon ? transport : undefined });
+    this.patch({ transport });  // toujours persister, même vide
   }
 
-  updateGridItem(index: number, key: 'label' | 'value', value: string): void {
-    const grid = (this.activity().grid ?? []).map((item, i) =>
-      i === index ? { ...item, [key]: value } : item
-    );
-    this.patch({ grid });
-  }
-
-onEnter(event: KeyboardEvent, index: number): void {
+onEnter(event: KeyboardEvent, id: string): void {
   event.preventDefault();
-  const grid = [...(this.activity().grid ?? [])];
-  grid.splice(index + 1, 0, { label: '', value: '' });
-  this.patch({ grid });
-  // Le setTimeout laisse Angular finir le re-render
-  setTimeout(() => this.focusField(index + 1, 'label'));
+  const grid = [...this.gridItems()];
+  const index = grid.findIndex(item => item.id === id);
+  grid.splice(index + 1, 0, { id: crypto.randomUUID(), label: '', value: '' });
+  this.gridItems.set(grid);         // ← local
+  this.patch({ grid });             // ← Firestore
+  requestAnimationFrame(() => this.focusField(index + 1, 'label'));
 }
 
-onBackspace(event: KeyboardEvent, index: number, key: 'label' | 'value'): void {
+onBackspace(event: KeyboardEvent, id: string, key: 'label' | 'value'): void {
   const el = event.target as HTMLInputElement;
   if (el.value.trim() !== '') return;
-
   event.preventDefault();
+  this.suppressBlur = true;
+
+  const grid = this.gridItems();
+  const index = grid.findIndex(item => item.id === id);
 
   if (key === 'value') {
     this.focusField(index, 'label');
+    this.suppressBlur = false;
     return;
   }
 
-  // key === 'label' : supprimer la ligne si les deux champs sont vides
-  const grid = this.activity().grid ?? [];
-  if (grid.length === 1) return;
+  if (grid.length === 1) { this.suppressBlur = false; return; }
 
-  this.patch({ grid: grid.filter((_, i) => i !== index) });
-  setTimeout(() => this.focusField(index - 1, 'value'));
+  const updated = grid.filter(item => item.id !== id);
+  this.gridItems.set(updated);      // ← local
+  this.patch({ grid: updated });    // ← Firestore
+  setTimeout(() => {
+    this.focusField(index - 1, 'value');
+    this.suppressBlur = false;
+  });
+}
+
+updateGridItem(id: string, key: 'label' | 'value', value: string): void {
+  if (this.suppressBlur) return;
+  const updated = this.gridItems().map(item =>
+    item.id === id ? { ...item, [key]: value } : item
+  );
+  this.gridItems.set(updated);      // ← local
+  this.patch({ grid: updated });    // ← Firestore
 }
 
 private focusField(index: number, key: 'label' | 'value'): void {
   const selector = key === 'label' ? '.act-grid-label' : '.act-grid-value';
-  const inputs = this.el.nativeElement.querySelectorAll<HTMLInputElement>(selector);
-  const input = inputs[index];
-  if (!input) return;
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
+  
+  requestAnimationFrame(() => {
+    const inputs = this.el.nativeElement.querySelectorAll<HTMLInputElement>(selector);
+    const input = inputs[index];
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
 }
 
 
@@ -109,7 +128,7 @@ private focusField(index: number, key: 'label' | 'value'): void {
 
  removeActivite() {
   this.isPendingRemove.set(true);
-  this.countdown.set(3);
+  this.countdown.set(5);
 
   this.countdownInterval = setInterval(() => {
     this.countdown.update(v => v - 1);
@@ -119,7 +138,7 @@ private focusField(index: number, key: 'label' | 'value'): void {
     clearInterval(this.countdownInterval!);
     this.isPendingRemove.set(false);
     this.travel.removeActivity(this.idSlot(), this.activity().id);
-  }, 3000);
+  }, 5000);
 }
 
 cancelRemove() {
@@ -127,5 +146,9 @@ cancelRemove() {
   clearInterval(this.countdownInterval!);
   this.removeTimeout = null;
   this.isPendingRemove.set(false);
+}
+
+private normalizeGrid(grid: GridItem[]): GridItem[] {
+  return grid.map(item => ({ ...item, id: item.id ?? crypto.randomUUID() }));
 }
 }

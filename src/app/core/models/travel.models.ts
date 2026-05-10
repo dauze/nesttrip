@@ -4,12 +4,14 @@ export interface Badge {
 }
 
 export interface TimelineItem {
+  id?: string;
   time: string;
   color: 'orange' | 'blue' | 'green' | 'gray'| "yellow"| "red"| "purple";
   content: string;
 }
 
 export interface GridItem {
+  id?: string;
   label: string;
   value: string;
 }
