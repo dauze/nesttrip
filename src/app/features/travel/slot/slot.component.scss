@@ -10,7 +10,8 @@
   background: var(--surface);
   padding: 0.75rem 0.9rem;  // ← donne de l'espace pour que la croix déborde
   display: flex;
-  flex-direction: column;          // ← espace entre activités (retire margin-bottom de .activity)
+  flex-direction: column;  
+  gap:1rem
 }
 .slot-header {
   border-top-left-radius: var(--radius);
