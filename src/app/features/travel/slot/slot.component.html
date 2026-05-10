@@ -13,7 +13,7 @@
   </span>
 </div>
   <div class="slot-body">
-    @for (activity of slot().activities; track activity.name) {
+    @for (activity of slot().activities; track activity.id) {
       <app-activity [activity]="activity" [idSlot]="slot().id" />
     }
     @if (slot().meal) {
