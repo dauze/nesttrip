@@ -1,11 +1,14 @@
 <div class="activity">
   <div class="act-header">
-    <span class="act-name">{{ activity().name }}</span>
+
+    <div
+  class="act-name-input"
+  contenteditable="true"
+  (blur)="patch({ name: $any($event.target).innerText.trim() })"
+>{{ activity().name }}</div>
     <div class="act-badges">
-      <!-- Bouton "Ajouter" caché derrière un input file -->
       <div class="act-files pill">
         <input #fileInput type="file" style="display:none" (change)="onFileSelected($event)" />
-
         @if (activity().fileUrl) {
           <div class="act-file-pill">
             <i class="ti ti-paperclip"></i>
@@ -17,18 +20,9 @@
             </button>
           </div>
         }
-
         @if (!activity().fileUrl) {
-          <button
-            class="pill badge-file act-file-add"
-            [disabled]="uploading()"
-            (click)="fileInput.click()"
-          >
-            @if (uploading()) {
-              <i class="ti ti-loader-2 spin"></i>
-            } @else {
-              <i class="ti ti-plus"></i>
-            }
+          <button class="pill badge-file act-file-add" [disabled]="uploading()" (click)="fileInput.click()">
+            @if (uploading()) { <span>🌀</span> } @else { <span>+</span> }
             Ajouter un fichier
           </button>
         }
@@ -39,22 +33,56 @@
     </div>
   </div>
 
-  @for (item of activity().grid; track item.label) {
-    <div class="act-item">
-      <strong>{{ item.label }}</strong> : {{ item.value }}
+  <!-- Grid items -->
+  @for (item of gridItems(); track $index; let i = $index) {
+    <div class="act-item act-item--edit">
+      <input
+        class="act-grid-label"
+        [value]="item.label"
+        placeholder="Label"
+        (blur)="updateGridItem(i, 'label', $any($event.target).value)"
+      />
+      <span class="act-item-sep">:</span>
+      <input
+        class="act-grid-value"
+        [value]="item.value"
+        placeholder="Valeur"
+        (blur)="updateGridItem(i, 'value', $any($event.target).value)"
+      />
+      <button class="btn-primary rounded-btn" (click)="removeGridItem(i)">
+        <span>x</span>
+      </button>
     </div>
   }
+  <div class="act-add-row-btn">
+    <button class="btn-primary rounded-btn" (click)="addGridItem()">+</button>
+  </div>
 
-  @if (activity().transport; as transport) {
-    <div class="act-transport">
-      <span class="act-transport-icon">{{ transport.icon }}</span>
-      <span>{{ transport.text }}</span>
-    </div>
-  }
+  <!-- Transport -->
+  <div class="act-transport act-transport--edit">
+    <input
+      class="act-transport-icon-input"
+      [value]="activity().transport?.icon ?? ''"
+      placeholder="🚇"
+      (blur)="patchTransport('icon', $any($event.target).value)"
+    />
+    <input
+      class="act-transport-text-input"
+      [value]="activity().transport?.text ?? ''"
+      placeholder="Description du transport..."
+      (blur)="patchTransport('text', $any($event.target).value)"
+    />
+  </div>
 
-  @if (activity().tip) {
-    <div class="act-tip">{{ activity().tip }}</div>
-  }
+  <!-- Tip -->
+  <textarea
+    class="act-tip-edit"
+    [value]="activity().tip ?? ''"
+    placeholder="Astuce / conseil..."
+    (blur)="patch({ tip: $any($event.target).value || undefined })"
+  ></textarea>
+
+  <!-- Notes -->
   <div style="margin-top: 6px; position: relative;">
     <div class="act-notes-placeholder" [style.opacity]="notesValue() ? 0 : 1">
       Ajouter une note...
