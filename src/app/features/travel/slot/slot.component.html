@@ -11,8 +11,10 @@
     @if (slot().meal) {
       <div class="meal-block" [innerHTML]="slot().meal! | safeHtml"></div>
     }
-    <div class="add-activity-btn-wrapper">
-      <button class="btn-primary rounded-btn" (click)="addActivity()">+</button>
-    </div>
+    @if (slot().type !== 'meal') {
+      <div class="add-activity-btn-wrapper">
+        <button class="btn-primary rounded-btn" (click)="addActivity()">+</button>
+      </div>
+    }
   </div>
 </div>

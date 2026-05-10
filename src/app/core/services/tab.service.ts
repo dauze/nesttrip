@@ -109,6 +109,23 @@ export class TabService {
   await updateDoc(doc(this.db, 'tabs', dayId),new FieldPath('content', 'slots'), newSlots);
   }
 
+  async removeActivity(slotId: number,activityId: number){
+  const dayId = this._activeDayId();
+    const days = this._days();
+    const day = days.find(d => d.id === dayId);
+    if (!day) return;
+
+    const newSlots = day.content.slots?.map(s => s.id !== slotId ? s : {
+      ...s,
+      activities: s.activities?.filter(a => a.id !== activityId)
+    });
+
+    this._days.set(days.map(d => d.id !== dayId ? d : {
+      ...d, content: { ...d.content, slots: newSlots }
+    }));
+
+    await updateDoc(doc(this.db, 'tabs', dayId),new FieldPath('content', 'slots'), newSlots);
+  }
   
 async updateSlotField(
   slotId: number,
