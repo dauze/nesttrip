@@ -73,7 +73,7 @@
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  flex: 1 1 auto;           // ← prend le reste, ou toute la ligne si wrap
+  flex: 0 0 auto;           // ← prend le reste, ou toute la ligne si wrap
   margin-bottom: 0.4rem;
 }
 
@@ -188,6 +188,8 @@
     field-sizing: content;
     border: none;
     font-family: inherit;
+    color:black;
+    background-color: transparent;
   }
 
   .act-grid-value {
@@ -197,6 +199,8 @@
     resize: none;
     border: none;
     font-family: inherit;
+    color:black;
+    background-color: transparent;
   }
 
   input {
