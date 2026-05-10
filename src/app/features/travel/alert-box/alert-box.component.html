@@ -1,0 +1,16 @@
+<div class="alert-box">
+  <h3 contenteditable="true"
+      (blur)="updateTitle($any($event.target).innerText.trim())">
+    {{ alerts().title }}
+  </h3>
+  <ul #listRef>
+    @for (point of alerts().points; track $index) {
+      <li contenteditable="true"
+          [innerHTML]="point | safeHtml"
+          (blur)="updatePoint($index, $any($event.target).innerHTML)"
+          (keydown.enter)="onEnter($any($event), $index)"
+          (keydown.backspace)="onBackspace($any($event), $index)">
+      </li>
+    }
+  </ul>
+</div>

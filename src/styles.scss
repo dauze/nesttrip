@@ -150,7 +150,6 @@ body {
     background: var(--surface);
     border-radius: var(--radius);
     padding: 1rem 1.1rem 0.9rem;
-    margin-bottom: 1rem;
     border: 1px solid var(--border-light);
     box-shadow: var(--shadow);
 }
@@ -194,108 +193,6 @@ body {
     border: 1px solid var(--gold-mid);
     height: 100%;
 }
-
-/* SLOTS */
-.slot {
-    margin-bottom: 0.85rem;
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-}
-
-.slot-header {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 0.9rem;
-}
-
-.slot-time {
-    font-size: 0.72rem;
-    font-weight: 700;
-    min-width: 88px;
-    letter-spacing: .01em;
-}
-
-.slot-name {
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.slot-icon {
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
-.slot-morning .slot-header {
-    background: var(--gold-light);
-    border-bottom: 1px solid var(--gold-mid);
-}
-
-.slot-morning .slot-time {
-    color: #92400e;
-}
-
-.slot-morning .slot-name {
-    color: #78350f;
-}
-
-.slot-afternoon .slot-header {
-    background: var(--blue-light);
-    border-bottom: 1px solid var(--blue-mid);
-}
-
-.slot-afternoon .slot-time {
-    color: #1e3a8a;
-}
-
-.slot-afternoon .slot-name {
-    color: #1e3a8a;
-}
-
-.slot-evening .slot-header {
-    background: var(--jade-light);
-    border-bottom: 1px solid var(--jade-mid);
-}
-
-.slot-evening .slot-time {
-    color: #14532d;
-}
-
-.slot-evening .slot-name {
-    color: #14532d;
-}
-
-.slot-meal .slot-header {
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-}
-
-.slot-meal .slot-time {
-    color: var(--text3);
-}
-
-.slot-meal .slot-name {
-    color: var(--text2);
-}
-
-.slot-transit .slot-header {
-    background: var(--surface2);
-    border-bottom: 1px dashed var(--border);
-}
-
-.slot-transit .slot-time {
-    color: var(--text3);
-}
-
-.slot-transit .slot-name {
-    color: var(--text2);
-}
-
-.slot-body {
-    background: var(--surface);
-}
-
 
 
 .pill {
@@ -491,7 +388,6 @@ body {
     border-radius: var(--radius);
     border: 1px solid var(--border-light);
     overflow: hidden;
-    margin-bottom: 1rem;
     box-shadow: var(--shadow);
 }
 
@@ -568,7 +464,6 @@ body {
     border: 1px solid var(--gold-mid);
     background: var(--gold-light);
     padding: 0.8rem 1rem;
-    margin-bottom: 1rem;
     box-shadow: var(--shadow);
 }
 
@@ -784,7 +679,7 @@ footer {
   padding-top: 0.1rem;
   padding-bottom: 0.1rem;
 }
-input, textarea, div, span {
+input, textarea, div, span, li,h3 {
   &:focus {
     outline: none;
     box-shadow: none;

@@ -1,7 +1,52 @@
 .activity {
-    padding: 0.75rem 0.9rem;
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 0;
+  padding: 0.75rem 0.9rem;
+  padding-bottom: 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  border-top-left-radius: 0%;
+  position: relative;
+  min-width: 0;          // ← permet à flexbox de comprimer l'activité
+}
+
+.activity:last-child {
+  border-bottom: 2px solid var(--border-light); // ← on garde la bordure (plus de suppression)
+}
+
+// Le bouton croix positionné dans l'angle supérieur gauche
+.btn-primary.rounded-btn {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+
+  // Écrase le style .btn-primary
+  background: white;
+  border: 1.5px solid #d1d5db;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  width: 20px;         // override width: 100% de .btn-primary
+  margin-top: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #ef4444;
+  }
+
+  span {
+    font-style: normal;
+    font-family: system-ui, sans-serif;
+  }
 }
 
 .activity:last-child {
@@ -9,6 +54,7 @@
 }
 
 .act-header {
+    padding-left: 0;
      display: flex;
   align-items: center;   // ← si c'était flex-start
   justify-content: space-between;
@@ -44,17 +90,6 @@
   flex: 1;
   min-width: 0;        // ← clé : permet à flexbox de rétrécir l'input
   &:focus { outline: none; border-bottom-color: var(--color-primary); }
-}
-
-.act-item--edit {
-  display: flex;
-  align-items: center;
-  gap: 6px;
- width: inherit;
-  .act-grid-label { font-weight: 600; width: 160px; }
-  .act-grid-value { flex: 1; min-width: 0; }
-  input { border: none; border-bottom: 1px dashed var(--color-border-secondary); background: transparent; }
-  .act-grid-remove { opacity: 0.4; &:hover { opacity: 1; } }
 }
 
 .act-add-row {
@@ -122,4 +157,34 @@
   display: flex;
     margin-left: 15rem;
   margin-top: 4px;
+}
+
+.act-item--edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;          // ← clé : sans ça flex-wrap ne sert à rien
+  width: 100%;
+
+  .act-grid-label {
+    font-weight: 600;
+    width: 160px;
+    flex-shrink: 0;
+  }
+
+  .act-grid-value {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  input {
+    border: none;
+    border-bottom: 1px dashed var(--color-border-secondary);
+    background: transparent;
+    width: 100%;
+    min-width: 0;        // ← les inputs ont un min-width natif du navigateur
+  }
+
+  .act-grid-remove { opacity: 0.4; &:hover { opacity: 1; } }
 }

@@ -16,6 +16,7 @@ import { InfoBoxComponent } from '../info-box/info-box.component';
     SlotComponent,
     InfoBoxComponent,
   ],
+  styleUrl:'day-panel.component.scss',
   template: `
       <!-- Onglet infos pratiques -->
       <app-hero [day]="day().content" />
@@ -40,5 +41,5 @@ import { InfoBoxComponent } from '../info-box/info-box.component';
 export class DayPanelComponent {
   readonly day = input.required<Day>();
 
-  
+
 }
