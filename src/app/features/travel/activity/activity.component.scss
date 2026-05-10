@@ -1,6 +1,7 @@
 .activity {
     padding: 0.75rem 0.9rem;
     border-bottom: 1px solid var(--border-light);
+    padding-bottom: 0;
 }
 
 .activity:last-child {
@@ -49,8 +50,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-
+ width: inherit;
   .act-grid-label { font-weight: 600; width: 160px; }
+  .act-grid-value { flex: 1; min-width: 0; }
   input { border: none; border-bottom: 1px dashed var(--color-border-secondary); background: transparent; }
   .act-grid-remove { opacity: 0.4; &:hover { opacity: 1; } }
 }
@@ -118,6 +120,6 @@
 }
 .act-add-row-btn {
   display: flex;
-    margin-left: 10rem;
+    margin-left: 15rem;
   margin-top: 4px;
 }

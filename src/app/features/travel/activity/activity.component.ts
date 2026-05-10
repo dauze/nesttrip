@@ -69,4 +69,8 @@ export class ActivityComponent {
   onNotesBlur(): void {
     this.travel.updateActivityField(this.idSlot(), this.activity().id, {notes :this.notesValue()});
   }
+
+  async removeActivite(){
+     this.travel.removeActivity(this.idSlot(),this.activity().id);
+  }
 }
