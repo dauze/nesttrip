@@ -1,6 +1,8 @@
+
+TODO : faire un thème ivoire #F5EFE6, teal #2A7871 et terracotta #C35F37.
 /**
  * ============================================================
- * TYPE OBJECT – Structure complète d'un jour de voyage à donner à Claude pour la génération d'un future voyage
+ * TYPE OBJECT – Structure complète d'un jour de voyage à donner à Claude pour la génération d'un future voyage - a dapter, plus d'actualité
  * ============================================================
  */
 

@@ -7,6 +7,7 @@ import { TabService } from '../../../core/services/tab.service';
   selector: 'app-alert-box',
   standalone: true,
   imports: [SafeHtmlPipe],
+  styleUrl : 'alert-box.component.scss',
   templateUrl:'alert-box.component.html' ,
 })
 export class AlertBoxComponent {

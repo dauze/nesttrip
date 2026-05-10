@@ -1,3 +1,82 @@
+.act-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 10px;
+    margin: 0.4rem 0;
+}
+
+@media (max-width: 400px) {
+    .act-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.act-notes {
+  width: 100%;
+  padding: 10px 12px 10px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: #FFF9ED;
+  border: 0.5px solid #EFC97A;
+  border-left: 3px solid #EF9F27;
+  border-radius: 0 8px 8px 0;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+  transition: background 0.15s, border-color 0.15s;
+  resize: none;
+
+  // Auto-hauteur selon contenu (Chrome 123+, Firefox 128+)
+  field-sizing: content;
+  min-height: 40px;
+
+  &:focus {
+    background: #FFF4D6;
+    border-color: #BA7517;
+  }
+}
+
+.act-notes-placeholder {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text3);
+  font-size: 13px;
+  transition: opacity 0.2s;
+}
+
+.act-transport {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: var(--text2);
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--border-light);
+}
+
+.act-transport-icon {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    margin-top: 1px;
+}
+
+.act-tip {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--text3);
+    margin-top: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    background: var(--surface2);
+    border-left: 3px solid var(--gold-mid);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    line-height: 1.5;
+}
 .activity {
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--border-light);
@@ -103,7 +182,6 @@
   cursor: pointer;
   &:hover { color: var(--color-text-primary); }
 }
-
 .act-transport--edit {
   display: flex;
   align-items: center;
@@ -124,7 +202,6 @@
     font-family: inherit;
     min-height: 1lh; }
 }
-
 .act-tip-edit {
   width: 100%;
   font-style: italic;

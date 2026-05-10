@@ -6,6 +6,7 @@ import { TabService } from '../../../core/services/tab.service';
   selector: 'app-hero',
   standalone: true,
   templateUrl: 'hero.component.html',
+  styleUrl: 'hero.component.scss',
 })
 export class HeroComponent {
   readonly day = input.required<DayContent>();

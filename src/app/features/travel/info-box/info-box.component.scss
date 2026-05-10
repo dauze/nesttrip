@@ -1,3 +1,49 @@
+/* INFO BOXES */
+.info-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.info-box-title {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text3);
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+}
+
+.info-box-body {
+    padding: 0.75rem 0.9rem;
+}
+
+.info-box-body ul {
+    padding-left: 1.1rem;
+}
+
+.info-box-body li {
+    font-size: 0.8rem;
+    color: var(--text2);
+    margin-bottom: 4px;
+    line-height: 1.5;
+}
+
+.info-box-body li strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.info-box-body p {
+    font-size: 0.8rem;
+    color: var(--text2);
+    line-height: 1.55;
+}
+
 .todo-list {
   display: flex;
   flex-direction: column;

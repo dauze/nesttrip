@@ -8,7 +8,8 @@ import { TabService } from '../../core/services/tab.service';
   selector: 'app-travel-page',
   standalone: true,
   imports: [DayNavComponent, DayPanelComponent],
-  templateUrl: 'travel.component.html' ,
+  templateUrl: 'travel.component.html',
+  styleUrl:'travel.component.scss'
 })
 export class TravelPageComponent {
   protected readonly service = inject(TabService);
