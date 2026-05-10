@@ -1,3 +1,4 @@
+@if (!isPendingRemove()) {
 <div class="activity">
   <button class="btn-primary rounded-btn" (click)="removeActivite()">
     <span>✕</span>
@@ -90,4 +91,23 @@
       (blur)="onNotesBlur()"
     ></textarea>
   </div>
+
 </div>
+}<!-- Footer undo bar -->
+@else {
+  <div class="undo-bar">
+    <div class="undo-bar__icon">
+      <i class="pi pi-trash"></i>
+    </div>
+    <div>
+      <div class="undo-bar__label">Activité supprimée</div>
+      <div class="undo-bar__sub">Suppression dans {{ countdown() }}s…</div>
+    </div>
+    <div class="undo-bar__progress">
+      <div class="undo-bar__fill"></div>
+    </div>
+    <p-button label="Annuler" icon="pi pi-arrow-up-left"
+              severity="secondary" size="small"
+              (click)="cancelRemove()" />
+  </div>
+}

@@ -1,10 +1,12 @@
-import { afterNextRender, Component, computed, effect, ElementRef, inject, input, signal  } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, signal  } from '@angular/core';
 import { Activity } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-activity',
   standalone: true,
+  imports:[ButtonModule ],
   templateUrl: 'activity.component.html',
   styleUrl:'activity.component.scss'
 })
@@ -21,6 +23,12 @@ export class ActivityComponent {
 
    // Copie locale du grid pour l'édition
   readonly gridItems = computed(() => [...(this.activity().grid ?? [])]);
+
+  private removeTimeout: ReturnType<typeof setTimeout> | null = null;
+  isPendingRemove = signal(false);
+
+  countdown = signal(3);
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     effect(() => {
@@ -99,7 +107,25 @@ private focusField(index: number, key: 'label' | 'value'): void {
     this.travel.updateActivityField(this.idSlot(), this.activity().id, {notes :this.notesValue()});
   }
 
-  async removeActivite(){
-     this.travel.removeActivity(this.idSlot(),this.activity().id);
-  }
+ removeActivite() {
+  this.isPendingRemove.set(true);
+  this.countdown.set(3);
+
+  this.countdownInterval = setInterval(() => {
+    this.countdown.update(v => v - 1);
+  }, 1000);
+
+  this.removeTimeout = setTimeout(async () => {
+    clearInterval(this.countdownInterval!);
+    this.isPendingRemove.set(false);
+    this.travel.removeActivity(this.idSlot(), this.activity().id);
+  }, 3000);
+}
+
+cancelRemove() {
+  clearTimeout(this.removeTimeout!);
+  clearInterval(this.countdownInterval!);
+  this.removeTimeout = null;
+  this.isPendingRemove.set(false);
+}
 }
