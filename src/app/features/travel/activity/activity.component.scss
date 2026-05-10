@@ -104,11 +104,22 @@
 
 .act-transport--edit {
   display: flex;
+  align-items: center;
   gap: 5px;
   margin-bottom: 0.2rem;
-  .act-transport-icon-input { width: 40px; text-align: center; }
+  .act-transport-icon-input { 
+    width: 40px; 
+    text-align: center;
+    justify-content: center;
+   }
   .act-transport-text-input { flex: 1; }
-  input { border: none; border-bottom: 1px dashed var(--color-border-secondary); background: transparent; }
+  textarea  { border: none; 
+    border-bottom: 1px dashed var(--color-border-secondary); 
+    background: transparent;
+    resize: none;
+    field-sizing: content;
+    font-family: inherit;
+    min-height: 1lh; }
 }
 
 .act-tip-edit {
@@ -174,6 +185,7 @@
     resize: none;
     field-sizing: content;
     border: none;
+    font-family: inherit;
   }
 
   .act-grid-value {
@@ -182,6 +194,7 @@
     field-sizing: content;
     resize: none;
     border: none;
+    font-family: inherit;
   }
 
   input {

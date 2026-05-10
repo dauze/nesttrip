@@ -58,18 +58,16 @@
 
   <!-- Transport -->
   <div class="act-transport act-transport--edit">
-    <input
+    <textarea
       class="act-transport-icon-input"
-      [value]="activity().transport?.icon ?? ''"
       placeholder="🚇"
       (blur)="patchTransport('icon', $any($event.target).value)"
-    />
-    <input
+    >{{ activity().transport?.icon ?? '' }}</textarea>
+    <textarea
       class="act-transport-text-input"
-      [value]="activity().transport?.text ?? ''"
       placeholder="Description du transport..."
       (blur)="patchTransport('text', $any($event.target).value)"
-    />
+    >{{ activity().transport?.text ?? '' }}</textarea>
   </div>
 
   <!-- Tip -->
