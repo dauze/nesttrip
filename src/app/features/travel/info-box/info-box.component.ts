@@ -18,6 +18,15 @@ export class InfoBoxComponent {
 
   @ViewChild('listRef') listRef!: ElementRef<HTMLUListElement>;
 
+  private saveDebounced = debounce(() => this.save(), 500);
+
+  onTextChange(index: number, value: string): void {
+    this.todoItems.update(items =>
+      items.map((item, i) => i === index ? { ...item, text: value } : item)
+    );
+    this.saveDebounced(); // ← persist avec debounce
+  }
+
 onEnter(event: KeyboardEvent, index: number): void {
   event.preventDefault();
   const items = [...this.stringItems];
@@ -73,11 +82,6 @@ onEnter(event: KeyboardEvent, index: number): void {
     );
   });
   }
-  onTextChange(index: number, value: string): void {
-    this.todoItems.update(items =>
-      items.map((item, i) => i === index ? { ...item, text: value } : item)
-    );
-  }
 
   toggleCheck(index: number): void {
     this.todoItems.update(items =>
@@ -124,4 +128,12 @@ onEnter(event: KeyboardEvent, index: number): void {
   updateTitle(title: string): void {
   this.travel.updateElementTitle(title, this.element().id);
 }
+}
+
+function debounce(fn: () => void, delay: number) {
+  let timer: ReturnType<typeof setTimeout>;
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(fn, delay);
+  };
 }

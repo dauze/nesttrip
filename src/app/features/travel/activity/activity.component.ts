@@ -1,12 +1,12 @@
 import { afterNextRender, Component, computed, effect, ElementRef, inject, input, signal  } from '@angular/core';
-import { Activity, GridItem } from '../../../core/models/travel.models';
+import { Activity, Badge, GridItem } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
 import { ButtonModule } from 'primeng/button';
-
+import { ChipModule } from 'primeng/chip';
 @Component({
   selector: 'app-activity',
   standalone: true,
-  imports:[ButtonModule ],
+  imports:[ButtonModule, ChipModule ],
   templateUrl: 'activity.component.html',
   styleUrl:'activity.component.scss'
 })
@@ -118,15 +118,17 @@ private focusField(index: number, key: 'label' | 'value'): void {
       this.uploading.set(false);
     }
   }
-  async removeFile(){
-    this.travel.removeActivityFile(this.idSlot(), this.activity().id, '');
+
+
+    removeFile() {
+    this.travel.removeActivityFile(this.idSlot(), this.activity().id, this.activity().filePath ?? '');
   }
 
   onNotesBlur(): void {
     this.travel.updateActivityField(this.idSlot(), this.activity().id, {notes :this.notesValue()});
   }
 
- removeActivite() {
+  removeActivite() {
   this.isPendingRemove.set(true);
   this.countdown.set(5);
 
@@ -134,12 +136,21 @@ private focusField(index: number, key: 'label' | 'value'): void {
     this.countdown.update(v => v - 1);
   }, 1000);
 
-  this.removeTimeout = setTimeout(async () => {
-    clearInterval(this.countdownInterval!);
-    this.isPendingRemove.set(false);
-    this.travel.removeActivity(this.idSlot(), this.activity().id);
-  }, 5000);
-}
+    this.removeTimeout = setTimeout(async () => {
+      clearInterval(this.countdownInterval!);
+      this.isPendingRemove.set(false);
+      this.travel.removeActivity(this.idSlot(), this.activity().id);
+    }, 5000);
+  }
+    removeBadge(badge: Badge) {
+  const updatedBadges = this.activity().badges.filter(b => b.text !== badge.text);
+  
+    this.travel.updateActivityField(
+      this.idSlot(),
+      this.activity().id,
+      { badges: updatedBadges }
+    );
+  }
 
 cancelRemove() {
   clearTimeout(this.removeTimeout!);

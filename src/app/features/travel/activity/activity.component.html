@@ -8,28 +8,43 @@
     (blur)="patch({ name: $any($event.target).innerText.trim() })" >{{ activity().name }}
     </div>
     <div class="act-badges">
-      <div class="act-files pill">
-        <input #fileInput type="file" style="display:none" (change)="onFileSelected($event)" />
-        @if (activity().fileUrl) {
-          <div class="act-file-pill">
-            <i class="ti ti-paperclip"></i>
-            <a [href]="activity().fileUrl" target="_blank" rel="noopener">
-              {{ activity().fileName }}
-            </a>
-            <button class="act-file-remove" (click)="removeFile()">
-              <i class="ti ti-x"></i>
-            </button>
-          </div>
-        }
-        @if (!activity().fileUrl) {
-          <button class="pill badge-file act-file-add" [disabled]="uploading()" (click)="fileInput.click()">
-            @if (uploading()) { <span>🌀</span> } @else { <span>+</span> }
-            Ajouter un fichier
-          </button>
-        }
+      <div class="act-files flex align-items-center gap-2">
+  <input #fileInput type="file" style="display:none" (change)="onFileSelected($event)" />
+    @if (activity().fileUrl) {
+    <div class="act-file-pill">
+      <a [href]="activity().fileUrl" target="_blank" rel="noopener">
+        {{ activity().fileName }}
+      </a>
+      <button type="button" (mousedown)="$event.stopPropagation(); $event.preventDefault(); removeFile()" aria-label="Supprimer">
+        <i class="pi pi-times-circle"></i>
+      </button>
+    </div>
+      }
+      @if (!activity().fileUrl) {
+        <button
+          pButton
+          type="button"
+          [rounded]="true" 
+          severity="secondary"
+          [label]="uploading() ? 'Envoi…' : 'Ajouter un fichier'"
+          [loading]="uploading()"
+          [disabled]="uploading()"
+          class="act-file-add"
+          (click)="fileInput.click()"
+        ></button>
+      }
       </div>
       @for (badge of activity().badges; track badge.text) {
-        <span class="pill {{ badge.class }}">{{ badge.text }}</span>
+        <span class="pill {{ badge.class }}">
+          {{ badge.text }}
+          <button
+            type="button"
+            (mousedown)="$event.stopPropagation(); $event.preventDefault(); removeBadge(badge)"
+            aria-label="Supprimer"
+          >
+            <i class="pi pi-times-circle"></i>
+          </button>
+        </span>
       }
     </div>
   </div>
@@ -98,7 +113,7 @@
 @else {
   <div class="undo-bar">
     <div class="undo-bar__icon">
-      <i class="pi pi-trash"></i>
+      <i class="ti ti-trash"></i>
     </div>
     <div>
       <div class="undo-bar__label">Activité supprimée</div>
@@ -107,7 +122,7 @@
     <div class="undo-bar__progress">
       <div class="undo-bar__fill"></div>
     </div>
-    <p-button label="Annuler" icon="pi pi-arrow-up-left"
+    <p-button label="Annuler" icon="ti ti-arrow-up-left"
               severity="secondary" size="small"
               (click)="cancelRemove()" />
   </div>
