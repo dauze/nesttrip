@@ -31,6 +31,7 @@ export interface Activity {
   notes?: string; //Notes manuelles
   fileUrl?: string;    // URL de téléchargement Firebase
   fileName?: string;  // Nom affiché
+  filePath?: string; 
 }
 
 export interface Slot {

@@ -62,102 +62,30 @@
 }
 
 ::ng-deep {
-    .color-picker-select.p-select {
-        position: relative;
-        width: 10px !important;
-        min-width: unset !important;
-        height: 10px !important;
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        overflow: visible !important;
-    }
-
     .color-picker-select .p-select-dropdown { display: none !important; }
-    
     .color-picker-select .p-select-label {
         padding: 0 !important;
-        width: 10px !important;
-        height: 10px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
     }
-
-    .p-select-overlay {
-        background: white !important;
-    }
-
-    .p-select-option {
-        background: white !important;
-        color: black !important;
-        &:hover { background: #f5f5f5 !important; }
-    }
-
     .p-select-list-container {
         max-height: none !important;
         overflow: visible !important;
     }
-    .p-select-overlay {
-    color-scheme: light !important;
-    background: white !important;
-    color: #1f2937 !important;
+    .color-picker-select.p-select {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      min-width: unset !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 }
 
-.p-select-option {
-    color: #1f2937 !important;
-    background: white !important;
-}
-}
-
-::ng-deep .color-picker-select {
-  width: auto !important;
-  min-width: unset !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-::ng-deep .color-picker-select .p-select-dropdown {
-  display: none !important;
-}
-
-::ng-deep .color-picker-select .p-select-label {
-  padding: 4px !important;
-}
-::ng-deep .color-picker-select .p-select {
-  background: transparent !important;
-}
-::ng-deep  .p-select-overlay {
-  background: white;
-}
-::ng-deep .p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus {
-     background: white;
-}
-::ng-deep .p-select-overlay {
-  background: white;
-  max-height: none !important;
-  overflow: visible !important;
-  border: none;
-}
-
-::ng-deep .p-select-list-container {
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-::ng-deep .color-picker-select.p-select {
-  display: flex;
-  align-items: center;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  min-width: unset !important;
-  width: 20px !important;
-}
 
 .tl-dot-wrapper {
   width: 10px;
@@ -167,19 +95,4 @@
   align-items: center;
   justify-content: center;
   position: relative;
-}
-
-::ng-deep .color-picker-select.p-select {
-  position: absolute;
-  inset: 0;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: unset !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }

@@ -78,12 +78,12 @@ export class TabService {
     const path = `tabs/${dayId}/${slotId}/${activityId}/${file.name}`;
 
     const { url, name } = await this.storageService.uploadFile(file, path);
-    await this.updateActivityField(slotId, activityId, { fileUrl: url, fileName: name });
+    await this.updateActivityField(slotId, activityId, { fileUrl: url, fileName: name , filePath: path});
   }
 
   async removeActivityFile(slotId: number, activityId: number, path: string): Promise<void> {
     await this.storageService.deleteFile(path);
-    await this.updateActivityField(slotId, activityId, { fileUrl: '', fileName: '' });
+    await this.updateActivityField(slotId, activityId, { fileUrl: '', fileName: '', filePath: '' });
   }
 
   async updateActivityField(
