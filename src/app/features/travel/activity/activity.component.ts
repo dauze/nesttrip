@@ -3,6 +3,7 @@ import { Activity, Badge, GridItem } from '../../../core/models/travel.models';
 import { TabService } from '../../../core/services/tab.service';
 import { ButtonModule } from 'primeng/button';
 import { ChipModule } from 'primeng/chip';
+import { StorageService } from '../../../core/services/storage.service';
 @Component({
   selector: 'app-activity',
   standalone: true,
@@ -12,6 +13,7 @@ import { ChipModule } from 'primeng/chip';
 })
 export class ActivityComponent {
   private readonly travel = inject(TabService);
+   private readonly storageService = inject(StorageService);
   readonly activity = input.required<Activity>();
   readonly idSlot = input.required<number>();
 
@@ -108,20 +110,26 @@ private focusField(index: number, key: 'label' | 'value'): void {
 }
 
 
-  async onFileSelected(event: Event): Promise<void> {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.uploading.set(true);
-    try {
-      await this.travel.uploadActivityFile(this.idSlot(), this.activity().id, file);
-    } finally {
-      this.uploading.set(false);
-    }
+  async onFileSelected(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  this.uploading.set(true);
+  try {
+    const path = `activities/${this.idSlot()}/${this.activity().id}/${Date.now()}_${file.name}`;
+    const { url, name } = await this.storageService.uploadFile(file, path);
+    await this.travel.addActivityFile(this.idSlot(), this.activity().id, { url, name, path });
+  } finally {
+    this.uploading.set(false);
   }
+}
 
 
-    removeFile() {
-    this.travel.removeActivityFile(this.idSlot(), this.activity().id, this.activity().filePath ?? '');
+  removeFile(index: number) {
+    const files = this.activity()?.files;
+    if (!files) return;
+    const file = files[index];
+    this.travel.removeActivityFile(this.idSlot(), this.activity()!.id, file.path, index);
   }
 
   onNotesBlur(): void {

@@ -29,9 +29,7 @@ export interface Activity {
   transport?: Transport;
   tip?: string;
   notes?: string; //Notes manuelles
-  fileUrl?: string;    // URL de téléchargement Firebase
-  fileName?: string;  // Nom affiché
-  filePath?: string; 
+  files?: { url: string; name: string; path: string }[];
 }
 
 export interface Slot {
