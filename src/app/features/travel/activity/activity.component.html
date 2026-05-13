@@ -10,29 +10,34 @@
     <div class="act-badges">
       <div class="act-files flex align-items-center gap-2">
   <input #fileInput type="file" style="display:none" (change)="onFileSelected($event)" />
-    @if (activity().fileUrl) {
-    <div class="act-file-pill">
-      <a [href]="activity().fileUrl" target="_blank" rel="noopener">
-        {{ activity().fileName }}
-      </a>
-      <button type="button" (mousedown)="$event.stopPropagation(); $event.preventDefault(); removeFile()" aria-label="Supprimer">
-        <i class="pi pi-times-circle"></i>
-      </button>
-    </div>
-      }
-      @if (!activity().fileUrl) {
+<!-- Une pill par fichier -->
+    @for (file of activity().files; track file.path; let i = $index) {
+      <div class="act-file-pill">
+        <a [href]="file.url" target="_blank" rel="noopener">
+          {{ file.name }}
+        </a>
         <button
-          pButton
           type="button"
-          [rounded]="true" 
-          severity="secondary"
-          [label]="uploading() ? 'Envoi…' : 'Ajouter un fichier'"
-          [loading]="uploading()"
-          [disabled]="uploading()"
-          class="act-file-add"
-          (click)="fileInput.click()"
-        ></button>
-      }
+          (mousedown)="$event.stopPropagation(); $event.preventDefault(); removeFile(i)"
+          aria-label="Supprimer"
+        >
+          <i class="pi pi-times-circle"></i>
+        </button>
+      </div>
+    }
+
+    <!-- Toujours visible -->
+    <button
+      pButton
+      type="button"
+      [rounded]="true"
+      severity="secondary"
+      [label]="uploading() ? 'Envoi…' : 'Ajouter un fichier'"
+      [loading]="uploading()"
+      [disabled]="uploading()"
+      class="act-file-add"
+      (click)="fileInput.click()"
+    ></button>
       </div>
       @for (badge of activity().badges; track badge.text) {
         <span class="pill {{ badge.class }}">
