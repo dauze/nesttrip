@@ -1,12 +1,7 @@
+/* styles.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
 :root {
-  --activity-repas: #ef9f27;
-  --activity-transport: #378add;
-  --activity-hebergement: #7f77dd;
-  --activity-visite: #d85a30;
-  --activity-activite: #1d9e75;
-  --activity-shopping: #d4537e;
-  --activity-detente: #639922;
-  --activity-evenement: #e24b4a;
-  --activity-nature: #5dcaa5;
-  --activity-soins: #888780;
+    --p-font-family: 'Inter', sans-serif; /* Token utilisé par PrimeNG */
+    font-family: var(--p-font-family);
 }

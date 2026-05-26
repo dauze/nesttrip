@@ -6,6 +6,40 @@ import { routes } from './app.routes';
 import { environment } from '../environnements/environnement';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
+import { definePreset } from '@primeuix/themes';
+
+const theme = definePreset(Aura,{
+  primitive: {
+    // Déclinaison de nuances pour la couleur primaire (#2A7871)
+    activity: {
+      repas: '#ef9f27',
+      transport: '#378add',
+      hebergement: '#7f77dd',
+      visite: '#d85a30',
+      activite: '#1d9e75',
+      shopping: '#d4537e',
+      detente: '#639922',
+      evenement: '#e24b4a',
+      nature: '#5dcaa5',
+      soins: '#888780',
+    },
+  },
+    semantic: {
+        primary: {
+          50: '#ECF6F5',
+          100: '#D0EAE7',
+          200: '#A1D5D0',
+          300: '#6CBBB3',
+          400: '#43A198',
+          500: '#2A7871',
+          600: '#21615B',
+          700: '#1A4C47',
+          800: '#133834',
+          900: '#0C2422',
+          950: '#061312'
+      }
+    }
+});
 
 
 // Init Firebase une seule fois, exporté pour être utilisé partout
@@ -17,10 +51,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     providePrimeNG({
              theme: {
-            preset: Aura,
-            options: {
-              darkModeSelector: 'system'
-            }
+            preset: theme,
           }
         })
   ]

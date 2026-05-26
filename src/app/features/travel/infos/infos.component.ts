@@ -5,11 +5,12 @@ import { InfoService } from '../../../core/services/info.service';
 import { PanelModule } from 'primeng/panel';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FormsModule } from '@angular/forms';
+import { InputTextModule } from 'primeng/inputtext';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, CheckboxModule, FormsModule],
+  imports: [PanelModule, CheckboxModule, FormsModule, InputTextModule],
   templateUrl: 'infos.component.html',
   styleUrl: 'infos.component.scss'
 })
