@@ -1,156 +1,175 @@
-import { Component, effect, ElementRef, inject, input, signal, ViewChild } from '@angular/core';
+import { Component, inject, input, ViewChildren, QueryList, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { Info, Item, Point } from '../../../core/models/firebase/info.models';
 import { InfoType } from '../../../core/enums/infos.type';
 import { InfoService } from '../../../core/services/info.service';
 import { PanelModule } from 'primeng/panel';
-import { CheckboxModule } from 'primeng/checkbox';
-import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
+import { CheckboxModule } from 'primeng/checkbox';
+import { TextareaModule, Textarea } from 'primeng/textarea';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, CheckboxModule, FormsModule, InputTextModule],
-  templateUrl: 'infos.component.html',
-  styleUrl: 'infos.component.scss'
+  imports: [PanelModule, InputTextModule, CheckboxModule, TextareaModule, FormsModule],
+  templateUrl: './infos.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InfosComponent {
   private readonly infos = inject(InfoService);
   readonly info = input.required<Info>();
-  readonly tripId = input.required<number>();  // string pour matcher les signatures du service
-
+  readonly tripId = input.required<number>();
   readonly InfoType = InfoType;
 
-  // Map itemId → Point[] pour ne pas recalculer à chaque fois
-  private readonly todoItemsMap = signal<Record<number, Point[]>>({});
+  @ViewChildren(Textarea) pTextareas!: QueryList<Textarea>;
 
-  @ViewChild('listRef') listRef!: ElementRef<HTMLUListElement>;
+  private debounceTimer: any;
 
-  constructor() {
-    effect(() => {
-      const map: Record<number, Point[]> = {};
-      for (const item of this.info().items) {
-        const raw = item.elements;
-        map[item.id] = !raw?.length
-          ? [{ text: '', checked: false }]
-          : raw.map((p: any) =>
-              typeof p === 'string' ? { text: p, checked: false } : p
-            );
-      }
-      this.todoItemsMap.set(map);
-    });
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (this.pTextareas) {
+      this.pTextareas.forEach(textarea => textarea.resize());
+    }
   }
 
-  // Accesseurs par item
-  todoItems(itemId: number): Point[] {
-    return this.todoItemsMap()[itemId] ?? [];
-  }
-
-  stringItems(item: Item): string[] {
-    return (item.elements as any[]).map(e =>
-      typeof e === 'string' ? e : e.text
+  getItems(item: Item): Point[] {
+    const raw = item.elements || [];
+    if (raw.length === 0) return [{ text: '', checked: false }];
+    return raw.map((p: any) => 
+      typeof p === 'string' ? { text: p, checked: false } : p
     );
   }
 
-  // ── TODO ──────────────────────────────────────────────────────────────
+  onTextChange(item: Item, index: number, value: string): void {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+
+    const elements = this.getItems(item).map((p, i) =>
+      i === index ? { ...p, text: value } : p
+    );
+
+    this.adjustCurrentTextareaSize(item.id, index);
+
+    this.debounceTimer = setTimeout(() => {
+      this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe();
+    }, 300);
+  }
+
+  /**
+   * TOUCHE ENTRÉE : Changement de ligne instantané en parallèle de la sauvegarde
+   */
+  onEnterRow(item: Item, index: number, event: KeyboardEvent): void {
+    event.preventDefault();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+
+    const textareaEl = event.target as HTMLTextAreaElement;
+    const selectionStart = textareaEl.selectionStart ?? 0;
+    
+    const currentPoints = this.getItems(item);
+    const currentText = currentPoints[index].text;
+
+    const textRemaining = currentText.substring(0, selectionStart);
+    const textDescending = currentText.substring(selectionStart);
+
+    const elements = [...currentPoints];
+    elements[index] = { ...elements[index], text: textRemaining };
+    elements.splice(index + 1, 0, { text: textDescending, checked: false });
+
+    // 1. On lance la sauvegarde en tâche de fond (Fire and Forget)
+    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe();
+
+    // 2. On bouge le curseur INSTANTANÉMENT sans attendre la réponse HTTP
+    // Un simple setTimeout à 0 permet juste de laisser Angular re-rendre le template HTML
+    setTimeout(() => this.focusRow(item.id, index + 1, 0));
+  }
+
+  /**
+   * TOUCHE SUPPR : Fusion des lignes instantanée en parallèle
+   */
+  onBackspaceRow(item: Item, index: number, event: KeyboardEvent): void {
+    const textareaEl = event.target as HTMLTextAreaElement;
+    const selectionStart = textareaEl.selectionStart ?? 0;
+
+    if (selectionStart !== 0 || index === 0) return;
+    
+    event.preventDefault();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+
+    const currentPoints = this.getItems(item);
+    const textToMoveUp = currentPoints[index].text;
+    const upperLineText = currentPoints[index - 1].text;
+    const targetCursorPosition = upperLineText.length;
+
+    const elements = currentPoints
+      .map((p, i) => i === index - 1 ? { ...p, text: upperLineText + textToMoveUp } : p)
+      .filter((_, i) => i !== index);
+
+    // 1. On envoie les données à Firebase en tâche de fond
+    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe();
+
+    // 2. On remonte le curseur IMMEDIATEMENT
+    setTimeout(() => this.focusRow(item.id, index - 1, targetCursorPosition));
+  }
+
+  onArrowUp(item: Item, index: number, event: KeyboardEvent): void {
+    const textareaEl = event.target as HTMLTextAreaElement;
+    const cursorPosition = textareaEl.selectionStart ?? 0;
+
+    if (index > 0) {
+      event.preventDefault();
+      this.focusRow(item.id, index - 1, cursorPosition);
+    } else {
+      event.preventDefault();
+      const titleEl = document.querySelector<HTMLInputElement>(`input[data-title-id="${item.id}"]`);
+      titleEl?.focus();
+    }
+  }
+
+  onArrowDown(item: Item, index: number, event: KeyboardEvent): void {
+    const textareaEl = event.target as HTMLTextAreaElement;
+    const cursorPosition = textareaEl.selectionStart ?? 0;
+    const totalRows = this.getItems(item).length;
+
+    if (index < totalRows - 1) {
+      event.preventDefault();
+      this.focusRow(item.id, index + 1, cursorPosition);
+    }
+  }
 
   toggleCheck(item: Item, index: number): void {
-    const elements = this.todoItems(item.id).map((p, i) =>
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+
+    const elements = this.getItems(item).map((p, i) =>
       i === index ? { ...p, checked: !p.checked } : p
     );
     this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe();
   }
 
-  onTextChange(item: Item, index: number, value: string): void {
-    const elements = this.todoItems(item.id).map((p, i) =>
-      i === index ? { ...p, text: value } : p
-    );
-    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe();
-  }
-
-  onEnterTodo(item: Item, index: number, event: Event): void {
-    event.preventDefault();
-    const current = this.todoItems(item.id);
-    const elements = [
-      ...current.slice(0, index + 1),
-      { text: '', checked: false },
-      ...current.slice(index + 1),
-    ];
-    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe(() => {
-      setTimeout(() => {
-        const inputs = document.querySelectorAll<HTMLInputElement>('.todo-input');
-        inputs[index + 1]?.focus();
-      });
-    });
-  }
-
-  onBackspaceTodo(item: Item, index: number, value: string, event: Event): void {
-    if (value !== '' || index === 0) return;
-    event.preventDefault();
-    const elements = this.todoItems(item.id).filter((_, i) => i !== index);
-    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe(() => {
-      setTimeout(() => {
-        const inputs = document.querySelectorAll<HTMLInputElement>('.todo-input');
-        inputs[index - 1]?.focus();
-      });
-    });
-  }
-
-  // ── INFO (liste ul/li) ────────────────────────────────────────────────
-
-  updateElement(item: Item, index: number, value: string): void {
-    const elements = this.stringItems(item).map((text, i) =>
-      i === index ? { text, checked: false } : { text: this.stringItems(item)[i], checked: false }
-    );
-    // On reconstruit proprement en Point[]
-    const points: Point[] = this.stringItems(item).map((text, i) =>
-      ({ text: i === index ? value : text, checked: false })
-    );
-    this.infos.updateItem(this.tripId(), item.id, { elements: points }, this.info()).subscribe();
-  }
-
-  onEnter(item: Item, event: KeyboardEvent, index: number): void {
-    event.preventDefault();
-    const items = [...this.stringItems(item)];
-    items.splice(index + 1, 0, '');
-    const elements: Point[] = items.map(text => ({ text, checked: false }));
-    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe(() => {
-      setTimeout(() => this.focusItem(index + 1));
-    });
-  }
-
-  onBackspace(item: Item, event: KeyboardEvent, index: number): void {
-    const el = event.target as HTMLElement;
-    if (el.innerText.trim() !== '') return;
-    event.preventDefault();
-    const strings = this.stringItems(item);
-    if (strings.length === 1) return;
-    const elements: Point[] = strings
-      .filter((_, i) => i !== index)
-      .map(text => ({ text, checked: false }));
-    this.infos.updateItem(this.tripId(), item.id, { elements }, this.info()).subscribe(() => {
-      setTimeout(() => this.focusItem(index - 1));
-    });
-  }
-
-  // ── Titre ─────────────────────────────────────────────────────────────
-
   updateTitle(item: Item, title: string): void {
     this.infos.updateItem(this.tripId(), item.id, { title }, this.info()).subscribe();
   }
 
-  // ── Utilitaires ───────────────────────────────────────────────────────
+  focusRow(itemId: number, index: number, cursorPosition: number): void {
+    const textareaEl = document.querySelector<HTMLTextAreaElement>(
+      `textarea[data-item-id="${itemId}"][data-index="${index}"]`
+    );
+    
+    if (textareaEl) {
+      textareaEl.focus();
+      setTimeout(() => {
+        textareaEl.setSelectionRange(cursorPosition, cursorPosition);
+        this.adjustCurrentTextareaSize(itemId, index);
+      });
+    }
+  }
 
-  private focusItem(index: number): void {
-    const items = this.listRef.nativeElement.querySelectorAll('li');
-    const target = items[index] as HTMLElement;
-    if (!target) return;
-    target.focus();
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(target);
-    range.collapse(false);
-    sel?.removeAllRanges();
-    sel?.addRange(range);
+  private adjustCurrentTextareaSize(itemId: number, index: number): void {
+    const targetTextarea = this.pTextareas.find(t => 
+      t.el.nativeElement.getAttribute('data-item-id') === String(itemId) &&
+      t.el.nativeElement.getAttribute('data-index') === String(index)
+    );
+
+    if (targetTextarea) {
+      targetTextarea.resize();
+    }
   }
 }
