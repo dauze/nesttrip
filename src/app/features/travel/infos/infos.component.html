@@ -1,0 +1,45 @@
+@for (item of info().items; track item.id) {
+<div class="info-box">
+  <div class="info-box-title"
+       contenteditable="true"
+       (blur)="updateTitle(item, $any($event.target).innerText.trim())">
+    {{ item.title }}
+  </div>
+  <div class="info-box-body">
+    @if(item.type === InfoType.TODO) {
+      <div class="todo-list" style="margin-top: 6px;">
+        @for (point of todoItems(item.id); track $index) {
+          <div class="todo-row">
+            <input
+              type="checkbox"
+              [checked]="point.checked"
+              (change)="toggleCheck(item, $index)"
+            />
+            <textarea
+              class="todo-input"
+              [class.checked]="point.checked"
+              rows="1"
+              [value]="point.text"
+              (input)="onTextChange(item, $index, $any($event.target).value)"
+              (keydown.enter)="onEnterTodo(item, $index, $event)"
+              (keydown.backspace)="onBackspaceTodo(item, $index, $any($event.target).value, $event)"
+              [attr.data-index]="$index"
+            ></textarea>
+          </div>
+        }
+      </div>
+    } @else {
+      <ul #listRef>
+        @for (el of stringItems(item); track $index) {
+          <li contenteditable="true"
+              [innerHTML]="el | safeHtml"
+              (blur)="updateElement(item, $index, $any($event.target).innerHTML)"
+              (keydown.enter)="onEnter(item, $any($event), $index)"
+              (keydown.backspace)="onBackspace(item, $any($event), $index)">
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+}

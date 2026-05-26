@@ -1,0 +1,12 @@
+<div class="timeline">
+  <div class="timeline-title">Vue d'ensemble de la journée</div>
+  @for (activity of activities(); track activity.id) {
+    <div class="tl-row">
+      <span class="tl-time">{{activity.duration}}</span>
+      <div class="tl-dot-wrapper">
+        <span class="tl-dot" [ngClass]="activity.type"></span>
+      </div>
+      <div class="tl-content"><span>{{activity.title}}</span></div>
+    </div>
+  }
+</div>

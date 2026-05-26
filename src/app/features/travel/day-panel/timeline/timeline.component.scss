@@ -41,13 +41,45 @@
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
-    &.orange { background: #f97316; }
-    &.blue   { background: #3b82f6; }
-    &.green  { background: #22c55e; }
-    &.gray   { background: #6b7280; }
-    &.yellow { background: #eab308; }
-    &.red    { background: #ef4444; }
-    &.purple { background: #a855f7; }
+     &.REPAS {
+    background: #EF9F27;
+  }
+
+  &.TRANSPORT {
+    background: #378ADD;
+  }
+
+  &.HEBERGEMENT {
+    background: #7F77DD;
+  }
+
+  &.VISITE {
+    background: #D85A30;
+  }
+
+  &.ACTIVITE {
+    background: #1D9E75;
+  }
+
+  &.SHOPPING {
+    background: #D4537E;
+  }
+
+  &.DETENTE {
+    background: #639922;
+  }
+
+  &.EVENEMENT {
+    background: #E24B4A;
+  }
+
+  &.NATURE {
+    background: #5DCAA5;
+  }
+
+  &.SOINS {
+    background: #888780;
+  }
 }
 
 .tl-content {
@@ -58,31 +90,6 @@
         color: var(--text3);
         font-style: normal;
         font-size: 0.72rem;
-    }
-}
-
-::ng-deep {
-    .color-picker-select .p-select-dropdown { display: none !important; }
-    .color-picker-select .p-select-label {
-        padding: 0 !important;
-    }
-    .p-select-list-container {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-    .color-picker-select.p-select {
-      position: absolute;
-      inset: 0;
-      width: 100% !important;
-      height: 100% !important;
-      min-width: unset !important;
-      border: none !important;
-      background: transparent !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 }
 

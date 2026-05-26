@@ -14,7 +14,6 @@ export class FirebaseService {
     this.app = getApps().length
       ? getApps()[0]
       : initializeApp(environment.firebase);
-
     this.db = getFirestore(this.app);
   }
 }
