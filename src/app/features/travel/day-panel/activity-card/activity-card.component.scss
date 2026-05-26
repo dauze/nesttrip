@@ -1,62 +1,16 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// Activity Card — styles
-// Philosophie : "read-first, edit-on-demand"
-// ═══════════════════════════════════════════════════════════════════════════
-
-// ── Tokens ────────────────────────────────────────────────────────────────
-:host {
-  display: block;
-  --type-color: #6366f1; // surcharge par le composant
-}
-
-// ── Carte racine ──────────────────────────────────────────────────────────
-.activity-card {
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--surface-border, #e2e8f0);
-  border-left: 4px solid var(--type-color);
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
-  transition: box-shadow .2s, opacity .2s, transform .15s;
-  user-select: none;    // empêche la sélection accidentelle pendant le drag
-  cursor: grab;
-
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,.10);
-  }
-
-  &.is-dragging {
-    opacity: .55;
-    transform: rotate(1.5deg) scale(1.01);
-    cursor: grabbing;
-    box-shadow: 0 12px 32px rgba(0,0,0,.18);
-  }
-}
-
-// ── Header ────────────────────────────────────────────────────────────────
-.card-header {
+// Header layout
+.panel-header {
   display: flex;
   align-items: center;
   gap: .6rem;
-  padding: .75rem 1rem;
-  cursor: pointer;
+  flex: 1;
   flex-wrap: wrap;
-
-  @media (max-width: 640px) {
-    gap: .4rem;
-    padding: .6rem .75rem;
-  }
 }
 
 .drag-handle {
-  color: var(--text-color-secondary);
   cursor: grab;
-  font-size: .85rem;
+  color: var(--text-color-secondary);
   padding: .2rem .3rem;
-  border-radius: 4px;
-  transition: background .15s;
-  flex-shrink: 0;
-
-  &:hover { background: var(--surface-hover); }
   &:active { cursor: grabbing; }
 }
 
@@ -64,264 +18,85 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--type-color) 14%, transparent);
-  color: var(--type-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
   flex-shrink: 0;
 }
 
-.header-title {
-  flex: 1 1 160px;
-  min-width: 0;
-}
-
-// Input titre — invisible au repos, visible au focus
+// Titre : invisible au repos
 .title-input {
-  width: 100%;
+  flex: 1;
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  padding: .2rem .3rem !important;
-  font-size: 1rem;
   font-weight: 600;
-  color: var(--text-color);
-  border-radius: 4px;
-  cursor: text;
-  transition: background .15s;
-
-  &:hover { background: var(--surface-hover) !important; }
-  &:focus {
-    background: var(--surface-100, #f8fafc) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--type-color) 30%, transparent) !important;
-  }
-}
-
-// ── Meta pills dans le header ─────────────────────────────────────────────
-.header-meta {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  flex-wrap: wrap;
-  flex-shrink: 0;
+  &:focus { background: var(--surface-100) !important; }
 }
 
 .meta-pill {
   display: inline-flex;
   align-items: center;
-  gap: .3rem;
-  background: var(--surface-100, #f1f5f9);
-  border: 1px solid var(--surface-border);
+  gap: .25rem;
+  background: var(--surface-100);
   border-radius: 20px;
   padding: .15rem .55rem;
   font-size: .78rem;
   color: var(--text-color-secondary);
-  white-space: nowrap;
-
-  i { font-size: .75rem; }
 }
 
-// Input inline dans la pill
 .pill-input {
   border: none;
   background: transparent;
   outline: none;
-  width: 44px;
+  width: 40px;
   text-align: right;
   font-size: .78rem;
-  color: var(--text-color);
-  font-weight: 500;
-  padding: 0;
-
-  &--price { width: 54px; }
-
-  &::-webkit-inner-spin-button,
-  &::-webkit-outer-spin-button { opacity: 0; }
-  &:hover::-webkit-inner-spin-button,
-  &:hover::-webkit-outer-spin-button { opacity: 1; }
 }
 
-.pill-unit { font-size: .7rem; color: var(--text-color-secondary); }
+// Body
+.card-body { padding: .5rem 0; }
 
-// Currency select dans la pill — ultra compact
-.currency-select {
-  .p-select {
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    height: auto !important;
-    padding: 0 !important;
-  }
-  .p-select-label { font-size: .75rem; padding: 0 .2rem !important; }
-}
-
-.booking-tag {
-  .p-tag { font-size: .7rem !important; padding: .1rem .45rem !important; }
-}
-
-.collapse-btn {
-  margin-left: auto;
-  flex-shrink: 0;
-  color: var(--text-color-secondary) !important;
-}
-
-// ── Body ──────────────────────────────────────────────────────────────────
-.card-body {
-  padding: 0 1rem 1rem;
-  overflow: hidden;
-  transition: max-height .25s ease, opacity .2s;
-
-  &.hidden {
-    display: none;
-  }
-}
-
-// ── Grille de champs ──────────────────────────────────────────────────────
-.grid-fields {
+.fields-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: .1rem 1.5rem;
+  gap: .25rem 1.5rem;
 
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
 }
 
-// Ligne label + champ
 .field-row {
   display: flex;
   align-items: center;
   gap: .5rem;
-  padding: .3rem .15rem;
-  border-bottom: 1px solid transparent;
+  padding: .3rem .25rem;
   border-radius: 6px;
-  transition: background .15s;
+  &:hover { background: var(--surface-hover); }
 
-  &:hover {
-    background: var(--surface-hover, #f8fafc);
+  label {
+    min-width: 100px;
+    font-size: .78rem;
+    color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    flex-shrink: 0;
   }
+
+  &.warn label { color: var(--yellow-600); }
 }
 
-.field-label {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  min-width: 110px;
-  font-size: .78rem;
-  font-weight: 500;
-  color: var(--text-color-secondary);
-  flex-shrink: 0;
-  user-select: none;
-
-  i { font-size: .75rem; }
-
-  &.deadline-warning { color: var(--yellow-600, #d97706); }
-
-  @media (max-width: 640px) {
-    min-width: 90px;
-    font-size: .75rem;
-  }
-}
-
-// Inputs style "transparent"
-%ghost-input {
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  font-size: .88rem;
-  padding: .25rem .4rem !important;
-  border-radius: 5px;
-  transition: border-color .15s, background .15s;
-  width: 100%;
-
-  &:hover {
-    border-color: var(--surface-border) !important;
-    background: var(--surface-50, #f8fafc) !important;
-  }
-  &:focus {
-    border-color: var(--primary-color) !important;
-    background: var(--surface-0, #fff) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent) !important;
-  }
-}
-
-.field-text {
-  @extend %ghost-input;
-  flex: 1;
-}
-
-.field-select {
-  flex: 1;
-  .p-select {
-    border: 1px solid transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    transition: border-color .15s, background .15s;
-    &:hover { border-color: var(--surface-border) !important; }
-    &:focus-within {
-      border-color: var(--primary-color) !important;
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent) !important;
-    }
-  }
-  .p-select-label { font-size: .88rem; }
-}
-
-.field-number {
-  flex: 1;
-}
-.field-number-input {
-  @extend %ghost-input;
-}
-
-.field-calendar-input {
-  @extend %ghost-input;
-}
-
-// Durée avec conversion
-.duration-field {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  flex: 1;
-}
-
-.duration-converted {
+.hint {
   font-size: .75rem;
   color: var(--text-color-secondary);
   white-space: nowrap;
 }
 
-// Prix
-.price-group {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  flex: 1;
-}
-
-// Lien avec icône d'ouverture
-.link-field {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  flex: 1;
-}
-
-.link-open {
-  color: var(--primary-color);
-  font-size: .85rem;
-  text-decoration: none;
-  flex-shrink: 0;
-  &:hover { color: var(--primary-700); }
-}
-
-// ── Section Google ────────────────────────────────────────────────────────
-.google-info {
-  margin-top: .85rem;
-  padding: .65rem .8rem;
-  background: var(--surface-50, #f8fafc);
+// Google section
+.google-section {
+  margin-top: .75rem;
+  padding: .65rem;
+  background: var(--surface-50);
   border-radius: 8px;
   border: 1px solid var(--surface-border);
 }
@@ -333,9 +108,7 @@
   font-size: .78rem;
   font-weight: 600;
   color: var(--text-color-secondary);
-  margin-bottom: .5rem;
-
-  i { font-size: .75rem; }
+  margin-bottom: .4rem;
 }
 
 .google-badge {
@@ -345,86 +118,41 @@
   border-radius: 3px;
   padding: .05rem .3rem;
   font-weight: 700;
-  letter-spacing: .02em;
 }
 
-.google-placeholder {
-  font-size: .82rem;
-  color: var(--text-color-secondary);
-  margin: 0;
-  font-style: italic;
-}
-
-// ── Bloc pleine largeur (notes, fichiers) ─────────────────────────────────
+// Blocs pleine largeur
 .field-block {
   margin-top: .75rem;
-
-  .field-label {
+  label {
     display: flex;
     align-items: center;
     gap: .35rem;
     font-size: .78rem;
-    font-weight: 500;
     color: var(--text-color-secondary);
     margin-bottom: .3rem;
   }
+  textarea { width: 100%; }
 }
 
-.field-textarea {
-  @extend %ghost-input;
-  resize: none;
-  line-height: 1.5;
-}
-
-// ── Fichiers ──────────────────────────────────────────────────────────────
-.file-count-badge {
-  margin-left: .3rem;
-  .p-badge { font-size: .65rem !important; min-width: 16px !important; height: 16px !important; }
-}
-
-.file-list {
-  display: flex;
-  flex-direction: column;
-  gap: .2rem;
-  margin-bottom: .5rem;
-}
-
+// Fichiers
 .file-item {
   display: flex;
   align-items: center;
   gap: .4rem;
   padding: .2rem .5rem;
   border-radius: 6px;
-  background: var(--surface-50);
   border: 1px solid var(--surface-border);
+  margin-bottom: .2rem;
   font-size: .82rem;
-
   &:hover { background: var(--surface-100); }
 }
 
-.file-icon { color: var(--primary-color); font-size: .85rem; }
-
 .file-name {
   flex: 1;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text-color);
   text-decoration: none;
-  &:hover { text-decoration: underline; color: var(--primary-color); }
-}
-
-.remove-file-btn {
-  width: 22px !important;
-  height: 22px !important;
-  flex-shrink: 0;
-}
-
-.file-upload-btn {
-  .p-fileupload-choose {
-    font-size: .8rem;
-    padding: .3rem .7rem;
-    height: auto;
-  }
+  &:hover { color: var(--primary-color); text-decoration: underline; }
 }

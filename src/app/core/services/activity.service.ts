@@ -33,4 +33,10 @@ export class ActivityService {
       [`days.${dayId.getTime()}.activities`]: updated
     }));
   }
+
+  reorderActivities(tripId: number, dayId: Date, reorderedActivities: Activity[]): Observable<void> {
+    return from(updateDoc(this.tripService.tripRef(tripId), {
+      [`days.${dayId.getTime()}.activities`]: reorderedActivities.map(activityToFb)
+    }));
+  }
 }

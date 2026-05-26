@@ -30,7 +30,7 @@ const TRIP_DATA = [{
           "price": { "amount": 850, "currency": "EUR" },
           "placeId": "cdg-airport",
           "booking": {
-            "status": "CONFIRMED",
+            "status": "BOOKED",
             "deadline": "2026-04-01T00:00:00.000Z"
           },
           "notes": "Arriver 3h avant le départ",
@@ -49,7 +49,7 @@ const TRIP_DATA = [{
           "price": { "amount": 320, "currency": "EUR" },
           "placeId": "hotel-shinjuku",
           "booking": {
-            "status": "PENDING",
+            "status": "TO_BOOK",
             "deadline": "2026-05-10T12:00:00.000Z"
           },
           "notes": "Demander une chambre avec vue",

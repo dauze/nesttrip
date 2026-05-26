@@ -1,0 +1,9 @@
+<app-timeline [activities]="day().activities" />
+<div cdkDropList (cdkDropListDropped)="onDrop($event)">
+  @for (activity of day().activities; track activity.id) {
+      <app-activity-card cdkDrag [activity]="activity" [currentDay]="day()" [tripId]="tripId()" />
+  }
+</div>
+<!-- <div class="add-activity-btn-wrapper">
+  <button class="btn-primary rounded-btn" (click)="addActivity()">+</button>
+</div> -->
