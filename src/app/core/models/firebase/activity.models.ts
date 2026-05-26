@@ -22,7 +22,7 @@ export interface PriceFirebase {
 }
 export interface BookingFirebase {
   status: BookingStatus;
-  deadline?: Date;
+  deadline?: string;
 }
 
 export interface FileFirebase {

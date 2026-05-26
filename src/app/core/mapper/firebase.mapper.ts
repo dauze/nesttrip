@@ -50,13 +50,13 @@ export function activityToFb(a: Activity): ActivityFirebase {
    function bookingFromFb(b: BookingFirebase): Booking {
     return {
       ...b,
-      deadline: b.deadline ? new Date(b.deadline) : undefined,
+      deadline: b.deadline ? new Date(Number(b.deadline)) : new Date(),
     };
   }
 
    function bookingToFb(b: Booking): BookingFirebase {
     return {
       ...b,
-      deadline: b.deadline,
+      deadline: b.deadline ? String(b.deadline.getTime()) : "",
     };
   }
