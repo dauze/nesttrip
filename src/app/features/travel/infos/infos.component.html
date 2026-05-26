@@ -1,27 +1,26 @@
 <div class="flex flex-column gap-3">
-  @for (item of info().items; track item.id) {
+  @for (item of localItems(); track item.id) {
     <p-panel [toggleable]="true">
-      
       <ng-template pTemplate="header">
-        <textarea 
-          pTextarea
-          [autoResize]="true"
-          [rows]="1"
+        <input 
+          pInputText 
+          type="text" 
           [value]="item.title" 
           (blur)="updateTitle(item, $any($event.target).value.trim())" 
-          class="w-full font-bold"
           [attr.data-title-id]="item.id"
           (keydown.arrowdown)="focusRow(item.id, 0, 0)"
-        ></textarea>
-      </ng-template>
-
-      <div class="flex flex-column gap-2 p-3 surface-card border-1 border-300 border-round">
-        
-        @for (point of getItems(item); track $index) {
-          <div class="flex align-items-baseline gap-2 w-full"> @if (item.type === InfoType.TODO) {
-              <p-checkbox [binary]="true" [ngModel]="point.checked" (onChange)="toggleCheck(item, $index)" class="mt-1" />
-            } @else {
-              <i class="pi pi-circle-fill text-xs text-color-secondary mt-2"></i>
+        />
+      </ng-template>        
+        @for (point of item.normalizedElements; track $index) {
+          <div class="flex align-items-baseline gap-2 w-full">
+            
+            @if (item.type === InfoType.TODO) {
+             <input 
+                type="checkbox" 
+                [checked]="point.checked" 
+                (change)="toggleCheck(item, $index)"
+                class="cursor-pointer h-1rem w-1rem mt-1 border-round border-1 border-300 accent-primary"
+              />
             }
 
             <textarea
@@ -29,12 +28,13 @@
               [autoResize]="true"
               [rows]="1"
               [value]="point.text" 
-              class="w-full bg-transparent border-none p-1 shadow-none focus:outline-none resize-none overflow-hidden text-base line-height-3"
+              class="w-full"
               [class.line-through]="item.type === InfoType.TODO && point.checked"
               [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
               (keydown.enter)="onEnterRow(item, $index, $any($event))" 
               (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
+              (keydown.delete)="onDeleteRow(item, $index, $any($event))"
               (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
               (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
               [attr.data-item-id]="item.id"
@@ -42,8 +42,6 @@
             ></textarea>
           </div>
         }
-
-      </div>
     </p-panel>
   }
 </div>

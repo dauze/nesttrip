@@ -10,11 +10,12 @@ import { Trip } from '../../core/models/dto/trip.interface';
 import { ToolbarModule } from 'primeng/toolbar';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { CardModule } from 'primeng/card';
 
 @Component({
   selector: 'app-travel',
   standalone: true,
-  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent, ToolbarModule, MenuModule],
+  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent, ToolbarModule, MenuModule, CardModule],
   styleUrl: 'travel.component.scss',
   templateUrl: 'travel.component.html',
 })

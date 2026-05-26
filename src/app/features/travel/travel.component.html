@@ -1,32 +1,36 @@
 @if (trip()) 
 {
-  <p-toolbar>
-    <ng-template #center>
-        <span>{{ trip()!.title }}</span>
-    </ng-template>
-    <ng-template #end>
-        <div class="card flex justify-center">
-            <p-menu #menu [model]="items" [popup]="true" />
-            <p-button (click)="menu.toggle($event)" icon="pi pi-user" rounded="true" />
-        </div>
-    </ng-template>
-  </p-toolbar>
-  <p-tabs scrollable (activeValueChange)="onTabChange()" [value]="tabs()[0]?.id">
-    <p-tablist>
-      @for (tab of tabs(); track tab.id) {
-        <p-tab [value]="tab.id">{{ tab.label }}</p-tab>
-      }
-    </p-tablist>
+  <div class="flex flex-column gap-2">
+    <p-toolbar>
+      <ng-template #center>
+          <span>{{ trip()!.title }}</span>
+      </ng-template>
+      <ng-template #end>
+          <div class="card flex justify-center">
+              <p-menu #menu [model]="items" [popup]="true" />
+              <p-button (click)="menu.toggle($event)" icon="pi pi-user" rounded="true" />
+          </div>
+      </ng-template>
+    </p-toolbar>
+    <p-card>
+      <p-tabs scrollable (activeValueChange)="onTabChange()" [value]="tabs()[0]?.id">
+        <p-tablist>
+          @for (tab of tabs(); track tab.id) {
+            <p-tab [value]="tab.id">{{ tab.label }}</p-tab>
+          }
+        </p-tablist>
 
-    <p-tabpanels>
-      <p-tabpanel value="info" [lazy]="true">
-        <app-infos [info]="trip()!.info" [tripId]="trip()!.id" />
-      </p-tabpanel>
-      @for (day of trip()?.days; track day.id) {
-        <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
-          <app-day-panel [day]="day" [tripId]="trip()!.id" />
-        </p-tabpanel>
-      }
-    </p-tabpanels>
-  </p-tabs>
+        <p-tabpanels>
+          <p-tabpanel value="info" [lazy]="true">
+            <app-infos [info]="trip()!.info" [tripId]="trip()!.id" />
+          </p-tabpanel>
+          @for (day of trip()?.days; track day.id) {
+            <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
+              <app-day-panel [day]="day" [tripId]="trip()!.id" />
+            </p-tabpanel>
+          }
+        </p-tabpanels>
+      </p-tabs>
+    </p-card>
+  </div>
 }
