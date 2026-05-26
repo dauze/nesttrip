@@ -1,13 +1,15 @@
 import { Component, effect, ElementRef, inject, input, signal, ViewChild } from '@angular/core';
-import { SafeHtmlPipe } from '../../../shared/pipes/safe-html.pipe';
 import { Info, Item, Point } from '../../../core/models/firebase/info.models';
 import { InfoType } from '../../../core/enums/infos.type';
 import { InfoService } from '../../../core/services/info.service';
+import { PanelModule } from 'primeng/panel';
+import { CheckboxModule } from 'primeng/checkbox';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [SafeHtmlPipe],
+  imports: [PanelModule, CheckboxModule, FormsModule],
   templateUrl: 'infos.component.html',
   styleUrl: 'infos.component.scss'
 })

@@ -1,154 +1,141 @@
-<p-panel
-  [toggleable]="true"
-  [style]="{ '--type-color': typeMeta().color, 'border-left': '4px solid ' + typeMeta().color }"
-  styleClass="activity-panel"
->
-
-  <!-- ── Header custom ──────────────────────────────────────────────────── -->
+<p-panel [toggleable]="true" [ngClass]="'activity ' + activity().type.toLowerCase()">
   <ng-template pTemplate="header">
-    <div class="panel-header">
-
-      <!-- Drag handle (exposé au CDK du parent) -->
-      <span cdkDragHandle class="drag-handle">
-        <i class="pi pi-bars"></i>
-      </span>
-
-      <!-- Type badge -->
-      <span class="type-badge" [style.background]="typeMeta().color + '22'" [style.color]="typeMeta().color">
-        <i [class]="typeMeta().icon"></i>
-      </span>
-
-      <!-- Titre -->
-      <input
-        pInputText
-        class="title-input"
-        [(ngModel)]="activity().title"
-        (ngModelChange)="onChange()"
-        placeholder="Nom de l'activité"
-        (click)="$event.stopPropagation()"
-      />
-
-      <!-- Pills résumé -->
-      <span class="meta-pill" (click)="$event.stopPropagation()">
+    <div class="flex align-items-center gap-2">
+      <span cdkDragHandle><i class="pi pi-bars"></i></span>
+      <!-- type -->
+      <i [class]="typeMeta().icon"></i>
+      <!-- title -->
+      <input pInputText [(ngModel)]="activity().title" (ngModelChange)="onChange()" 
+      placeholder="Nom de l'activité" (click)="$event.stopPropagation()"/>
+      <!-- duration -->
+      <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
         <i class="pi pi-clock"></i>
-        <input type="number" class="pill-input" [(ngModel)]="activity().duration" (ngModelChange)="onChange()" min="0" step="15" />
-        min
-      </span>
-
-      <p-tag
-        [severity]="bookingMeta().severity"
-        [value]="bookingMeta().label"
-        [rounded]="true"
-        (click)="$event.stopPropagation()"
-      />
-
+        <input pInputText type="number" [(ngModel)]="activity().duration" (ngModelChange)="onChange()" min="0" step="15" />
+        <span>min</span>
+      </div>
+      <!-- booking -->
+      <p-tag [severity]="bookingMeta().severity" [value]="bookingMeta().label" [rounded]="true" (click)="$event.stopPropagation()" />
     </div>
   </ng-template>
-
-  <!-- ── Body ───────────────────────────────────────────────────────────── -->
-  <div class="card-body">
-
-    <div class="fields-grid">
-
-      <!-- Type -->
-      <div class="field-row">
-        <label><i class="pi pi-tag"></i> Type</label>
-        <p-select [options]="activityTypeOptions" [(ngModel)]="activity().type"
-          (ngModelChange)="onChange()" optionLabel="label" optionValue="value" appendTo="body" />
+    <!-- grid -->
+    <div class="grid">
+      <!-- TYPE -->
+      <div class="col-12 md:col-6">
+        <div class="flex align-items-center gap-2">
+          <label class="flex align-items-center gap-2">
+            <i class="pi pi-tag"></i>
+            <span>Type</span>
+          </label>
+          <p-select [options]="activityTypeOptions" [(ngModel)]="activity().type" (ngModelChange)="onChange()"/>
+        </div>
       </div>
-
-      <!-- Durée -->
-      <div class="field-row">
-        <label><i class="pi pi-clock"></i> Durée</label>
-        <p-inputNumber [(ngModel)]="activity().duration" (ngModelChange)="onChange()"
-          [min]="0" [step]="15" suffix=" min" />
-        <span class="hint">{{ activity().duration | duration }}</span>
+      <!-- DURATION -->
+      <div class="col-12 md:col-6">
+        <div class="flex align-items-center gap-2">
+          <label class="flex align-items-center gap-2">
+            <i class="pi pi-clock"></i>
+            <span>Durée</span>
+          </label>
+          <p-inputNumber [(ngModel)]="activity().duration" (ngModelChange)="onChange()" [min]="0" [step]="15" suffix=" min" />
+        </div>
       </div>
-
-      <!-- Réservation -->
-      <div class="field-row">
-        <label><i class="pi pi-bookmark"></i> Réservation</label>
-        <p-select [options]="bookingStatusOptions" [(ngModel)]="activity().booking!.status"
-          (ngModelChange)="onChange()" optionLabel="label" optionValue="value" appendTo="body" />
+      <!-- BOOKING -->
+      <div class="col-12 md:col-6">
+        <div class="flex align-items-center gap-2">
+          <label class="flex align-items-center gap-2">
+            <i class="pi pi-bookmark"></i>
+            <span>Réservation</span>
+          </label>
+          <p-select class="flex-1" [options]="bookingStatusOptions" [(ngModel)]="activity().booking!.status" (ngModelChange)="onChange()"
+            optionLabel="label" optionValue="value" appendTo="body" />
+        </div>
       </div>
-
-      <!-- Deadline (conditionnel) -->
+      <!-- DEADLINE -->
       @if (showDeadline()) {
-        <div class="field-row" [class.warn]="isDeadlineSoon()">
-          <label><i class="pi pi-calendar"></i> Deadline</label>
-          <p-datepicker [(ngModel)]="activity().booking!.deadline" (ngModelChange)="onChange()"
-            dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" placeholder="Aucune deadline" />
+        <div class="col-12 md:col-6">
+          <div class="flex align-items-center gap-2">
+            <label class="flex align-items-center gap-2"
+              [class.text-yellow-700]="isDeadlineSoon()"
+              [class.text-color-secondary]="!isDeadlineSoon()">
+              <i class="pi pi-calendar"></i>
+              <span>Deadline</span>
+            </label>
+            <p-datepicker [(ngModel)]="activity().booking!.deadline" (ngModelChange)="onChange()" dateFormat="dd/mm/yy" [showIcon]="true"
+              appendTo="body" placeholder="Aucune deadline" />
+          </div>
         </div>
       }
-
-      <!-- Prix -->
-      <div class="field-row">
-        <label><i class="pi pi-euro"></i> Prix</label>
-        <p-inputNumber [(ngModel)]="activity().price.amount" (ngModelChange)="onChange()"
-          [min]="0" [minFractionDigits]="0" [maxFractionDigits]="2" />
-        <p-select [options]="currencyOptions" [(ngModel)]="activity().price.currency"
-          (ngModelChange)="onChange()" optionLabel="label" optionValue="value"
-          [style]="{ width: '90px' }" appendTo="body" />
+      <!-- PRICE -->
+      <div class="col-12 md:col-6">
+        <div  class="flex align-items-center gap-2">
+          <label class="flex align-items-center gap-2">
+            <i class="pi pi-euro"></i>
+             <span>Prix</span>
+          </label>
+          <p-inputNumber [(ngModel)]="activity().price.amount" (ngModelChange)="onChange()" [min]="0"
+            [minFractionDigits]="0" [maxFractionDigits]="2" />
+          <p-select [options]="currencyOptions" [(ngModel)]="activity().price.currency" (ngModelChange)="onChange()"/>
+        </div>
       </div>
-
-      <!-- Site web -->
-      <div class="field-row">
-        <label><i class="pi pi-globe"></i> Site web</label>
-        <input pInputText [(ngModel)]="activity().website" (ngModelChange)="onChange()" placeholder="https://…" />
-        @if (activity().website) {
-          <a [href]="activity().website" target="_blank" rel="noopener" pTooltip="Ouvrir">
-            <i class="pi pi-external-link"></i>
-          </a>
-        }
+      <!-- WEBSITE -->
+      <div class="col-12 md:col-6">
+        <div class="flex align-items-center gap-2">
+          <label class="flex align-items-center gap-2">
+            <i class="pi pi-globe"></i>
+            <span>Site</span>
+          </label>
+          <input pInputText [(ngModel)]="activity().website" (ngModelChange)="onChange()" placeholder="https://…" />
+          @if (activity().website) {
+            <a [href]="activity().website" target="_blank" rel="noopener" >
+              <i class="pi pi-external-link"></i>
+            </a>
+          }
+        </div>
       </div>
-
-      <!-- Téléphone -->
-      <div class="field-row">
-        <label><i class="pi pi-phone"></i> Téléphone</label>
-        <input pInputText [(ngModel)]="activity().phone" (ngModelChange)="onChange()" placeholder="+33 …" type="tel" />
+      <!-- PHONE -->
+      <div class="col-12 md:col-6">
+        <div class="flex align-items-center gap-2">
+          <label class="flex align-items-center gap-2">
+            <i class="pi pi-phone"></i>
+             <span>Téléphone</span>
+          </label>
+          <input pInputText [(ngModel)]="activity().phone" (ngModelChange)="onChange()" placeholder="+33 …" type="tel" />
+        </div>
       </div>
 
     </div>
-
-    <!-- Google Place slot -->
+    <!-- GOOGLE -->
     @if (activity().placeId) {
-      <div class="google-section">
-        <span class="section-label">
-          <i class="pi pi-map-marker"></i> Lieu
-          <span class="google-badge">Google</span>
-        </span>
-        <ng-content select="[slot=google-place]" />
-      </div>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-map-marker"></i>
+          <span>Lieu</span>
+          <span> Google</span>
+        </div>
     }
-
-    <!-- Notes -->
-    <div class="field-block">
-      <label><i class="pi pi-pencil"></i> Notes</label>
-      <textarea pTextarea [(ngModel)]="activity().notes" (ngModelChange)="onChange()"
-        placeholder="Ajouter une note…" rows="3" autoResize="true"></textarea>
-    </div>
-
-    <!-- Fichiers -->
-    <div class="field-block">
-      <label>
-        <i class="pi pi-paperclip"></i> Fichiers
-        @if (activity().files?.length) {
-          <p-badge [value]="activity().files!.length" severity="secondary" />
-        }
+    <!-- NOTES -->
+    <div class="flex flex-column gap-2">
+      <label class="flex align-items-center gap-2">
+        <i class="pi pi-pencil"></i>
+         <span>Notes</span>
       </label>
-
+      <textarea pTextarea [(ngModel)]="activity().notes" (ngModelChange)="onChange()"  placeholder="Ajouter une note…"
+        rows="3" autoResize="true" class="w-full">
+      </textarea>
+    </div>
+    <!-- FILES -->
+    <div class="flex flex-column gap-2">
+      <label class="flex align-items-center gap-2">
+        <i class="pi pi-paperclip"></i>
+        <span>Fichiers</span>
+      </label>
       @for (file of activity().files; track file.path; let i = $index) {
-        <div class="file-item">
+        <div>
           <i class="pi pi-file"></i>
-          <a [href]="file.url" [download]="file.name" class="file-name">{{ file.name }}</a>
-          <p-button icon="pi pi-times" severity="danger" [text]="true" [rounded]="true" size="small"
-            (onClick)="removeFile(i)" pTooltip="Supprimer" />
+          <a [href]="file.url" [download]="file.name" > {{ file.name }}</a>
+          <p-button icon="pi pi-times" severity="danger" [text]="true" [rounded]="true" (onClick)="removeFile(i)" />
         </div>
       }
-
-      <p-fileUpload mode="basic" chooseLabel="Ajouter" chooseIcon="pi pi-upload"
-        [multiple]="true" [auto]="true" (onSelect)="onFileSelect($event)" />
+      <p-fileUpload mode="basic" chooseLabel="Ajouter" chooseIcon="pi pi-upload" [multiple]="true"
+        [auto]="true" (onSelect)="onFileSelect($event)" />
     </div>
-
-  </div>
 </p-panel>

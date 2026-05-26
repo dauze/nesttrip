@@ -2,8 +2,6 @@ import { Component, input, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-
-// PrimeNG
 import { InputTextModule }   from 'primeng/inputtext';
 import { TextareaModule }    from 'primeng/textarea';
 import { SelectModule }      from 'primeng/select';
@@ -15,14 +13,11 @@ import { FileUploadModule }  from 'primeng/fileupload';
 import { BadgeModule }       from 'primeng/badge';
 import { DatePickerModule }  from 'primeng/datepicker';
 import { PanelModule }       from 'primeng/panel';
-
-import { DurationPipe }      from '../../../../core/pipes/duration.pipe';
 import { ActivityService }   from '../../../../core/services/activity.service';
 import { FileService }       from '../../../../core/services/file.service';
 import { Activity }          from '../../../../core/models/dto/activity.interface';
 import { Day }               from '../../../../core/models/dto/trip.interface';
 import { BookingStatus }     from '../../../../core/enums/booking.status';
-import { ActivityType }      from '../../../../core/enums/activites-type.enum';
 import {
   ACTIVITY_TYPE_META,
   BOOKING_STATUS_META,
@@ -39,8 +34,7 @@ import { switchMap } from 'rxjs';
     CommonModule, FormsModule, DragDropModule,
     InputTextModule, TextareaModule, SelectModule, InputNumberModule,
     DatePickerModule, TagModule, ButtonModule, TooltipModule,
-    FileUploadModule, BadgeModule, PanelModule,
-    DurationPipe,
+    FileUploadModule, BadgeModule, PanelModule
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -57,26 +51,24 @@ export class ActivityCardComponent {
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions      = CURRENCY_OPTIONS;
 
+  readonly BookingStatus = BookingStatus;
+
   readonly typeMeta    = computed(() => ACTIVITY_TYPE_META[this.activity().type]);
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
     return BOOKING_STATUS_META[status];
   });
-
   readonly isDeadlineSoon = computed(() => {
     const deadline = this.activity().booking?.deadline;
     if (!deadline) return false;
     const diff = new Date(deadline).getTime() - Date.now();
     return diff > 0 && diff < 7 * 24 * 60 * 60 * 1000;
   });
-
   readonly showDeadline = computed(() =>
     [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(
       this.activity().booking?.status ?? BookingStatus.NOT_NEEDED
     )
   );
-
-  readonly BookingStatus = BookingStatus;
 
   onChange(): void {
     this.activityService

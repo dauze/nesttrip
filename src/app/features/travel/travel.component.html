@@ -1,10 +1,16 @@
 @if (trip()) 
 {
-  <header class="site-header">
-    <div class="header-top">
-      <h1>{{ trip()!.title }}</h1>
-    </div>
-  </header>
+  <p-toolbar>
+    <ng-template #center>
+        <span>{{ trip()!.title }}</span>
+    </ng-template>
+    <ng-template #end>
+        <div class="card flex justify-center">
+            <p-menu #menu [model]="items" [popup]="true" />
+            <p-button (click)="menu.toggle($event)" icon="pi pi-user" />
+        </div>
+    </ng-template>
+  </p-toolbar>
   <p-tabs scrollable (activeValueChange)="onTabChange()" [value]="tabs()[0]?.id">
     <p-tablist>
       @for (tab of tabs(); track tab.id) {
@@ -24,8 +30,3 @@
     </p-tabpanels>
   </p-tabs>
 }
-
-<footer>
-  <div>Site réalisé par Dauze en personne, sans l'aide de Claude · Mai 2026</div>
-  <p-button label="Log out" severity="secondary" (onClick)="logout()" />
-</footer>

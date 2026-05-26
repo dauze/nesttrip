@@ -7,22 +7,38 @@ import { InfosComponent } from './infos/infos.component';
 import { AuthService } from '../../core/services/auth.service';
 import { TripService } from '../../core/services/trip.service';
 import { Trip } from '../../core/models/dto/trip.interface';
+import { ToolbarModule } from 'primeng/toolbar';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 @Component({
   selector: 'app-travel',
   standalone: true,
-  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent],
+  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent, ToolbarModule, MenuModule],
   styleUrl: 'travel.component.scss',
   templateUrl: 'travel.component.html',
 })
 export class TravelComponent implements OnInit{
- protected readonly tripService = inject(TripService);
-protected readonly authService = inject(AuthService);
-readonly trip: Signal<Trip | undefined> = this.tripService.activeTrip;
+  protected readonly tripService = inject(TripService);
+  protected readonly authService = inject(AuthService);
+  readonly trip: Signal<Trip | undefined> = this.tripService.activeTrip;
 
-ngOnInit(): void {
-  this.tripService.activeTripId.set(1); //TODO changer car en dur
-}
+  items: MenuItem[] = [
+            {
+                label: 'Options',
+                items: [
+                    {
+                        label: 'Log out',
+                        icon: 'pi pi-sign-out',
+                        command: () => this.authService.logout().subscribe()
+                    }
+                ]
+            }
+        ];;
+
+  ngOnInit(): void {
+    this.tripService.activeTripId.set(1); //TODO changer car en dur
+  }
 
 
   protected readonly tabs = computed(() => [
@@ -39,9 +55,5 @@ ngOnInit(): void {
 
   protected onTabChange(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  protected logout(): void {
-    this.authService.logout().subscribe();
   }
 }
