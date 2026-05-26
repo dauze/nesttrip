@@ -7,11 +7,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TextareaModule, Textarea } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, InputTextModule, CheckboxModule, TextareaModule, FormsModule],
+  imports: [PanelModule, InputTextModule, CheckboxModule, TextareaModule, FormsModule, ButtonModule],
   templateUrl: './infos.component.html',
   // changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -56,6 +57,22 @@ export class InfosComponent {
       this.pTextareas.forEach(textarea => textarea.resize());
     }
   }
+
+    addItem(){
+        this.infos.addItem(this.tripId(), this.info(),
+        {
+          id: crypto.getRandomValues(new Uint32Array(1))[0],
+          title: '',
+          type: InfoType.TODO,
+          elements: [
+            {
+              text: '',
+              checked: false
+            }
+          ]
+        }
+      ).subscribe();
+      }
 
   /**
    * Envoi asynchrone vers Firebase sans bloquer l'interface
