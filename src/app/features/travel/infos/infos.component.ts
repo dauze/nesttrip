@@ -10,6 +10,7 @@ import { ButtonModule } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AutoResizeFixDirective } from '../../../core/pipes/auto-resize-area.pipe';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-infos',
@@ -20,6 +21,7 @@ import { AutoResizeFixDirective } from '../../../core/pipes/auto-resize-area.pip
 })
 export class InfosComponent {
   private readonly infosService = inject(InfoService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly info = input.required<Info>();
   readonly tripId = input.required<number>();
   readonly InfoType = InfoType;
@@ -56,6 +58,22 @@ export class InfosComponent {
       error: () => this.localItems.set(this.localItems().filter(i => i.id !== newItem.id))
     });
     this.focusTitleWithRetry(newItem.id);
+  }
+
+  confirmDelete(item: Item): void {
+    this.confirmationService.confirm({
+      message: 'Supprimer cet élément ?',
+      accept: () => {
+        this.skipNextEffect = true;
+        this.localItems.set(this.localItems().filter(i => i.id !== item.id));
+        this.infosService.removeItem(this.tripId(), item.id, this.info()).subscribe({
+          error: () => {
+            this.skipNextEffect = false;
+            this.localItems.set([...this.localItems(), item]);
+          }
+        });
+      }
+    });
   }
 
   toggleType(item: Item): void {

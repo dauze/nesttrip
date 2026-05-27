@@ -6,7 +6,7 @@ import { TripService } from './trip.service';
 
 @Injectable({ providedIn: 'root' })
 export class InfoService {
-    private readonly tripService = inject(TripService);
+  private readonly tripService = inject(TripService);
 
   createItem(tripId: number, newItem: Item): Observable<void> {
     return from(updateDoc(this.tripService.tripRef(tripId), {

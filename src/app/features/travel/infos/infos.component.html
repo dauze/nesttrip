@@ -20,6 +20,13 @@
             [outlined]="true"
             (onClick)="toggleType(item)"
           />
+          <p-button 
+            icon="pi pi-trash"
+            [rounded]="true"
+            severity="danger"
+            [outlined]="true"
+            (onClick)="confirmDelete(item)"
+          />
         </div>
       </ng-template>        
         @for (point of item.elements; track point.id) {

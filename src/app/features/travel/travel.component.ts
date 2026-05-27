@@ -9,13 +9,15 @@ import { TripService } from '../../core/services/trip.service';
 import { Trip } from '../../core/models/dto/trip.interface';
 import { ToolbarModule } from 'primeng/toolbar';
 import { MenuModule } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import { ConfirmationService, MenuItem } from 'primeng/api';
 import { CardModule } from 'primeng/card';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-travel',
   standalone: true,
-  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent, ToolbarModule, MenuModule, CardModule],
+  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent, ToolbarModule, MenuModule, CardModule, ConfirmDialog],
+  providers: [ConfirmationService],
   styleUrl: 'travel.component.scss',
   templateUrl: 'travel.component.html',
 })
