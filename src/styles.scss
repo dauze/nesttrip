@@ -5,3 +5,26 @@
     --p-font-family: 'Inter', sans-serif; /* Token utilisé par PrimeNG */
     font-family: var(--p-font-family);
 }
+.p-textarea {
+  transition: none !important;
+}
+
+.checkbox {
+  appearance: none;
+  width: var(--p-checkbox-width);
+  height: var(--p-checkbox-height);
+  min-width: var(--p-checkbox-width);
+  border: 1.5px solid var(--p-checkbox-border-color);
+  border-radius: var(--p-checkbox-border-radius);
+  cursor: pointer;
+  transition: none;
+
+  &:checked {
+    background: var(--p-checkbox-checked-background);
+    border-color: var(--p-checkbox-checked-border-color);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%2318181b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-size: 10px;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+}

@@ -4,28 +4,27 @@
       <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2">
           <span cdkDragHandle><i class="pi pi-bars"></i></span>
-          <input 
-            pInputText 
-            type="text" 
+          <textarea 
+            pTextarea
+            [autoResize]="true"
+            [rows]="1" 
             [value]="item.title" 
             (blur)="updateTitle(item, $any($event.target).value.trim())" 
             [attr.data-title-id]="item.id"
             (keydown.arrowdown)="focusRow(item.id, 0, 0)"
-          />
+          ></textarea>
         </div>
       </ng-template>        
-        @for (point of item.elements; track $index) {
+        @for (point of item.elements; track point.id) {
           <div class="flex align-items-baseline gap-2 w-full">
-            
             @if (item.type === InfoType.TODO) {
-             <input 
-                type="checkbox" 
-                [checked]="point.checked" 
+              <input 
+                type="checkbox"
+                class="checkbox"
+                [checked]="point.checked"
                 (change)="toggleCheck(item, $index)"
-                class="cursor-pointer h-1rem w-1rem mt-1 border-round border-1 border-300 accent-primary"
               />
             }
-            
             <textarea
               pTextarea
               [autoResize]="true"

@@ -13,6 +13,7 @@ export interface Item {
 }
 
 export interface Point {
+  id: number
   text: string;
   checked: boolean;
 }
