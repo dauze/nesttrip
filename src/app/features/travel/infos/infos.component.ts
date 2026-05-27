@@ -97,10 +97,25 @@ export class InfosComponent {
   }
 
   toggleCheck(item: Item, index: number): void {
-    const current = this.localItems().find(i => i.id === item.id)!;
-    const elements = current.elements.map((p, i) => i === index ? { ...p, checked: !p.checked } : p);
-    this.updateElements(item, elements);
-  }
+      const current = this.localItems().find(i => i.id === item.id)!;
+      const point = current.elements[index];
+      const newChecked = !point.checked;
+      const updated = { ...point, checked: newChecked };
+
+      let elements: Point[];
+      if (newChecked) {
+        // Déplace en fin de liste
+        elements = [
+          ...current.elements.filter((_, i) => i !== index),
+          updated
+        ];
+      } else {
+        // Simple toggle sans déplacement
+        elements = current.elements.map((p, i) => i === index ? updated : p);
+      }
+
+      this.updateElements(item, elements);
+    }
 
   onEnterRow(item: Item, index: number, event: KeyboardEvent): void {
     event.preventDefault();
@@ -116,7 +131,7 @@ export class InfosComponent {
 
     const elements = [...current.elements];
     elements[index] = { ...elements[index], text: before };
-    elements.splice(index + 1, 0, this.newPoint(after));
+    elements.splice(index + 1, 0, this.newPoint(after, current.elements[index].checked)); // 👈
 
     this.updateElements(item, elements);
     this.focusRow(item.id, index + 1, 0);
@@ -177,7 +192,7 @@ export class InfosComponent {
   onArrowUp(item: Item, index: number, event: KeyboardEvent): void {
     event.preventDefault();
     if (index > 0) this.focusRow(item.id, index - 1, (event.target as HTMLTextAreaElement).selectionStart ?? 0);
-    else document.querySelector<HTMLInputElement>(`input[data-title-id="${item.id}"]`)?.focus();
+    else document.querySelector<HTMLElement>(`[data-title-id="${item.id}"]`)?.focus(); // 👈
   }
 
   onArrowDown(item: Item, index: number, event: KeyboardEvent): void {
