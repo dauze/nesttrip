@@ -6,7 +6,7 @@
           <span cdkDragHandle class="flex-shrink-0"><i class="pi pi-bars"></i></span>
           <textarea 
             pTextarea
-            class="flex-1 overflow-hidden min-w-0"
+            class="flex-1 overflow-hidden font-bold min-w-0"
             [autoResize]="true"
             [rows]="1" 
             [value]="item.title" 
@@ -18,6 +18,7 @@
             <p-button 
               [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
               [rounded]="true"
+              [text]="true"
               severity="secondary"
               [outlined]="true"
               (onClick)="toggleType(item)"
@@ -25,7 +26,8 @@
             <p-button 
               icon="pi pi-trash"
               [rounded]="true"
-              severity="danger"
+              [text]="true"
+              severity="secondary"
               [outlined]="true"
               (onClick)="confirmDelete(item)"
             />

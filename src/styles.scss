@@ -13,13 +13,17 @@
     }
 }
 
-.p-textarea {
-  transition: none !important;
-}
 .p-card {
   --p-card-body-padding: 0.5rem;
 }
-
 .p-tabpanels {
   --p-tabs-tabpanel-padding: 0.5rem;
+}
+.p-textarea {
+    --p-textarea-background: transparent;
+    --p-textarea-border-color: transparent;
+    --p-textarea-shadow: none;
+    --p-textarea-transition-duration: 0s;
+    --p-textarea-hover-border-color:transparent;
+    --p-textarea-focus-border-color: transparent;
 }
