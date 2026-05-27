@@ -1,17 +1,25 @@
 /* styles.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
 :root {
-    --p-font-family: 'Inter', sans-serif; /* Token utilisé par PrimeNG */
+    --p-font-family: 'Plus Jakarta Sans', sans-serif;
     font-family: var(--p-font-family);
+    font-size: 16px;
 }
+
+@media screen and (max-width: 768px) {
+    :root {
+        font-size: 14px;
+    }
+}
+
 .p-textarea {
   transition: none !important;
 }
+.p-card {
+  --p-card-body-padding: 0.5rem;
+}
 
-p-checkbox {
-  .p-checkbox-box,
-  .p-checkbox-icon {
-    transition: none !important;
-  }
+.p-tabpanels {
+  --p-tabs-tabpanel-padding: 0.5rem;
 }

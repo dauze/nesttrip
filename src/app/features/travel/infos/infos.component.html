@@ -1,11 +1,12 @@
-<div class="flex flex-column gap-3" cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
+<div cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
   @for (item of localItems(); track item.id) {
     <p-panel [toggleable]="true" cdkDrag>
       <ng-template pTemplate="header">
-        <div class="flex align-items-center gap-2">
-          <span cdkDragHandle><i class="pi pi-bars"></i></span>
+        <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
+          <span cdkDragHandle class="flex-shrink-0"><i class="pi pi-bars"></i></span>
           <textarea 
             pTextarea
+            class="flex-1 overflow-hidden min-w-0"
             [autoResize]="true"
             [rows]="1" 
             [value]="item.title" 
@@ -13,26 +14,29 @@
             [attr.data-title-id]="item.id"
             (keydown.arrowdown)="focusRow(item.id, 0, 0)"
           ></textarea>
-          <p-button 
-            [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
-            [rounded]="true"
-            severity="secondary"
-            [outlined]="true"
-            (onClick)="toggleType(item)"
-          />
-          <p-button 
-            icon="pi pi-trash"
-            [rounded]="true"
-            severity="danger"
-            [outlined]="true"
-            (onClick)="confirmDelete(item)"
-          />
+          <div class="flex gap-1 flex-shrink-0">
+            <p-button 
+              [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
+              [rounded]="true"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="toggleType(item)"
+            />
+            <p-button 
+              icon="pi pi-trash"
+              [rounded]="true"
+              severity="danger"
+              [outlined]="true"
+              (onClick)="confirmDelete(item)"
+            />
+          </div>
         </div>
       </ng-template>        
         @for (point of item.elements; track point.id) {
           <div class="flex align-items-center gap-2 w-full">
             @if (item.type === InfoType.TODO) {
-               <p-checkbox 
+              <p-checkbox 
+                class="flex-shrink-0"
                 [binary]="true"
                 [ngModel]="point.checked"
                 (ngModelChange)="toggleCheck(item, $index)"
@@ -43,7 +47,7 @@
               [autoResize]="true"
               [rows]="1"
               [value]="point.text" 
-              class="w-full"
+              class="flex-1 overflow-hidden min-w-0"
               [class.line-through]="item.type === InfoType.TODO && point.checked"
               [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
