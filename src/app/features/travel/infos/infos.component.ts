@@ -4,17 +4,17 @@ import { InfoType } from '../../../core/enums/infos.type';
 import { InfoService } from '../../../core/services/info.service';
 import { PanelModule } from 'primeng/panel';
 import { InputTextModule } from 'primeng/inputtext';
-import { CheckboxModule } from 'primeng/checkbox';
 import { TextareaModule } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { Checkbox } from 'primeng/checkbox';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AutoResizeFixDirective } from '../../../core/pipes/auto-resize-area.pipe';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, InputTextModule, CheckboxModule, TextareaModule, FormsModule, ButtonModule, DragDropModule, AutoResizeFixDirective],
+  imports: [PanelModule, InputTextModule, TextareaModule, FormsModule, Checkbox, ButtonModule, DragDropModule, AutoResizeFixDirective],
   templateUrl: './infos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -56,6 +56,16 @@ export class InfosComponent {
       error: () => this.localItems.set(this.localItems().filter(i => i.id !== newItem.id))
     });
     this.focusTitleWithRetry(newItem.id);
+  }
+
+  toggleType(item: Item): void {
+    const type = item.type === InfoType.TODO ? InfoType.INFO : InfoType.TODO;
+    this.skipNextEffect = true;
+    this.localItems.set(this.localItems().map(i => i.id === item.id ? { ...i, type } : i));
+    this.infosService.updateItem(this.tripId(), item.id, { type }, this.info()).subscribe({
+      next: () => this.skipNextEffect = false,
+      error: () => this.skipNextEffect = false
+    });
   }
 
   updateTitle(item: Item, title: string): void {

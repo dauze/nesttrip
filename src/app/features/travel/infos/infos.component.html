@@ -13,16 +13,22 @@
             [attr.data-title-id]="item.id"
             (keydown.arrowdown)="focusRow(item.id, 0, 0)"
           ></textarea>
+          <p-button 
+            [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
+            [rounded]="true"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="toggleType(item)"
+          />
         </div>
       </ng-template>        
         @for (point of item.elements; track point.id) {
-          <div class="flex align-items-baseline gap-2 w-full">
+          <div class="flex align-items-center gap-2 w-full">
             @if (item.type === InfoType.TODO) {
-              <input 
-                type="checkbox"
-                class="checkbox"
-                [checked]="point.checked"
-                (change)="toggleCheck(item, $index)"
+               <p-checkbox 
+                [binary]="true"
+                [ngModel]="point.checked"
+                (ngModelChange)="toggleCheck(item, $index)"
               />
             }
             <textarea
