@@ -32,3 +32,12 @@ body {
     --p-textarea-hover-border-color:transparent;
     --p-textarea-focus-border-color: transparent;
 }
+.p-dialog-header {
+  --p-dialog-header-padding:0;
+}
+.p-dialog-footer {
+  --p-dialog-footer-padding:0 0.5rem 0.5rem 0.5rem;
+}
+.p-dialog-content {
+  --p-dialog-content-padding:0 0.5rem 0.5rem 0.5rem;
+}

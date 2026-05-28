@@ -8,22 +8,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 
-const theme = definePreset(Aura,{
-  primitive: {
-    // Déclinaison de nuances pour la couleur primaire (#2A7871)
-    activity: {
-      repas: '#ef9f27',
-      transport: '#378add',
-      hebergement: '#7f77dd',
-      visite: '#d85a30',
-      activite: '#1d9e75',
-      shopping: '#d4537e',
-      detente: '#639922',
-      evenement: '#e24b4a',
-      nature: '#5dcaa5',
-      soins: '#888780',
-    },
-  },
+const theme = definePreset(Aura, {
     semantic: {
         primary: {
           50: '#ECF6F5',

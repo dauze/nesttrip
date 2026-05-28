@@ -8,13 +8,27 @@
 
   <div class="flex flex-column gap-2">
     @for (activity of activities(); track activity.id) {
-      <div class="flex align-items-center gap-2">
-        <span class="w-5rem" >
-          ≃ {{ activity.duration | duration }}
+      <div class="grid align-items-center">
+
+        <!-- durée -->
+
+        <span class="col-3">
+          ~ {{ activity.duration | duration }}
         </span>
-        <i class="pi pi-circle-on" [ngClass]="activity.type.toLowerCase()"></i>
-        <span> {{ activity.title }}</span>
+
+
+        <!-- icône -->
+        <span class="col-1">
+        <i [class]="ACTIVITY_TYPE_META[activity.type]?.icon" class="text-lg text-primary"></i>
+        </span>
+
+        <!-- titre -->
+        <span class="col-8">
+          {{ activity.title }}
+        </span>
+
       </div>
+      <p-divider styleClass="m-0"></p-divider>
     }
   </div>
 </p-panel>

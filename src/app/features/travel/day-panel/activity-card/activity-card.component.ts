@@ -51,9 +51,10 @@ export class ActivityCardComponent {
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions      = CURRENCY_OPTIONS;
 
+  readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META
+
   readonly BookingStatus = BookingStatus;
 
-  readonly typeMeta    = computed(() => ACTIVITY_TYPE_META[this.activity().type]);
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
     return BOOKING_STATUS_META[status];

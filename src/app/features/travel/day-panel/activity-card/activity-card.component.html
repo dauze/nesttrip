@@ -3,9 +3,9 @@
     <div class="flex align-items-center gap-2">
       <span cdkDragHandle><i class="pi pi-bars"></i></span>
       <!-- type -->
-      <i [class]="typeMeta().icon"></i>
+      <i [class]="ACTIVITY_TYPE_META[this.activity().type]?.icon"></i>
       <!-- title -->
-      <input pInputText [(ngModel)]="activity().title" (ngModelChange)="onChange()" 
+      <input pInputText [(ngModel)]="activity().title" (ngModelChange)="onChange()"
       placeholder="Nom de l'activité" (click)="$event.stopPropagation()"/>
       <!-- duration -->
       <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
