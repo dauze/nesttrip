@@ -26,6 +26,7 @@ import {
   CURRENCY_OPTIONS,
 } from '../../../../core/constants/activity.constants';
 import { switchMap } from 'rxjs';
+import {DurationPipe} from '../../../../core/pipes/duration.pipe';
 
 @Component({
   selector: 'app-activity-card',
@@ -34,7 +35,7 @@ import { switchMap } from 'rxjs';
     CommonModule, FormsModule, DragDropModule,
     InputTextModule, TextareaModule, SelectModule, InputNumberModule,
     DatePickerModule, TagModule, ButtonModule, TooltipModule,
-    FileUploadModule, BadgeModule, PanelModule
+    FileUploadModule, BadgeModule, PanelModule, DurationPipe
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -51,9 +52,8 @@ export class ActivityCardComponent {
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions      = CURRENCY_OPTIONS;
 
-  readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META
+  readonly activityTypeMeta = ACTIVITY_TYPE_META
 
-  readonly BookingStatus = BookingStatus;
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;

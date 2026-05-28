@@ -1,20 +1,17 @@
-<p-panel [toggleable]="true" [ngClass]="'activity ' + activity().type.toLowerCase()">
+<p-panel [toggleable]="true" [ngClass]="'booking ' + bookingMeta().className">
   <ng-template pTemplate="header">
     <div class="flex align-items-center gap-2">
       <span cdkDragHandle><i class="pi pi-bars"></i></span>
       <!-- type -->
-      <i [class]="ACTIVITY_TYPE_META[this.activity().type]?.icon"></i>
+      <i [class]="activityTypeMeta[this.activity().type]?.icon"></i>
       <!-- title -->
       <input pInputText [(ngModel)]="activity().title" (ngModelChange)="onChange()"
       placeholder="Nom de l'activité" (click)="$event.stopPropagation()"/>
       <!-- duration -->
       <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
         <i class="pi pi-clock"></i>
-        <input pInputText type="number" [(ngModel)]="activity().duration" (ngModelChange)="onChange()" min="0" step="15" />
-        <span>min</span>
+        <span>{{activity().duration | duration}}</span>
       </div>
-      <!-- booking -->
-      <p-tag [severity]="bookingMeta().severity" [value]="bookingMeta().label" [rounded]="true" (click)="$event.stopPropagation()" />
     </div>
   </ng-template>
     <!-- grid -->

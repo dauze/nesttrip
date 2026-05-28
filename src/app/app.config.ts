@@ -7,6 +7,7 @@ import { environment } from '../environnements/environnement';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
+import {fr} from 'primelocale/fr.json';
 
 const theme = definePreset(Aura, {
     semantic: {
@@ -37,7 +38,8 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
              theme: {
             preset: theme,
-          }
+      },
+      translation: fr
         })
   ]
 };

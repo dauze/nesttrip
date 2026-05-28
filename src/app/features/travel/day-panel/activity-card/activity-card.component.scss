@@ -1,11 +1,5 @@
-.activity  {border-left-width: 0.4rem;}
-.repas { border-left-color: var(--p-activity-repas); }
-.transport { border-left-color: var(--p-activity-transport); }
-.hebergement { border-left-color: var(--p-activity-hebergement); }
-.visite { border-left-color: var(--p-activity-visite); }
-.activite { border-left-color: var(--p-activity-activite); }
-.shopping { border-left-color: var(--p-activity-shopping); }
-.detente { border-left-color: var(--p-activity-detente); }
-.evenement { border-left-color: var(--p-activity-evenement); }
-.nature { border-left-color: var(--p-activity-nature); }
-.soins { border-left-color: var(--p-activity-soins); }
+.booking  {border-left-width: 0.4rem;}
+.to_book    { border-left-color: var(--p-red-500); }
+.booked     { border-left-color: var(--p-green-500); }
+.not_needed { border-left-color: var(--p-blue-500); }
+.waitlist   { border-left-color: var(--p-yellow-500); }

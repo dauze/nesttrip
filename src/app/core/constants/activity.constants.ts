@@ -8,7 +8,7 @@ export interface ActivityTypeMeta {
 
 export interface BookingStatusMeta {
   label: string;
-  severity: 'success' | 'warn' | 'danger' | 'info' | 'secondary';
+  className: string;
 }
 
 export const ACTIVITY_TYPE_META: Record<ActivityType, ActivityTypeMeta> = {
@@ -24,12 +24,11 @@ export const ACTIVITY_TYPE_META: Record<ActivityType, ActivityTypeMeta> = {
   [ActivityType.SOINS]: {label: 'Soins', icon: 'pi pi-plus-circle', },
 };
 
-export const BOOKING_STATUS_META: Record<BookingStatus, BookingStatusMeta> = {
-  [BookingStatus.TO_BOOK]: {label: 'À réserver', severity: 'warn'},
-  [BookingStatus.BOOKED]: {label: 'Réservé', severity: 'success'},
-  [BookingStatus.NOT_NEEDED]: {label: 'Sans réservation', severity: 'secondary'},
-  [BookingStatus.WAITLIST]: {label: 'Liste d\'attente', severity: 'info'},
-  [BookingStatus.CANCELLED]: {label: 'Annulé', severity: 'danger'},
+export const BOOKING_STATUS_META: Record<BookingStatus, {label: string; className: string;}> = {
+  [BookingStatus.TO_BOOK]: {label: 'À réserver', className: 'to_book'},
+  [BookingStatus.BOOKED]: {label: 'Réservé', className: 'booked'},
+  [BookingStatus.NOT_NEEDED]: {label: 'Sans réservation', className: 'not_needed'},
+  [BookingStatus.WAITLIST]: {label: 'Liste d\'attente', className: 'waitlist'},
 };
 
 export const CURRENCY_OPTIONS = [
