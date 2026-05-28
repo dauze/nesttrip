@@ -35,7 +35,7 @@ import {DurationPipe} from '../../../../core/pipes/duration.pipe';
     CommonModule, FormsModule, DragDropModule,
     InputTextModule, TextareaModule, SelectModule, InputNumberModule,
     DatePickerModule, TagModule, ButtonModule, TooltipModule,
-    FileUploadModule, BadgeModule, PanelModule, DurationPipe
+    FileUploadModule, BadgeModule, PanelModule, DurationPipe, TextareaModule
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
