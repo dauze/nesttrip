@@ -1,4 +1,4 @@
-<div class="flex justify-content-center align-items-center min-h-screen bg-transparent p-3">
+<div class="flex justify-content-center align-items-center min-h-screen bg-transparent p-3"  style="min-width: 20rem;">
   <p-card class="w-full max-w-28rem">
     <div class="text-center mb-5">
       <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
@@ -10,9 +10,9 @@
       </p>
     </div>
     <div class="flex flex-column gap-4">
-      <p-button 
-        label="Continuer avec Google" 
-        icon="pi pi-google" 
+      <p-button
+        label="Continuer avec Google"
+        icon="pi pi-google"
         severity="secondary"
         styleClass="w-full justify-content-center"
         [disabled]="loading()"
@@ -25,11 +25,11 @@
 
       <div class="flex flex-column gap-2">
         <label for="email" class="font-medium text-900">Email</label>
-        <input 
-          pInputText 
-          id="email" 
-          type="email" 
-          [(ngModel)]="email" 
+        <input
+          pInputText
+          id="email"
+          type="email"
+          [(ngModel)]="email"
           placeholder="vous@exemple.com"
           autocomplete="email"
           [invalid]="!!errorMsg()"
@@ -38,10 +38,10 @@
 
       <div class="flex flex-column gap-2">
         <label for="password" class="font-medium text-900">Mot de passe</label>
-        <p-password 
+        <p-password
           id="password"
-          [(ngModel)]="password" 
-          [toggleMask]="true" 
+          [(ngModel)]="password"
+          [toggleMask]="true"
           [feedback]="false"
           placeholder="••••••••"
           autocomplete="current-password"
@@ -55,8 +55,8 @@
         <p-message severity="error" [text]="errorMsg()" styleClass="w-full justify-content-start"></p-message>
       }
 
-      <p-button 
-        [label]="isRegister() ? 'Créer mon compte' : 'Se connecter'" 
+      <p-button
+        [label]="isRegister() ? 'Créer mon compte' : 'Se connecter'"
         styleClass="w-full justify-content-center mt-2"
         [loading]="loading()"
         (onClick)="submitEmail()">
@@ -64,14 +64,14 @@
 
       <p class="text-center text-color-secondary m-0 mt-2">
         {{ isRegister() ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
-        <p-button 
-          [label]="isRegister() ? 'Se connecter' : 'S\'inscrire'" 
-          link="true" 
+        <p-button
+          [label]="isRegister() ? 'Se connecter' : 'S\'inscrire'"
+          link="true"
           styleClass="p-0 vertical-align-baseline ml-1 font-semibold"
           (onClick)="toggleMode()">
         </p-button>
       </p>
-      
+
     </div>
   </p-card>
 </div>
