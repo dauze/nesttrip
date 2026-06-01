@@ -255,21 +255,6 @@ export class InfosComponent {
     this.updateElements(item, newElements);
   }
 
-  sortPredicate(item: Item) {
-    return (index: number, dragged: CdkDrag<Point>) => {
-      // mode INFO => autorisé partout
-      if (item.type !== InfoType.TODO) return true;
-
-      const elements = item.elements;
-
-      // index max autorisé = nb de unchecked
-      const maxIndex = elements.filter(p => !p.checked).length;
-
-      // interdit de passer dans la zone checked
-      return index < maxIndex;
-    };
-  }
-
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   private newPoint(text = '', checked = false): Point {

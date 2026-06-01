@@ -37,18 +37,16 @@
       <div
         cdkDropList
         [cdkDropListData]="item.elements"
-        [cdkDropListSortPredicate]="sortPredicate(item)"
         (cdkDropListDropped)="onDropPoint(item, $event)"
         class="flex flex-column"
       >
         @for (point of item.elements; track point.id) {
+          @if(item.type !== InfoType.TODO || !point.checked){
           <div class="flex align-items-center gap-2 w-full pl-3"
-          cdkDrag  [cdkDragDisabled]="item.type === InfoType.TODO && point.checked">
+          cdkDrag>
             <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem">
-           @if (item.type !== InfoType.TODO || !point.checked) {
               <i class="pi pi-ellipsis-v"></i>
               <i class="pi pi-ellipsis-v"></i>
-           }
             </span>
             @if (item.type === InfoType.TODO) {
               <p-checkbox
@@ -76,6 +74,45 @@
               [attr.data-index]="$index"
             ></textarea>
           </div>
+          }
+        }
+        @if (item.type === InfoType.TODO && item.elements.some(p => p.checked)) {
+          <p-panel [toggleable]="true" [collapsed]="false" class="border-none">
+            <ng-template pTemplate="header">
+              <span class="text-sm text-color-secondary">
+                Terminées ({{ item.elements.filter(p => p.checked).length }})
+              </span>
+            </ng-template>
+            @for (point of item.elements; track point.id) {
+              @if (point.checked) {
+                <div class="flex align-items-center gap-2 w-full opacity-70 pl-2">
+                  <span class="w-1rem"></span>
+                  <p-checkbox
+                    [binary]="true"
+                    [ngModel]="point.checked"
+                    (ngModelChange)=" toggleCheck(item, item.elements.indexOf(point))"
+                  />
+                  <textarea
+                    pTextarea
+                    [autoResize]="true"
+                    [rows]="1"
+                    [value]="point.text"
+                    class="flex-1 overflow-hidden min-w-0"
+                    [class.line-through]="item.type === InfoType.TODO && point.checked"
+                    [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
+                    (input)="onTextChange(item, $index, $any($event.target).value)"
+                    (keydown.enter)="onEnterRow(item, $index, $any($event))"
+                    (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
+                    (keydown.delete)="onDeleteRow(item, $index, $any($event))"
+                    (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
+                    (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
+                    [attr.data-item-id]="item.id"
+                    [attr.data-index]="$index"
+                  ></textarea>
+                </div>
+              }
+            }
+          </p-panel>
         }
       </div>
     </p-panel>
