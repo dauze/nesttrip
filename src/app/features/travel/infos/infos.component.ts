@@ -51,13 +51,26 @@ export class InfosComponent {
       id: crypto.getRandomValues(new Uint32Array(1))[0],
       title: '',
       type: this.InfoType.TODO,
-      elements: [this.newPoint()]
+      elements: []
     };
     this.localItems.set([...this.localItems(), newItem]);
     this.infosService.createItem(this.tripId(), newItem).subscribe({
       error: () => this.localItems.set(this.localItems().filter(i => i.id !== newItem.id))
     });
     this.focusTitleWithRetry(newItem.id);
+  }
+
+  addPoint(item: Item): void {
+    const elements = [...item.elements];
+    elements.push(this.newPoint('', false));
+    this.updateElements(item, elements);
+    this.focusRow(item.id, elements.length - 1, 0);
+  }
+
+  removePoint(item: Item, index: number): void {
+    const elements = [...item.elements];
+    elements.splice(index, 1);
+    this.updateElements(item, elements);
   }
 
   confirmDelete(item: Item): void {
