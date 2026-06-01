@@ -40,7 +40,13 @@
             <i class="pi pi-clock"></i>
             <span>Durée</span>
           </label>
-          <p-inputNumber [(ngModel)]="activity().duration" (ngModelChange)="onChange()" [min]="0" [step]="15" suffix=" min" />
+          <p-inputMask
+            mask="99h99"
+            [unmask]="false"
+            [(ngModel)]="durationDisplay"
+            (ngModelChange)="onDurationChange($event)"
+            placeholder="02h30"
+          />
         </div>
       </div>
       <!-- BOOKING -->
@@ -50,7 +56,7 @@
             <i class="pi pi-bookmark"></i>
             <span>Réservation</span>
           </label>
-          <p-select class="flex-1" [options]="bookingStatusOptions" [(ngModel)]="activity().booking!.status" (ngModelChange)="onChange()"
+          <p-select [options]="bookingStatusOptions" [(ngModel)]="activity().booking!.status" (ngModelChange)="onChange()"
             optionLabel="label" optionValue="value" appendTo="body" />
         </div>
       </div>
@@ -64,7 +70,7 @@
               <i class="pi pi-calendar"></i>
               <span>Deadline</span>
             </label>
-            <p-datepicker [(ngModel)]="activity().booking!.deadline" (ngModelChange)="onChange()" dateFormat="dd/mm/yy" [showIcon]="true"
+            <p-datepicker class="w-12rem" [(ngModel)]="activity().booking!.deadline" (ngModelChange)="onChange()" dateFormat="dd/mm/yy" [showIcon]="true"
               appendTo="body" placeholder="Aucune deadline" />
           </div>
         </div>

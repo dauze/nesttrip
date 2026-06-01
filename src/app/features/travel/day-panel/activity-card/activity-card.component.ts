@@ -12,6 +12,7 @@ import { TooltipModule }     from 'primeng/tooltip';
 import { FileUploadModule }  from 'primeng/fileupload';
 import { BadgeModule }       from 'primeng/badge';
 import { DatePickerModule }  from 'primeng/datepicker';
+import { InputMask }  from 'primeng/inputmask';
 import { PanelModule }       from 'primeng/panel';
 import { ActivityService }   from '../../../../core/services/activity.service';
 import { FileService }       from '../../../../core/services/file.service';
@@ -35,7 +36,8 @@ import {DurationPipe} from '../../../../core/pipes/duration.pipe';
     CommonModule, FormsModule, DragDropModule,
     InputTextModule, TextareaModule, SelectModule, InputNumberModule,
     DatePickerModule, TagModule, ButtonModule, TooltipModule,
-    FileUploadModule, BadgeModule, PanelModule, DurationPipe, TextareaModule
+    FileUploadModule, BadgeModule, PanelModule, DurationPipe, TextareaModule,
+    InputMask
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -101,5 +103,30 @@ export class ActivityCardComponent {
         );
       })
     ).subscribe();
+  }
+
+  get durationDisplay(): string {
+  const duration = this.activity().duration ?? 0;
+
+  const h = Math.floor(duration / 60);
+  const m = duration % 60;
+
+  return `${h.toString().padStart(2, '0')}h${m
+    .toString()
+    .padStart(2, '0')}`;
+  }
+
+  onDurationChange(value: string): void {
+    const match = value.match(/^(\d{2})h(\d{2})$/);
+
+    if (!match) {
+      return;
+    }
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+
+    this.activity().duration = hours * 60 + minutes;
+    this.onChange();
   }
 }
