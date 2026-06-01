@@ -3,20 +3,19 @@ import { Info, Item, Point } from '../../../core/models/firebase/info.models';
 import { InfoType } from '../../../core/enums/infos.type';
 import { InfoService } from '../../../core/services/info.service';
 import { PanelModule } from 'primeng/panel';
-import { InputTextModule } from 'primeng/inputtext';
-import { TextareaModule } from 'primeng/textarea';
+import { Textarea } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { Button } from 'primeng/button';
+import { Fieldset } from 'primeng/fieldset';
 import { Checkbox } from 'primeng/checkbox';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AutoResizeFixDirective } from '../../../core/pipes/auto-resize-area.pipe';
 import { ConfirmationService } from 'primeng/api';
-import { CdkDrag } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, InputTextModule, TextareaModule, FormsModule, Checkbox, ButtonModule, DragDropModule, AutoResizeFixDirective],
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, AutoResizeFixDirective, Fieldset],
   templateUrl: './infos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -136,7 +135,7 @@ export class InfosComponent {
 
     const elements = [...current.elements];
     elements[index] = { ...elements[index], text: before };
-    elements.splice(index + 1, 0, this.newPoint(after, current.elements[index].checked)); // 👈
+    elements.splice(index + 1, 0, this.newPoint(after, current.elements[index].checked));
 
     this.updateElements(item, elements);
     this.focusRow(item.id, index + 1, 0);
@@ -219,40 +218,21 @@ export class InfosComponent {
       }, 50);
     });
   }
+  
   onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
     const current = this.localItems().find(i => i.id === item.id)!;
+    const elements = [...current.elements];
 
-    // mode INFO => free drag
     if (item.type !== InfoType.TODO) {
-      const elements = [...current.elements];
       moveItemInArray(elements, event.previousIndex, event.currentIndex);
       this.updateElements(item, elements);
       return;
     }
 
-    const elements = [...current.elements];
-
-    // Séparer checked / unchecked
+    // Seuls les unchecked sont dans la liste, on reorder directement
     const unchecked = elements.filter(p => !p.checked);
-    const checked = elements.filter(p => p.checked);
-
-    const dragged = elements[event.previousIndex];
-
-    // sécurité
-    if (dragged.checked) return;
-
-    // Empêche de drop dans la zone checked
-    if (event.currentIndex >= unchecked.length) {
-      return; // ❌ interdit
-    }
-
-    // reorder uniquement dans unchecked
     moveItemInArray(unchecked, event.previousIndex, event.currentIndex);
-
-    // reconstruire
-    const newElements = [...unchecked, ...checked];
-
-    this.updateElements(item, newElements);
+    this.updateElements(item, [...unchecked, ...elements.filter(p => p.checked)]);
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────

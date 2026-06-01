@@ -77,10 +77,10 @@
           }
         }
         @if (item.type === InfoType.TODO && item.elements.some(p => p.checked)) {
-          <p-panel [toggleable]="true" [collapsed]="false" class="border-none">
-            <ng-template pTemplate="header">
+          <p-fieldset [toggleable]="true" [collapsed]="true" styleClass="completed-fieldset border-none p-2">
+            <ng-template #header>
               <span class="text-sm text-color-secondary">
-                Terminées ({{ item.elements.filter(p => p.checked).length }})
+                {{ item.elements.filter(p => p.checked).length }} éléments terminés
               </span>
             </ng-template>
             @for (point of item.elements; track point.id) {
@@ -112,7 +112,7 @@
                 </div>
               }
             }
-          </p-panel>
+          </p-fieldset>
         }
       </div>
     </p-panel>
