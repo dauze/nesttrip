@@ -1,6 +1,5 @@
-import { Component, inject, input, signal } from '@angular/core';
-import { TimelineComponent } from './timeline/timeline.component';
-import { ActivityCardComponent } from "./activity-card/activity-card.component";
+import { Component, inject, input } from '@angular/core';
+import { Timeline } from './timeline/timeline';
 import { Day } from '../../../core/models/dto/trip.interface';
 import { moveItemInArray, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { Activity } from '../../../core/models/dto/activity.interface';
@@ -9,21 +8,22 @@ import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
 import { ActivityType } from '../../../core/enums/activites-type.enum';
 import { BookingStatus } from '../../../core/enums/booking.status';
+import { ActivityCard } from './activity-card/activity-card';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
   imports: [
-    TimelineComponent,
-    ActivityCardComponent,
+    Timeline,
+    ActivityCard,
     DragDropModule,
     PanelModule,
     Button
 ],
-  styleUrl:'day-panel.component.scss',
-  templateUrl: 'day-panel.component.html',
+  styleUrl:'day-panel.scss',
+  templateUrl: 'day-panel.html',
 })
-export class DayPanelComponent {
+export class DayPanel {
   private readonly activityService = inject(ActivityService);
 
   readonly day = input.required<Day>();

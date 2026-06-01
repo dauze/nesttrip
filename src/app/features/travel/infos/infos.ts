@@ -16,10 +16,10 @@ import { ConfirmationService } from 'primeng/api';
   selector: 'app-infos',
   standalone: true,
   imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, AutoResizeFixDirective, Fieldset],
-  templateUrl: './infos.component.html',
+  templateUrl: './infos.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InfosComponent {
+export class Infos {
   private readonly infosService = inject(InfoService);
   private readonly confirmationService = inject(ConfirmationService);
   readonly info = input.required<Info>();

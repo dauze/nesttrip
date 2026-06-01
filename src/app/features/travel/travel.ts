@@ -1,9 +1,9 @@
 // trip-layout.component.ts
-import { Component, inject, input, computed, OnInit, Signal, signal } from '@angular/core';
+import { Component, inject, computed, OnInit, Signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
-import { DayPanelComponent } from './day-panel/day-panel.component';
-import { InfosComponent } from './infos/infos.component';
+import { DayPanel } from './day-panel/day-panel';
+import { Infos } from './infos/infos';
 import { AuthService } from '../../core/services/auth.service';
 import { TripService } from '../../core/services/trip.service';
 import { Trip } from '../../core/models/dto/trip.interface';
@@ -16,12 +16,12 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 @Component({
   selector: 'app-travel',
   standalone: true,
-  imports: [ButtonModule, TabsModule, DayPanelComponent, InfosComponent, ToolbarModule, MenuModule, CardModule, ConfirmDialog],
+  imports: [ButtonModule, TabsModule, Infos, ToolbarModule, MenuModule, CardModule, ConfirmDialog, DayPanel],
   providers: [ConfirmationService],
-  styleUrl: 'travel.component.scss',
-  templateUrl: 'travel.component.html',
+  styleUrl: 'travel.scss',
+  templateUrl: 'travel.html',
 })
-export class TravelComponent implements OnInit{
+export class Travel implements OnInit{
   protected readonly tripService = inject(TripService);
   protected readonly authService = inject(AuthService);
   readonly trip: Signal<Trip | undefined> = this.tripService.activeTrip;

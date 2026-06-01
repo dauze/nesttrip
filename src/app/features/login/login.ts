@@ -13,10 +13,10 @@ import { MessageModule } from 'primeng/message';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, ButtonModule, CardModule, DividerModule, InputTextModule, PasswordModule,MessageModule],
-  templateUrl: 'login.component.html',
-  styleUrls: ['login.component.scss']
+  templateUrl: 'login.html',
+  styleUrls: ['login.scss']
 })
-export class LoginComponent {
+export class Login {
   private authService = inject(AuthService);
 
   email = '';

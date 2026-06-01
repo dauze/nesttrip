@@ -12,10 +12,10 @@ import {ACTIVITY_TYPE_META} from '../../../../core/constants/activity.constants'
   selector: 'app-timeline',
   standalone: true,
   imports: [SelectModule, FormsModule, PanelModule, DurationPipe, DividerModule],
-  templateUrl: 'timeline.component.html',
-  styleUrl: 'timeline.component.scss',
+  templateUrl: 'timeline.html',
+  styleUrl: 'timeline.scss',
 })
-export class TimelineComponent {
+export class Timeline {
   readonly activities = input.required<Activity[]>();
   readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META;
 }

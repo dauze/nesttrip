@@ -39,10 +39,10 @@ import {DurationPipe} from '../../../../core/pipes/duration.pipe';
     FileUploadModule, BadgeModule, PanelModule, DurationPipe, TextareaModule,
     InputMask
   ],
-  templateUrl: './activity-card.component.html',
-  styleUrl: './activity-card.component.scss',
+  templateUrl: './activity-card.html',
+  styleUrl: './activity-card.scss',
 })
-export class ActivityCardComponent {
+export class ActivityCard {
   readonly activity   = input.required<Activity>();
   readonly tripId     = input.required<number>();
   readonly currentDay = input.required<Day>();
