@@ -9,14 +9,9 @@
 
 @media screen and (max-width: 768px) {
     :root {
-        font-size: 14px;
+        font-size: 15px;
     }
 }
-
-body {
-  margin: 0;
-}
-
 
 .p-card {
   --p-card-body-padding: 0.5rem;
@@ -41,7 +36,16 @@ body {
 .p-dialog-content {
   --p-dialog-content-padding:0 0.5rem 0.5rem 0.5rem;
 }
+.p-checkbox-box {
+  --p-checkbox-transition-duration: 0s;
+}
 
 .p-panel-content {
     --p-panel-content-padding:0 0.5rem 0.5rem 0.5rem;
+}
+
+
+.pi-ellipsis-v {
+    display: block;
+    width: 6px;
 }

@@ -3,19 +3,19 @@
     <p-panel [toggleable]="true" cdkDrag>
       <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
-          <span cdkDragHandle class="flex-shrink-0"><i class="pi pi-bars"></i></span>
-          <textarea 
+          <span cdkDragHandle class="flex-shrink-0 cursor-move"><i class="pi pi-bars"></i></span>
+          <textarea
             pTextarea
             class="flex-1 overflow-hidden font-bold min-w-0"
             [autoResize]="true"
-            [rows]="1" 
-            [value]="item.title" 
-            (blur)="updateTitle(item, $any($event.target).value.trim())" 
+            [rows]="1"
+            [value]="item.title"
+            (blur)="updateTitle(item, $any($event.target).value.trim())"
             [attr.data-title-id]="item.id"
             (keydown.arrowdown)="focusRow(item.id, 0, 0)"
           ></textarea>
           <div class="flex gap-1 flex-shrink-0">
-            <p-button 
+            <p-button
               [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
               [rounded]="true"
               [text]="true"
@@ -23,7 +23,7 @@
               [outlined]="true"
               (onClick)="toggleType(item)"
             />
-            <p-button 
+            <p-button
               icon="pi pi-trash"
               [rounded]="true"
               [text]="true"
@@ -33,11 +33,25 @@
             />
           </div>
         </div>
-      </ng-template>        
+      </ng-template>
+      <div
+        cdkDropList
+        [cdkDropListData]="item.elements"
+        [cdkDropListSortPredicate]="sortPredicate(item)"
+        (cdkDropListDropped)="onDropPoint(item, $event)"
+        class="flex flex-column"
+      >
         @for (point of item.elements; track point.id) {
-          <div class="flex align-items-center gap-2 w-full">
+          <div class="flex align-items-center gap-2 w-full pl-3"
+          cdkDrag  [cdkDragDisabled]="item.type === InfoType.TODO && point.checked">
+            <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem">
+           @if (item.type !== InfoType.TODO || !point.checked) {
+              <i class="pi pi-ellipsis-v"></i>
+              <i class="pi pi-ellipsis-v"></i>
+           }
+            </span>
             @if (item.type === InfoType.TODO) {
-              <p-checkbox 
+              <p-checkbox
                 class="flex-shrink-0"
                 [binary]="true"
                 [ngModel]="point.checked"
@@ -48,12 +62,12 @@
               pTextarea
               [autoResize]="true"
               [rows]="1"
-              [value]="point.text" 
+              [value]="point.text"
               class="flex-1 overflow-hidden min-w-0"
               [class.line-through]="item.type === InfoType.TODO && point.checked"
               [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
-              (keydown.enter)="onEnterRow(item, $index, $any($event))" 
+              (keydown.enter)="onEnterRow(item, $index, $any($event))"
               (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
               (keydown.delete)="onDeleteRow(item, $index, $any($event))"
               (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
@@ -63,6 +77,7 @@
             ></textarea>
           </div>
         }
+      </div>
     </p-panel>
   }
   <div class="flex justify-content-center w-full">
