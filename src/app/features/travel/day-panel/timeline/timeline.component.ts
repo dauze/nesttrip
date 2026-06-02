@@ -1,21 +1,21 @@
+import {Activity} from '../activity.model';
 import { Component, input } from '@angular/core';
 
 import { SelectModule } from 'primeng/select';
 import {FormsModule} from '@angular/forms';
-import {Activity} from '@core/models/dto/activity.interface';
 import { PanelModule } from 'primeng/panel';
 import {DividerModule} from 'primeng/divider';
-import {DurationPipe} from '@core/pipes/duration.pipe';
-import {ACTIVITY_TYPE_META} from '@core/constants/activity.constants';
+import {DurationPipe} from '@shared/pipes/duration.pipe';
+import {ACTIVITY_TYPE_META} from '../activity-card/activity.constants';
 
 @Component({
   selector: 'app-timeline',
   standalone: true,
   imports: [SelectModule, FormsModule, PanelModule, DurationPipe, DividerModule],
-  templateUrl: 'timeline.html',
-  styleUrl: 'timeline.scss',
+  templateUrl: 'timeline.component.html',
+  styleUrl: 'timeline.component.scss',
 })
-export class Timeline {
+export class TimelineComponent {
   readonly activities = input.required<Activity[]>();
   readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META;
 }

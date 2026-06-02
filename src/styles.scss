@@ -2,50 +2,55 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
 :root {
-    --p-font-family: 'Plus Jakarta Sans', sans-serif;
-    font-family: var(--p-font-family);
-    font-size: 16px;
+  --p-font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--p-font-family), serif;
+  font-size: 16px;
 }
 
 @media screen and (max-width: 768px) {
-    :root {
-        font-size: 15px;
-    }
+  :root {
+    font-size: 15px;
+  }
 }
 
 .p-card {
   --p-card-body-padding: 0.5rem;
 }
+
 .p-tabpanels {
   --p-tabs-tabpanel-padding: 0.5rem;
 }
+
 .p-textarea {
-    --p-textarea-background: transparent;
-    --p-textarea-border-color: transparent;
-    --p-textarea-shadow: none;
-    --p-textarea-transition-duration: 0s;
-    --p-textarea-hover-border-color:transparent;
-    --p-textarea-focus-border-color: transparent;
+  --p-textarea-background: transparent;
+  --p-textarea-border-color: transparent;
+  --p-textarea-shadow: none;
+  --p-textarea-transition-duration: 0s;
+  --p-textarea-hover-border-color: transparent;
+  --p-textarea-focus-border-color: transparent;
 }
+
 .p-dialog-header {
-  --p-dialog-header-padding:0;
+  --p-dialog-header-padding: 0;
 }
+
 .p-dialog-footer {
-  --p-dialog-footer-padding:0 0.5rem 0.5rem 0.5rem;
+  --p-dialog-footer-padding: 0 0.5rem 0.5rem 0.5rem;
 }
+
 .p-dialog-content {
-  --p-dialog-content-padding:0 0.5rem 0.5rem 0.5rem;
+  --p-dialog-content-padding: 0 0.5rem 0.5rem 0.5rem;
 }
+
 .p-checkbox-box {
   --p-checkbox-transition-duration: 0s;
 }
 
 .p-panel-content {
-    --p-panel-content-padding:0 0.5rem 0.5rem 0.5rem;
+  --p-panel-content-padding: 0 0.5rem 0.5rem 0.5rem;
 }
 
-
 .pi-ellipsis-v {
-    display: block;
-    width: 6px;
+  display: block;
+  width: 6px;
 }

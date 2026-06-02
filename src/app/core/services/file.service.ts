@@ -1,7 +1,7 @@
-import { Injectable, inject } from '@angular/core';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { FirebaseService } from './firebase.service';
+import { inject, Injectable } from '@angular/core';
+import { deleteObject, getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import { from, Observable, switchMap } from 'rxjs';
+import { FirebaseService } from '@core/infra/firebase/firebase.service';
 
 @Injectable({ providedIn: 'root' })
 export class FileService {
@@ -11,7 +11,7 @@ export class FileService {
     const storageRef = ref(this.storage, path);
     return from(uploadBytes(storageRef, file)).pipe(
       switchMap(() => from(getDownloadURL(storageRef))),
-      switchMap(url => [{ url, name: file.name }])
+      switchMap((url) => [{ url, name: file.name }]),
     );
   }
 
