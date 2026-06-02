@@ -1,6 +1,5 @@
-import { Info } from "../firebase/info.models";
-import { Activity } from "./activity.interface";
-
+import {Activity} from './day-panel/activity.model';
+import {Info} from './infos/info.models';
 
 export interface Trip {
   id: number;

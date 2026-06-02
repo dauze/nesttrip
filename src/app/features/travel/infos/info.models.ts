@@ -1,4 +1,4 @@
-import { InfoType } from "../../enums/infos.type";
+import {InfoType} from "@core/enums/infos.type";
 
 export interface Info {
   id: number;
@@ -9,11 +9,11 @@ export interface Item {
   id: number;
   title: string;
   type: InfoType;
-  elements : Point[]
+  elements: Point[];
 }
 
 export interface Point {
-  id: number
+  id: number;
   text: string;
   checked: boolean;
 }

@@ -1,13 +1,13 @@
 import { Component, inject, input } from '@angular/core';
 import { Timeline } from './timeline/timeline';
-import { Day } from '../../../core/models/dto/trip.interface';
+import {Day} from '@core/models/dto/trip.interface';
 import { moveItemInArray, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
-import { Activity } from '../../../core/models/dto/activity.interface';
-import { ActivityService } from '../../../core/services/activity.service';
+import {Activity} from '@core/models/dto/activity.interface';
+import {ActivityService} from '@core/services/activity.service';
 import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
-import { ActivityType } from '../../../core/enums/activites-type.enum';
-import { BookingStatus } from '../../../core/enums/booking.status';
+import {ActivityType} from '@core/enums/activites-type.enum';
+import {BookingStatus} from '@core/enums/booking.status';
 import { ActivityCard } from './activity-card/activity-card';
 
 @Component({
@@ -34,7 +34,7 @@ export class DayPanel {
     this.activityService.reorderActivities(this.tripId(), this.day().id, this.day().activities).subscribe();
   }
   addActivity(){
-    this.activityService.createActivity(this.tripId(), this.day().id, 
+    this.activityService.createActivity(this.tripId(), this.day().id,
     {
       id: crypto.getRandomValues(new Uint32Array(1))[0],
       title: '',

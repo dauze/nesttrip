@@ -4,9 +4,9 @@ import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { DayPanel } from './day-panel/day-panel';
 import { Infos } from './infos/infos';
-import { AuthService } from '../../core/services/auth.service';
-import { TripService } from '../../core/services/trip.service';
-import { Trip } from '../../core/models/dto/trip.interface';
+import {AuthService} from '@core/services/auth.service';
+import {TravelService} from './travel.service';
+import {Travel} from './travel.model';
 import { ToolbarModule } from 'primeng/toolbar';
 import { MenuModule } from 'primeng/menu';
 import { ConfirmationService, MenuItem } from 'primeng/api';
@@ -22,9 +22,9 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   templateUrl: 'travel.html',
 })
 export class Travel implements OnInit{
-  protected readonly tripService = inject(TripService);
+  protected readonly travelService = inject(TravelService);
   protected readonly authService = inject(AuthService);
-  readonly trip: Signal<Trip | undefined> = this.tripService.activeTrip;
+  readonly trip: Signal<Trip | undefined> = this.travelService.activeTrip;
 
   items: MenuItem[] = [
             {
@@ -40,7 +40,7 @@ export class Travel implements OnInit{
         ];;
 
   ngOnInit(): void {
-    this.tripService.activeTripId.set(1); //TODO changer car en dur
+    this.travelService.activeTripId.set(1); //TODO changer car en dur
   }
 
 

@@ -14,20 +14,20 @@ import { BadgeModule }       from 'primeng/badge';
 import { DatePickerModule }  from 'primeng/datepicker';
 import { InputMask }  from 'primeng/inputmask';
 import { PanelModule }       from 'primeng/panel';
-import { ActivityService }   from '../../../../core/services/activity.service';
-import { FileService }       from '../../../../core/services/file.service';
-import { Activity }          from '../../../../core/models/dto/activity.interface';
-import { Day }               from '../../../../core/models/dto/trip.interface';
-import { BookingStatus }     from '../../../../core/enums/booking.status';
+import {ActivityService} from '@core/services/activity.service';
+import {FileService} from '@core/services/file.service';
+import {Activity} from '@core/models/dto/activity.interface';
+import {Day} from '@core/models/dto/trip.interface';
+import {BookingStatus} from '@core/enums/booking.status';
 import {
   ACTIVITY_TYPE_META,
   BOOKING_STATUS_META,
   ACTIVITY_TYPE_OPTIONS,
   BOOKING_STATUS_OPTIONS,
   CURRENCY_OPTIONS,
-} from '../../../../core/constants/activity.constants';
+} from '@core/constants/activity.constants';
 import { switchMap } from 'rxjs';
-import {DurationPipe} from '../../../../core/pipes/duration.pipe';
+import {DurationPipe} from '@core/pipes/duration.pipe';
 
 @Component({
   selector: 'app-activity-card',

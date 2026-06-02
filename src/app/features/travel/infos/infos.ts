@@ -1,21 +1,20 @@
-import { Component, inject, input, ChangeDetectionStrategy, signal, effect } from '@angular/core';
-import { Info, Item, Point } from '../../../core/models/firebase/info.models';
-import { InfoType } from '../../../core/enums/infos.type';
-import { InfoService } from '../../../core/services/info.service';
+import {Component, inject, input, ChangeDetectionStrategy, signal, effect} from '@angular/core';
 import { PanelModule } from 'primeng/panel';
 import { Textarea } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Fieldset } from 'primeng/fieldset';
 import { Checkbox } from 'primeng/checkbox';
-import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-import { AutoResizeFixDirective } from '../../../core/pipes/auto-resize-area.pipe';
+import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import { ConfirmationService } from 'primeng/api';
+import {InfoType} from '@core/enums/infos.type';
+import {Info, Item, Point} from './info.models';
+import {InfoService} from './info.service';
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, AutoResizeFixDirective, Fieldset],
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset],
   templateUrl: './infos.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -231,7 +230,7 @@ export class Infos {
       }, 50);
     });
   }
-  
+
   onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
     const current = this.localItems().find(i => i.id === item.id)!;
     const elements = [...current.elements];

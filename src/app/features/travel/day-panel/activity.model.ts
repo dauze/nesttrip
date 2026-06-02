@@ -1,5 +1,5 @@
-import { ActivityType } from "../../enums/activites-type.enum";
-import { BookingStatus } from "../../enums/booking.status";
+import {ActivityType} from '@core/enums/activites-type.enum';
+import {BookingStatus} from '@core/enums/booking.status';
 
 export interface Activity {
   id: number;
