@@ -1,4 +1,5 @@
-import { Component, computed, inject, OnInit, Signal } from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {Component, computed, inject, OnInit, signal, Signal, effect} from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { DayPanelComponent } from './day-panel/day-panel.component';
@@ -11,6 +12,7 @@ import { MenuModule } from 'primeng/menu';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialog } from 'primeng/confirmdialog';
+import {SwipeDirective} from '@app/shared/directives/swipe.directive';
 
 @Component({
   selector: 'app-travel',
@@ -18,12 +20,14 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   imports: [
     ButtonModule,
     TabsModule,
+    FormsModule,
     Infos,
     ToolbarModule,
     MenuModule,
     CardModule,
     ConfirmDialog,
     DayPanelComponent,
+    SwipeDirective
   ],
   providers: [ConfirmationService],
   styleUrl: 'travel.component.scss',
@@ -51,15 +55,37 @@ export class TravelComponent implements OnInit {
     this.travelService.activeTravelId.set(1); //TODO changer car en dur
   }
 
+  activeDay = signal<string>('info');
+
+  private initialized = false;
+
+  constructor() {
+    effect(() => {
+      const trip = this.trip();
+      if (!trip || this.initialized) return;
+
+      this.activeDay.set(this.getTodayId(trip));
+      this.initialized = true;
+    });
+  }
+
   protected readonly tabs = computed(() => [
-    { id: 'info', label: 'Général' },
+    {id: 'info', label: 'Général'},
     ...(this.trip()
       ? this.trip()!.days.map((d) => ({
-          id: d.id.toISOString(),
-          label: this.formatDate(d.id),
-        }))
+        id: d.id.toISOString(),
+        label: this.formatDate(d.id),
+      }))
       : []),
   ]);
+
+  nextTab() {
+    this.moveTab(1);
+  }
+
+  prevTab() {
+    this.moveTab(-1);
+  }
 
   protected formatDate(date: Date): string {
     return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
@@ -67,5 +93,25 @@ export class TravelComponent implements OnInit {
 
   protected onTabChange(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  private moveTab(offset: number) {
+    const list = this.tabs().map(t => t.id);
+    const i = list.indexOf(this.activeDay());
+
+    const next = list[i + offset];
+    if (next) {
+      this.activeDay.set(next);
+    }
+  }
+
+  private getTodayId(trip: Travel): string {
+    const today = new Date().toDateString();
+
+    const day = trip.days.find(d =>
+      new Date(d.id).toDateString() === today
+    );
+
+    return day ? day.id.toISOString() : 'info';
   }
 }
