@@ -17,8 +17,8 @@ import {Place} from '../models/place.dto';
 export class GooglePlaceService {
   private http = inject(HttpClient);
 
-  private readonly searchTerm: Signal<string> = signal('');
-  private readonly selectedId: Signal<string> = signal<string>(null);
+  private readonly searchTerm = signal('');
+  private readonly selectedId = signal<string>('');
 
 
   setSearchTerm(term: string) {
@@ -38,7 +38,7 @@ export class GooglePlaceService {
       map(q => q.trim()),
       switchMap(q =>
         this.http
-          .get<Place[]>('/api/etablissements', {params: {q}})
+          .get<Partial<Place>[]>('/api/etablissements', {params: {q}})
           .pipe(
             catchError(() => of([]))
           )
@@ -48,19 +48,14 @@ export class GooglePlaceService {
     {initialValue: []}
   );
 
-  readonly place = toSignal(
-    toObservable(this.selectedId).pipe(
-      distinctUntilChanged(),
-      filter(q => !!q),
-      map(q => q.trim()),
-      switchMap(id => this.http
-        .get<Place>(`/api/etablissements/${id}`)
-        .pipe(
-          catchError(() => of(null))
-        )
-      ),
-      shareReplay({bufferSize: 1, refCount: true})
-    ),
-    {initialValue: null}
+  readonly place$ = toObservable(this.selectedId).pipe(
+  distinctUntilChanged(),
+  filter(id => !!id),
+  switchMap(id =>
+    this.http.get<Place>(`/api/etablissement/${id}`).pipe(
+      catchError(() => of(null))
+    )
+  ),
+  shareReplay({bufferSize: 1, refCount: true})
   );
 }

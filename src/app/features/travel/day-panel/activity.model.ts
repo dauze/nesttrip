@@ -7,12 +7,21 @@ export interface Activity {
   type: ActivityType;
   duration: number;
   price: Price;
-  placeId: string;
   booking: Booking;
   notes: string;
   files: ActivityFile[];
-  website: string;
-  phone: string;
+    //Google
+  placeId: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  rating?: number;
+  openingHours?: string[];
+  phone?: string;
+  website?: string;
+  types?: string[];
+  priceLevel?: number;
+  photos?: string[];
 }
 
 export interface Price {

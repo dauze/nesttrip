@@ -23,7 +23,6 @@ export interface ActivityFirebase {
   types?: string[];
   priceLevel?: number;
   photos?: string[];
-  source: 'google' | 'manual';
 }
 export interface PriceFirebase {
   amount: number;

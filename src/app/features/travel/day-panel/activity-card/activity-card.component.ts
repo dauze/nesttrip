@@ -10,18 +10,18 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
+import { AutoComplete, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { BadgeModule } from 'primeng/badge';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputMask } from 'primeng/inputmask';
 import { PanelModule } from 'primeng/panel';
-import {AutoComplete} from 'primeng/autoComplete';
 import { BookingStatus } from '@core/enums/booking.status';
 import { Activity } from '@features/travel/day-panel/activity.model';
-import { DurationPipe } from '@shared/pipes/duration.pipe';
+import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
 import { Day } from '@features/travel/travel.model';
 import { ActivityService } from '@features/travel/day-panel/activity.service';
 import { FileService } from '@core/services/file.service';
-import {GooglePlacesService} from '@core/services/google.places.service';
+import {GooglePlaceService} from '@core/services/google.places.service';
 import {
   ACTIVITY_TYPE_META,
   ACTIVITY_TYPE_OPTIONS,
@@ -29,7 +29,7 @@ import {
   BOOKING_STATUS_OPTIONS,
   CURRENCY_OPTIONS,
 } from '@features/travel/day-panel/activity-card/activity.constants';
-import { switchMap } from 'rxjs';
+import { filter, first, switchMap } from 'rxjs';
 import {Place} from '@app/core/models/place.dto';
 
 @Component({
@@ -65,7 +65,7 @@ export class ActivityCardComponent {
 
   private readonly activityService = inject(ActivityService);
   private readonly fileService = inject(FileService);
-  private readonly googlePlacesService = inject(GooglePlacesService);
+  private readonly googlePlaceService = inject(GooglePlaceService);
 
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
@@ -73,7 +73,7 @@ export class ActivityCardComponent {
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
-  readonly places = this.googlePlacesService.places;
+  readonly places = this.googlePlaceService.places;
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -103,22 +103,27 @@ export class ActivityCardComponent {
       .subscribe();
   }
 
-
   onSearch() {
-    this.googlePlacesService.setSearchTerm(this.term);
+    this.googlePlaceService.setSearchTerm(this.term);
   }
 
-  onSelect(place: Place) {
-    this.googlePlacesService.setSelectedId(place.placeId);
-    this.googlePlacesService.place
-    //TODO save de
-    //label,
-    //  placeId,
-    //  lat,
-    //  lng,
-    //  source: 'google'
-  }
 
+  onSelect(event: AutoCompleteSelectEvent) { 
+    const place = event.value as Partial<Place>;
+    this.googlePlaceService.setSelectedId(place.placeId ?? '');
+    this.googlePlaceService.place$
+    .pipe(first(), filter((p): p is Place => !!p?.placeId))
+    .subscribe(p => {
+      Object.assign(this.activity(), { 
+        label: p.name, 
+        placeId: p.placeId, 
+        lat: p.latitude, 
+        lng: p.longitude, 
+
+      });
+      this.onChange();
+    });
+  }
 
   onFileSelect(event: { files: File[] }): void {
     for (const file of event.files) {
