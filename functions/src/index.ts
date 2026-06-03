@@ -19,12 +19,12 @@ app.use((req, res, next) => {
 });
 
 // GET /api/etablissements?q=paris+restaurant
-app.get('/etablissements', (req, res) =>
+app.get('/api/etablissements', (req, res) =>
   searchPlaces(req, res, googleApiKey.value())
 );
 
 // GET /api/etablissements/:id
-app.get('/etablissements/:id', (req, res) =>
+app.get('/api/etablissements/:id', (req, res) =>
   getPlace(req, res, googleApiKey.value())
 );
 

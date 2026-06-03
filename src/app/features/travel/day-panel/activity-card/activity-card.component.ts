@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -10,11 +10,12 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
-import { AutoComplete, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { BadgeModule } from 'primeng/badge';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputMask } from 'primeng/inputmask';
 import { PanelModule } from 'primeng/panel';
+import { ProgressSpinner  } from 'primeng/progressspinner';
 import { BookingStatus } from '@core/enums/booking.status';
 import { Activity } from '@features/travel/day-panel/activity.model';
 import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
@@ -53,6 +54,7 @@ import {Place} from '@app/core/models/place.dto';
     DurationPipe,
     TextareaModule,
     AutoComplete,
+    ProgressSpinner,
     InputMask,
   ],
   templateUrl: './activity-card.component.html',
@@ -73,7 +75,7 @@ export class ActivityCardComponent {
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
-  readonly places = this.googlePlaceService.places;
+  readonly places        = this.googlePlaceService.places;
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -90,7 +92,24 @@ export class ActivityCardComponent {
       this.activity().booking?.status ?? BookingStatus.NOT_NEEDED,
     ),
   );
-  term = '';
+  selectedPlace: Pick<Place, 'placeId' | 'name'> | null = null;
+
+
+  constructor() {
+    // Se déclenche quand un nouveau lieu est chargé avec succès
+    effect(() => {
+      const p = this.googlePlaceService.place();
+      if (!p) return;
+
+      Object.assign(this.activity(), {
+        title:   p.name,
+        placeId: p.placeId,
+        lat:     p.latitude,
+        lng:     p.longitude,
+      });
+      this.onChange();
+    });
+  }
 
   onChange(): void {
     this.activityService
@@ -103,26 +122,14 @@ export class ActivityCardComponent {
       .subscribe();
   }
 
-  onSearch() {
-    this.googlePlaceService.setSearchTerm(this.term);
+  onSearch(event: AutoCompleteCompleteEvent) {
+    this.googlePlaceService.setSearchTerm(event.query  ?? '');
   }
 
-
-  onSelect(event: AutoCompleteSelectEvent) { 
+  onSelect(event: AutoCompleteSelectEvent) {
     const place = event.value as Partial<Place>;
     this.googlePlaceService.setSelectedId(place.placeId ?? '');
-    this.googlePlaceService.place$
-    .pipe(first(), filter((p): p is Place => !!p?.placeId))
-    .subscribe(p => {
-      Object.assign(this.activity(), { 
-        label: p.name, 
-        placeId: p.placeId, 
-        lat: p.latitude, 
-        lng: p.longitude, 
-
-      });
-      this.onChange();
-    });
+    // C'est tout — l'effect s'occupe du reste
   }
 
   onFileSelect(event: { files: File[] }): void {

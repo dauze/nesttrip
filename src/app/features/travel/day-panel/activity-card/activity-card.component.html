@@ -6,17 +6,20 @@
       <i [class]="activityTypeMeta[this.activity().type]?.icon"></i>
       <!-- title -->
       <p-autoComplete
-        [(ngModel)]="term"
         [suggestions]="places()"
-        (completeMethod)="onSearch()"
+         [ngModel]="this.activity().title"
+        (completeMethod)="onSearch($event)"
         (onSelect)="onSelect($event)"
-        field="description"
+        field="name"
         [dropdown]="false"
-        [forceSelection]="true"
         [autoHighlight]="true"
         placeholder="Nom de l'activité"
         [inputStyleClass]="'flex-1 font-bold min-w-0'">
+        <ng-template #item let-place>
+          {{ place.name }}
+        </ng-template>
       </p-autoComplete>
+
       <!-- duration -->
       <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
         <i class="pi pi-clock"></i>

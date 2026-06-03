@@ -1,17 +1,18 @@
-import {Injectable, inject, signal, Signal} from '@angular/core';
+import {Injectable, inject, signal, computed} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {toSignal, toObservable} from '@angular/core/rxjs-interop';
 import {
-  debounceTime,
-  distinctUntilChanged,
-  switchMap,
-  catchError,
-  of,
-  filter,
-  shareReplay,
-  map
+  debounceTime, distinctUntilChanged, switchMap,
+  catchError, of, filter, map, shareReplay, startWith
 } from 'rxjs';
+import { environment } from '../../../environnements/environnement';
 import {Place} from '../models/place.dto';
+
+type LoadingState<T> =
+  | {status: 'idle'}
+  | {status: 'loading'}
+  | {status: 'success'; data: T}
+  | {status: 'error'};
 
 @Injectable({providedIn: 'root'})
 export class GooglePlaceService {
@@ -20,42 +21,58 @@ export class GooglePlaceService {
   private readonly searchTerm = signal('');
   private readonly selectedId = signal<string>('');
 
+  setSearchTerm(term: string) { this.searchTerm.set(term); }
+  setSelectedId(id: string)   { this.selectedId.set(id); }
 
-  setSearchTerm(term: string) {
-    this.searchTerm.set(term);
-  }
+  // --- Suggestions autocomplete ---
 
-  setSelectedId(id: string) {
-    this.selectedId.set(id);
-  }
-
-
-  readonly places = toSignal(
-    toObservable(this.searchTerm).pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      filter(q => !!q && q.trim().length >= 2),
-      map(q => q.trim()),
-      switchMap(q =>
-        this.http
-          .get<Partial<Place>[]>('/api/etablissements', {params: {q}})
-          .pipe(
-            catchError(() => of([]))
-          )
-      ),
-      shareReplay({bufferSize: 1, refCount: true})
+  private readonly placesState$ = toObservable(this.searchTerm).pipe(
+    debounceTime(300),
+    distinctUntilChanged(),
+    filter(q => q.trim().length >= 2),
+    map(q => q.trim()),
+    switchMap(q =>
+      this.http.get<Pick<Place, 'placeId' | 'name'>[]>(`${environment.apiUrl}/etablissements`, {params: {q}}).pipe(
+        map(data  => ({status: 'success', data}) as LoadingState<Partial<Place>[]>),
+        startWith({status: 'loading'}         as LoadingState<Partial<Place>[]>),
+        catchError(() => of({status: 'error'} as LoadingState<Partial<Place>[]>))
+      )
     ),
-    {initialValue: []}
+    startWith({status: 'idle'} as LoadingState<Pick<Place, 'placeId' | 'name'>[]>),
+    shareReplay({bufferSize: 1, refCount: true})
   );
 
-  readonly place$ = toObservable(this.selectedId).pipe(
-  distinctUntilChanged(),
-  filter(id => !!id),
-  switchMap(id =>
-    this.http.get<Place>(`/api/etablissement/${id}`).pipe(
-      catchError(() => of(null))
-    )
-  ),
-  shareReplay({bufferSize: 1, refCount: true})
+  readonly placesState = toSignal(this.placesState$,
+    {initialValue: {status: 'idle'} as LoadingState<Pick<Place, 'placeId' | 'name'>[]>}
   );
+
+  readonly places  = computed(() => {
+    const s = this.placesState();
+    return s.status === 'success' ? s.data : [];
+  });
+
+  // --- Détail lieu sélectionné ---
+
+  private readonly placeState$ = toObservable(this.selectedId).pipe(
+    distinctUntilChanged(),
+    filter(id => !!id),
+    switchMap(id =>
+      this.http.get<Place>(`${environment.apiUrl}/etablissements/${id}`).pipe(
+        map(data  => ({status: 'success', data}) as LoadingState<Place>),
+        startWith({status: 'loading'}         as LoadingState<Place>),
+        catchError(() => of({status: 'error'} as LoadingState<Place>))
+      )
+    ),
+    startWith({status: 'idle'} as LoadingState<Place>),
+    shareReplay({bufferSize: 1, refCount: true})
+  );
+
+  readonly placeState = toSignal(this.placeState$,
+    {initialValue: {status: 'idle'} as LoadingState<Place>}
+  );
+
+  readonly place        = computed(() => {
+    const s = this.placeState();
+    return s.status === 'success' ? s.data : null;
+  });
 }
