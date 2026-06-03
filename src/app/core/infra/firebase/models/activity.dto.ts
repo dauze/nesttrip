@@ -7,14 +7,24 @@ export interface ActivityFirebase {
   type: ActivityType;
   duration: number;
   price: PriceFirebase;
-  placeId: string;
   booking?: BookingFirebase;
   notes?: string;
   files?: FileFirebase[];
-  website?: string;
-  phone?: string;
-}
 
+  //Google
+  placeId: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  rating?: number;
+  openingHours?: string[];
+  phone?: string;
+  website?: string;
+  types?: string[];
+  priceLevel?: number;
+  photos?: string[];
+  source: 'google' | 'manual';
+}
 export interface PriceFirebase {
   amount: number;
   currency: string;

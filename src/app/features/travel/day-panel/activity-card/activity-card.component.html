@@ -5,15 +5,18 @@
       <!-- type -->
       <i [class]="activityTypeMeta[this.activity().type]?.icon"></i>
       <!-- title -->
-      <textarea
-        pTextarea
-        class="flex-1 overflow-hidden font-bold min-w-0"
-        [autoResize]="true"
-        [rows]="1"
-        [value]="activity().title"
-        (blur)="onChange()"
+      <p-autoComplete
+        [(ngModel)]="term"
+        [suggestions]="places()"
+        (completeMethod)="onSearch()"
+        (onSelect)="onSelect()"
+        field="description"
+        [dropdown]="false"
+        [forceSelection]="true"
+        [autoHighlight]="true"
         placeholder="Nom de l'activité"
-      ></textarea>
+        [inputStyleClass]="'flex-1 font-bold min-w-0'">
+      </p-autoComplete>
       <!-- duration -->
       <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
         <i class="pi pi-clock"></i>
@@ -87,32 +90,6 @@
           <p-select [options]="currencyOptions" [(ngModel)]="activity().price.currency" (ngModelChange)="onChange()"/>
         </div>
       </div>
-      <!-- WEBSITE -->
-      <div class="col-12 md:col-6">
-        <div class="flex align-items-center gap-2">
-          <label class="flex align-items-center gap-2">
-            <i class="pi pi-globe"></i>
-            <span>Site</span>
-          </label>
-          <input pInputText [(ngModel)]="activity().website" (ngModelChange)="onChange()" placeholder="https://…" />
-          @if (activity().website) {
-            <a [href]="activity().website" target="_blank" rel="noopener" >
-              <i class="pi pi-external-link"></i>
-            </a>
-          }
-        </div>
-      </div>
-      <!-- PHONE -->
-      <div class="col-12 md:col-6">
-        <div class="flex align-items-center gap-2">
-          <label class="flex align-items-center gap-2">
-            <i class="pi pi-phone"></i>
-             <span>Téléphone</span>
-          </label>
-          <input pInputText [(ngModel)]="activity().phone" (ngModelChange)="onChange()" placeholder="+33 …" type="tel" />
-        </div>
-      </div>
-
     </div>
     <!-- NOTES -->
     <div class="flex flex-column gap-2">
