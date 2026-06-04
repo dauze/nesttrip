@@ -3,7 +3,7 @@ import {Component, computed, inject, OnInit, signal, Signal, effect} from '@angu
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { DayPanelComponent } from './day-panel/day-panel.component';
-import { Infos } from './infos/infos';
+import { InfosComponent } from './infos/infos.component';
 import { AuthService } from '@core/services/auth.service';
 import { TravelService } from './travel.service';
 import { Travel } from './travel.model';
@@ -12,7 +12,7 @@ import { MenuModule } from 'primeng/menu';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import {SwipeDirective} from '@app/shared/directives/swipe.directive';
+import {SwipeDirective} from '../../shared/directives/swipe.directive';
 
 @Component({
   selector: 'app-travel',
@@ -21,7 +21,7 @@ import {SwipeDirective} from '@app/shared/directives/swipe.directive';
     ButtonModule,
     TabsModule,
     FormsModule,
-    Infos,
+    InfosComponent,
     ToolbarModule,
     MenuModule,
     CardModule,

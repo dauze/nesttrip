@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -30,7 +30,7 @@ import {
   BOOKING_STATUS_OPTIONS,
   CURRENCY_OPTIONS,
 } from '@features/travel/day-panel/activity-card/activity.constants';
-import { filter, first, switchMap } from 'rxjs';
+import { switchMap } from 'rxjs';
 import {Place} from '@app/core/models/place.dto';
 
 @Component({
@@ -54,7 +54,6 @@ import {Place} from '@app/core/models/place.dto';
     DurationPipe,
     TextareaModule,
     AutoComplete,
-    ProgressSpinner,
     InputMask,
   ],
   templateUrl: './activity-card.component.html',
@@ -181,14 +180,11 @@ export class ActivityCardComponent {
 
   onDurationChange(value: string): void {
     const match = value.match(/^(\d{2})h(\d{2})$/);
-
     if (!match) {
       return;
     }
-
     const hours = Number(match[1]);
     const minutes = Number(match[2]);
-
     this.activity().duration = hours * 60 + minutes;
     this.onChange();
   }

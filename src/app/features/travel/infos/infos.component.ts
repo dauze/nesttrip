@@ -10,15 +10,17 @@ import { ConfirmationService } from 'primeng/api';
 import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
 import {InfoService} from './info.service';
+import { AutoResizeFixDirective } from '../../../shared/pipes/auto-resize-area.pipe';
+
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset],
-  templateUrl: './infos.html',
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, AutoResizeFixDirective],
+  templateUrl: './infos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Infos {
+export class InfosComponent {
   private readonly infosService = inject(InfoService);
   private readonly confirmationService = inject(ConfirmationService);
   readonly info = input.required<Info>();
