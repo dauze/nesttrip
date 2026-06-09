@@ -5,6 +5,7 @@ import { TravelDataSource } from '@app/core/infra/firebase/services/travel.persi
 import { ActivityPersistenceService } from '@core/infra/firebase/services/activity.persistence.service';
 import { Item } from './infos/info.models';
 import { InfoPersistenceService } from '@app/core/infra/firebase/services/infos.persistence.service';
+import { Subscription } from 'rxjs';
 
 type TravelEntities = Record<number, Travel>;
 type DayEntities = Record<string, Day>; // key = ISO date
@@ -13,7 +14,7 @@ type ActivityEntities = Record<number, Activity>;
 @Injectable({ providedIn: 'root' })
 export class TravelStore {
   private readonly dataSource = inject(TravelDataSource);
-  private readonly persistence = inject(ActivityPersistenceService);
+  private readonly activityPersistenceService = inject(ActivityPersistenceService);
   private readonly infoPersistenceService = inject(InfoPersistenceService);
 
   // ✅ STATE NORMALISÉ
@@ -30,37 +31,101 @@ export class TravelStore {
   // ✅ UI STATE
   readonly activeTravelId = signal<number | null>(null);
 
+  private travelSub: Subscription | null = null;
+
+  private readonly activitiesByDay = new Map<string, Signal<Activity[]>>();
+private readonly activitiesById = new Map<number, Signal<Activity>>();
+
   // ✅ SELECTORS
-  readonly activeTravel = computed(() => {
-    const id = this.activeTravelId();
-    return id ? this.travels()[id] : undefined;
-  });
+ readonly activeTravel = computed(() => {
+  const id = this.activeTravelId();
+  if (!id) return undefined;
 
-  getActivities(dayId: Date): Signal<Activity[]> {
-    const key = dayId.toISOString();
+  const travel = this.travels()[id];
+  if (!travel) return undefined;
 
-    return computed(() => {
-      const ids = this.dayActivities()[key] ?? [];
-      const map = this.activities();
-      return ids.map((id) => map[id]);
-    });
+  const dayKeys = this.travelDays()[id] ?? [];
+  const daysMap = this.days();
+
+  return {
+    ...travel,
+    days: dayKeys.map((key) => daysMap[key]),
+  };
+});
+
+getActivities(dayId: Date): Signal<Activity[]> {
+  const key = dayId.toISOString();
+  if (!this.activitiesByDay.has(key)) {
+    this.activitiesByDay.set(
+      key,
+      computed(() => {
+        const ids = this.dayActivities()[key] ?? [];
+        const map = this.activities();
+        return ids.map((id) => map[id]);
+      }),
+    );
   }
+  return this.activitiesByDay.get(key)!;
+}
 
-  getActivity(activityId: number) {
-    return computed(() => this.activities()[activityId]);
+getActivity(activityId: number): Signal<Activity> {
+  if (!this.activitiesById.has(activityId)) {
+    this.activitiesById.set(
+      activityId,
+      computed(() => this.activities()[activityId]),
+    );
   }
+  return this.activitiesById.get(activityId)!;
+}
 
   // ✅ LOAD DATA FROM FIREBASE
-  constructor() {
-    effect(() => {
-      const id = this.activeTravelId();
-      if (!id) return;
+private hydrated = new Set<number>();
 
-      this.dataSource.getTravel$(id).subscribe((travel) => {
+constructor() {
+  effect(() => {
+    const id = this.activeTravelId();
+
+    this.travelSub?.unsubscribe();
+
+    if (!id) return;
+
+    this.travelSub = this.dataSource.getTravel$(id).subscribe((travel) => {
+      if (!this.hydrated.has(travel.id)) {
         this.hydrate(travel);
-      });
+        this.hydrated.add(travel.id);
+      } else {
+        this.mergeFromRemote(travel);
+      }
     });
+  });
+}
+
+private mergeFromRemote(travel: Travel) {
+  const currentActivities = this.activities();
+
+  const newActivities: ActivityEntities = {};
+  const newDayActivities: Record<string, number[]> = {};
+
+  for (const day of travel.days) {
+    const dayKey = day.id.toISOString();
+    newDayActivities[dayKey] = [];
+
+    for (const activity of day.activities) {
+      const current = currentActivities[activity.id];
+
+      // ✅ On ne remplace que si l'activité a vraiment changé
+      newActivities[activity.id] =
+        current && JSON.stringify(current) === JSON.stringify(activity)
+          ? current  // même référence → pas de re-render
+          : activity;
+
+      newDayActivities[dayKey].push(activity.id);
+    }
   }
+
+  this.activities.set(newActivities);
+  this.dayActivities.set(newDayActivities);
+}
 
   // ✅ HYDRATATION
   private hydrate(travel: Travel) {
@@ -166,15 +231,15 @@ export class TravelStore {
   }
 
   // ✅ UTIL
-  private syncDay(tripId: number, dayId: Date) {
-    const dayKey = dayId.toISOString();
-    const activityIds = this.dayActivities()[dayKey] ?? [];
-    const activities = this.activities();
+private syncDay(tripId: number, dayId: Date) {
+  const dayKey = dayId.toISOString();
+  const activityIds = this.dayActivities()[dayKey] ?? [];
+  const activities = this.activities();
 
-    const list = activityIds.map((id) => activities[id]);
+  const list = activityIds.map((id) => activities[id]);
 
-    this.persistence.queueUpdate(tripId, dayId, list);
-  }
+  this.activityPersistenceService.queueUpdate(tripId, dayId, list);
+}
 
   setActiveTravel(id: number) {
     this.activeTravelId.set(id);
@@ -237,12 +302,12 @@ export class TravelStore {
     this.syncInfo(tripId);
   }
 
-  private syncInfo(tripId: number) {
-    const ids = this.travelInfoItems()[tripId] ?? [];
-    const items = this.infoItems();
+private syncInfo(tripId: number) {
+  const ids = this.travelInfoItems()[tripId] ?? [];
+  const items = this.infoItems();
 
-    const list = ids.map((id) => items[id]);
+  const list = ids.map((id) => items[id]);
 
-    this.infoPersistenceService.queueUpdate(tripId, list);
-  }
+  this.infoPersistenceService.queueUpdate(tripId, list);
+}
 }

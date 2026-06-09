@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, Input } from '@angular/core';
+import { Component, computed, effect, inject, input, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -65,11 +65,14 @@ export class ActivityCardComponent {
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
 
-  @Input() tripId!: number;
-  @Input() dayId!: Date;
-  @Input() activityId!: number;
+  // Remplace les @Input() par des signals
+  readonly tripId = input.required<number>();
+  readonly dayId = input.required<Date>();
+  readonly activityId = input.required<number>();
 
-  readonly activity = this.travelStore.getActivity(this.activityId);
+  readonly activity = computed(() => 
+  this.travelStore.getActivity(this.activityId())()
+  );
 
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
@@ -108,7 +111,7 @@ export class ActivityCardComponent {
       const activity = this.activity();
       if (!activity) return;
 
-      this.travelStore.updateActivity(this.tripId, this.dayId, {
+      this.travelStore.updateActivity(this.tripId(), this.dayId(), {
         ...activity,
         title: p.name,
         placeId: p.placeId,
@@ -121,7 +124,7 @@ export class ActivityCardComponent {
   onChange(): void {
     const activity = this.activity();
     if (!activity) return;
-    this.travelStore.updateActivity(this.tripId, this.dayId, activity);
+    this.travelStore.updateActivity(this.tripId(), this.dayId(), activity);
   }
 
   onSearch(event: AutoCompleteCompleteEvent) {
@@ -137,12 +140,12 @@ export class ActivityCardComponent {
     const activity = this.activity();
     if (!activity) return;
     for (const file of event.files) {
-      const path = `trips/${this.tripId}/${this.dayId.getTime()}/${activity.id}/${file.name}`;
+      const path = `trips/${this.tripId()}/${this.dayId().getTime()}/${activity.id}/${file.name}`;
       this.fileService
         .uploadFile(file, path)
         .pipe(
           tap(({ url, name }) => {
-            this.travelStore.updateActivity(this.tripId, this.dayId, {
+            this.travelStore.updateActivity(this.tripId(), this.dayId(), {
               ...activity,
               files: [...(activity.files ?? []), { name, url, path }],
             });
@@ -161,7 +164,7 @@ export class ActivityCardComponent {
       .pipe(
         tap(() => {
           const files = activity.files ?? [];
-          this.travelStore.updateActivity(this.tripId, this.dayId, {
+          this.travelStore.updateActivity(this.tripId(), this.dayId(), {
             ...activity,
             files: files.filter((_, i) => i !== index),
           });
