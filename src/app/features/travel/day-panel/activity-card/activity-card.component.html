@@ -1,4 +1,5 @@
 @if (activity(); as activity) {
+<form [formGroup]="form">
   <p-panel [toggleable]="true" [collapsed]="true" [ngClass]="'booking ' + bookingMeta().className">
   <ng-template pTemplate="header">
     <div class="flex align-items-center gap-2">
@@ -8,7 +9,7 @@
       <!-- title -->
       <p-autoComplete
         [suggestions]="places()"
-         [ngModel]="activity.title"
+        formControlName="title"
         (completeMethod)="onSearch($event)"
         (onSelect)="onSelect($event)"
         field="name"
@@ -37,7 +38,7 @@
             <i class="pi pi-tag"></i>
             <span>Type</span>
           </label>
-          <p-select [options]="activityTypeOptions" [(ngModel)]="activity.type" (ngModelChange)="onChange()"/>
+          <p-select [options]="activityTypeOptions" formControlName="type"/>
         </div>
       </div>
       <!-- DURATION -->
@@ -50,21 +51,21 @@
           <p-inputMask
             mask="99h99"
             [unmask]="false"
-            [(ngModel)]="durationDisplay"
-            (ngModelChange)="onDurationChange($event)"
+            formGroupName="duration"
             placeholder="0h00"
           />
         </div>
       </div>
       <!-- BOOKING -->
+      <div formGroupName="booking">
       <div class="col-12 md:col-6">
         <div class="flex align-items-center gap-2">
           <label class="flex align-items-center gap-2">
             <i class="pi pi-bookmark"></i>
             <span>Réservation</span>
           </label>
-          <p-select [options]="bookingStatusOptions" [(ngModel)]="activity.booking!.status" (ngModelChange)="onChange()"
-            optionLabel="label" optionValue="value" appendTo="body" />
+            <p-select [options]="bookingStatusOptions" formControlName="status"
+              optionLabel="label" optionValue="value" appendTo="body" />
         </div>
       </div>
       <!-- DEADLINE -->
@@ -77,11 +78,13 @@
               <i class="pi pi-calendar"></i>
               <span>Deadline</span>
             </label>
-            <p-datepicker class="w-12rem" [(ngModel)]="activity.booking!.deadline" (ngModelChange)="onChange()" dateFormat="dd/mm/yy" [showIcon]="true"
+            <p-datepicker class="w-12rem" formControlName="deadline" dateFormat="dd/mm/yy" [showIcon]="true"
               appendTo="body" placeholder="Aucune deadline" />
           </div>
         </div>
       }
+      </div>
+       <div formGroupName="price">
       <!-- PRICE -->
       <div class="col-12 md:col-6">
         <div  class="flex align-items-center gap-2">
@@ -89,9 +92,9 @@
             <i class="pi pi-euro"></i>
              <span>Prix</span>
           </label>
-          <p-inputNumber [(ngModel)]="activity.price.amount" (ngModelChange)="onChange()" [min]="0"
+          <p-inputNumber formControlName="amount"  [min]="0"
             [minFractionDigits]="0" [maxFractionDigits]="2" />
-          <p-select [options]="currencyOptions" [(ngModel)]="activity.price.currency" (ngModelChange)="onChange()"/>
+          <p-select [options]="currencyOptions" formControlName="currency" />
         </div>
       </div>
     </div>
@@ -101,7 +104,7 @@
         <i class="pi pi-pencil"></i>
          <span>Notes</span>
       </label>
-      <textarea pTextarea [(ngModel)]="activity.notes" (ngModelChange)="onChange()"  placeholder="Ajouter une note…"
+      <textarea pTextarea formControlName="notes" placeholder="Ajouter une note…"
         rows="3" autoResize="true" class="w-full">
       </textarea>
     </div>
@@ -121,5 +124,7 @@
       <p-fileUpload mode="basic" chooseLabel="Ajouter" chooseIcon="pi pi-upload" [multiple]="true"
         [auto]="true" (onSelect)="onFileSelect($event)" />
     </div>
+  </div>
 </p-panel>
+</form>
 }

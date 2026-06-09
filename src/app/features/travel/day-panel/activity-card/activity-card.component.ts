@@ -1,6 +1,6 @@
-import { Component, computed, effect, inject, input, Input } from '@angular/core';
+import { Component, computed, effect, inject, input, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
@@ -31,7 +31,7 @@ import {
   CURRENCY_OPTIONS,
 } from '@features/travel/day-panel/activity-card/activity.constants';
 import { Place } from '@app/core/models/place.dto';
-import { tap } from 'rxjs/operators';
+import { debounceTime, tap } from 'rxjs/operators';
 import { TravelStore } from '@features/travel/travel.service';
 
 @Component({
@@ -39,7 +39,7 @@ import { TravelStore } from '@features/travel/travel.service';
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
+    ReactiveFormsModule,
     DragDropModule,
     InputTextModule,
     TextareaModule,
@@ -64,11 +64,67 @@ export class ActivityCardComponent {
   private readonly travelStore = inject(TravelStore);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
+   private readonly fb = inject(FormBuilder);
 
   // Remplace les @Input() par des signals
   readonly tripId = input.required<number>();
   readonly dayId = input.required<Date>();
   readonly activityId = input.required<number>();
+  readonly form: FormGroup;
+
+constructor() {
+  this.form = this.fb.group({
+    title: [''],
+    type: [''],
+    duration: [0],
+    notes: [''],
+    booking: this.fb.group({
+      status: [BookingStatus.NOT_NEEDED],
+      deadline: [null],
+    }),
+    price: this.fb.group({
+      amount: [0],
+      currency: ['EUR'],
+    }),
+  });
+
+  // Init depuis le store une seule fois
+  effect(() => {
+    const a = this.travelStore.getActivity(this.activityId())();
+    if (a) {
+      untracked(() => this.form.patchValue(a, { emitEvent: false }));
+    }
+  });
+
+  // Push vers le store à chaque changement
+  this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
+    const activity = this.travelStore.getActivity(this.activityId())();
+    if (!activity) return;
+    this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+      ...activity,
+      ...value,
+    });
+  });
+
+    // Se déclenche quand un nouveau lieu est chargé avec succès
+   effect(() => {
+      const p = this.googlePlaceService.place();
+      if (!p) return;
+
+      untracked(() => {
+        const activity = this.activity();
+        if (!activity) return;
+
+        this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+          ...activity,
+          title: p.name,
+          placeId: p.placeId,
+          latitude: p.latitude,
+          longitude: p.longitude,
+        });
+      });
+    });
+}
 
   readonly activity = computed(() => 
   this.travelStore.getActivity(this.activityId())()
@@ -103,30 +159,23 @@ export class ActivityCardComponent {
   });
   selectedPlace: Pick<Place, 'placeId' | 'name'> | null = null;
 
-  constructor() {
-    // Se déclenche quand un nouveau lieu est chargé avec succès
-    effect(() => {
-      const p = this.googlePlaceService.place();
-      if (!p) return;
-      const activity = this.activity();
-      if (!activity) return;
+    onTitleChange(value: string | Partial<Place>) {
+  if (typeof value !== 'string') return;
+  
+  const activity = this.activity();
+  if (!activity) return;
 
-      this.travelStore.updateActivity(this.tripId(), this.dayId(), {
-        ...activity,
-        title: p.name,
-        placeId: p.placeId,
-        latitude: p.latitude,
-        longitude: p.longitude,
-      });
-    });
-  }
+  this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+    ...activity,        // ✅ copie, pas mutation
+    title: value,
+  });
+}
 
   onChange(): void {
     const activity = this.activity();
     if (!activity) return;
-    this.travelStore.updateActivity(this.tripId(), this.dayId(), activity);
+    this.travelStore.updateActivity(this.tripId(), this.dayId(), { ...activity });
   }
-
   onSearch(event: AutoCompleteCompleteEvent) {
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
