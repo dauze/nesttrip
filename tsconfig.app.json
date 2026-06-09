@@ -13,5 +13,5 @@
     }
   },
   "include": ["src/**/*.ts", "src/app/scripts/seed-firestore.ts", "functions/src/get-place.ts", "functions/src/search-places.ts"],
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": ["src/**/*.spec.ts","functions" ]
 }
