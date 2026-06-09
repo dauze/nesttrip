@@ -7,6 +7,7 @@ import {
   distinctUntilChanged,
   filter,
   map,
+  Observable,
   of,
   shareReplay,
   startWith,
@@ -59,27 +60,7 @@ export class GooglePlaceService {
   });
 
   // --- Détail lieu sélectionné ---
-
-  private readonly placeState$ = toObservable(this.selectedId).pipe(
-    distinctUntilChanged(),
-    filter(id => !!id),
-    switchMap(id =>
-      this.http.get<Place>(`${environment.apiUrl}/etablissements/${id}`).pipe(
-        map(data  => ({status: 'success', data}) as LoadingState<Place>),
-        startWith({status: 'loading'}         as LoadingState<Place>),
-        catchError(() => of({status: 'error'} as LoadingState<Place>))
-      )
-    ),
-    startWith({status: 'idle'} as LoadingState<Place>),
-    shareReplay({bufferSize: 1, refCount: true})
-  );
-
-  readonly placeState = toSignal(this.placeState$,
-    {initialValue: {status: 'idle'} as LoadingState<Place>}
-  );
-
-  readonly place        = computed(() => {
-    const s = this.placeState();
-    return s.status === 'success' ? s.data : null;
-  });
+  getPlaceDetail(id: string): Observable<Place> {
+    return this.http.get<Place>(`${environment.apiUrl}/etablissements/${id}`);
+  }
 }

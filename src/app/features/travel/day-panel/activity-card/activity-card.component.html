@@ -1,130 +1,129 @@
 @if (activity(); as activity) {
-<form [formGroup]="form">
   <p-panel [toggleable]="true" [collapsed]="true" [ngClass]="'booking ' + bookingMeta().className">
-  <ng-template pTemplate="header">
-    <div class="flex align-items-center gap-2">
-      <span cdkDragHandle><i class="pi pi-bars"></i></span>
-      <!-- type -->
-      <i [class]="activityTypeMeta[activity.type]?.icon"></i>
-      <!-- title -->
-      <p-autoComplete
-        [suggestions]="places()"
-        formControlName="title"
-        (completeMethod)="onSearch($event)"
-        (onSelect)="onSelect($event)"
-        field="name"
-        [dropdown]="false"
-        [autoHighlight]="true"
-        placeholder="Nom de l'activité"
-        [inputStyleClass]="'flex-1 font-bold min-w-0'">
-        <ng-template #item let-place>
-          {{ place.name }}
-        </ng-template>
-      </p-autoComplete>
 
-      <!-- duration -->
-      <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
-        <i class="pi pi-clock"></i>
-        <span>{{activity.duration | duration}}</span>
-      </div>
-    </div>
-  </ng-template>
-    <!-- grid -->
-    <div class="grid">
-      <!-- TYPE -->
-      <div class="col-12 md:col-6">
-        <div class="flex align-items-center gap-2">
-          <label class="flex align-items-center gap-2">
-            <i class="pi pi-tag"></i>
-            <span>Type</span>
-          </label>
-          <p-select [options]="activityTypeOptions" formControlName="type"/>
+    <ng-template pTemplate="header">
+      <div class="flex align-items-center gap-2">
+        <span cdkDragHandle><i class="pi pi-bars"></i></span>
+        <i [class]="activityTypeMeta[activity.type]?.icon"></i>
+
+        <!-- Title HORS form pour éviter conflit ngModel/ReactiveForm -->
+        <p-autoComplete
+          [suggestions]="places()"
+          [(ngModel)]="title"
+          (onBlur)="onTitleBlur()"
+          (completeMethod)="onSearch($event)"
+          (onSelect)="onSelect($event)"
+          field="name"
+          [dropdown]="false"
+          [autoHighlight]="true"
+          placeholder="Nom de l'activité"
+          [inputStyleClass]="'flex-1 font-bold min-w-0'">
+          <ng-template #item let-place>{{ place.name }}</ng-template>
+        </p-autoComplete>
+
+        <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
+          <i class="pi pi-clock"></i>
+          <span>{{ activity.duration | duration }}</span>
         </div>
       </div>
-      <!-- DURATION -->
-      <div class="col-12 md:col-6">
-        <div class="flex align-items-center gap-2">
-          <label class="flex align-items-center gap-2">
-            <i class="pi pi-clock"></i>
-            <span>Durée</span>
-          </label>
-          <p-inputMask
-            mask="99h99"
-            [unmask]="false"
-            formGroupName="duration"
-            placeholder="0h00"
-          />
-        </div>
-      </div>
-      <!-- BOOKING -->
-      <div formGroupName="booking">
-      <div class="col-12 md:col-6">
-        <div class="flex align-items-center gap-2">
-          <label class="flex align-items-center gap-2">
-            <i class="pi pi-bookmark"></i>
-            <span>Réservation</span>
-          </label>
-            <p-select [options]="bookingStatusOptions" formControlName="status"
-              optionLabel="label" optionValue="value" appendTo="body" />
-        </div>
-      </div>
-      <!-- DEADLINE -->
-      @if (showDeadline()) {
+    </ng-template>
+
+    <!-- Tout le reste dans le form ReactiveForm -->
+    <form [formGroup]="form">
+      <div class="grid">
+        <!-- TYPE -->
         <div class="col-12 md:col-6">
           <div class="flex align-items-center gap-2">
-            <label class="flex align-items-center gap-2"
-              [class.text-yellow-700]="isDeadlineSoon()"
-              [class.text-color-secondary]="!isDeadlineSoon()">
-              <i class="pi pi-calendar"></i>
-              <span>Deadline</span>
+            <label class="flex align-items-center gap-2">
+              <i class="pi pi-tag"></i><span>Type</span>
             </label>
-            <p-datepicker class="w-12rem" formControlName="deadline" dateFormat="dd/mm/yy" [showIcon]="true"
-              appendTo="body" placeholder="Aucune deadline" />
+            <p-select [options]="activityTypeOptions" formControlName="type" />
           </div>
         </div>
-      }
-      </div>
-       <div formGroupName="price">
-      <!-- PRICE -->
-      <div class="col-12 md:col-6">
-        <div  class="flex align-items-center gap-2">
-          <label class="flex align-items-center gap-2">
-            <i class="pi pi-euro"></i>
-             <span>Prix</span>
-          </label>
-          <p-inputNumber formControlName="amount"  [min]="0"
-            [minFractionDigits]="0" [maxFractionDigits]="2" />
-          <p-select [options]="currencyOptions" formControlName="currency" />
+
+        <!-- DURATION -->
+        <div class="col-12 md:col-6">
+          <div class="flex align-items-center gap-2">
+            <label class="flex align-items-center gap-2">
+              <i class="pi pi-clock"></i><span>Durée</span>
+            </label>
+            <p-inputMask
+              mask="99h99"
+              [unmask]="false"
+              [ngModel]="durationDisplay()"
+              (ngModelChange)="onDurationChange($event)"
+              [ngModelOptions]="{standalone: true}"
+              placeholder="0h00"
+            />
+          </div>
+        </div>
+
+        <!-- BOOKING -->
+        <div class="col-12 md:col-6" formGroupName="booking">
+          <div class="flex align-items-center gap-2">
+            <label class="flex align-items-center gap-2">
+              <i class="pi pi-bookmark"></i><span>Réservation</span>
+            </label>
+            <p-select [options]="bookingStatusOptions" formControlName="status"
+              optionLabel="label" optionValue="value" appendTo="body" />
+          </div>
+        </div>
+
+        <!-- DEADLINE -->
+        @if (showDeadline()) {
+          <div class="col-12 md:col-6" formGroupName="booking">
+            <div class="flex align-items-center gap-2">
+              <label class="flex align-items-center gap-2"
+                [class.text-yellow-700]="isDeadlineSoon()"
+                [class.text-color-secondary]="!isDeadlineSoon()">
+                <i class="pi pi-calendar"></i><span>Deadline</span>
+              </label>
+              <p-datepicker class="w-12rem" formControlName="deadline"
+                dateFormat="dd/mm/yy" [showIcon]="true"
+                appendTo="body" placeholder="Aucune deadline" />
+            </div>
+          </div>
+        }
+
+        <!-- PRICE -->
+        <div class="col-12 md:col-6" formGroupName="price">
+          <div class="flex align-items-center gap-2">
+            <label class="flex align-items-center gap-2">
+              <i class="pi pi-euro"></i><span>Prix</span>
+            </label>
+            <p-inputNumber formControlName="amount" [min]="0"
+              [minFractionDigits]="0" [maxFractionDigits]="2" />
+            <p-select [options]="currencyOptions" formControlName="currency" />
+          </div>
         </div>
       </div>
-    </div>
-    <!-- NOTES -->
-    <div class="flex flex-column gap-2">
-      <label class="flex align-items-center gap-2">
-        <i class="pi pi-pencil"></i>
-         <span>Notes</span>
-      </label>
-      <textarea pTextarea formControlName="notes" placeholder="Ajouter une note…"
-        rows="3" autoResize="true" class="w-full">
-      </textarea>
-    </div>
-    <!-- FILES -->
-    <div class="flex flex-column gap-2">
-      <label class="flex align-items-center gap-2">
-        <i class="pi pi-paperclip"></i>
-        <span>Fichiers</span>
-      </label>
-      @for (file of activity.files; track file.path; let i = $index) {
-        <div>
-          <i class="pi pi-file"></i>
-          <a [href]="file.url" [download]="file.name" > {{ file.name }}</a>
-          <p-button icon="pi pi-times" severity="danger" [text]="true" [rounded]="true" (onClick)="removeFile(i)" />
-        </div>
-      }
-      <p-fileUpload mode="basic" chooseLabel="Ajouter" chooseIcon="pi pi-upload" [multiple]="true"
-        [auto]="true" (onSelect)="onFileSelect($event)" />
-    </div>
-  </div>
-</p-panel>
-</form>
+
+      <!-- NOTES -->
+      <div class="flex flex-column gap-2">
+        <label class="flex align-items-center gap-2">
+          <i class="pi pi-pencil"></i><span>Notes</span>
+        </label>
+        <textarea pTextarea formControlName="notes" placeholder="Ajouter une note…"
+          rows="3" autoResize="true" class="w-full">
+        </textarea>
+      </div>
+
+      <!-- FILES -->
+      <div class="flex flex-column gap-2">
+        <label class="flex align-items-center gap-2">
+          <i class="pi pi-paperclip"></i><span>Fichiers</span>
+        </label>
+        @for (file of activity.files; track file.path; let i = $index) {
+          <div>
+            <i class="pi pi-file"></i>
+            <a [href]="file.url" [download]="file.name">{{ file.name }}</a>
+            <p-button icon="pi pi-times" severity="danger" [text]="true" [rounded]="true" (onClick)="removeFile(i)" />
+          </div>
+        }
+        <p-fileUpload mode="basic" chooseLabel="Ajouter" chooseIcon="pi pi-upload"
+          [multiple]="true" [auto]="true" (onSelect)="onFileSelect($event)" />
+      </div>
+    </form>
+
+  </p-panel>
 }

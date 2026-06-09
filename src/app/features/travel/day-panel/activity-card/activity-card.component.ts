@@ -10,11 +10,7 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
-import {
-  AutoComplete,
-  AutoCompleteCompleteEvent,
-  AutoCompleteSelectEvent,
-} from 'primeng/autocomplete';
+import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { BadgeModule } from 'primeng/badge';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputMask } from 'primeng/inputmask';
@@ -24,11 +20,8 @@ import { DurationPipe } from '@app/shared/pipes/duration.pipe';
 import { FileService } from '@core/services/file.service';
 import { GooglePlaceService } from '@core/services/google.places.service';
 import {
-  ACTIVITY_TYPE_META,
-  ACTIVITY_TYPE_OPTIONS,
-  BOOKING_STATUS_META,
-  BOOKING_STATUS_OPTIONS,
-  CURRENCY_OPTIONS,
+  ACTIVITY_TYPE_META, ACTIVITY_TYPE_OPTIONS,
+  BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS,
 } from '@features/travel/day-panel/activity-card/activity.constants';
 import { Place } from '@app/core/models/place.dto';
 import { debounceTime, tap } from 'rxjs/operators';
@@ -38,24 +31,11 @@ import { TravelStore } from '@features/travel/travel.service';
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    DragDropModule,
-    InputTextModule,
-    TextareaModule,
-    SelectModule,
-    InputNumberModule,
-    DatePickerModule,
-    TagModule,
-    ButtonModule,
-    TooltipModule,
-    FileUploadModule,
-    BadgeModule,
-    PanelModule,
-    DurationPipe,
-    TextareaModule,
-    AutoComplete,
-    InputMask,
+    CommonModule, ReactiveFormsModule, FormsModule, DragDropModule,
+    InputTextModule, TextareaModule, SelectModule, InputNumberModule,
+    DatePickerModule, TagModule, ButtonModule, TooltipModule,
+    FileUploadModule, BadgeModule, PanelModule, DurationPipe,
+    AutoComplete, InputMask,
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -64,125 +44,132 @@ export class ActivityCardComponent {
   private readonly travelStore = inject(TravelStore);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
-   private readonly fb = inject(FormBuilder);
+  private readonly fb = inject(FormBuilder);
 
-  // Remplace les @Input() par des signals
   readonly tripId = input.required<number>();
   readonly dayId = input.required<Date>();
   readonly activityId = input.required<number>();
+
   readonly form: FormGroup;
 
-constructor() {
-  this.form = this.fb.group({
-    title: [''],
-    type: [''],
-    duration: [0],
-    notes: [''],
-    booking: this.fb.group({
-      status: [BookingStatus.NOT_NEEDED],
-      deadline: [null],
-    }),
-    price: this.fb.group({
-      amount: [0],
-      currency: ['EUR'],
-    }),
-  });
+  // Title géré séparément, hors ReactiveForm
+  title = '';
 
-  // Init depuis le store une seule fois
-  effect(() => {
-    const a = this.travelStore.getActivity(this.activityId())();
-    if (a) {
-      untracked(() => this.form.patchValue(a, { emitEvent: false }));
-    }
-  });
+  private initialized = false;
 
-  // Push vers le store à chaque changement
-  this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
-    const activity = this.travelStore.getActivity(this.activityId())();
-    if (!activity) return;
-    this.travelStore.updateActivity(this.tripId(), this.dayId(), {
-      ...activity,
-      ...value,
-    });
-  });
-
-    // Se déclenche quand un nouveau lieu est chargé avec succès
-   effect(() => {
-      const p = this.googlePlaceService.place();
-      if (!p) return;
-
-      untracked(() => {
-        const activity = this.activity();
-        if (!activity) return;
-
-        this.travelStore.updateActivity(this.tripId(), this.dayId(), {
-          ...activity,
-          title: p.name,
-          placeId: p.placeId,
-          latitude: p.latitude,
-          longitude: p.longitude,
-        });
-      });
-    });
-}
-
-  readonly activity = computed(() => 
-  this.travelStore.getActivity(this.activityId())()
+  readonly activity = computed(() =>
+    this.travelStore.getActivity(this.activityId())()
   );
 
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
-
   readonly places = this.googlePlaceService.places;
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
     return BOOKING_STATUS_META[status];
   });
-  readonly isDeadlineSoon = computed(() => {
-    const activity = this.activity();
-    if (!activity) return;
 
-    const deadline = activity.booking?.deadline;
+  readonly isDeadlineSoon = computed(() => {
+    const deadline = this.form.get('booking.deadline')?.value;
     if (!deadline) return false;
     const diff = new Date(deadline).getTime() - Date.now();
     return diff > 0 && diff < 7 * 24 * 60 * 60 * 1000;
   });
+
   readonly showDeadline = computed(() => {
-    const activity = this.activity();
-    if (!activity) return;
-    return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(
-      activity.booking?.status ?? BookingStatus.NOT_NEEDED,
-    );
+    const status = this.form.get('booking.status')?.value ?? BookingStatus.NOT_NEEDED;
+    return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(status);
   });
-  selectedPlace: Pick<Place, 'placeId' | 'name'> | null = null;
 
-    onTitleChange(value: string | Partial<Place>) {
-  if (typeof value !== 'string') return;
-  
-  const activity = this.activity();
-  if (!activity) return;
-
-  this.travelStore.updateActivity(this.tripId(), this.dayId(), {
-    ...activity,        // ✅ copie, pas mutation
-    title: value,
+  readonly durationDisplay = computed(() => {
+    const duration = this.form.get('duration')?.value ?? 0;
+    const h = Math.floor(duration / 60);
+    const m = duration % 60;
+    return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`;
   });
-}
 
-  onChange(): void {
-    const activity = this.activity();
-    if (!activity) return;
-    this.travelStore.updateActivity(this.tripId(), this.dayId(), { ...activity });
+  constructor() {
+    this.form = this.fb.group({
+      type: [''],
+      duration: [0],
+      notes: [''],
+      booking: this.fb.group({
+        status: [BookingStatus.NOT_NEEDED],
+        deadline: [null],
+      }),
+      price: this.fb.group({
+        amount: [0],
+        currency: ['EUR'],
+      }),
+    });
+
+    // Init depuis le store une seule fois
+    effect(() => {
+      const a = this.travelStore.getActivity(this.activityId())();
+      if (a && !this.initialized) {
+        this.initialized = true;
+        untracked(() => {
+          this.form.patchValue(a, { emitEvent: false });
+          this.title = a.title; // title séparé du form
+        });
+      }
+    });
+
+    // Push vers le store à chaque changement du form
+    this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
+      const activity = this.activity();
+      if (!activity) return;
+      this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+        ...activity,
+        ...value,
+        title: this.title, // on réinjecte le title séparé
+        booking: value.booking ?? activity.booking,
+        price: value.price ?? activity.price,
+      });
+    });
   }
+
+  onTitleBlur(): void {
+    const activity = this.activity();
+    if (!activity) return;
+    this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+      ...activity,
+      title: this.title,
+    });
+  }
+
   onSearch(event: AutoCompleteCompleteEvent) {
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 
   onSelect(event: AutoCompleteSelectEvent) {
     const place = event.value as Partial<Place>;
-    this.googlePlaceService.setSelectedId(place.placeId ?? '');
+    if (!place.placeId) return;
+
+    this.title = place.name ?? '';
+
+    this.googlePlaceService.getPlaceDetail(place.placeId).subscribe((p) => {
+      this.title = p.name;
+      const activity = this.activity();
+      if (!activity) return;
+      this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+        ...activity,
+        title: p.name,
+        placeId: p.placeId,
+        latitude: p.latitude,
+        longitude: p.longitude,
+      });
+    });
+  }
+
+  onDurationChange(value: string): void {
+    const match = value.match(/^(\d{2})h(\d{2})$/);
+    if (!match) return;
+    const minutes = Number(match[1]) * 60 + Number(match[2]);
+    this.form.patchValue({ duration: minutes });
   }
 
   onFileSelect(event: { files: File[] }): void {
@@ -190,17 +177,14 @@ constructor() {
     if (!activity) return;
     for (const file of event.files) {
       const path = `trips/${this.tripId()}/${this.dayId().getTime()}/${activity.id}/${file.name}`;
-      this.fileService
-        .uploadFile(file, path)
-        .pipe(
-          tap(({ url, name }) => {
-            this.travelStore.updateActivity(this.tripId(), this.dayId(), {
-              ...activity,
-              files: [...(activity.files ?? []), { name, url, path }],
-            });
-          }),
-        )
-        .subscribe();
+      this.fileService.uploadFile(file, path).pipe(
+        tap(({ url, name }) => {
+          this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+            ...activity,
+            files: [...(activity.files ?? []), { name, url, path }],
+          });
+        }),
+      ).subscribe();
     }
   }
 
@@ -208,41 +192,13 @@ constructor() {
     const activity = this.activity();
     if (!activity) return;
     const file = activity.files![index];
-    this.fileService
-      .deleteFile(file.path)
-      .pipe(
-        tap(() => {
-          const files = activity.files ?? [];
-          this.travelStore.updateActivity(this.tripId(), this.dayId(), {
-            ...activity,
-            files: files.filter((_, i) => i !== index),
-          });
-        }),
-      )
-      .subscribe();
-  }
-
-  get durationDisplay(): string {
-    const activity = this.activity();
-    if (!activity) return '';
-    const duration = activity.duration ?? 0;
-
-    const h = Math.floor(duration / 60);
-    const m = duration % 60;
-
-    return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`;
-  }
-
-  onDurationChange(value: string): void {
-    const activity = this.activity();
-    if (!activity) return;
-    const match = value.match(/^(\d{2})h(\d{2})$/);
-    if (!match) {
-      return;
-    }
-    const hours = Number(match[1]);
-    const minutes = Number(match[2]);
-    activity.duration = hours * 60 + minutes;
-    this.onChange();
+    this.fileService.deleteFile(file.path).pipe(
+      tap(() => {
+        this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+          ...activity,
+          files: (activity.files ?? []).filter((_, i) => i !== index),
+        });
+      }),
+    ).subscribe();
   }
 }
