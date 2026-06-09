@@ -1,11 +1,11 @@
-import {Activity} from '../activity.model';
+import { Activity } from '../activity.model';
 import { Component, input } from '@angular/core';
 
 import { SelectModule } from 'primeng/select';
-import {FormsModule} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { PanelModule } from 'primeng/panel';
-import {DividerModule} from 'primeng/divider';
-import {ACTIVITY_TYPE_META} from '../activity-card/activity.constants';
+import { DividerModule } from 'primeng/divider';
+import { ACTIVITY_TYPE_META } from '../activity-card/activity.constants';
 import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
 
 @Component({

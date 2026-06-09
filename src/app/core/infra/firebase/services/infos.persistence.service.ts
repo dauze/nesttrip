@@ -1,45 +1,64 @@
-import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { collection, doc, onSnapshot, query } from 'firebase/firestore';
-import { Travel } from '@features/travel/travel.model';
-import { FirebaseService } from '@core/infra/firebase/firebase.service';
-import { TravelFirebase } from '@core/infra/firebase/models/travel.dto';
-import { travelFromFb } from '@core/infra/firebase/mappers/travel.mapper';
+import { inject, Injectable, signal } from '@angular/core';
+import { EMPTY, from, Subject } from 'rxjs';
+import { catchError, debounceTime, switchMap, tap } from 'rxjs/operators';
+import { Item } from '@app/features/travel/infos/info.models';
+import { TravelFirestoreService } from '@core/infra/firebase/services/travel.firebase.service';
+
+type Key = number;
+
+type PendingUpdate = {
+  tripId: number;
+  items: Item[];
+};
 
 @Injectable({ providedIn: 'root' })
-export class TravelDataSource {
-  private readonly db = inject(FirebaseService).db;
+export class InfoPersistenceService {
+  private readonly firestore = inject(TravelFirestoreService);
 
-  getTrips$() {
-    return new Observable<Pick<Travel, 'id' | 'title'>[]>((observer) => {
-      const unsub = onSnapshot(
-        query(collection(this.db, 'trips')),
-        (snap) =>
-          observer.next(
-            snap.docs.map((d) => {
-              const { id, title } = d.data() as TravelFirebase;
-              return { id, title };
-            }),
-          ),
-        (err) => observer.error(err),
-      );
-      return () => unsub();
-    });
+  // ✅ status exposé (optionnel UI)
+  readonly syncing = signal(false);
+
+  // ✅ dedup (1 update par trip)
+  private readonly pending = new Map<Key, PendingUpdate>();
+
+  private readonly trigger$ = new Subject<void>();
+
+  constructor() {
+    this.trigger$
+      .pipe(
+        debounceTime(300),
+        tap(() => this.syncing.set(true)),
+        switchMap(() => this.flush()),
+        tap(() => this.syncing.set(false)),
+      )
+      .subscribe();
   }
 
-  getTravel$(id: number) {
-    return new Observable<Travel>((observer) => {
-      const unsub = onSnapshot(
-        doc(this.db, 'trips', id.toString()),
-        (snap) => {
-          const data = snap.data();
-          if (data) {
-            observer.next(travelFromFb(data as TravelFirebase));
-          }
-        },
-        (err) => observer.error(err),
-      );
-      return () => unsub();
-    });
+  // ✅ appelé par le store
+  queueUpdate(tripId: number, items: Item[]) {
+    this.pending.set(tripId, { tripId, items });
+    this.trigger$.next();
+  }
+
+  // ✅ flush batch
+  private flush() {
+    if (this.pending.size === 0) {
+      return EMPTY;
+    }
+
+    const updates = Array.from(this.pending.values());
+    this.pending.clear();
+
+    return from(Promise.all(updates.map((u) => this.firestore.updateInfo(u.tripId, u.items)))).pipe(
+      catchError((err) => {
+        console.error('Persistence failed, retry later', err);
+
+        updates.forEach((u) => this.pending.set(this.key(u.tripId), u));
+        return EMPTY;
+      }),
+    );
+  }
+  private key(tripId: number): string {
+    return `info_${tripId}`;
   }
 }

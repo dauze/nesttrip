@@ -1,17 +1,16 @@
-import {Activity, Booking} from '@features/travel/day-panel/activity.model';
-import {BookingStatus} from '@core/enums/booking.status';
-import {ActivityFirebase, BookingFirebase} from '../models/activity.dto';
-
+import { Activity, Booking } from '@features/travel/day-panel/activity.model';
+import { BookingStatus } from '@core/enums/booking.status';
+import { ActivityFirebase, BookingFirebase } from '../models/activity.dto';
 
 export function activityFromFb(a: ActivityFirebase): Activity {
   return {
     ...a,
-    price: a.price ?? {amount: 0, currency: 'EUR'},
-    booking: a.booking ? bookingFromFb(a.booking) : {status: BookingStatus.NOT_NEEDED},
+    price: a.price ?? { amount: 0, currency: 'EUR' },
+    booking: a.booking ? bookingFromFb(a.booking) : { status: BookingStatus.NOT_NEEDED },
     files: a.files ?? [],
     notes: a.notes ?? '',
     website: a.website ?? '',
-    phone: a.phone ?? ''
+    phone: a.phone ?? '',
   };
 }
 
@@ -33,6 +32,6 @@ function bookingFromFb(b: BookingFirebase): Booking {
 function bookingToFb(b: Booking): BookingFirebase {
   return {
     ...b,
-    deadline: b.deadline ? String(b.deadline.getTime()) : "",
+    deadline: b.deadline ? String(b.deadline.getTime()) : '',
   };
 }

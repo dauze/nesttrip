@@ -1,18 +1,18 @@
-import {FormsModule} from '@angular/forms';
-import {Component, computed, inject, OnInit, signal, Signal, effect} from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
 import { AuthService } from '@core/services/auth.service';
-import { TravelService } from './travel.service';
 import { Travel } from './travel.model';
 import { ToolbarModule } from 'primeng/toolbar';
 import { MenuModule } from 'primeng/menu';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import {SwipeDirective} from '../../shared/directives/swipe.directive';
+import { SwipeDirective } from '../../shared/directives/swipe.directive';
+import { TravelStore } from '@features/travel/travel.service';
 
 @Component({
   selector: 'app-travel',
@@ -27,16 +27,17 @@ import {SwipeDirective} from '../../shared/directives/swipe.directive';
     CardModule,
     ConfirmDialog,
     DayPanelComponent,
-    SwipeDirective
+    SwipeDirective,
   ],
   providers: [ConfirmationService],
   styleUrl: 'travel.component.scss',
   templateUrl: 'travel.component.html',
 })
 export class TravelComponent implements OnInit {
-  protected readonly travelService = inject(TravelService);
+  protected readonly travelStore = inject(TravelStore);
   protected readonly authService = inject(AuthService);
-  readonly trip: Signal<Travel | undefined> = this.travelService.activeTravel;
+
+  readonly trip = this.travelStore.activeTravel;
 
   items: MenuItem[] = [
     {
@@ -52,7 +53,7 @@ export class TravelComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.travelService.activeTravelId.set(1); //TODO changer car en dur
+    this.travelStore.setActiveTravel(1); //TODO changer car en dur
   }
 
   activeDay = signal<string>('info');
@@ -69,15 +70,18 @@ export class TravelComponent implements OnInit {
     });
   }
 
-  protected readonly tabs = computed(() => [
-    {id: 'info', label: 'Général'},
-    ...(this.trip()
-      ? this.trip()!.days.map((d) => ({
+  readonly tabs = computed(() => {
+    const trip = this.trip();
+    if (!trip) return [{ id: 'info', label: 'Général' }];
+
+    return [
+      { id: 'info', label: 'Général' },
+      ...trip.days.map((d) => ({
         id: d.id.toISOString(),
         label: this.formatDate(d.id),
-      }))
-      : []),
-  ]);
+      })),
+    ];
+  });
 
   nextTab() {
     this.moveTab(1);
@@ -96,7 +100,7 @@ export class TravelComponent implements OnInit {
   }
 
   private moveTab(offset: number) {
-    const list = this.tabs().map(t => t.id);
+    const list = this.tabs().map((t) => t.id);
     const i = list.indexOf(this.activeDay());
 
     const next = list[i + offset];
@@ -108,9 +112,7 @@ export class TravelComponent implements OnInit {
   private getTodayId(trip: Travel): string {
     const today = new Date().toDateString();
 
-    const day = trip.days.find(d =>
-      new Date(d.id).toDateString() === today
-    );
+    const day = trip.days.find((d) => new Date(d.id).toDateString() === today);
 
     return day ? day.id.toISOString() : 'info';
   }

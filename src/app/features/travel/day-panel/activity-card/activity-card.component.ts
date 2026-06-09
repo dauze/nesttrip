@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -10,16 +10,17 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
-import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import {
+  AutoComplete,
+  AutoCompleteCompleteEvent,
+  AutoCompleteSelectEvent,
+} from 'primeng/autocomplete';
 import { BadgeModule } from 'primeng/badge';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputMask } from 'primeng/inputmask';
 import { PanelModule } from 'primeng/panel';
 import { BookingStatus } from '@core/enums/booking.status';
-import { Activity } from '@features/travel/day-panel/activity.model';
-import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
-import { Day } from '@features/travel/travel.model';
-import { ActivityService } from '@features/travel/day-panel/activity.service';
+import { DurationPipe } from '@app/shared/pipes/duration.pipe';
 import { FileService } from '@core/services/file.service';
 import { GooglePlaceService } from '@core/services/google.places.service';
 import {
@@ -27,10 +28,11 @@ import {
   ACTIVITY_TYPE_OPTIONS,
   BOOKING_STATUS_META,
   BOOKING_STATUS_OPTIONS,
-  CURRENCY_OPTIONS
+  CURRENCY_OPTIONS,
 } from '@features/travel/day-panel/activity-card/activity.constants';
-import { switchMap } from 'rxjs';
 import { Place } from '@app/core/models/place.dto';
+import { tap } from 'rxjs/operators';
+import { TravelStore } from '@features/travel/travel.service';
 
 @Component({
   selector: 'app-activity-card',
@@ -59,18 +61,19 @@ import { Place } from '@app/core/models/place.dto';
   styleUrl: './activity-card.component.scss',
 })
 export class ActivityCardComponent {
-  readonly activity = input.required<Activity>();
-  readonly tripId = input.required<number>();
-  readonly currentDay = input.required<Day>();
-
-  private readonly activityService = inject(ActivityService);
+  private readonly travelStore = inject(TravelStore);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
+
+  @Input() tripId!: number;
+  @Input() dayId!: Date;
+  @Input() activityId!: number;
+
+  readonly activity = this.travelStore.getActivity(this.activityId);
 
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
-
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
   readonly places = this.googlePlaceService.places;
@@ -80,16 +83,21 @@ export class ActivityCardComponent {
     return BOOKING_STATUS_META[status];
   });
   readonly isDeadlineSoon = computed(() => {
-    const deadline = this.activity().booking?.deadline;
+    const activity = this.activity();
+    if (!activity) return;
+
+    const deadline = activity.booking?.deadline;
     if (!deadline) return false;
     const diff = new Date(deadline).getTime() - Date.now();
     return diff > 0 && diff < 7 * 24 * 60 * 60 * 1000;
   });
-  readonly showDeadline = computed(() =>
+  readonly showDeadline = computed(() => {
+    const activity = this.activity();
+    if (!activity) return;
     [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(
-      this.activity().booking?.status ?? BookingStatus.NOT_NEEDED,
-    ),
-  );
+      activity.booking?.status ?? BookingStatus.NOT_NEEDED,
+    );
+  });
   selectedPlace: Pick<Place, 'placeId' | 'name'> | null = null;
 
   constructor() {
@@ -97,26 +105,23 @@ export class ActivityCardComponent {
     effect(() => {
       const p = this.googlePlaceService.place();
       if (!p) return;
+      const activity = this.activity();
+      if (!activity) return;
 
-      Object.assign(this.activity(), {
+      this.travelStore.updateActivity(this.tripId, this.dayId, {
+        ...activity,
         title: p.name,
         placeId: p.placeId,
-        lat: p.latitude,
-        lng: p.longitude,
+        latitude: p.latitude,
+        longitude: p.longitude,
       });
-      this.onChange();
     });
   }
 
   onChange(): void {
-    this.activityService
-      .updateActivity(
-        this.tripId(),
-        this.currentDay().id,
-        this.activity(),
-        this.currentDay().activities,
-      )
-      .subscribe();
+    const activity = this.activity();
+    if (!activity) return;
+    this.travelStore.updateActivity(this.tripId, this.dayId, activity);
   }
 
   onSearch(event: AutoCompleteCompleteEvent) {
@@ -126,23 +131,21 @@ export class ActivityCardComponent {
   onSelect(event: AutoCompleteSelectEvent) {
     const place = event.value as Partial<Place>;
     this.googlePlaceService.setSelectedId(place.placeId ?? '');
-    // C'est tout — l'effect s'occupe du reste
   }
 
   onFileSelect(event: { files: File[] }): void {
+    const activity = this.activity();
+    if (!activity) return;
     for (const file of event.files) {
-      const path = `trips/${this.tripId()}/${this.currentDay().id.getTime()}/${this.activity().id}/${file.name}`;
+      const path = `trips/${this.tripId}/${this.dayId.getTime()}/${activity.id}/${file.name}`;
       this.fileService
         .uploadFile(file, path)
         .pipe(
-          switchMap(({ url, name }) => {
-            this.activity().files!.push({ name, url, path });
-            return this.activityService.updateActivity(
-              this.tripId(),
-              this.currentDay().id,
-              this.activity(),
-              this.currentDay().activities,
-            );
+          tap(({ url, name }) => {
+            this.travelStore.updateActivity(this.tripId, this.dayId, {
+              ...activity,
+              files: [...(activity.files ?? []), { name, url, path }],
+            });
           }),
         )
         .subscribe();
@@ -150,25 +153,27 @@ export class ActivityCardComponent {
   }
 
   removeFile(index: number): void {
-    const file = this.activity().files![index];
+    const activity = this.activity();
+    if (!activity) return;
+    const file = activity.files![index];
     this.fileService
       .deleteFile(file.path)
       .pipe(
-        switchMap(() => {
-          this.activity().files!.splice(index, 1);
-          return this.activityService.updateActivity(
-            this.tripId(),
-            this.currentDay().id,
-            this.activity(),
-            this.currentDay().activities,
-          );
+        tap(() => {
+          const files = activity.files ?? [];
+          this.travelStore.updateActivity(this.tripId, this.dayId, {
+            ...activity,
+            files: files.filter((_, i) => i !== index),
+          });
         }),
       )
       .subscribe();
   }
 
   get durationDisplay(): string {
-    const duration = this.activity().duration ?? 0;
+    const activity = this.activity();
+    if (!activity) return '';
+    const duration = activity.duration ?? 0;
 
     const h = Math.floor(duration / 60);
     const m = duration % 60;
@@ -177,13 +182,15 @@ export class ActivityCardComponent {
   }
 
   onDurationChange(value: string): void {
+    const activity = this.activity();
+    if (!activity) return;
     const match = value.match(/^(\d{2})h(\d{2})$/);
     if (!match) {
       return;
     }
     const hours = Number(match[1]);
     const minutes = Number(match[2]);
-    this.activity().duration = hours * 60 + minutes;
+    activity.duration = hours * 60 + minutes;
     this.onChange();
   }
 }

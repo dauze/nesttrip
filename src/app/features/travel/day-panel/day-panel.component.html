@@ -10,8 +10,8 @@
     </ng-template>
     <div class="flex flex-column gap-2">
       <div cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
-        @for (activity of day().activities; track activity.id) {
-            <app-activity-card cdkDrag [activity]="activity" [currentDay]="day()" [tripId]="tripId()" />
+        @for (activity of activities(); track activity.id) {
+            <app-activity-card cdkDrag [activityId]="activity.id" [dayId]="day().id" [tripId]="tripId()" />
         }
       </div>
       <div class="flex justify-content-center w-full">

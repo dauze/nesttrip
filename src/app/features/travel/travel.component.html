@@ -27,7 +27,7 @@
             </p-tabpanel>
             @for (day of trip()?.days; track day.id) {
               <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
-                <app-day-panel [day]="day" [tripId]="trip()!.id" />
+                <app-day-panel [dayId]="day.id" [tripId]="trip()!.id" />
               </p-tabpanel>
             }
           </p-tabpanels>

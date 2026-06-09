@@ -1,13 +1,14 @@
-<p-panel [toggleable]="true" [collapsed]="true" [ngClass]="'booking ' + bookingMeta().className">
+@if (activity(); as activity) {
+  <p-panel [toggleable]="true" [collapsed]="true" [ngClass]="'booking ' + bookingMeta().className">
   <ng-template pTemplate="header">
     <div class="flex align-items-center gap-2">
       <span cdkDragHandle><i class="pi pi-bars"></i></span>
       <!-- type -->
-      <i [class]="activityTypeMeta[this.activity().type]?.icon"></i>
+      <i [class]="activityTypeMeta[activity.type]?.icon"></i>
       <!-- title -->
       <p-autoComplete
         [suggestions]="places()"
-         [ngModel]="this.activity().title"
+         [ngModel]="activity.title"
         (completeMethod)="onSearch($event)"
         (onSelect)="onSelect($event)"
         field="name"
@@ -23,7 +24,7 @@
       <!-- duration -->
       <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
         <i class="pi pi-clock"></i>
-        <span>{{activity().duration | duration}}</span>
+        <span>{{activity.duration | duration}}</span>
       </div>
     </div>
   </ng-template>
@@ -36,7 +37,7 @@
             <i class="pi pi-tag"></i>
             <span>Type</span>
           </label>
-          <p-select [options]="activityTypeOptions" [(ngModel)]="activity().type" (ngModelChange)="onChange()"/>
+          <p-select [options]="activityTypeOptions" [(ngModel)]="activity.type" (ngModelChange)="onChange()"/>
         </div>
       </div>
       <!-- DURATION -->
@@ -62,7 +63,7 @@
             <i class="pi pi-bookmark"></i>
             <span>Réservation</span>
           </label>
-          <p-select [options]="bookingStatusOptions" [(ngModel)]="activity().booking!.status" (ngModelChange)="onChange()"
+          <p-select [options]="bookingStatusOptions" [(ngModel)]="activity.booking!.status" (ngModelChange)="onChange()"
             optionLabel="label" optionValue="value" appendTo="body" />
         </div>
       </div>
@@ -76,7 +77,7 @@
               <i class="pi pi-calendar"></i>
               <span>Deadline</span>
             </label>
-            <p-datepicker class="w-12rem" [(ngModel)]="activity().booking!.deadline" (ngModelChange)="onChange()" dateFormat="dd/mm/yy" [showIcon]="true"
+            <p-datepicker class="w-12rem" [(ngModel)]="activity.booking!.deadline" (ngModelChange)="onChange()" dateFormat="dd/mm/yy" [showIcon]="true"
               appendTo="body" placeholder="Aucune deadline" />
           </div>
         </div>
@@ -88,9 +89,9 @@
             <i class="pi pi-euro"></i>
              <span>Prix</span>
           </label>
-          <p-inputNumber [(ngModel)]="activity().price.amount" (ngModelChange)="onChange()" [min]="0"
+          <p-inputNumber [(ngModel)]="activity.price.amount" (ngModelChange)="onChange()" [min]="0"
             [minFractionDigits]="0" [maxFractionDigits]="2" />
-          <p-select [options]="currencyOptions" [(ngModel)]="activity().price.currency" (ngModelChange)="onChange()"/>
+          <p-select [options]="currencyOptions" [(ngModel)]="activity.price.currency" (ngModelChange)="onChange()"/>
         </div>
       </div>
     </div>
@@ -100,7 +101,7 @@
         <i class="pi pi-pencil"></i>
          <span>Notes</span>
       </label>
-      <textarea pTextarea [(ngModel)]="activity().notes" (ngModelChange)="onChange()"  placeholder="Ajouter une note…"
+      <textarea pTextarea [(ngModel)]="activity.notes" (ngModelChange)="onChange()"  placeholder="Ajouter une note…"
         rows="3" autoResize="true" class="w-full">
       </textarea>
     </div>
@@ -110,7 +111,7 @@
         <i class="pi pi-paperclip"></i>
         <span>Fichiers</span>
       </label>
-      @for (file of activity().files; track file.path; let i = $index) {
+      @for (file of activity.files; track file.path; let i = $index) {
         <div>
           <i class="pi pi-file"></i>
           <a [href]="file.url" [download]="file.name" > {{ file.name }}</a>
@@ -121,3 +122,4 @@
         [auto]="true" (onSelect)="onFileSelect($event)" />
     </div>
 </p-panel>
+}
