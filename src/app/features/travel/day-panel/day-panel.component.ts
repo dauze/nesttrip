@@ -1,4 +1,4 @@
-import { Component, inject, input, Signal } from '@angular/core';
+import { Component, computed, inject, input, Signal } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Activity } from './activity.model';
@@ -21,7 +21,7 @@ export class DayPanelComponent {
   readonly tripId = input.required<number>();
   readonly dayId = input.required<Date>();
 
-  readonly activities: Signal<Activity[]> = this.travelStore.getActivities(this.dayId());
+  readonly activities: Signal<Activity[]> = computed(() => this.travelStore.getActivities(this.dayId())());
 
   onDrop(event: CdkDragDrop<Activity[]>): void {
     moveItemInArray(this.activities(), event.previousIndex, event.currentIndex);

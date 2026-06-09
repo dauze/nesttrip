@@ -94,7 +94,7 @@ export class ActivityCardComponent {
   readonly showDeadline = computed(() => {
     const activity = this.activity();
     if (!activity) return;
-    [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(
+    return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(
       activity.booking?.status ?? BookingStatus.NOT_NEEDED,
     );
   });

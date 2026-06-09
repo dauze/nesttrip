@@ -1,6 +1,6 @@
 
 <div class="flex flex-column gap-2">
-  <app-timeline [activities]="day().activities" />
+  <app-timeline [activities]="activities()" />
   <p-panel [toggleable]="true" [collapsed]="false">
     <ng-template pTemplate="header">
       <div class="flex align-items-center gap-2">
@@ -11,7 +11,7 @@
     <div class="flex flex-column gap-2">
       <div cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
         @for (activity of activities(); track activity.id) {
-            <app-activity-card cdkDrag [activityId]="activity.id" [dayId]="day().id" [tripId]="tripId()" />
+            <app-activity-card cdkDrag [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
       </div>
       <div class="flex justify-content-center w-full">

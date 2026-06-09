@@ -1,4 +1,4 @@
-import {Component, inject, input, ChangeDetectionStrategy, signal, effect} from '@angular/core';
+import {Component, inject, input, ChangeDetectionStrategy, signal, effect, computed} from '@angular/core';
 import { PanelModule } from 'primeng/panel';
 import { Textarea } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
@@ -9,8 +9,8 @@ import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-dr
 import { ConfirmationService } from 'primeng/api';
 import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
-import {InfoService} from './info.service';
 import { AutoResizeFixDirective } from '../../../shared/pipes/auto-resize-area.pipe';
+import { TravelStore } from '../travel.service';
 
 
 @Component({
@@ -21,30 +21,21 @@ import { AutoResizeFixDirective } from '../../../shared/pipes/auto-resize-area.p
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InfosComponent {
-  private readonly infosService = inject(InfoService);
+  private readonly travelStore = inject(TravelStore);
   private readonly confirmationService = inject(ConfirmationService);
   readonly info = input.required<Info>();
   readonly tripId = input.required<number>();
   readonly InfoType = InfoType;
+  readonly items = computed(() => this.travelStore.getInfoItems(this.tripId())());
 
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private skipNextEffect = false;
-  readonly localItems = signal<Item[]>([]);
-
-  constructor() {
-    effect(() => {
-      if (!this.skipNextEffect) this.localItems.set(this.info().items);
-      this.skipNextEffect = false;
-    });
-  }
 
   // ─── Events ─────────────────────────────────────────────────────────────────
 
   onDrop(event: CdkDragDrop<Item[]>): void {
-    const items = [...this.localItems()];
+      if (event.previousIndex === event.currentIndex) return; // early exit utile
+    const items = [...this.items()];
     moveItemInArray(items, event.previousIndex, event.currentIndex);
-    this.localItems.set(items);
-    this.infosService.reorderItems(this.tripId(), items).subscribe();
+    this.travelStore.reorderItems(this.tripId(), items.map(a => a.id));
   }
 
   addItem(): void {
@@ -54,10 +45,7 @@ export class InfosComponent {
       type: this.InfoType.TODO,
       elements: []
     };
-    this.localItems.set([...this.localItems(), newItem]);
-    this.infosService.createItem(this.tripId(), newItem).subscribe({
-      error: () => this.localItems.set(this.localItems().filter(i => i.id !== newItem.id))
-    });
+    this.travelStore.createItem(this.tripId(), newItem);
     this.focusTitleWithRetry(newItem.id);
   }
 
@@ -78,40 +66,28 @@ export class InfosComponent {
     this.confirmationService.confirm({
       message: 'Supprimer cet élément ?',
       accept: () => {
-        this.skipNextEffect = true;
-        this.localItems.set(this.localItems().filter(i => i.id !== item.id));
-        this.infosService.removeItem(this.tripId(), item.id, this.info()).subscribe({
-          error: () => {
-            this.skipNextEffect = false;
-            this.localItems.set([...this.localItems(), item]);
-          }
-        });
+        this.travelStore.removeItem(this.tripId(), item.id)
       }
     });
   }
 
   toggleType(item: Item): void {
     const type = item.type === InfoType.TODO ? InfoType.INFO : InfoType.TODO;
-    this.skipNextEffect = true;
-    this.localItems.set(this.localItems().map(i => i.id === item.id ? { ...i, type } : i));
-    this.infosService.updateItem(this.tripId(), item.id, { type }, this.info()).subscribe({
-      next: () => this.skipNextEffect = false,
-      error: () => this.skipNextEffect = false
-    });
+    this.travelStore.updateItem(this.tripId(), item.id, { type });
   }
 
   updateTitle(item: Item, title: string): void {
-    this.infosService.updateItem(this.tripId(), item.id, { title }, this.info()).subscribe();
+    this.travelStore.updateItem(this.tripId(), item.id, { title });
   }
 
   onTextChange(item: Item, index: number, value: string): void {
-    const current = this.localItems().find(i => i.id === item.id)!;
+    const current = this.items().find(i => i.id === item.id)!;
     const elements = current.elements.map((p, i) => i === index ? { ...p, text: value } : p);
-    this.updateElements(item, elements, true);
+    this.updateElements(item, elements);
   }
 
   toggleCheck(item: Item, index: number): void {
-      const current = this.localItems().find(i => i.id === item.id)!;
+      const current = this.items().find(i => i.id === item.id)!;
       const point = current.elements[index];
       const newChecked = !point.checked;
       const updated = { ...point, checked: newChecked };
@@ -137,11 +113,10 @@ export class InfosComponent {
 
   onEnterRow(item: Item, index: number, event: KeyboardEvent): void {
     event.preventDefault();
-    this.clearDebounce();
 
     const el = event.target as HTMLTextAreaElement;
     const cursor = el.selectionStart ?? 0;
-    const current = this.localItems().find(i => i.id === item.id)!;
+    const current = this.items().find(i => i.id === item.id)!;
 
     const before = current.elements[index].text.substring(0, cursor);
     const after  = current.elements[index].text.substring(cursor);
@@ -160,9 +135,8 @@ export class InfosComponent {
     if ((el.selectionStart ?? 0) !== 0 || index === 0) return;
 
     event.preventDefault();
-    this.clearDebounce();
 
-    const current = this.localItems().find(i => i.id === item.id)!;
+    const current = this.items().find(i => i.id === item.id)!;
     const upper = current.elements[index - 1].text;
     const merged = upper + current.elements[index].text;
     const cursor = upper.length;
@@ -181,12 +155,11 @@ export class InfosComponent {
 
   onDeleteRow(item: Item, index: number, event: KeyboardEvent): void {
     const el = event.target as HTMLTextAreaElement;
-    const current = this.localItems().find(i => i.id === item.id)!;
+    const current = this.items().find(i => i.id === item.id)!;
     const points = current.elements;
 
     if (el.value.length === 0 && points.length > 1) {
       event.preventDefault();
-      this.clearDebounce();
       const elements = points.filter((_, i) => i !== index);
       this.updateElements(item, elements);
       setTimeout(() => this.focusRow(item.id, Math.min(index, elements.length - 1), 0), 0);
@@ -196,7 +169,6 @@ export class InfosComponent {
     const cursor = el.selectionStart ?? 0;
     if (cursor === el.value.length && index < points.length - 1) {
       event.preventDefault();
-      this.clearDebounce();
       const merged = points[index].text + points[index + 1].text;
       el.value = merged;
       el.setSelectionRange(cursor, cursor);
@@ -214,7 +186,7 @@ export class InfosComponent {
   }
 
   onArrowDown(item: Item, index: number, event: KeyboardEvent): void {
-    const current = this.localItems().find(i => i.id === item.id)!;
+    const current = this.items().find(i => i.id === item.id)!;
     if (index < current.elements.length - 1) {
       event.preventDefault();
       this.focusRow(item.id, index + 1, (event.target as HTMLTextAreaElement).selectionStart ?? 0);
@@ -234,7 +206,7 @@ export class InfosComponent {
   }
 
   onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
-    const current = this.localItems().find(i => i.id === item.id)!;
+    const current = this.items().find(i => i.id === item.id)!;
     const elements = [...current.elements];
 
     if (item.type !== InfoType.TODO) {
@@ -255,21 +227,8 @@ export class InfosComponent {
     return { id: crypto.getRandomValues(new Uint32Array(1))[0], text, checked };
   }
 
-  private clearDebounce(): void {
-    if (this.debounceTimer) { clearTimeout(this.debounceTimer); this.debounceTimer = null; }
-  }
-
-  private updateElements(item: Item, elements: Point[], debounce = false): void {
-    this.skipNextEffect = true;
-    this.localItems.set(this.localItems().map(i => i.id === item.id ? { ...i, elements } : i));
-
-    const save = () => this.infosService.updateItem(this.tripId(), item.id, { elements }, this.info())
-      .subscribe({ next: () => this.skipNextEffect = false, error: () => this.skipNextEffect = false });
-
-    if (!debounce) { save(); return; }
-
-    this.clearDebounce();
-    this.debounceTimer = setTimeout(() => { this.debounceTimer = null; save(); }, 1000);
+  private updateElements(item: Item, elements: Point[]): void {
+    this.travelStore.updateItem(this.tripId(), item.id, { elements });
   }
 
   private focusTitleWithRetry(itemId: number, attempts = 0): void {

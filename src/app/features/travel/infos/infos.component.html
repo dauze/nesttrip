@@ -1,5 +1,5 @@
-<div cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
-  @for (item of localItems(); track item.id) {
+<div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
+  @for (item of items(); track item.id) {
     <p-panel [toggleable]="true" cdkDrag>
       <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">

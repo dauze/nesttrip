@@ -1,9 +1,10 @@
 import { computed, effect, inject, Injectable, Signal, signal } from '@angular/core';
 import { Day, Travel } from '@features/travel/travel.model';
 import { Activity } from '@features/travel/day-panel/activity.model';
-import { TravelDataSource } from '@core/infra/firebase/services/travel.persistence.service';
+import { TravelDataSource } from '@app/core/infra/firebase/services/travel.persistence.service';
 import { ActivityPersistenceService } from '@core/infra/firebase/services/activity.persistence.service';
 import { Item } from './infos/info.models';
+import { InfoPersistenceService } from '@app/core/infra/firebase/services/infos.persistence.service';
 
 type TravelEntities = Record<number, Travel>;
 type DayEntities = Record<string, Day>; // key = ISO date
@@ -13,6 +14,7 @@ type ActivityEntities = Record<number, Activity>;
 export class TravelStore {
   private readonly dataSource = inject(TravelDataSource);
   private readonly persistence = inject(ActivityPersistenceService);
+  private readonly infoPersistenceService = inject(InfoPersistenceService);
 
   // ✅ STATE NORMALISÉ
   private readonly travels = signal<TravelEntities>({});
@@ -229,7 +231,7 @@ export class TravelStore {
   reorderItems(tripId: number, ids: number[]) {
     this.travelInfoItems.update((map) => ({
       ...map,
-      ids,
+      [tripId]: ids,
     }));
 
     this.syncInfo(tripId);
@@ -241,6 +243,6 @@ export class TravelStore {
 
     const list = ids.map((id) => items[id]);
 
-    this.persistence.queueInfoUpdate(tripId, list);
+    this.infoPersistenceService.queueUpdate(tripId, list);
   }
 }
