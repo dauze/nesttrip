@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, output } from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -15,23 +15,22 @@ import { BadgeModule } from 'primeng/badge';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputMask } from 'primeng/inputmask';
 import { PanelModule } from 'primeng/panel';
-import { ProgressSpinner  } from 'primeng/progressspinner';
 import { BookingStatus } from '@core/enums/booking.status';
 import { Activity } from '@features/travel/day-panel/activity.model';
 import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
 import { Day } from '@features/travel/travel.model';
 import { ActivityService } from '@features/travel/day-panel/activity.service';
 import { FileService } from '@core/services/file.service';
-import {GooglePlaceService} from '@core/services/google.places.service';
+import { GooglePlaceService } from '@core/services/google.places.service';
 import {
   ACTIVITY_TYPE_META,
   ACTIVITY_TYPE_OPTIONS,
   BOOKING_STATUS_META,
   BOOKING_STATUS_OPTIONS,
-  CURRENCY_OPTIONS,
+  CURRENCY_OPTIONS
 } from '@features/travel/day-panel/activity-card/activity.constants';
 import { switchMap } from 'rxjs';
-import {Place} from '@app/core/models/place.dto';
+import { Place } from '@app/core/models/place.dto';
 
 @Component({
   selector: 'app-activity-card',
@@ -74,7 +73,7 @@ export class ActivityCardComponent {
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
-  readonly places        = this.googlePlaceService.places;
+  readonly places = this.googlePlaceService.places;
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -93,7 +92,6 @@ export class ActivityCardComponent {
   );
   selectedPlace: Pick<Place, 'placeId' | 'name'> | null = null;
 
-
   constructor() {
     // Se déclenche quand un nouveau lieu est chargé avec succès
     effect(() => {
@@ -101,10 +99,10 @@ export class ActivityCardComponent {
       if (!p) return;
 
       Object.assign(this.activity(), {
-        title:   p.name,
+        title: p.name,
         placeId: p.placeId,
-        lat:     p.latitude,
-        lng:     p.longitude,
+        lat: p.latitude,
+        lng: p.longitude,
       });
       this.onChange();
     });
@@ -122,7 +120,7 @@ export class ActivityCardComponent {
   }
 
   onSearch(event: AutoCompleteCompleteEvent) {
-    this.googlePlaceService.setSearchTerm(event.query  ?? '');
+    this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 
   onSelect(event: AutoCompleteSelectEvent) {

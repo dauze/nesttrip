@@ -1,12 +1,19 @@
-import {Injectable, inject, signal, computed} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {toSignal, toObservable} from '@angular/core/rxjs-interop';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
-  debounceTime, distinctUntilChanged, switchMap,
-  catchError, of, filter, map, shareReplay, startWith
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  map,
+  of,
+  shareReplay,
+  startWith,
+  switchMap
 } from 'rxjs';
 import { environment } from '../../../environnements/environnement';
-import {Place} from '../models/place.dto';
+import { Place } from '../models/place.dto';
 
 type LoadingState<T> =
   | {status: 'idle'}
@@ -29,11 +36,11 @@ export class GooglePlaceService {
   private readonly placesState$ = toObservable(this.searchTerm).pipe(
     debounceTime(300),
     distinctUntilChanged(),
-    filter(q => q.trim().length >= 2),
-    map(q => q.trim()),
-    switchMap(q =>
+    filter((q: string) => q.trim().length >= 2),
+    map((q: string) => q.trim()),
+    switchMap((q: string) =>
       this.http.get<Pick<Place, 'placeId' | 'name'>[]>(`${environment.apiUrl}/etablissements`, {params: {q}}).pipe(
-        map(data  => ({status: 'success', data}) as LoadingState<Partial<Place>[]>),
+        map((data: any)  => ({status: 'success', data}) as LoadingState<Partial<Place>[]>),
         startWith({status: 'loading'}         as LoadingState<Partial<Place>[]>),
         catchError(() => of({status: 'error'} as LoadingState<Partial<Place>[]>))
       )

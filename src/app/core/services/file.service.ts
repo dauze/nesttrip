@@ -11,7 +11,7 @@ export class FileService {
     const storageRef = ref(this.storage, path);
     return from(uploadBytes(storageRef, file)).pipe(
       switchMap(() => from(getDownloadURL(storageRef))),
-      switchMap((url) => [{ url, name: file.name }]),
+      switchMap((url: any) => [{ url, name: file.name }]),
     );
   }
 
