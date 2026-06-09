@@ -1,4 +1,4 @@
-import { Activity, Booking } from '@features/travel/day-panel/activity.model';
+import { Activity, Booking } from '@app/features/travel/day-panel/activity-card/activity.model';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityFirebase, BookingFirebase } from '../models/activity.dto';
 

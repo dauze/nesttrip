@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, Signal } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Activity } from './activity.model';
+import { Activity } from './activity-card/activity.model';
 import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
 import { ActivityType } from '@core/enums/activites-type.enum';

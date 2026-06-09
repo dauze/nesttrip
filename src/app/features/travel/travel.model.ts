@@ -1,4 +1,4 @@
-import { Activity } from './day-panel/activity.model';
+import { Activity } from './day-panel/activity-card/activity.model';
 import { Info } from './infos/info.models';
 
 export interface Travel {

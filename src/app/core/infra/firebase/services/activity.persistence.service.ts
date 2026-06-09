@@ -1,9 +1,7 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { activityToFb } from '@core/infra/firebase/mappers/activity.mapper';
-import { EMPTY, from, Subject } from 'rxjs';
-import { catchError, debounceTime, finalize, switchMap, tap } from 'rxjs/operators';
 import { TravelFirestoreService } from '@core/infra/firebase/services/travel.firebase.service';
-import { Activity } from '@app/features/travel/day-panel/activity.model';
+import { Activity } from '@app/features/travel/day-panel/activity-card/activity.model';
 import { BasePersistenceService } from './base.persistence.service';
 
 type ActivityUpdate = {

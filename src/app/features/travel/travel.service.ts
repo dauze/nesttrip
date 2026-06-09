@@ -1,6 +1,6 @@
 import { computed, effect, inject, Injectable, Signal, signal } from '@angular/core';
 import { Day, Travel } from '@features/travel/travel.model';
-import { Activity } from '@features/travel/day-panel/activity.model';
+import { Activity } from '@app/features/travel/day-panel/activity-card/activity.model';
 import { TravelDataSource } from '@app/core/infra/firebase/services/travel.persistence.service';
 import { ActivityPersistenceService } from '@core/infra/firebase/services/activity.persistence.service';
 import { Item } from './infos/info.models';

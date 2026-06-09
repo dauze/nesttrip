@@ -1,4 +1,4 @@
-import { Activity } from '../activity.model';
+import { Activity } from '../activity-card/activity.model';
 import { Component, input } from '@angular/core';
 
 import { SelectModule } from 'primeng/select';
