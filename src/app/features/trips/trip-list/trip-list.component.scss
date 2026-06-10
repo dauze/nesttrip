@@ -1,0 +1,61 @@
+.trip-list-container {
+  padding: 1.5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.trips-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trip-card {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+  }
+
+  &__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  &__arrow {
+    color: var(--p-text-muted-color);
+    font-size: 0.85rem;
+  }
+
+  &--skeleton {
+    cursor: default;
+    pointer-events: none;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  text-align: center;
+
+  &__icon {
+    font-size: 3rem;
+    color: var(--p-text-muted-color);
+  }
+
+  &__text {
+    color: var(--p-text-muted-color);
+    margin: 0;
+  }
+}

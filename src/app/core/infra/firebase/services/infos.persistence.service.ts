@@ -1,23 +1,23 @@
 import { inject, Injectable } from '@angular/core';
-import { Item } from '@app/features/travel/infos/info.models';
 import { TravelFirestoreService } from '@core/infra/firebase/services/travel.firebase.service';
 import { BasePersistenceService } from './base.persistence.service';
+import { Item } from '@app/features/trips/trip-detail/infos/info.models';
 
 type InfoUpdate = {
-  key: number;
-  tripId: number;
+  key: string;
+  tripId: string;
   items: Item[];
 };
 
 @Injectable({ providedIn: 'root' })
-export class InfoPersistenceService extends BasePersistenceService<number, InfoUpdate> {
+export class InfoPersistenceService extends BasePersistenceService<string, InfoUpdate> {
   private readonly firestore = inject(TravelFirestoreService);
 
   constructor() {
     super();
   }
 
-  queueUpdate(tripId: number, items: Item[]) {
+  queueUpdate(tripId: string, items: Item[]) {
     this.queue(tripId, { key: tripId, tripId, items });
   }
 

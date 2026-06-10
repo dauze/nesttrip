@@ -2,7 +2,7 @@ import {ActivityType} from '@core/enums/activites-type.enum';
 import {BookingStatus} from '@core/enums/booking.status';
 
 export interface Activity {
-  id: number;
+  id: string;
   title: string;
   type: ActivityType;
   duration: number;

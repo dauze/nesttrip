@@ -1,0 +1,32 @@
+<div class="trip-list-container">
+  @if (travelStore.tripsLoading()) {
+    <div class="trips-grid">
+      @for (i of skeletons; track i) {
+        <p-card styleClass="trip-card trip-card--skeleton">
+          <p-skeleton height="1.5rem" styleClass="mb-2" />
+          <p-skeleton height="1rem" width="60%" />
+        </p-card>
+      }
+    </div>
+  } @else if (travelStore.trips().length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-map empty-state__icon"></i>
+      <p class="empty-state__text">Aucun voyage pour l'instant.</p>
+      <p-button label="Créer un voyage" icon="pi pi-plus" />
+    </div>
+  } @else {
+    <div class="trips-grid">
+      @for (trip of travelStore.trips(); track trip.id) {
+        <p-card
+          styleClass="trip-card"
+          (click)="selectTrip(trip.id)"
+        >
+          <div class="trip-card__content">
+            <span class="trip-card__title">{{ trip.title }}</span>
+            <i class="pi pi-arrow-right trip-card__arrow"></i>
+          </div>
+        </p-card>
+      }
+    </div>
+  }
+</div>

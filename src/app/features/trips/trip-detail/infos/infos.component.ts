@@ -9,8 +9,8 @@ import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-dr
 import { ConfirmationService } from 'primeng/api';
 import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
-import { AutoResizeFixDirective } from '../../../shared/pipes/auto-resize-area.pipe';
-import { TravelStore } from '../travel.service';
+import { AutoResizeFixDirective } from '../../../../shared/pipes/auto-resize-area.pipe';
+import { TravelStore } from '../../travel.service';
 
 
 @Component({
@@ -25,10 +25,10 @@ export class InfosComponent {
   private readonly confirmationService = inject(ConfirmationService);
 
   readonly info = input.required<Info>();
-  readonly tripId = input.required<number>();
+  readonly tripId = input.required<string>();
   readonly InfoType = InfoType;
   readonly items = computed(() => this.travelStore.getInfoItems(this.tripId())());
-  readonly activePointId = signal<number | null>(null);
+  readonly activePointId = signal<string | null>(null);
 
   // ─── Events ─────────────────────────────────────────────────────────────────
   onDrop(event: CdkDragDrop<Item[]>): void {
@@ -40,7 +40,7 @@ export class InfosComponent {
 
   addItem(): void {
    const newItem: Item = {
-      id: crypto.getRandomValues(new Uint32Array(1))[0],
+      id: crypto.randomUUID(),
       title: '',
       type: InfoType.TODO,
       elements: []
@@ -181,7 +181,7 @@ export class InfosComponent {
     this.updateElements(item, [...unchecked, ...checked]);
   }
 
-  focusRow(itemId: number, index: number, cursor: number): void {
+  focusRow(itemId: string, index: number, cursor: number): void {
     const selector = `textarea[data-item-id="${itemId}"][data-index="${index}"]`;
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLTextAreaElement>(selector);
@@ -192,7 +192,7 @@ export class InfosComponent {
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   private newPoint(text = '', checked = false): Point {
-    return { id: crypto.getRandomValues(new Uint32Array(1))[0], text, checked };
+    return { id: crypto.randomUUID(), text, checked };
   }
 
   private updateElements(item: Item, elements: Point[]): void {

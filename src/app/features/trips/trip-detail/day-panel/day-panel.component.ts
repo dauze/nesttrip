@@ -7,7 +7,7 @@ import { Button } from 'primeng/button';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
-import { TravelStore } from '@features/travel/travel.service';
+import { TravelStore } from '../../travel.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -18,7 +18,7 @@ import { TravelStore } from '@features/travel/travel.service';
 })
 export class DayPanelComponent {
   private readonly travelStore = inject(TravelStore);
-  readonly tripId = input.required<number>();
+  readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
 
   readonly activities: Signal<Activity[]> = computed(() => this.travelStore.getActivities(this.dayId())());
@@ -33,7 +33,7 @@ export class DayPanelComponent {
   }
   addActivity() {
     this.travelStore.createActivity(this.tripId(), this.dayId(), {
-      id: crypto.getRandomValues(new Uint32Array(1))[0],
+      id: crypto.randomUUID(),
       title: '',
       type: ActivityType.ACTIVITE,
       duration: 0,

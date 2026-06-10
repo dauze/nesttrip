@@ -1,12 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { activityToFb } from '@core/infra/firebase/mappers/activity.mapper';
 import { TravelFirestoreService } from '@core/infra/firebase/services/travel.firebase.service';
-import { Activity } from '@app/features/travel/day-panel/activity-card/activity.model';
 import { BasePersistenceService } from './base.persistence.service';
+import { Activity } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
 
 type ActivityUpdate = {
   key: string;
-  tripId: number;
+  tripId: string;
   dayId: Date;
   activities: Activity[];
 };
@@ -19,7 +19,7 @@ export class ActivityPersistenceService
 
   constructor() { super(); }
 
-  queueUpdate(tripId: number, dayId: Date, activities: Activity[]) {
+  queueUpdate(tripId: string, dayId: Date, activities: Activity[]) {
     this.queue(`${tripId}_${dayId.getTime()}`, { key: `${tripId}_${dayId.getTime()}`, tripId, dayId, activities });
   }
 

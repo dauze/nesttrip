@@ -1,6 +1,6 @@
+import { Travel } from '@app/features/trips/travel.model';
 import { TravelFirebase } from '../models/travel.dto';
 import { activityFromFb, activityToFb } from './activity.mapper';
-import { Travel } from '@features/travel/travel.model';
 
 export function travelFromFb(data: TravelFirebase): Travel {
   return {

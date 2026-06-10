@@ -1,10 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { collection, doc, onSnapshot, query } from 'firebase/firestore';
-import { Travel } from '@features/travel/travel.model';
 import { FirebaseService } from '@core/infra/firebase/firebase.service';
 import { TravelFirebase } from '@core/infra/firebase/models/travel.dto';
 import { travelFromFb } from '@core/infra/firebase/mappers/travel.mapper';
+import { Travel } from '@app/features/trips/travel.model';
 
 @Injectable({ providedIn: 'root' })
 export class TravelDataSource {
@@ -27,7 +27,7 @@ export class TravelDataSource {
     });
   }
 
-  getTravel$(id: number) {
+  getTravel$(id: string) {
     return new Observable<Travel>((observer) => {
       const unsub = onSnapshot(
         doc(this.db, 'trips', id.toString()),

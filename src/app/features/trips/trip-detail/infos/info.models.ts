@@ -1,19 +1,19 @@
 import {InfoType} from "@core/enums/infos.type";
 
 export interface Info {
-  id: number;
+  id: string;
   items: Item[];
 }
 
 export interface Item {
-  id: number;
+  id: string;
   title: string;
   type: InfoType;
   elements: Point[];
 }
 
 export interface Point {
-  id: number;
+  id: string;
   text: string;
   checked: boolean;
 }

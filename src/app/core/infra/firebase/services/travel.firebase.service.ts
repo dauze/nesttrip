@@ -6,17 +6,17 @@ import { FirebaseService } from '@core/infra/firebase/firebase.service';
 export class TravelFirestoreService {
   private readonly db = inject(FirebaseService).db;
 
-  tripRef(tripId: number): DocumentReference {
+  tripRef(tripId: string): DocumentReference {
     return doc(this.db, 'trips', tripId.toString());
   }
 
-  updateActivities(tripId: number, dayId: Date, activities: any[]) {
+  updateActivities(tripId: string, dayId: Date, activities: any[]) {
     return updateDoc(this.tripRef(tripId), {
       [`days.${dayId.getTime()}.activities`]: activities,
     });
   }
 
-  updateInfo(tripId: number, items: any[]) {
+  updateInfo(tripId: string, items: any[]) {
     return updateDoc(this.tripRef(tripId), {
       'info.items': items,
     });

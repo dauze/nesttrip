@@ -1,70 +1,52 @@
 import { FormsModule } from '@angular/forms';
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
-import { DayPanelComponent } from './day-panel/day-panel.component';
-import { InfosComponent } from './infos/infos.component';
-import { AuthService } from '@core/services/auth.service';
-import { Travel } from './travel.model';
-import { ToolbarModule } from 'primeng/toolbar';
-import { MenuModule } from 'primeng/menu';
-import { ConfirmationService, MenuItem } from 'primeng/api';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import { SwipeDirective } from '../../shared/directives/swipe.directive';
-import { TravelStore } from '@features/travel/travel.service';
-import { InfosSkeletonComponent } from './infos/infos-skeleton.component';
+import { ConfirmationService } from 'primeng/api';
+import { TravelStore } from '@features/trips/travel.service';
+import { Travel } from '@features/trips/travel.model';
+import { SwipeDirective } from '@app/shared/directives/swipe.directive';
+import { DayPanelComponent } from './day-panel/day-panel.component';
+import { InfosComponent } from './infos/infos.component';
 
 @Component({
-  selector: 'app-travel',
+  selector: 'app-trip-detail',
   standalone: true,
   imports: [
+    FormsModule,
     ButtonModule,
     TabsModule,
-    FormsModule,
-    InfosComponent,
-    InfosSkeletonComponent,
-    ToolbarModule,
-    MenuModule,
     CardModule,
     ConfirmDialog,
+    InfosComponent,
     DayPanelComponent,
     SwipeDirective,
   ],
   providers: [ConfirmationService],
-  styleUrl: 'travel.component.scss',
-  templateUrl: 'travel.component.html',
+  templateUrl: 'trip-detail.component.html',
+  styleUrl: 'trip-detail.component.scss',
 })
-export class TravelComponent implements OnInit {
+export class TripDetailComponent implements OnInit {
   protected readonly travelStore = inject(TravelStore);
-  protected readonly authService = inject(AuthService);
-
-  readonly trip = this.travelStore.activeTravel;
-
-  items: MenuItem[] = [
-    {
-      label: 'Options',
-      items: [
-        {
-          label: 'Log out',
-          icon: 'pi pi-sign-out',
-          command: () => this.authService.logout().subscribe(),
-        },
-      ],
-    },
-  ];
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
-    this.travelStore.setActiveTravel(1); //TODO changer car en dur
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.travelStore.setActiveTrip(id);
+    }
   }
 
-  activeDay = signal<string>('info');
+  readonly activeDay = signal<string>('info');
 
   private initialized = false;
 
   constructor() {
     effect(() => {
-      const trip = this.trip();
+      const trip = this.travelStore.activeTravel();
       if (!trip || this.initialized) return;
 
       this.activeDay.set(this.getTodayId(trip));
@@ -73,7 +55,7 @@ export class TravelComponent implements OnInit {
   }
 
   readonly tabs = computed(() => {
-    const trip = this.trip();
+    const trip = this.travelStore.activeTravel();
     if (!trip) return [{ id: 'info', label: 'Général' }];
 
     return [
@@ -85,26 +67,25 @@ export class TravelComponent implements OnInit {
     ];
   });
 
-  nextTab() {
+  nextTab(): void {
     this.moveTab(1);
   }
 
-  prevTab() {
+  prevTab(): void {
     this.moveTab(-1);
-  }
-
-  protected formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
   }
 
   protected onTabChange(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  private moveTab(offset: number) {
+  protected formatDate(date: Date): string {
+    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
+  }
+
+  private moveTab(offset: number): void {
     const list = this.tabs().map((t) => t.id);
     const i = list.indexOf(this.activeDay());
-
     const next = list[i + offset];
     if (next) {
       this.activeDay.set(next);
@@ -113,9 +94,7 @@ export class TravelComponent implements OnInit {
 
   private getTodayId(trip: Travel): string {
     const today = new Date().toDateString();
-
     const day = trip.days.find((d) => new Date(d.id).toDateString() === today);
-
     return day ? day.id.toISOString() : 'info';
   }
 }

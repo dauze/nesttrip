@@ -7,10 +7,27 @@ export const routes: Routes = [
     loadComponent: () => import('@features/login/login.component').then((m) => m.LoginComponent),
   },
   {
-    path: 'app',
-    loadComponent: () => import('@features/travel/travel.component').then((m) => m.TravelComponent),
+    path: 'trips',
+    loadComponent: () => import('@features/trips/trips.component').then((m) => m.TripsComponent),
     canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('@features/trips/trip-list/trip-list.component').then(
+            (m) => m.TripListComponent,
+          ),
+      },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('@features/trips/trip-detail/trip-detail.component').then(
+            (m) => m.TripDetailComponent,
+          ),
+      },
+    ],
   },
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: '**', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', redirectTo: 'trips', pathMatch: 'full' },
+  { path: '**', redirectTo: 'trips' },
 ];
+ 
