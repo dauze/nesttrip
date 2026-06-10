@@ -1,4 +1,4 @@
-import {Component, inject, input, ChangeDetectionStrategy, signal, effect, computed} from '@angular/core';
+import {Component, inject, input, ChangeDetectionStrategy, computed, signal} from '@angular/core';
 import { PanelModule } from 'primeng/panel';
 import { Textarea } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
@@ -23,51 +23,45 @@ import { TravelStore } from '../travel.service';
 export class InfosComponent {
   private readonly travelStore = inject(TravelStore);
   private readonly confirmationService = inject(ConfirmationService);
+
   readonly info = input.required<Info>();
   readonly tripId = input.required<number>();
   readonly InfoType = InfoType;
   readonly items = computed(() => this.travelStore.getInfoItems(this.tripId())());
-
   readonly activePointId = signal<number | null>(null);
-  // ─── Events ─────────────────────────────────────────────────────────────────
 
+  // ─── Events ─────────────────────────────────────────────────────────────────
   onDrop(event: CdkDragDrop<Item[]>): void {
-      if (event.previousIndex === event.currentIndex) return; // early exit utile
+    if (event.previousIndex === event.currentIndex) return;
     const items = [...this.items()];
     moveItemInArray(items, event.previousIndex, event.currentIndex);
     this.travelStore.reorderItems(this.tripId(), items.map(a => a.id));
   }
 
   addItem(): void {
-    const newItem: Item = {
+   const newItem: Item = {
       id: crypto.getRandomValues(new Uint32Array(1))[0],
       title: '',
-      type: this.InfoType.TODO,
+      type: InfoType.TODO,
       elements: []
     };
     this.travelStore.createItem(this.tripId(), newItem);
-    this.focusTitleWithRetry(newItem.id);
   }
 
   addPoint(item: Item): void {
-    const elements = [...item.elements];
-    elements.push(this.newPoint('', false));
+    const elements = [...item.elements, this.newPoint()];
     this.updateElements(item, elements);
     this.focusRow(item.id, elements.length - 1, 0);
   }
 
   removePoint(item: Item, index: number): void {
-    const elements = [...item.elements];
-    elements.splice(index, 1);
-    this.updateElements(item, elements);
+    this.updateElements(item, item.elements.filter((_, i) => i !== index));
   }
 
   confirmDelete(item: Item): void {
     this.confirmationService.confirm({
       message: 'Supprimer cet élément ?',
-      accept: () => {
-        this.travelStore.removeItem(this.tripId(), item.id)
-      }
+      accept: () => this.travelStore.removeItem(this.tripId(), item.id)
     });
   }
 
@@ -81,51 +75,30 @@ export class InfosComponent {
   }
 
   onTextChange(item: Item, index: number, value: string): void {
-    const current = this.items().find(i => i.id === item.id)!;
-    const elements = current.elements.map((p, i) => i === index ? { ...p, text: value } : p);
+    const elements = item.elements.map((p, i) => i === index ? { ...p, text: value } : p);
     this.updateElements(item, elements);
   }
 
   toggleCheck(item: Item, index: number): void {
-      const current = this.items().find(i => i.id === item.id)!;
-      const point = current.elements[index];
-      const newChecked = !point.checked;
-      const updated = { ...point, checked: newChecked };
-
-      let elements: Point[];
-      if (newChecked) {
-        // Déplace en fin de liste
-        elements = [
-          ...current.elements.filter((_, i) => i !== index),
-          updated
-        ];
-      } else {
-        // Déplace en début de liste
-        elements = [
-          updated,
-          ...current.elements.filter((_, i) => i !== index),
-
-        ];
-      }
-
-      this.updateElements(item, elements);
-    }
+    const point = item.elements[index];
+    const updated = { ...point, checked: !point.checked };
+    const rest = item.elements.filter((_, i) => i !== index);
+    // checked → fin de liste, unchecked → début
+    const elements = updated.checked ? [...rest, updated] : [updated, ...rest];
+    this.updateElements(item, elements);
+  }
 
   onEnterRow(item: Item, index: number, event: KeyboardEvent): void {
     event.preventDefault();
-
     const el = event.target as HTMLTextAreaElement;
     const cursor = el.selectionStart ?? 0;
-    const current = this.items().find(i => i.id === item.id)!;
-
-    const before = current.elements[index].text.substring(0, cursor);
-    const after  = current.elements[index].text.substring(cursor);
+    const before = item.elements[index].text.substring(0, cursor);
+    const after  = item.elements[index].text.substring(cursor);
     el.value = before;
 
-    const elements = [...current.elements];
+    const elements = [...item.elements];
     elements[index] = { ...elements[index], text: before };
-    elements.splice(index + 1, 0, this.newPoint(after, current.elements[index].checked));
-
+    elements.splice(index + 1, 0, this.newPoint(after, item.elements[index].checked));
     this.updateElements(item, elements);
     this.focusRow(item.id, index + 1, 0);
   }
@@ -133,12 +106,10 @@ export class InfosComponent {
   onBackspaceRow(item: Item, index: number, event: KeyboardEvent): void {
     const el = event.target as HTMLTextAreaElement;
     if ((el.selectionStart ?? 0) !== 0 || index === 0) return;
-
     event.preventDefault();
 
-    const current = this.items().find(i => i.id === item.id)!;
-    const upper = current.elements[index - 1].text;
-    const merged = upper + current.elements[index].text;
+    const upper = item.elements[index - 1].text;
+    const merged = upper + item.elements[index].text;
     const cursor = upper.length;
 
     const upperEl = document.querySelector<HTMLTextAreaElement>(
@@ -146,17 +117,15 @@ export class InfosComponent {
     );
     if (upperEl) { upperEl.value = merged; upperEl.focus(); upperEl.setSelectionRange(cursor, cursor); }
 
-    const elements = current.elements
+    const elements = item.elements
       .map((p, i) => i === index - 1 ? { ...p, text: merged } : p)
       .filter((_, i) => i !== index);
-
     this.updateElements(item, elements);
   }
 
   onDeleteRow(item: Item, index: number, event: KeyboardEvent): void {
     const el = event.target as HTMLTextAreaElement;
-    const current = this.items().find(i => i.id === item.id)!;
-    const points = current.elements;
+    const points = item.elements;
 
     if (el.value.length === 0 && points.length > 1) {
       event.preventDefault();
@@ -182,60 +151,46 @@ export class InfosComponent {
   onArrowUp(item: Item, index: number, event: KeyboardEvent): void {
     event.preventDefault();
     if (index > 0) this.focusRow(item.id, index - 1, (event.target as HTMLTextAreaElement).selectionStart ?? 0);
-    else document.querySelector<HTMLElement>(`[data-title-id="${item.id}"]`)?.focus(); // 👈
+    else document.querySelector<HTMLElement>(`[data-title-id="${item.id}"]`)?.focus();
   }
 
   onArrowDown(item: Item, index: number, event: KeyboardEvent): void {
-    const current = this.items().find(i => i.id === item.id)!;
-    if (index < current.elements.length - 1) {
+    if (index < item.elements.length - 1) {
       event.preventDefault();
       this.focusRow(item.id, index + 1, (event.target as HTMLTextAreaElement).selectionStart ?? 0);
     }
+  }
+
+  onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
+    if (item.type !== InfoType.TODO) {
+      const elements = [...item.elements];
+      moveItemInArray(elements, event.previousIndex, event.currentIndex);
+      this.updateElements(item, elements);
+      return;
+    }
+
+    // Les indices du drag event sont relatifs aux unchecked uniquement
+    const unchecked = item.elements.filter(p => !p.checked);
+    const checked   = item.elements.filter(p => p.checked);
+    moveItemInArray(unchecked, event.previousIndex, event.currentIndex);
+    this.updateElements(item, [...unchecked, ...checked]);
   }
 
   focusRow(itemId: number, index: number, cursor: number): void {
     const selector = `textarea[data-item-id="${itemId}"][data-index="${index}"]`;
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLTextAreaElement>(selector);
-      if (el) { el.focus(); el.setSelectionRange(cursor, cursor); }
-      else setTimeout(() => {
-        const el2 = document.querySelector<HTMLTextAreaElement>(selector);
-        if (el2) { el2.focus(); el2.setSelectionRange(cursor, cursor); }
-      }, 50);
+      el?.focus();
+      el?.setSelectionRange(cursor, cursor);
     });
   }
 
-  onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
-    const current = this.items().find(i => i.id === item.id)!;
-    const elements = [...current.elements];
-
-    if (item.type !== InfoType.TODO) {
-      moveItemInArray(elements, event.previousIndex, event.currentIndex);
-      this.updateElements(item, elements);
-      return;
-    }
-
-    // Seuls les unchecked sont dans la liste, on reorder directement
-    const unchecked = elements.filter(p => !p.checked);
-    moveItemInArray(unchecked, event.previousIndex, event.currentIndex);
-    this.updateElements(item, [...unchecked, ...elements.filter(p => p.checked)]);
-  }
-
   // ─── Helpers ────────────────────────────────────────────────────────────────
-
   private newPoint(text = '', checked = false): Point {
     return { id: crypto.getRandomValues(new Uint32Array(1))[0], text, checked };
   }
 
   private updateElements(item: Item, elements: Point[]): void {
     this.travelStore.updateItem(this.tripId(), item.id, { elements });
-  }
-
-  private focusTitleWithRetry(itemId: number, attempts = 0): void {
-    const el = document.querySelector<HTMLElement>(
-      `input[data-title-id="${itemId}"], textarea[data-title-id="${itemId}"]`
-    );
-    if (el) { el.focus(); return; }
-    if (attempts < 5) setTimeout(() => this.focusTitleWithRetry(itemId, attempts + 1), 50 * (attempts + 1));
   }
 }
