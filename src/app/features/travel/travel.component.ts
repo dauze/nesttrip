@@ -13,6 +13,7 @@ import { CardModule } from 'primeng/card';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { SwipeDirective } from '../../shared/directives/swipe.directive';
 import { TravelStore } from '@features/travel/travel.service';
+import { InfosSkeletonComponent } from './infos/infos-skeleton.component';
 
 @Component({
   selector: 'app-travel',
@@ -22,6 +23,7 @@ import { TravelStore } from '@features/travel/travel.service';
     TabsModule,
     FormsModule,
     InfosComponent,
+    InfosSkeletonComponent,
     ToolbarModule,
     MenuModule,
     CardModule,

@@ -1,0 +1,44 @@
+<div class="flex flex-column gap-2">
+  @for (panel of panels; track $index) {
+    <div class="surface-card border-round-lg border-1 surface-border overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex align-items-center gap-2 px-3 py-2 border-bottom-1 surface-border">
+        <p-skeleton shape="square" size="1rem" styleClass="flex-shrink-0 border-round" />
+        <p-skeleton [width]="panel.titleWidth" height="1.25rem" styleClass="flex-1" />
+        <div class="flex gap-1 ml-auto flex-shrink-0">
+          <p-skeleton shape="circle" size="1.75rem" />
+          <p-skeleton shape="circle" size="1.75rem" />
+          <p-skeleton shape="circle" size="1.75rem" />
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="flex flex-column gap-2 px-3 py-3">
+        @for (_ of [].constructor(panel.rows); track $index) {
+          <div class="flex align-items-center gap-2 pl-3">
+            <p-skeleton width="0.625rem" height="1rem" styleClass="flex-shrink-0" />
+            @if (panel.hasCheckbox) {
+              <p-skeleton shape="square" size="1rem" styleClass="flex-shrink-0 border-round" />
+            }
+            <p-skeleton
+              [width]="(60 + ($index % 3) * 15) + '%'"
+              height="1rem"
+              styleClass="flex-1"
+            />
+          </div>
+        }
+        <!-- Faux bouton "Élément de liste" -->
+        <div class="flex align-items-center gap-2 pl-2 mt-1">
+          <p-skeleton shape="square" size="1rem" styleClass="border-round" />
+          <p-skeleton width="6rem" height="0.875rem" />
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Faux bouton "+" en bas -->
+  <div class="flex justify-content-center">
+    <p-skeleton shape="circle" size="2.25rem" />
+  </div>
+</div>

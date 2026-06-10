@@ -1,9 +1,9 @@
-@if (trip()) {
+@if (trip(); as trip) {
   <p-confirmDialog />
   <div class="flex flex-column gap-2" style="min-width: 26rem;">
     <p-toolbar>
       <ng-template #center>
-          <span>{{ trip()!.title }}</span>
+          <span>{{ trip.title }}</span>
       </ng-template>
       <ng-template #end>
           <div class="card flex justify-center">
@@ -23,11 +23,11 @@
         <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
           <p-tabpanels>
             <p-tabpanel value="info" [lazy]="true">
-              <app-infos [info]="trip()!.info" [tripId]="trip()!.id" />
+                <app-infos [info]="trip.info" [tripId]="trip.id" />
             </p-tabpanel>
-            @for (day of trip()?.days; track day.id) {
+            @for (day of trip?.days; track day.id) {
               <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
-                <app-day-panel [dayId]="day.id" [tripId]="trip()!.id" />
+                <app-day-panel [dayId]="day.id" [tripId]="trip!.id" />
               </p-tabpanel>
             }
           </p-tabpanels>
