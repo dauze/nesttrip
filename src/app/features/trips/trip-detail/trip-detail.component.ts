@@ -1,16 +1,19 @@
 import { FormsModule } from '@angular/forms';
-import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
+import { ToolbarModule } from 'primeng/toolbar';
+import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { TravelStore } from '@features/trips/travel.service';
-import { Travel } from '@features/trips/travel.model';
 import { SwipeDirective } from '@app/shared/directives/swipe.directive';
+import { Travel } from '../travel.model';
+import { TravelStore } from '../travel.service';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
+import { InfosSkeletonComponent } from "./infos/infos-skeleton.component";
 
 @Component({
   selector: 'app-trip-detail',
@@ -20,25 +23,39 @@ import { InfosComponent } from './infos/infos.component';
     ButtonModule,
     TabsModule,
     CardModule,
+    ToolbarModule,
+    SkeletonModule,
     ConfirmDialog,
     InfosComponent,
     DayPanelComponent,
     SwipeDirective,
-  ],
+    InfosSkeletonComponent
+],
   providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
 })
-export class TripDetailComponent implements OnInit {
+export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly travelStore = inject(TravelStore);
   private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
+    this.initialized = false;
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.travelStore.setActiveTrip(id);
     }
   }
+
+  ngOnDestroy(): void {
+    this.travelStore.clearActiveTrip();
+  }
+
+  readonly tripTitle = computed(() => {
+    const id = this.route.snapshot.paramMap.get('id');
+    const fromList = this.travelStore.trips().find((t) => t.id === id);
+    return fromList?.title ?? this.travelStore.activeTravel()?.title ?? '';
+  });
 
   readonly activeDay = signal<string>('info');
 

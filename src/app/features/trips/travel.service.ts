@@ -1,10 +1,10 @@
 import { computed, effect, inject, Injectable, Signal, signal } from '@angular/core';
-import { Day, Travel } from '@features/trips/travel.model';
 import { TravelDataSource } from '@app/core/infra/firebase/services/travel.persistence.service';
 import { ActivityPersistenceService } from '@core/infra/firebase/services/activity.persistence.service';
 import { Item } from './trip-detail/infos/info.models';
 import { InfoPersistenceService } from '@app/core/infra/firebase/services/infos.persistence.service';
 import { Subscription } from 'rxjs';
+import { Travel, Day } from './travel.model';
 import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
 
 type TravelEntities = Record<string, Travel>;
@@ -90,14 +90,10 @@ export class TravelStore {
 
   constructor() {
     effect(() => {
-      const id = this.activeTravelId();
-
-      this.travelSub?.unsubscribe();
-
-      if (!id) return;
-
       this.activeTravelLoading.set(true);
-
+      const id = this.activeTravelId();
+      this.travelSub?.unsubscribe();
+      if (!id) return;
       this.travelSub = this.dataSource.getTravel$(id).subscribe((travel) => {
         if (!this.hydrated.has(travel.id)) {
           this.hydrate(travel);
@@ -187,8 +183,6 @@ export class TravelStore {
    * Appelé au montage de TripListComponent.
    */
   loadTrips(): void {
-    if (this.tripsLoading()) return;
-
     this.tripsLoading.set(true);
     this.tripsUnsub?.();
 
@@ -217,7 +211,6 @@ export class TravelStore {
   clearActiveTrip(): void {
     this.travelSub?.unsubscribe();
     this.activeTravelId.set(null);
-    this.activeTravelLoading.set(false);
   }
 
   // ✅ COMMANDES — ACTIVITIES

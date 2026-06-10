@@ -1,33 +1,33 @@
-@if (travelStore.activeTravel(); as trip) {
   <p-confirmDialog />
-
-  <div class="trip-detail-container">
-    <!-- Sous-toolbar propre au détail du trip -->
-    <div class="trip-subtitle-bar">
-      <span class="trip-subtitle-bar__title">{{ trip.title }}</span>
-    </div>
-
-    <p-card>
-      <p-tabs scrollable (activeValueChange)="onTabChange()" [(value)]="activeDay">
-        <p-tablist>
-          @for (tab of tabs(); track tab.id) {
-            <p-tab [value]="tab.id">{{ tab.label }}</p-tab>
-          }
-        </p-tablist>
-
-        <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
-          <p-tabpanels>
-            <p-tabpanel value="info" [lazy]="true">
-              <app-infos [info]="trip.info" [tripId]="trip.id" />
-            </p-tabpanel>
-            @for (day of trip.days; track day.id) {
-              <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
-                <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
-              </p-tabpanel>
-            }
-          </p-tabpanels>
-        </div>
-      </p-tabs>
+  <div class="flex flex-column gap-2 pt-2">
+  @if (!travelStore.activeTravelLoading()) {
+    <p-card [header]="tripTitle()">
     </p-card>
-  </div>
-}
+    @if (travelStore.activeTravel(); as trip) {
+      <p-card>
+        <p-tabs scrollable (activeValueChange)="onTabChange()" [(value)]="activeDay">
+          <p-tablist>
+            @for (tab of tabs(); track tab.id) {
+              <p-tab [value]="tab.id">{{ tab.label }}</p-tab>
+            }
+          </p-tablist>
+          <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
+            <p-tabpanels>
+              <p-tabpanel value="info" [lazy]="true">
+                <app-infos [info]="trip.info" [tripId]="trip.id" />
+              </p-tabpanel>
+              @for (day of trip.days; track day.id) {
+                <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
+                  <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
+                </p-tabpanel>
+              }
+            </p-tabpanels>
+          </div>
+        </p-tabs>
+      </p-card>
+    }
+  } @else {
+    <p-skeleton height="2.2rem"/>
+    <app-infos-skeleton></app-infos-skeleton>
+  }
+</div>
