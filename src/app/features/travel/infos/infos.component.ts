@@ -46,6 +46,11 @@ export class InfosComponent {
       elements: []
     };
     this.travelStore.createItem(this.tripId(), newItem);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(
+        `input[data-title-id="${newItem.id}"], textarea[data-title-id="${newItem.id}"]`
+      )?.focus();
+    });
   }
 
   addPoint(item: Item): void {
