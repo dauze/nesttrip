@@ -16,20 +16,20 @@
           ></textarea>
           <div class="flex gap-1 flex-shrink-0">
             <p-button
-              [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
-              [rounded]="true"
-              [text]="true"
-              severity="secondary"
-              [outlined]="true"
-              (onClick)="toggleType(item)"
-            />
-            <p-button
               icon="pi pi-trash"
               [rounded]="true"
               [text]="true"
               severity="secondary"
               [outlined]="true"
               (onClick)="confirmDelete(item)"
+            />
+            <p-button
+              [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="toggleType(item)"
             />
           </div>
         </div>
@@ -70,6 +70,8 @@
               (keydown.delete)="onDeleteRow(item, $index, $any($event))"
               (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
               (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
+              (focus)="activePointId.set(point.id)"
+              (blur)="activePointId.set(null)"
               [attr.data-item-id]="item.id"
               [attr.data-index]="$index"
             ></textarea>
@@ -79,6 +81,8 @@
               [text]="true"
               severity="secondary"
               size="small"
+              (mousedown)="$event.preventDefault()"
+              [style.display]="activePointId() === point.id ? 'flex' : 'none'"
               (onClick)="removePoint(item, $index)"
             />
           </div>
@@ -129,6 +133,8 @@
                     (keydown.delete)="onDeleteRow(item, $index, $any($event))"
                     (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
                     (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
+                    (focus)="activePointId.set(point.id)"
+                    (blur)="activePointId.set(null)"
                     [attr.data-item-id]="item.id"
                     [attr.data-index]="$index"
                   ></textarea>
@@ -138,6 +144,8 @@
                     [text]="true"
                     severity="secondary"
                     size="small"
+                    (mousedown)="$event.preventDefault()"
+                    [style.display]="activePointId() === point.id ? 'flex' : 'none'"
                     (onClick)="removePoint(item, $index)"
                   />
                 </div>

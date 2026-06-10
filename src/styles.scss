@@ -25,7 +25,6 @@
   --p-textarea-background: transparent;
   --p-textarea-border-color: transparent;
   --p-textarea-shadow: none;
-  --p-textarea-transition-duration: 0s;
   --p-textarea-hover-border-color: transparent;
   --p-textarea-focus-border-color: transparent;
 }
@@ -40,10 +39,6 @@
 
 .p-dialog-content {
   --p-dialog-content-padding: 0 0.5rem 0.5rem 0.5rem;
-}
-
-.p-checkbox-box {
-  --p-checkbox-transition-duration: 0s;
 }
 
 .p-panel-content {

@@ -28,7 +28,7 @@ export class InfosComponent {
   readonly InfoType = InfoType;
   readonly items = computed(() => this.travelStore.getInfoItems(this.tripId())());
 
-
+  readonly activePointId = signal<number | null>(null);
   // ─── Events ─────────────────────────────────────────────────────────────────
 
   onDrop(event: CdkDragDrop<Item[]>): void {
