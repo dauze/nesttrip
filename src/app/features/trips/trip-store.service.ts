@@ -5,6 +5,7 @@ import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
 import { Item } from './trip-detail/infos/info.models';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
+import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
@@ -14,6 +15,7 @@ type ActivityEntities = Record<string, Activity>;
 export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService); //TODO à voir pour déguager
   private readonly infoPersistenceService = inject(InfosPersistenceService); //TODO à voir pour déguager
+  private readonly tripPersistenceService = inject(TripPersistenceService);
 
   // ── État normalisé ────────────────────────────────────────────────────────
 
@@ -209,4 +211,45 @@ export class TripStore {
     const list = ids.map((id) => items[id]);
     this.infoPersistenceService.queueUpdate(tripId, list);
   }
+
+saveTrip(trip: Trip): void {
+  // 1. Hydratation optimiste des signals locaux
+  // _tripsResult : ajout dans la liste du dashboard
+  this._tripsResult.update((list) => [
+    ...(list ?? []),
+    { id: trip.id, title: trip.title },
+  ]);
+
+  // _trips : entité complète
+  this._trips.update((trips) => ({ ...trips, [trip.id]: trip }));
+
+  // _days + _tripDays : un entry par jour
+  const dayKeys: string[] = [];
+  this._days.update((days) => {
+    const copy = { ...days };
+    for (const day of trip.days) {
+      const key = day.id.toISOString();
+      copy[key] = day;
+      dayKeys.push(key);
+    }
+    return copy;
+  });
+  this._tripDays.update((map) => ({ ...map, [trip.id]: dayKeys }));
+
+  // _infoItems + _tripInfoItems : items de l'info (vides à la création)
+  const itemIds = trip.info.items.map((item) => item.id);
+  this._infoItems.update((items) => {
+    const copy = { ...items };
+    for (const item of trip.info.items) {
+      copy[item.id] = item;
+    }
+    return copy;
+  });
+  this._tripInfoItems.update((map) => ({ ...map, [trip.id]: itemIds }));
+
+  // 2. Persistance Firestore (fire & forget — pas de debounce sur une création)
+  this.tripPersistenceService.createTrip(trip).catch((err) => {
+    console.error('[TripStore] Erreur création trip Firestore :', err);
+  });
+}
 }

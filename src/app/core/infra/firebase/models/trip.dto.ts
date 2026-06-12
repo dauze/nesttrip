@@ -3,6 +3,7 @@ import {ActivityFirebase} from './activity.dto';
 
 export interface TripFirebase {
   id: string;
+  ville: string;
   title: string;
   days: Record<string, { activities: ActivityFirebase[] }>;
   info: Info;
