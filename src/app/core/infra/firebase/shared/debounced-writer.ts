@@ -2,7 +2,7 @@ import { signal } from "@angular/core";
 import { Subject, debounceTime, tap, switchMap, finalize, EMPTY, from, catchError } from "rxjs";
 
 // base-persistence.service.ts
-export abstract class BasePersistenceService<K, T extends { key: K }> {
+export abstract class DebounceWriter<K, T extends { key: K }> {
   protected abstract write(updates: T[]): Promise<unknown>;
 
   readonly syncing = signal(false);

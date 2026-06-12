@@ -1,32 +1,53 @@
-<div class="trip-list-container">
+<div class="flex flex-column gap-3 p-4">
+
+  <!-- Header -->
+  <div class="flex justify-content-between align-items-center">
+    <span class="text-2xl font-semibold">Mes voyages</span>
+    <p-button
+      label="Ajouter un voyage"
+      icon="pi pi-plus"
+      routerLink="/trips/new"
+    />
+  </div>
+
+  <!-- Skeleton -->
   @if (tripsLoading()) {
-    <div class="trips-grid">
+    <div class="grid">
       @for (i of [1, 2, 3]; track i) {
-        <p-card styleClass="trip-card trip-card--skeleton">
-          <p-skeleton height="1.5rem" styleClass="mb-2" />
-          <p-skeleton height="1rem" width="60%" />
-        </p-card>
+        <div class="col-12 md:col-6 lg:col-4">
+          <p-card>
+            <p-skeleton height="1.5rem" styleClass="mb-2" />
+            <p-skeleton height="1rem" width="60%" />
+          </p-card>
+        </div>
       }
     </div>
+{{trips()}}
+  <!-- Empty state -->
   } @else if (trips().length === 0) {
-    <div class="empty-state">
-      <i class="pi pi-map empty-state__icon"></i>
-      <p class="empty-state__text">Aucun voyage pour l'instant.</p>
-      <p-button label="Créer un voyage" icon="pi pi-plus" />
-    </div>
+    <p-message
+      severity="info"
+      text="Aucun voyage pour l'instant."
+      styleClass="w-full"
+    />
+
+  <!-- Trip list -->
   } @else {
-    <div class="trips-grid">
+    <div class="grid">
       @for (trip of trips(); track trip.id) {
-        <p-card
-          styleClass="trip-card"
-          (click)="selectTrip(trip.id)"
-        >
-          <div class="trip-card__content">
-            <span class="trip-card__title">{{ trip.title }}</span>
-            <i class="pi pi-arrow-right trip-card__arrow"></i>
-          </div>
-        </p-card>
+        <div class="col-12 md:col-6 lg:col-4">
+          <p-card
+            styleClass="cursor-pointer hover:surface-100 transition-colors transition-duration-200 w-full"
+            (click)="selectTrip(trip.id)"
+          >
+            <div class="flex justify-content-between align-items-center">
+              <span class="font-medium text-lg">{{ trip.title }}</span>
+              <i class="pi pi-arrow-right text-color-secondary"></i>
+            </div>
+          </p-card>
+        </div>
       }
     </div>
   }
+
 </div>

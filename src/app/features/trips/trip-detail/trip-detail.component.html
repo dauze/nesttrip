@@ -1,9 +1,9 @@
   <p-confirmDialog />
   <div class="flex flex-column gap-2 pt-2">
-  @if (!travelStore.activeTravelLoading()) {
+  @if (!tripStore.activeTripLoading()) {
     <p-card [header]="tripTitle()">
     </p-card>
-    @if (travelStore.activeTravel(); as trip) {
+    @if (tripStore.activeTrip(); as trip) {
       <p-card>
         <p-tabs scrollable (activeValueChange)="onTabChange()" [(value)]="activeDay">
           <p-tablist>

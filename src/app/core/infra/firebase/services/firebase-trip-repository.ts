@@ -1,40 +1,38 @@
 import { effect, inject, Injectable } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { Travel } from '@app/features/trips/travel.model';
+import { Trip } from '@app/features/trips/trip.model';
 import { Activity } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
 import { Item } from '@app/features/trips/trip-detail/infos/info.models';
-import { TripStore } from '@app/features/trips/travel.store';
-import { TravelDataSource } from './trip.persistence.service';
+import { TripDataSource } from './trip-data-source';
+import { TripStore } from '@app/features/trips/trip-store.service';
 
 
 @Injectable({ providedIn: 'root' })
-export class TravelLoaderService {
-  private readonly dataSource = inject(TravelDataSource);
+export class FirebaseTripRepository {
+  private readonly dataSource = inject(TripDataSource);
   private readonly tripStore = inject(TripStore);
 
-  private travelSub: Subscription | null = null;
-  private readonly hydrated = new Set<string>();
+  private tripSub: Subscription | null = null;
 
   constructor() {
     effect(() => {
-      const id = this.tripStore._activeTravelId();
-      this.travelSub?.unsubscribe();
+      const id = this.tripStore._activeTripId();
+      this.tripSub?.unsubscribe();
 
       if (!id) {
-        this.tripStore.activeTravelLoading.set(false);
+        this.tripStore.activeTripLoading.set(false);
         return;
       }
 
-      this.tripStore.activeTravelLoading.set(true);
+      this.tripStore.activeTripLoading.set(true);
 
-      this.travelSub = this.dataSource.getTravel$(id).subscribe((travel) => {
-        if (!this.hydrated.has(travel.id)) {
-          this.hydrate(travel);
-          this.hydrated.add(travel.id);
+      this.tripSub = this.dataSource.getTrip$(id).subscribe((trip) => {
+        if (!this.tripStore.hasTrip(trip.id)) {
+          this.hydrate(trip);
         } else {
-          this.mergeFromRemote(travel);
+          this.mergeFromRemote(trip);
         }
-        this.tripStore.activeTravelLoading.set(false);
+        this.tripStore.activeTripLoading.set(false);
       });
     });
 
@@ -45,29 +43,29 @@ export class TravelLoaderService {
 
   // ── Hydratation initiale ──────────────────────────────────────────────────
 
-  private hydrate(travel: Travel): void {
-    const newTravels = { ...this.tripStore._travels() };
+  private hydrate(trip: Trip): void {
+    const newTrips = { ...this.tripStore._trips() };
     const newDays: Record<string, ReturnType<typeof this.tripStore._days>[string]> = {};
     const newActivities: Record<string, Activity> = {};
-    const newTravelDays: Record<string, string[]> = {};
+    const newTripDays: Record<string, string[]> = {};
     const newDayActivities: Record<string, string[]> = {};
     const infoItems: Record<string, Item> = {};
-    const travelInfoItems: Record<string, string[]> = {};
+    const tripInfoItems: Record<string, string[]> = {};
 
-    newTravels[travel.id] = { ...travel, days: [] };
-    newTravelDays[travel.id] = [];
-    travelInfoItems[travel.id] = [];
+    newTrips[trip.id] = { ...trip, days: [] };
+    newTripDays[trip.id] = [];
+    tripInfoItems[trip.id] = [];
 
-    for (const item of travel.info.items) {
+    for (const item of trip.info.items) {
       infoItems[item.id] = item;
-      travelInfoItems[travel.id].push(item.id);
+      tripInfoItems[trip.id].push(item.id);
     }
 
-    for (const day of travel.days) {
+    for (const day of trip.days) {
       const dayKey = day.id.toISOString();
 
       newDays[dayKey] = { ...day, activities: [] };
-      newTravelDays[travel.id].push(dayKey);
+      newTripDays[trip.id].push(dayKey);
       newDayActivities[dayKey] = [];
 
       for (const activity of day.activities) {
@@ -76,22 +74,22 @@ export class TravelLoaderService {
       }
     }
 
-    this.tripStore._travels.set(newTravels);
+    this.tripStore._trips.set(newTrips);
     this.tripStore._days.set(newDays);
     this.tripStore._activities.set(newActivities);
-    this.tripStore._travelDays.set(newTravelDays);
+    this.tripStore._tripDays.set(newTripDays);
     this.tripStore._dayActivities.set(newDayActivities);
     this.tripStore._infoItems.set(infoItems);
-    this.tripStore._travelInfoItems.set(travelInfoItems);
+    this.tripStore._tripInfoItems.set(tripInfoItems);
   }
 
   // ── Merge remote (mise à jour temps réel) ────────────────────────────────
-  private mergeFromRemote(travel: Travel): void {
+  private mergeFromRemote(trip: Trip): void {
     const currentActivities = this.tripStore._activities();
     const newActivities: Record<string, Activity> = {};
     const newDayActivities: Record<string, string[]> = {};
 
-    for (const day of travel.days) {
+    for (const day of trip.days) {
       const dayKey = day.id.toISOString();
       newDayActivities[dayKey] = [];
 

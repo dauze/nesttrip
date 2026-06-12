@@ -1,16 +1,16 @@
-import { Component, inject,} from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
-import { TripStore } from '../trip.store.service';
+import { MessageModule } from 'primeng/message';
+import { TripStore } from '../trip-store.service';
 
 @Component({
   selector: 'app-accueil-trip',
   standalone: true,
-  imports: [CardModule, ButtonModule, SkeletonModule],
+  imports: [CardModule, ButtonModule, SkeletonModule, MessageModule, RouterModule],
   templateUrl: 'accueil-trip.component.html',
-  styleUrl: 'accueil-trip.component.scss',
 })
 export class AccueilTripComponent {
   protected readonly tripStore = inject(TripStore);

@@ -19,6 +19,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'new',
+        loadComponent: () =>
+          import('@features/trips/new-trip/new-trip.component').then(
+            (m) => m.NewTripComponent,
+          ),
+      },
+      {
         path: ':id',
         loadComponent: () =>
           import('@features/trips/trip-detail/trip-detail.component').then(

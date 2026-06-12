@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { activityToFb } from '@core/infra/firebase/mappers/activity.mapper';
-import { BasePersistenceService } from './base.persistence.service';
 import { Activity } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
 import { updateDoc, doc } from 'firebase/firestore';
-import { FirebaseService } from '../firebase.service';
+import { FirebaseService } from '../../firebase.service';
+import { DebounceWriter } from '../../shared/debounced-writer';
 
 type ActivityUpdate = {
   key: string;
@@ -14,7 +14,7 @@ type ActivityUpdate = {
 
 @Injectable({ providedIn: 'root' })
 export class ActivityPersistenceService
-  extends BasePersistenceService<string, ActivityUpdate> {
+  extends DebounceWriter<string, ActivityUpdate> {
   private readonly db = inject(FirebaseService).db;
 
   constructor() { super(); }

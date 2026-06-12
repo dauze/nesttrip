@@ -8,7 +8,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import {fr} from 'primelocale/fr.json';
-import { TravelLoaderService } from './core/infra/firebase/services/travel.loader.service';
+import { FirebaseTripRepository } from './core/infra/firebase/services/firebase-trip-repository';
 
 const theme = definePreset(Aura, {
     semantic: {
@@ -44,8 +44,8 @@ export const appConfig: ApplicationConfig = {
         }),
         {
       provide: APP_INITIALIZER,
-      useFactory: (loader: TravelLoaderService) => () => {},
-      deps: [TravelLoaderService],
+      useFactory: (loader: FirebaseTripRepository) => () => {},
+      deps: [FirebaseTripRepository],
       multi: true
     }
   ]

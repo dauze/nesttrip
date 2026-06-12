@@ -1,7 +1,7 @@
 import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
 import { Info } from './trip-detail/infos/info.models';
 
-export interface Travel {
+export interface Trip {
   id: string;
   title: string;
   days: Day[];

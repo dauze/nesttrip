@@ -1,8 +1,8 @@
-import { Travel } from '@app/features/trips/travel.model';
-import { TravelFirebase } from '../models/travel.dto';
+import { Trip } from '@app/features/trips/trip.model';
+import { TripFirebase } from '../models/trip.dto';
 import { activityFromFb, activityToFb } from './activity.mapper';
 
-export function travelFromFb(data: TravelFirebase): Travel {
+export function tripFromFb(data: TripFirebase): Trip {
   return {
     ...data,
     days: Object.entries(data.days).map(([key, value]) => ({
@@ -12,7 +12,7 @@ export function travelFromFb(data: TravelFirebase): Travel {
   };
 }
 
-export function travelToFb(data: Travel): TravelFirebase {
+export function tripToFb(data: Trip): TripFirebase {
   return {
     ...data,
     days: Object.fromEntries(

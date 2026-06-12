@@ -9,11 +9,11 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { SwipeDirective } from '@app/shared/directives/swipe.directive';
-import { Travel } from '../travel.model';
+import { Trip } from '../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
 import { InfosSkeletonComponent } from "./infos/infos-skeleton.component";
-import { TripStore } from '../trip.store.service';
+import { TripStore } from '../trip-store.service';
 
 @Component({
   selector: 'app-trip-detail',
@@ -54,7 +54,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly tripTitle = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
     const fromList = this.tripStore.trips().find((t) => t.id === id);
-    return fromList?.title ?? this.tripStore.activeTravel()?.title ?? '';
+    return fromList?.title ?? this.tripStore.activeTrip()?.title ?? '';
   });
 
   readonly activeDay = signal<string>('info');
@@ -63,7 +63,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      const trip = this.tripStore.activeTravel();
+      const trip = this.tripStore.activeTrip();
       if (!trip || this.initialized) return;
 
       this.activeDay.set(this.getTodayId(trip));
@@ -72,7 +72,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   readonly tabs = computed(() => {
-    const trip = this.tripStore.activeTravel();
+    const trip = this.tripStore.activeTrip();
     if (!trip) return [{ id: 'info', label: 'Général' }];
 
     return [
@@ -109,7 +109,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getTodayId(trip: Travel): string {
+  private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
     const day = trip.days.find((d) => new Date(d.id).toDateString() === today);
     return day ? day.id.toISOString() : 'info';

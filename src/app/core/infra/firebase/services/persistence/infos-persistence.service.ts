@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { BasePersistenceService } from './base.persistence.service';
 import { Item } from '@app/features/trips/trip-detail/infos/info.models';
 import { updateDoc, doc } from 'firebase/firestore';
-import { FirebaseService } from '../firebase.service';
+import { FirebaseService } from '../../firebase.service';
+import { DebounceWriter } from '../../shared/debounced-writer';
 
 type InfoUpdate = {
   key: string;
@@ -11,7 +11,7 @@ type InfoUpdate = {
 };
 
 @Injectable({ providedIn: 'root' })
-export class InfoPersistenceService extends BasePersistenceService<string, InfoUpdate> {
+export class InfosPersistenceService extends DebounceWriter<string, InfoUpdate> {
   private readonly db = inject(FirebaseService).db;
   constructor() {
     super();

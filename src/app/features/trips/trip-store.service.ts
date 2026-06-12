@@ -1,74 +1,78 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
-import { ActivityPersistenceService } from '@core/infra/firebase/services/activity.persistence.service';
-import { InfoPersistenceService } from '@app/core/infra/firebase/services/infos.persistence.service';
-import { Travel, Day } from './travel.model';
+import { Trip, Day } from './trip.model';
 import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
 import { Item } from './trip-detail/infos/info.models';
+import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
+import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
 
-type TravelEntities = Record<string, Travel>;
+type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
 type ActivityEntities = Record<string, Activity>;
 
 @Injectable({ providedIn: 'root' })
 export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService); //TODO à voir pour déguager
-  private readonly infoPersistenceService = inject(InfoPersistenceService); //TODO à voir pour déguager
+  private readonly infoPersistenceService = inject(InfosPersistenceService); //TODO à voir pour déguager
 
   // ── État normalisé ────────────────────────────────────────────────────────
 
-  /** @internal — écrit uniquement par TravelLoaderService */
-  readonly _travels = signal<TravelEntities>({});
+  /** @internal — écrit uniquement par TripLoaderService */
+  readonly _trips = signal<TripEntities>({});
   /** @internal */
   readonly _days = signal<DayEntities>({});
   /** @internal */
   readonly _activities = signal<ActivityEntities>({});
   /** @internal */
-  readonly _travelDays = signal<Record<string, string[]>>({});
+  readonly _tripDays = signal<Record<string, string[]>>({});
   /** @internal */
   readonly _dayActivities = signal<Record<string, string[]>>({});
   /** @internal */
   readonly _infoItems = signal<Record<string, Item>>({});
   /** @internal */
-  readonly _travelInfoItems = signal<Record<string, string[]>>({});
+  readonly _tripInfoItems = signal<Record<string, string[]>>({});
   /** @internal */
- readonly _tripsResult = signal<Pick<Travel, 'id' | 'title'>[] | undefined>(undefined);
+ readonly _tripsResult = signal<Pick<Trip, 'id' | 'title'>[] | undefined>(undefined);
   // ── UI state ──────────────────────────────────────────────────────────────
-  readonly _activeTravelId = signal<string | null>(null);
-  readonly activeTravelLoading = signal<boolean>(false);
+  readonly _activeTripId = signal<string | null>(null);
+  readonly activeTripLoading = signal<boolean>(false);
 
   // ── Liste des trips (dashboard) ───────────────────────────────────────────
  
   readonly trips = computed(() => this._tripsResult() ?? []);
   readonly tripsLoading = computed(() => this._tripsResult() === undefined);    
 
+  hasTrip(id: string): boolean {
+    return id in this._trips();
+  }
+
   // ── Sélecteur — trip actif reconstitué ───────────────────────────────────
 
-  readonly activeTravel = computed(() => {
-    const id = this._activeTravelId();
+  readonly activeTrip = computed(() => {
+    const id = this._activeTripId();
     if (!id) return null;
 
-    const travel = this._travels()[id];
-    if (!travel) return null;
+    const trip = this._trips()[id];
+    if (!trip) return null;
 
-    const dayKeys = this._travelDays()[id] ?? [];
+    const dayKeys = this._tripDays()[id] ?? [];
     const daysMap = this._days();
 
     return {
-      ...travel,
+      ...trip,
       days: dayKeys.map((key) => daysMap[key]),
     };
   });
 
   setActiveTrip(id: string): void {
-    this._activeTravelId.set(id);
+    this._activeTripId.set(id);
   }
 
   clearActiveTrip(): void {
-    this._activeTravelId.set(null);
+    this._activeTripId.set(null);
   }
 
-  // ── Sélecteurs memoïsés par entité ───────────────────────────────────────
+  // ── Sélecteurs memorisés par entité ───────────────────────────────────────
 
   private readonly activitiesByDay = new Map<string, Signal<Activity[]>>();
   private readonly activitiesById = new Map<string, Signal<Activity>>();
@@ -153,7 +157,7 @@ export class TripStore {
 
   getInfoItems(tripId: string): Signal<Item[]> {
     return computed(() => {
-      const ids = this._travelInfoItems()[tripId] ?? [];
+      const ids = this._tripInfoItems()[tripId] ?? [];
       const map = this._infoItems();
       return ids.map((id) => map[id]);
     });
@@ -161,7 +165,7 @@ export class TripStore {
 
   createItem(tripId: string, item: Item): void {
     this._infoItems.update((items) => ({ ...items, [item.id]: item }));
-    this._travelInfoItems.update((map) => ({
+    this._tripInfoItems.update((map) => ({
       ...map,
       [tripId]: [...(map[tripId] ?? []), item.id],
     }));
@@ -186,7 +190,7 @@ export class TripStore {
       return copy;
     });
 
-    this._travelInfoItems.update((map) => ({
+    this._tripInfoItems.update((map) => ({
       ...map,
       [tripId]: (map[tripId] ?? []).filter((id) => id !== itemId),
     }));
@@ -194,12 +198,12 @@ export class TripStore {
   }
 
   reorderItems(tripId: string, ids: string[]): void {
-    this._travelInfoItems.update((map) => ({ ...map, [tripId]: ids }));
+    this._tripInfoItems.update((map) => ({ ...map, [tripId]: ids }));
     this.syncInfo(tripId);
   }
 
   private syncInfo(tripId: string): void {
-    const ids = this._travelInfoItems()[tripId] ?? [];
+    const ids = this._tripInfoItems()[tripId] ?? [];
     const items = this._infoItems();
 
     const list = ids.map((id) => items[id]);
