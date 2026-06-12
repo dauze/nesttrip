@@ -7,7 +7,7 @@ import { Button } from 'primeng/button';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
-import { TravelStore } from '../../travel.service';
+import { TravelStore } from '../../travel.store';
 
 @Component({
   selector: 'app-day-panel',

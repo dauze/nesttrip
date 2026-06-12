@@ -14,8 +14,8 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () =>
-          import('@features/trips/trip-list/trip-list.component').then(
-            (m) => m.TripListComponent,
+          import('@features/trips/accueil-trip/accueil-trip.component').then(
+            (m) => m.AccueilTripComponent,
           ),
       },
       {

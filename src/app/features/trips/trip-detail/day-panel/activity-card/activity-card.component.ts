@@ -22,8 +22,8 @@ import { GooglePlaceService } from '@core/services/google.places.service';
 
 import { Place } from '@app/core/models/place.dto';
 import { debounceTime, tap } from 'rxjs/operators';
-import { TravelStore } from '@app/features/trips/travel.service';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS, ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
+import { TravelStore } from '@app/features/trips/travel.store';
 
 @Component({
   selector: 'app-activity-card',

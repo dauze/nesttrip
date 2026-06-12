@@ -10,10 +10,10 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { SwipeDirective } from '@app/shared/directives/swipe.directive';
 import { Travel } from '../travel.model';
-import { TravelStore } from '../travel.service';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
 import { InfosSkeletonComponent } from "./infos/infos-skeleton.component";
+import { TravelStore } from '../travel.store';
 
 @Component({
   selector: 'app-trip-detail',

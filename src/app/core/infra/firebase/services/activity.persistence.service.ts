@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { activityToFb } from '@core/infra/firebase/mappers/activity.mapper';
-import { TravelFirestoreService } from '@core/infra/firebase/services/travel.firebase.service';
 import { BasePersistenceService } from './base.persistence.service';
 import { Activity } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
+import { updateDoc, doc } from 'firebase/firestore';
+import { FirebaseService } from '../firebase.service';
 
 type ActivityUpdate = {
   key: string;
@@ -14,8 +15,7 @@ type ActivityUpdate = {
 @Injectable({ providedIn: 'root' })
 export class ActivityPersistenceService
   extends BasePersistenceService<string, ActivityUpdate> {
-
-  private readonly firestore = inject(TravelFirestoreService);
+  private readonly db = inject(FirebaseService).db;
 
   constructor() { super(); }
 
@@ -26,7 +26,9 @@ export class ActivityPersistenceService
   protected override write(updates: ActivityUpdate[]) {
     return Promise.all(
       updates.map((u) =>
-        this.firestore.updateActivities(u.tripId, u.dayId, u.activities.map(activityToFb))
+        updateDoc(doc(this.db, 'trips', u.tripId.toString()), {
+              [`days.${u.dayId.getTime()}.activities`]: u.activities.map(activityToFb),
+            })
       )
     );
   }

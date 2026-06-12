@@ -10,7 +10,7 @@ import { ConfirmationService } from 'primeng/api';
 import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
 import { AutoResizeFixDirective } from '../../../../shared/pipes/auto-resize-area.pipe';
-import { TravelStore } from '../../travel.service';
+import { TravelStore } from '../../travel.store';
 
 
 @Component({

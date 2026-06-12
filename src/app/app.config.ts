@@ -1,4 +1,4 @@
-import { ApplicationConfig } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -8,6 +8,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import {fr} from 'primelocale/fr.json';
+import { TravelLoaderService } from './core/infra/firebase/services/travel.loader.service';
 
 const theme = definePreset(Aura, {
     semantic: {
@@ -40,6 +41,12 @@ export const appConfig: ApplicationConfig = {
             preset: theme,
       },
       translation: fr
-        })
+        }),
+        {
+      provide: APP_INITIALIZER,
+      useFactory: (loader: TravelLoaderService) => () => {},
+      deps: [TravelLoaderService],
+      multi: true
+    }
   ]
 };

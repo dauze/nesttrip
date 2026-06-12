@@ -1,26 +1,23 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject,} from '@angular/core';
 import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
-import { TravelStore } from '@features/trips/travel.service';
+import { TravelStore } from '../travel.store';
 
 @Component({
-  selector: 'app-trip-list',
+  selector: 'app-accueil-trip',
   standalone: true,
   imports: [CardModule, ButtonModule, SkeletonModule],
-  templateUrl: 'trip-list.component.html',
-  styleUrl: 'trip-list.component.scss',
+  templateUrl: 'accueil-trip.component.html',
+  styleUrl: 'accueil-trip.component.scss',
 })
-export class TripListComponent implements OnInit {
+export class AccueilTripComponent {
   protected readonly travelStore = inject(TravelStore);
   private readonly router = inject(Router);
 
-  readonly skeletons = [1, 2, 3];
-
-  ngOnInit(): void {
-    this.travelStore.loadTrips();
-  }
+  readonly trips = this.travelStore.trips;
+  readonly tripsLoading = this.travelStore.tripsLoading;
 
   selectTrip(id: string): void {
     this.router.navigate(['/trips', id]);
