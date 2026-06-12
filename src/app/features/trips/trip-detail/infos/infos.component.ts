@@ -10,7 +10,7 @@ import { ConfirmationService } from 'primeng/api';
 import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
 import { AutoResizeFixDirective } from '../../../../shared/pipes/auto-resize-area.pipe';
-import { TravelStore } from '../../travel.store';
+import { TripStore } from '../../trip.store.service';
 
 
 @Component({
@@ -21,13 +21,13 @@ import { TravelStore } from '../../travel.store';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InfosComponent {
-  private readonly travelStore = inject(TravelStore);
+  private readonly tripStore = inject(TripStore);
   private readonly confirmationService = inject(ConfirmationService);
 
   readonly info = input.required<Info>();
   readonly tripId = input.required<string>();
   readonly InfoType = InfoType;
-  readonly items = computed(() => this.travelStore.getInfoItems(this.tripId())());
+  readonly items = computed(() => this.tripStore.getInfoItems(this.tripId())());
   readonly activePointId = signal<string | null>(null);
 
   // ─── Events ─────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ export class InfosComponent {
     if (event.previousIndex === event.currentIndex) return;
     const items = [...this.items()];
     moveItemInArray(items, event.previousIndex, event.currentIndex);
-    this.travelStore.reorderItems(this.tripId(), items.map(a => a.id));
+    this.tripStore.reorderItems(this.tripId(), items.map(a => a.id));
   }
 
   addItem(): void {
@@ -45,7 +45,7 @@ export class InfosComponent {
       type: InfoType.TODO,
       elements: []
     };
-    this.travelStore.createItem(this.tripId(), newItem);
+    this.tripStore.createItem(this.tripId(), newItem);
     requestAnimationFrame(() => {
       document.querySelector<HTMLElement>(
         `input[data-title-id="${newItem.id}"], textarea[data-title-id="${newItem.id}"]`
@@ -66,17 +66,17 @@ export class InfosComponent {
   confirmDelete(item: Item): void {
     this.confirmationService.confirm({
       message: 'Supprimer cet élément ?',
-      accept: () => this.travelStore.removeItem(this.tripId(), item.id)
+      accept: () => this.tripStore.removeItem(this.tripId(), item.id)
     });
   }
 
   toggleType(item: Item): void {
     const type = item.type === InfoType.TODO ? InfoType.INFO : InfoType.TODO;
-    this.travelStore.updateItem(this.tripId(), item.id, { type });
+    this.tripStore.updateItem(this.tripId(), item.id, { type });
   }
 
   updateTitle(item: Item, title: string): void {
-    this.travelStore.updateItem(this.tripId(), item.id, { title });
+    this.tripStore.updateItem(this.tripId(), item.id, { title });
   }
 
   onTextChange(item: Item, index: number, value: string): void {
@@ -196,6 +196,6 @@ export class InfosComponent {
   }
 
   private updateElements(item: Item, elements: Point[]): void {
-    this.travelStore.updateItem(this.tripId(), item.id, { elements });
+    this.tripStore.updateItem(this.tripId(), item.id, { elements });
   }
 }

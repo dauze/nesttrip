@@ -13,7 +13,7 @@ import { Travel } from '../travel.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
 import { InfosSkeletonComponent } from "./infos/infos-skeleton.component";
-import { TravelStore } from '../travel.store';
+import { TripStore } from '../trip.store.service';
 
 @Component({
   selector: 'app-trip-detail',
@@ -36,25 +36,25 @@ import { TravelStore } from '../travel.store';
   styleUrl: 'trip-detail.component.scss',
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
-  protected readonly travelStore = inject(TravelStore);
+  protected readonly tripStore = inject(TripStore);
   private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.initialized = false;
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.travelStore.setActiveTrip(id);
+      this.tripStore.setActiveTrip(id);
     }
   }
 
   ngOnDestroy(): void {
-    this.travelStore.clearActiveTrip();
+    this.tripStore.clearActiveTrip();
   }
 
   readonly tripTitle = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
-    const fromList = this.travelStore.trips().find((t) => t.id === id);
-    return fromList?.title ?? this.travelStore.activeTravel()?.title ?? '';
+    const fromList = this.tripStore.trips().find((t) => t.id === id);
+    return fromList?.title ?? this.tripStore.activeTravel()?.title ?? '';
   });
 
   readonly activeDay = signal<string>('info');
@@ -63,7 +63,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      const trip = this.travelStore.activeTravel();
+      const trip = this.tripStore.activeTravel();
       if (!trip || this.initialized) return;
 
       this.activeDay.set(this.getTodayId(trip));
@@ -72,7 +72,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   readonly tabs = computed(() => {
-    const trip = this.travelStore.activeTravel();
+    const trip = this.tripStore.activeTravel();
     if (!trip) return [{ id: 'info', label: 'Général' }];
 
     return [

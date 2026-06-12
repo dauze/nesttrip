@@ -7,7 +7,7 @@ import { Button } from 'primeng/button';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
-import { TravelStore } from '../../travel.store';
+import { TripStore } from '../../trip.store.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -17,22 +17,22 @@ import { TravelStore } from '../../travel.store';
   templateUrl: 'day-panel.component.html',
 })
 export class DayPanelComponent {
-  private readonly travelStore = inject(TravelStore);
+  private readonly tripStore = inject(TripStore);
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
 
-  readonly activities: Signal<Activity[]> = computed(() => this.travelStore.getActivities(this.dayId())());
+  readonly activities: Signal<Activity[]> = computed(() => this.tripStore.getActivities(this.dayId())());
 
   onDrop(event: CdkDragDrop<Activity[]>): void {
     moveItemInArray(this.activities(), event.previousIndex, event.currentIndex);
-    this.travelStore.reorderActivities(
+    this.tripStore.reorderActivities(
       this.tripId(),
       this.dayId(),
       this.activities().map((a) => a.id),
     );
   }
   addActivity() {
-    this.travelStore.createActivity(this.tripId(), this.dayId(), {
+    this.tripStore.createActivity(this.tripId(), this.dayId(), {
       id: crypto.randomUUID(),
       title: '',
       type: ActivityType.ACTIVITE,

@@ -3,29 +3,29 @@ import { Subscription } from 'rxjs';
 import { Travel } from '@app/features/trips/travel.model';
 import { Activity } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
 import { Item } from '@app/features/trips/trip-detail/infos/info.models';
-import { TravelStore } from '@app/features/trips/travel.store';
+import { TripStore } from '@app/features/trips/travel.store';
 import { TravelDataSource } from './trip.persistence.service';
 
 
 @Injectable({ providedIn: 'root' })
 export class TravelLoaderService {
   private readonly dataSource = inject(TravelDataSource);
-  private readonly store = inject(TravelStore);
+  private readonly tripStore = inject(TripStore);
 
   private travelSub: Subscription | null = null;
   private readonly hydrated = new Set<string>();
 
   constructor() {
     effect(() => {
-      const id = this.store._activeTravelId();
+      const id = this.tripStore._activeTravelId();
       this.travelSub?.unsubscribe();
 
       if (!id) {
-        this.store.activeTravelLoading.set(false);
+        this.tripStore.activeTravelLoading.set(false);
         return;
       }
 
-      this.store.activeTravelLoading.set(true);
+      this.tripStore.activeTravelLoading.set(true);
 
       this.travelSub = this.dataSource.getTravel$(id).subscribe((travel) => {
         if (!this.hydrated.has(travel.id)) {
@@ -34,20 +34,20 @@ export class TravelLoaderService {
         } else {
           this.mergeFromRemote(travel);
         }
-        this.store.activeTravelLoading.set(false);
+        this.tripStore.activeTravelLoading.set(false);
       });
     });
 
     this.dataSource.getTrips$().subscribe(trips => {
-      this.store._tripsResult.set(trips);
+      this.tripStore._tripsResult.set(trips);
     });
   }
 
   // ── Hydratation initiale ──────────────────────────────────────────────────
 
   private hydrate(travel: Travel): void {
-    const newTravels = { ...this.store._travels() };
-    const newDays: Record<string, ReturnType<typeof this.store._days>[string]> = {};
+    const newTravels = { ...this.tripStore._travels() };
+    const newDays: Record<string, ReturnType<typeof this.tripStore._days>[string]> = {};
     const newActivities: Record<string, Activity> = {};
     const newTravelDays: Record<string, string[]> = {};
     const newDayActivities: Record<string, string[]> = {};
@@ -76,18 +76,18 @@ export class TravelLoaderService {
       }
     }
 
-    this.store._travels.set(newTravels);
-    this.store._days.set(newDays);
-    this.store._activities.set(newActivities);
-    this.store._travelDays.set(newTravelDays);
-    this.store._dayActivities.set(newDayActivities);
-    this.store._infoItems.set(infoItems);
-    this.store._travelInfoItems.set(travelInfoItems);
+    this.tripStore._travels.set(newTravels);
+    this.tripStore._days.set(newDays);
+    this.tripStore._activities.set(newActivities);
+    this.tripStore._travelDays.set(newTravelDays);
+    this.tripStore._dayActivities.set(newDayActivities);
+    this.tripStore._infoItems.set(infoItems);
+    this.tripStore._travelInfoItems.set(travelInfoItems);
   }
 
   // ── Merge remote (mise à jour temps réel) ────────────────────────────────
   private mergeFromRemote(travel: Travel): void {
-    const currentActivities = this.store._activities();
+    const currentActivities = this.tripStore._activities();
     const newActivities: Record<string, Activity> = {};
     const newDayActivities: Record<string, string[]> = {};
 
@@ -108,7 +108,7 @@ export class TravelLoaderService {
       }
     }
 
-    this.store._activities.set(newActivities);
-    this.store._dayActivities.set(newDayActivities);
+    this.tripStore._activities.set(newActivities);
+    this.tripStore._dayActivities.set(newDayActivities);
   }
 }

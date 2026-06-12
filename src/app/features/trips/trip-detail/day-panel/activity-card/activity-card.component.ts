@@ -23,7 +23,7 @@ import { GooglePlaceService } from '@core/services/google.places.service';
 import { Place } from '@app/core/models/place.dto';
 import { debounceTime, tap } from 'rxjs/operators';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS, ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
-import { TravelStore } from '@app/features/trips/travel.store';
+import { TripStore } from '@app/features/trips/travel.store';
 
 @Component({
   selector: 'app-activity-card',
@@ -39,7 +39,7 @@ import { TravelStore } from '@app/features/trips/travel.store';
   styleUrl: './activity-card.component.scss',
 })
 export class ActivityCardComponent {
-  private readonly travelStore = inject(TravelStore);
+  private readonly tripStore = inject(TripStore);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly fb = inject(FormBuilder);
@@ -56,7 +56,7 @@ export class ActivityCardComponent {
   private initialized = false;
 
   readonly activity = computed(() =>
-    this.travelStore.getActivity(this.activityId())()
+    this.tripStore.getActivity(this.activityId())()
   );
 
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
@@ -106,7 +106,7 @@ export class ActivityCardComponent {
 
     // Init depuis le store une seule fois
     effect(() => {
-      const a = this.travelStore.getActivity(this.activityId())();
+      const a = this.tripStore.getActivity(this.activityId())();
       if (a && !this.initialized) {
         this.initialized = true;
         untracked(() => {
@@ -120,7 +120,7 @@ export class ActivityCardComponent {
     this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
       const activity = this.activity();
       if (!activity) return;
-      this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+      this.tripStore.updateActivity(this.tripId(), this.dayId(), {
         ...activity,
         ...value,
         title: this.title, // on réinjecte le title séparé
@@ -133,7 +133,7 @@ export class ActivityCardComponent {
   onTitleBlur(): void {
     const activity = this.activity();
     if (!activity) return;
-    this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+    this.tripStore.updateActivity(this.tripId(), this.dayId(), {
       ...activity,
       title: this.title,
     });
@@ -153,7 +153,7 @@ export class ActivityCardComponent {
       this.title = p.name;
       const activity = this.activity();
       if (!activity) return;
-      this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+      this.tripStore.updateActivity(this.tripId(), this.dayId(), {
         ...activity,
         title: p.name,
         placeId: p.placeId,
@@ -177,7 +177,7 @@ export class ActivityCardComponent {
       const path = `trips/${this.tripId()}/${this.dayId().getTime()}/${activity.id}/${file.name}`;
       this.fileService.uploadFile(file, path).pipe(
         tap(({ url, name }) => {
-          this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+          this.tripStore.updateActivity(this.tripId(), this.dayId(), {
             ...activity,
             files: [...(activity.files ?? []), { name, url, path }],
           });
@@ -192,7 +192,7 @@ export class ActivityCardComponent {
     const file = activity.files![index];
     this.fileService.deleteFile(file.path).pipe(
       tap(() => {
-        this.travelStore.updateActivity(this.tripId(), this.dayId(), {
+        this.tripStore.updateActivity(this.tripId(), this.dayId(), {
           ...activity,
           files: (activity.files ?? []).filter((_, i) => i !== index),
         });
