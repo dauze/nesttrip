@@ -18,9 +18,9 @@ import { TripRole } from '../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
 import { InfosSkeletonComponent } from './infos/infos-skeleton.component';
-import { CollaborationService } from '@app/core/infra/firebase/services/persistence/collaboration.service';
 import { finalize } from 'rxjs';
 import { TripFacade } from '../trip-facade.service';
+import { CollaborationService } from '@app/core/services/collaboration.service';
 
 @Component({
   selector: 'app-trip-detail',

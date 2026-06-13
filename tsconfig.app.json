@@ -12,6 +12,6 @@
       "@environnements/*": ["./src/environnements/*"],
     }
   },
-  "include": ["src/**/*.ts", "src/app/scripts/seed-firestore.ts", "functions/src/get-place.ts", "functions/src/search-places.ts"],
+  "include": ["src/**/*.ts", "src/app/scripts/seed-firestore.ts", "functions/src/places/get-place.handler.ts", "functions/src/places/search-places.handler.ts"],
   "exclude": ["src/**/*.spec.ts","functions" ]
 }

@@ -1,13 +1,13 @@
-import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import express from 'express';
-import { searchPlaces } from './search-places';
-import { getPlace } from './get-place';
+import { searchPlacesHandler } from './places/search-places.handler';
+import { getPlaceHandler } from './places/get-place.handler';
+import { addCollaboratorHandler } from './collaborators/add-collaborator.handler';
+import { authMiddleware } from './shared/auth.middleware';
 
-// Initialiser admin SDK une seule fois
 admin.initializeApp();
-const db = admin.firestore();
 
 const googleApiKey = defineSecret('GOOGLE_PLACES_API_KEY');
 
@@ -17,45 +17,18 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
   next();
 });
 
-app.get('/api/etablissements', (req, res) =>
-  searchPlaces(req, res, googleApiKey.value())
-);
+app.use(authMiddleware); // ← toutes les routes en dessous sont protégées
 
-app.get('/api/etablissements/:id', (req, res) =>
-  getPlace(req, res, googleApiKey.value())
-);
+app.get('/api/etablissements', (req, res) => searchPlacesHandler(req, res, googleApiKey.value()));
+app.get('/api/etablissements/:id', (req, res) => getPlaceHandler(req, res, googleApiKey.value()));
+app.post('/api/collaborators', (req, res) => addCollaboratorHandler(req, res));
 
 export const api = onRequest(
   { secrets: [googleApiKey], region: 'europe-west1' },
   app
 );
-
-export const addCollaborator = onCall(async ({ data, auth }) => {
-  if (!auth) throw new HttpsError('unauthenticated', 'Login required');
-
-  const { tripId, inviteeEmail, role } = data;
-
-  const tripRef = db.collection('trips').doc(tripId);
-  const trip = await tripRef.get();
-
-  if (!trip.exists) {
-    throw new HttpsError('not-found', 'Trip not found');
-  }
-
-  if (trip.data()?.members[auth.uid] !== 'owner') {
-    throw new HttpsError('permission-denied', 'Only owners can invite');
-  }
-
-  const invitee = await admin.auth().getUserByEmail(inviteeEmail);
-
-  await tripRef.update({
-    [`members.${invitee.uid}`]: role,
-  });
-
-  return { success: true };
-});

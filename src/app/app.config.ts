@@ -8,6 +8,8 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import {fr} from 'primelocale/fr.json';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 const theme = definePreset(Aura, {
     semantic: {
@@ -35,6 +37,7 @@ export const firebaseAuth = getAuth(firebaseApp);
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
+    provideHttpClient(withInterceptors([authInterceptor])),
     providePrimeNG({
              theme: {
             preset: theme,
