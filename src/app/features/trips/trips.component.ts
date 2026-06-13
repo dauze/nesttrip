@@ -7,20 +7,28 @@ import { MenuItem } from 'primeng/api';
 import { AuthService } from '@core/services/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
+import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
+import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
+import { TripFacade } from './trip-facade.service';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
   imports: [RouterOutlet, ToolbarModule, ButtonModule, MenuModule],
+  providers: [
+    FirebaseTripRepository,
+    { provide: TripRepository, useExisting: FirebaseTripRepository },
+    TripFacade,
+  ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',
 })
 export class TripsComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly facade = inject(TripFacade); // instanciation
 
-  // Affiche la flèche retour quand on est sur /trips/:id
-  private readonly currentUrl = toSignal(
+  readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((e) => e instanceof NavigationEnd),
       map((e) => (e as NavigationEnd).urlAfterRedirects),
@@ -30,7 +38,6 @@ export class TripsComponent {
 
   readonly showBack = computed(() => {
     const url = this.currentUrl() ?? '';
-    // /trips seul → pas de flèche, /trips/quelque-chose → flèche
     return /^\/trips\/.+/.test(url);
   });
 

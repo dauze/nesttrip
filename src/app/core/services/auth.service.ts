@@ -12,19 +12,16 @@ import {
 import { from, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { firebaseAuth } from '../../app.config';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private router = inject(Router);
 
-  // Observable du user courant via onAuthStateChanged
-  readonly currentUser$ = new Observable<User | null>((subscriber) => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
-      subscriber.next(user);
-    });
-    return unsubscribe; // cleanup auto au unsubscribe
-  });
-
+  getCurrentUser(): User  | null {
+    return firebaseAuth.currentUser;
+  }
+  
   loginWithEmail(email: string, password: string): Observable<any> {
     return from(signInWithEmailAndPassword(firebaseAuth, email, password)).pipe(
       tap(() => this.router.navigate(['/app'])),

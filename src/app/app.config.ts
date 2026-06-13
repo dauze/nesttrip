@@ -8,7 +8,6 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import {fr} from 'primelocale/fr.json';
-import { FirebaseTripRepository } from './core/infra/firebase/services/firebase-trip-repository';
 
 const theme = definePreset(Aura, {
     semantic: {
@@ -30,7 +29,7 @@ const theme = definePreset(Aura, {
 
 
 // Init Firebase une seule fois, exporté pour être utilisé partout
-const firebaseApp = initializeApp(environment.firebase);
+export const firebaseApp = initializeApp(environment.firebase);
 export const firebaseAuth = getAuth(firebaseApp);
 
 export const appConfig: ApplicationConfig = {
@@ -42,11 +41,5 @@ export const appConfig: ApplicationConfig = {
       },
       translation: fr
         }),
-        {
-      provide: APP_INITIALIZER,
-      useFactory: (loader: FirebaseTripRepository) => () => {},
-      deps: [FirebaseTripRepository],
-      multi: true
-    }
   ]
 };

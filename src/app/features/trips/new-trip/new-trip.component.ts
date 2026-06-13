@@ -9,6 +9,7 @@ import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
 import { Info } from '../trip-detail/infos/info.models';
 import { TripStore } from '../trip-store.service';
+import { AuthService } from '@app/core/services/auth.service';
 
 @Component({
   selector: 'app-new-trip',
@@ -27,6 +28,7 @@ export class NewTripComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly tripStore = inject(TripStore);
+  private readonly authService = inject(AuthService);
 
   readonly form = this.fb.group({
     title: ['', Validators.required],
@@ -44,6 +46,8 @@ export class NewTripComponent {
       this.form.markAllAsTouched();
       return;
     }
+    const uid = this.authService.getCurrentUser()?.uid;
+    if (!uid) throw new Error('User not authenticated');
 
     const { title, ville, dateDebut, dateFin } = this.form.value as {
       title: string;
@@ -58,6 +62,8 @@ export class NewTripComponent {
       ville,
       days: this.buildDays(dateDebut, dateFin),
       info: this.buildInfo(),
+      ownerId: uid,
+      members: { [uid]: 'owner' },
     };
 
     this.saveTrip(trip);

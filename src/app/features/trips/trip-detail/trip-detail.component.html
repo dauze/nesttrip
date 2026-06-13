@@ -1,9 +1,67 @@
-  <p-confirmDialog />
-  <div class="flex flex-column gap-2 pt-2">
-  @if (!tripStore.activeTripLoading()) {
-    <p-card [header]="tripTitle()">
+<p-confirmDialog />
+<p-dialog
+  header="Inviter un collaborateur"
+  [(visible)]="showInviteDialog"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  [draggable]="false">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="flex flex-column gap-2">
+      <label for="inviteeEmail">Adresse email</label>
+      <input
+  pInputText
+  id="inviteeEmail"
+  name="inviteeEmail"
+  [(ngModel)]="inviteeEmail"
+  placeholder="collaborateur@email.com"
+  [disabled]="inviteLoading()"
+  class="w-full" />
+    </div>
+    <div class="flex flex-column gap-2">
+      <label for="inviteeRole">Rôle</label>
+      <p-select
+        id="inviteeRole"
+        name="inviteeRole"
+        [(ngModel)]="inviteeRole"
+        [options]="roleOptions"
+        optionLabel="label"
+        optionValue="value"
+        [disabled]="inviteLoading()" />
+    </div>
+    @if (inviteError()) {
+      <p-message severity="error" [text]="inviteError()!" />
+    }
+  </div>
+  <ng-template #footer>
+    <p-button
+      label="Annuler"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="closeInviteDialog()" />
+    <p-button
+      label="Inviter"
+      [loading]="inviteLoading()"
+      [disabled]="!inviteeEmail"
+      (onClick)="inviteCollaborator()" />
+  </ng-template>
+</p-dialog>
+
+<div class="flex flex-column gap-2 pt-2">
+  @if (!facade.activeTripLoading()) {
+    <p-card>
+      <ng-template #header>
+        <div class="flex align-items-center justify-content-between px-3 pt-3">
+          <span class="text-xl font-semibold">{{ tripTitle() }}</span>
+          <p-button
+            icon="pi pi-user-plus"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="openInviteDialog()" />
+        </div>
+      </ng-template>
     </p-card>
-    @if (tripStore.activeTrip(); as trip) {
+    @if (facade.activeTrip(); as trip) {
       <p-card>
         <p-tabs scrollable (activeValueChange)="onTabChange()" [(value)]="activeDay">
           <p-tablist>
@@ -28,6 +86,6 @@
     }
   } @else {
     <p-skeleton height="2.2rem"/>
-    <app-infos-skeleton></app-infos-skeleton>
+    <app-infos-skeleton />
   }
 </div>
