@@ -24,6 +24,9 @@ import { BadgeModule } from 'primeng/badge';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputMask } from 'primeng/inputmask';
 import { PanelModule } from 'primeng/panel';
+import { DividerModule } from 'primeng/divider';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { GalleriaModule } from 'primeng/galleria';
 
 import { BookingStatus } from '@core/enums/booking.status';
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
@@ -39,7 +42,9 @@ import {
   BOOKING_STATUS_META,
 } from './activity.constants';
 import { TripStore } from '@app/features/trips/trip-store.service';
+import { environment } from '@environnements/environnement';
 
+/** Max photos shown in carousel — change freely */
 const MAX_PHOTOS = 6;
 
 @Component({
@@ -61,6 +66,9 @@ const MAX_PHOTOS = 6;
     FileUploadModule,
     BadgeModule,
     PanelModule,
+    DividerModule,
+    ProgressSpinnerModule,
+    GalleriaModule,
     DurationPipe,
     AutoComplete,
     InputMask,
@@ -83,23 +91,23 @@ export class ActivityCardComponent {
 
   readonly form: FormGroup;
 
-  /** Title managed separately — outside ReactiveForm to avoid ngModel/ReactiveForm conflict with p-autoComplete */
+  /** Title managed separately to avoid ngModel/ReactiveForm conflict with p-autoComplete */
   title = '';
 
-  /** Controls carousel photo index */
-  readonly activePhotoIndex = signal(0);
+  /** Files currently uploading (tracked by filename for spinner display) */
+  readonly uploadingFiles = signal<Set<string>>(new Set());
 
-  /** Controls hours/reviews expand state */
-  readonly hoursExpanded = signal(false);
-  readonly reviewsExpanded = signal(false);
-
-  /** Controls full card expand/collapse */
-  readonly expanded = signal(true);
+  /**
+   * Lazy-loaded Google data (photos + reviews + openingHours).
+   * Fetched on first panel expand. NOT stored in Firestore (Google TOS §3.2.3b).
+   */
+  readonly lazyGoogleData = signal<Place | null>(null);
+  readonly googleDataLoading = signal(false);
+  private googleDataLoaded = false;
 
   private initialized = false;
 
   readonly activity = computed(() => this.tripStore.getActivity(this.activityId())());
-
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
@@ -130,54 +138,56 @@ export class ActivityCardComponent {
     return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`;
   });
 
-  /** Subset of photos capped at MAX_PHOTOS */
-  readonly displayPhotos = computed(() => {
-    const photos = this.activity()?.photos ?? [];
-    return photos.slice(0, MAX_PHOTOS);
+  /** Gallery images built from lazy photo refs, proxied through Firebase Function */
+  readonly galleryImages = computed(() => {
+    const photos = this.lazyGoogleData()?.photos ?? [];
+    return photos.slice(0, MAX_PHOTOS).map((ref) => ({
+      itemImageSrc: this.photoUrl(ref, 800),
+      thumbnailImageSrc: this.photoUrl(ref, 150),
+      alt: this.activity()?.title ?? '',
+    }));
   });
 
-  readonly hasGoogleData = computed(() => !!this.activity()?.placeId);
+  readonly hasPlaceId = computed(() => !!this.activity()?.placeId);
 
-  /** Determines whether the place is currently open based on dayId + openingHours */
+  readonly mapsUrl = computed(() => {
+    const placeId = this.activity()?.placeId;
+    return placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : null;
+  });
+
+  /**
+   * Open/closed status from lazy openingHours, relative to dayId date + current time.
+   * Google format (fr): "lundi: 11:00 – 02:00"
+   */
   readonly isOpenNow = computed(() => {
-    const hours = this.activity()?.openingHours;
+    const hours = this.lazyGoogleData()?.openingHours;
     if (!hours?.length) return null;
+
     const day = this.dayId();
     const now = new Date();
-    // Use dayId date but current time-of-day
     const checkTime = new Date(day);
     checkTime.setHours(now.getHours(), now.getMinutes(), 0, 0);
-    // openingHours are strings like "Lundi: 12:00–22:30"
-    // We parse the line matching today's day index
-    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+    const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const todayName = dayNames[checkTime.getDay()];
-    const todayLine = hours.find((h) => h.startsWith(todayName));
+    const todayLine = hours.find((h) => h.toLowerCase().startsWith(todayName));
     if (!todayLine) return false;
     if (todayLine.toLowerCase().includes('fermé')) return false;
-    // Extract time ranges "HH:MM–HH:MM"
-    const ranges = [...todayLine.matchAll(/(\d{1,2}):(\d{2})–(\d{1,2}):(\d{2})/g)];
+
+    const ranges = [...todayLine.matchAll(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/g)];
     const hm = checkTime.getHours() * 60 + checkTime.getMinutes();
+
     return ranges.some(([, sh, sm, eh, em]) => {
       const start = +sh * 60 + +sm;
-      const end = +eh * 60 + +em;
+      let end = +eh * 60 + +em;
+      if (end < start) end += 24 * 60; // overnight hours
       return hm >= start && hm <= end;
     });
   });
 
-  /** Opening hours line matching the dayId date, marked for display */
-  readonly todayHoursLabel = computed(() => {
-    const hours = this.activity()?.openingHours;
-    if (!hours?.length) return null;
-    const day = this.dayId();
-    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    return dayNames[day.getDay()];
-  });
-
-  /** Price display string */
-  readonly priceDisplay = computed(() => {
-    const price = this.activity()?.price;
-    if (!price?.amount) return null;
-    return `${price.amount} ${price.currency}`;
+  readonly todayDayName = computed(() => {
+    const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    return dayNames[this.dayId().getDay()];
   });
 
   constructor() {
@@ -195,7 +205,6 @@ export class ActivityCardComponent {
       }),
     });
 
-    // Init from store — once only
     effect(() => {
       const a = this.tripStore.getActivity(this.activityId())();
       if (a && !this.initialized) {
@@ -207,7 +216,6 @@ export class ActivityCardComponent {
       }
     });
 
-    // Push form changes to store with debounce
     this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
       const activity = this.activity();
       if (!activity) return;
@@ -221,8 +229,21 @@ export class ActivityCardComponent {
     });
   }
 
-  toggle(): void {
-    this.expanded.update((v) => !v);
+  /** Triggered by p-panel (onAfterToggle). Loads Google data lazily on first open. */
+  onPanelToggle(event: { collapsed?: boolean }): void {
+    if (event.collapsed !== false) return;
+    const placeId = this.activity()?.placeId;
+    if (!placeId || this.googleDataLoaded || this.googleDataLoading()) return;
+
+    this.googleDataLoading.set(true);
+    this.googlePlaceService.getPlaceDetail(placeId).subscribe({
+      next: (place) => {
+        this.lazyGoogleData.set(place);
+        this.googleDataLoaded = true;
+        this.googleDataLoading.set(false);
+      },
+      error: () => this.googleDataLoading.set(false),
+    });
   }
 
   onTitleBlur(): void {
@@ -243,11 +264,15 @@ export class ActivityCardComponent {
     if (!place.placeId) return;
 
     this.title = place.name ?? '';
+    this.lazyGoogleData.set(null);
+    this.googleDataLoaded = false;
 
     this.googlePlaceService.getPlaceDetail(place.placeId).subscribe((p) => {
       this.title = p.name;
       const activity = this.activity();
       if (!activity) return;
+
+      // ⚠️  photos & reviews NOT stored — Google TOS §3.2.3b forbids caching
       this.tripStore.updateActivity(this.tripId(), this.dayId(), {
         ...activity,
         title: p.name,
@@ -257,16 +282,16 @@ export class ActivityCardComponent {
         longitude: p.longitude,
         rating: p.rating,
         reviewCount: p.reviewCount,
-        reviews: p.reviews,
         openingHours: p.openingHours,
         phone: p.phone,
         website: p.website,
         types: p.types,
         priceLevel: p.priceLevel,
-        photos: p.photos,
       });
-      // Reset carousel
-      this.activePhotoIndex.set(0);
+
+      // Cache locally for this session only
+      this.lazyGoogleData.set(p);
+      this.googleDataLoaded = true;
     });
   }
 
@@ -280,19 +305,22 @@ export class ActivityCardComponent {
   onFileSelect(event: { files: File[] }): void {
     const activity = this.activity();
     if (!activity) return;
+
     for (const file of event.files) {
       const path = `trips/${this.tripId()}/${this.dayId().getTime()}/${activity.id}/${file.name}`;
-      this.fileService
-        .uploadFile(file, path)
-        .pipe(
-          tap(({ url, name }) => {
-            this.tripStore.updateActivity(this.tripId(), this.dayId(), {
-              ...activity,
-              files: [...(activity.files ?? []), { name, url, path }],
-            });
-          }),
-        )
-        .subscribe();
+      this.uploadingFiles.update((s) => new Set(s).add(file.name));
+
+      this.fileService.uploadFile(file, path).pipe(
+        tap(({ url, name }) => {
+          this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+            ...activity,
+            files: [...(activity.files ?? []), { name, url, path }],
+          });
+        }),
+      ).subscribe({
+        complete: () => this.uploadingFiles.update((s) => { const n = new Set(s); n.delete(file.name); return n; }),
+        error:    () => this.uploadingFiles.update((s) => { const n = new Set(s); n.delete(file.name); return n; }),
+      });
     }
   }
 
@@ -300,56 +328,36 @@ export class ActivityCardComponent {
     const activity = this.activity();
     if (!activity) return;
     const file = activity.files![index];
-    this.fileService
-      .deleteFile(file.path)
-      .pipe(
-        tap(() => {
-          this.tripStore.updateActivity(this.tripId(), this.dayId(), {
-            ...activity,
-            files: (activity.files ?? []).filter((_, i) => i !== index),
-          });
-        }),
-      )
-      .subscribe();
+    this.fileService.deleteFile(file.path).pipe(
+      tap(() => {
+        this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+          ...activity,
+          files: (activity.files ?? []).filter((_, i) => i !== index),
+        });
+      }),
+    ).subscribe();
   }
 
-  onDeleteClick(): void {
-    this.deleteRequest.emit();
+  onDeleteClick(): void { this.deleteRequest.emit(); }
+  onAiEnrichClick(): void { this.aiEnrichRequest.emit(); }
+
+  /** Proxy URL for a Google Places photo reference */
+  photoUrl(ref: string, maxWidth = 800): string {
+    return `${environment.apiUrl}/api/photos/${ref}?maxWidth=${maxWidth}`;
   }
 
-  onAiEnrichClick(): void {
-    this.aiEnrichRequest.emit();
-  }
-
-  setActivePhoto(index: number): void {
-    this.activePhotoIndex.set(index);
-  }
-
-  toggleHours(): void {
-    this.hoursExpanded.update((v) => !v);
-  }
-
-  toggleReviews(): void {
-    this.reviewsExpanded.update((v) => !v);
-  }
-
-  /** Returns star string for a rating 1-5 */
   starsFor(rating: number): string {
     const full = Math.round(rating);
     return '★'.repeat(full) + '☆'.repeat(5 - full);
   }
 
-  /** File icon class based on extension */
   fileIcon(name: string): string {
-    const ext = name.split('.').pop()?.toLowerCase();
+    const ext = name.split('.').pop()?.toLowerCase() ?? '';
     const map: Record<string, string> = {
       pdf: 'pi-file-pdf',
-      jpg: 'pi-image',
-      jpeg: 'pi-image',
-      png: 'pi-image',
-      doc: 'pi-file-word',
-      docx: 'pi-file-word',
+      jpg: 'pi-image', jpeg: 'pi-image', png: 'pi-image', webp: 'pi-image',
+      doc: 'pi-file-word', docx: 'pi-file-word',
     };
-    return `pi ${map[ext ?? ''] ?? 'pi-file'}`;
+    return `pi ${map[ext] ?? 'pi-file'}`;
   }
 }
