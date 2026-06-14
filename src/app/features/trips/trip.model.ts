@@ -7,7 +7,7 @@ export interface Trip {
   ville: string;
   title: string;
   ownerId: string;
-  members: Record<string, TripRole>;
+  members: Record<string, TripMember>;
   days: Day[];
   info: Info;
 }
@@ -15,4 +15,11 @@ export interface Trip {
 export interface Day {
   id: Date;
   activities: Activity[];
+}
+
+
+export interface TripMember {
+  role: TripRole;
+  email: string;
+  displayName?: string;
 }

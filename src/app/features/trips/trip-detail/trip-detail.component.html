@@ -52,12 +52,35 @@
       <ng-template #header>
         <div class="flex align-items-center justify-content-between px-3 pt-3">
           <span class="text-xl font-semibold">{{ tripTitle() }}</span>
-          <p-button
-            icon="pi pi-user-plus"
-            [rounded]="true"
-            [text]="true"
-            severity="secondary"
-            (onClick)="openInviteDialog()" />
+<div class="flex align-items-center gap-3">
+
+  <p-avatarGroup>
+    @for (entry of getVisibleMembers(); track entry[0]) {
+  <p-avatar
+    [label]="getInitials(entry[1])"
+    shape="circle"
+    size="normal"
+    [pTooltip]="entry[1].email"
+    tooltipPosition="bottom" />
+}
+        @if (getExtraCount() > 0) {
+          <p-avatar
+            [label]="'+' + getExtraCount()"
+            shape="circle"
+            size="normal"
+            [pTooltip]="getExtraTooltip()"
+            tooltipPosition="bottom" />
+        }
+      </p-avatarGroup>
+
+      <p-button
+        icon="pi pi-user-plus"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="openInviteDialog()" />
+
+    </div>
         </div>
       </ng-template>
     </p-card>

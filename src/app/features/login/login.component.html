@@ -1,4 +1,4 @@
-<div class="flex justify-content-center align-items-center min-h-screen bg-transparent p-3"  style="min-width: 20rem;">
+<div class="flex justify-content-center align-items-center min-h-screen bg-transparent p-3" style="min-width: 20rem;">
   <p-card class="w-full max-w-28rem p-2">
     <div class="text-center mb-5">
       <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
@@ -6,9 +6,10 @@
         {{ isRegister() ? 'Créer un compte' : 'Connexion' }}
       </h1>
       <p class="text-color-secondary m-0">
-        {{ isRegister() ? 'Rejoignez-nous dès aujourd\'hui' : 'Bienvenue' }}
+        {{ isRegister() ? "Rejoignez-nous dès aujourd'hui" : 'Bienvenue' }}
       </p>
     </div>
+
     <div class="flex flex-column gap-4">
       <p-button
         label="Continuer avec Google"
@@ -22,6 +23,32 @@
       <p-divider>
         <span class="text-sm text-color-secondary font-normal">ou</span>
       </p-divider>
+
+      <!-- Prénom + Nom uniquement à l'inscription -->
+      @if (isRegister()) {
+        <div class="flex flex-column gap-2 flex-1">
+          <label for="firstName" class="font-medium text-900">Prénom</label>
+          <input
+            pInputText
+            id="firstName"
+            type="text"
+            [(ngModel)]="firstName"
+            placeholder="Jean"
+            autocomplete="given-name"
+            class="w-full" />
+        </div>
+        <div class="flex flex-column gap-2 flex-1">
+          <label for="lastName" class="font-medium text-900">Nom</label>
+          <input
+            pInputText
+            id="lastName"
+            type="text"
+            [(ngModel)]="lastName"
+            placeholder="Dupont"
+            autocomplete="family-name"
+            class="w-full" />
+        </div>
+      }
 
       <div class="flex flex-column gap-2">
         <label for="email" class="font-medium text-900">Email</label>
@@ -71,7 +98,6 @@
           (onClick)="toggleMode()">
         </p-button>
       </p>
-
     </div>
   </p-card>
 </div>

@@ -13,7 +13,7 @@ import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { ConfirmationService } from 'primeng/api';
 import { SwipeDirective } from '@app/shared/directives/swipe.directive';
-import { Trip } from '../trip.model';
+import { Trip, TripMember } from '../trip.model';
 import { TripRole } from '../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
@@ -21,6 +21,9 @@ import { InfosSkeletonComponent } from './infos/infos-skeleton.component';
 import { finalize } from 'rxjs';
 import { TripFacade } from '../trip-facade.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
+import { AvatarModule } from 'primeng/avatar';
+import { AvatarGroupModule } from 'primeng/avatargroup';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-trip-detail',
@@ -41,6 +44,9 @@ import { CollaborationService } from '@app/core/services/collaboration.service';
     DayPanelComponent,
     SwipeDirective,
     InfosSkeletonComponent,
+    AvatarModule, 
+    AvatarGroupModule,
+    TooltipModule
   ],
   providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',
@@ -57,6 +63,36 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected inviteeRole: TripRole = 'editor';
   protected readonly inviteLoading = signal(false);
   protected readonly inviteError = signal<string | null>(null);
+  protected objectEntries = Object.entries;
+  private readonly MAX_VISIBLE = 5;
+
+    getInitials(member: TripMember): string {
+  if (member.displayName) {
+    return member.displayName
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }
+  return member.email.slice(0, 2).toUpperCase();
+}
+getVisibleMembers(): [string, TripMember][] {
+  const members = this.facade.activeTrip()?.members ?? {};
+  return Object.entries(members).slice(0, this.MAX_VISIBLE);
+}
+
+getExtraCount(): number {
+  const total = Object.keys(this.facade.activeTrip()?.members ?? {}).length;
+  return Math.max(0, total - this.MAX_VISIBLE);
+}
+
+getExtraTooltip(): string {
+  const members = this.facade.activeTrip()?.members ?? {};
+  return Object.keys(members)
+    .slice(this.MAX_VISIBLE)
+    .join(', ');
+}
 
   protected readonly roleOptions: { label: string; value: TripRole }[] = [
     { label: 'Éditeur', value: 'editor' },
@@ -115,20 +151,26 @@ readonly tripTitle = computed(() => {
   }
 
   protected inviteCollaborator(): void {
-    const tripId = this.route.snapshot.paramMap.get('id');
-    if (!tripId || !this.inviteeEmail) return;
+  const tripId = this.route.snapshot.paramMap.get('id');
+  if (!tripId || !this.inviteeEmail) return;
 
-    this.inviteLoading.set(true);
-    this.inviteError.set(null);
+  this.inviteLoading.set(true);
+  this.inviteError.set(null);
 
-    this.collaborationService
-      .addCollaborator(tripId, this.inviteeEmail, this.inviteeRole)
-      .pipe(finalize(() => this.inviteLoading.set(false)))
-      .subscribe({
-        next: () => this.closeInviteDialog(),
-        error: (err) => this.inviteError.set(err?.message ?? 'Une erreur est survenue'),
-      });
-  }
+  this.collaborationService
+    .addCollaborator(tripId, this.inviteeEmail, this.inviteeRole)
+    .pipe(finalize(() => this.inviteLoading.set(false)))
+    .subscribe({
+      next: () => {
+        this.closeInviteDialog();
+        this.inviteeEmail = '';  // reset propre
+      },
+      error: (err) => {
+        const message = err?.error?.error ?? err?.message ?? 'Une erreur est survenue';
+        this.inviteError.set(message);
+      },
+    });
+}
 
   // — tabs
   nextTab(): void { this.moveTab(1); }

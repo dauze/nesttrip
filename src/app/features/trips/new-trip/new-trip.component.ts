@@ -46,8 +46,9 @@ export class NewTripComponent {
       this.form.markAllAsTouched();
       return;
     }
-    const uid = this.authService.getCurrentUser()?.uid;
-    if (!uid) throw new Error('User not authenticated');
+
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
 
     const { title, ville, dateDebut, dateFin } = this.form.value as {
       title: string;
@@ -62,8 +63,14 @@ export class NewTripComponent {
       ville,
       days: this.buildDays(dateDebut, dateFin),
       info: this.buildInfo(),
-      ownerId: uid,
-      members: { [uid]: 'owner' },
+      ownerId: user.uid,
+      members: {
+        [user.uid]: {
+          role: 'owner',
+          email: user.email ?? '',
+          displayName: user.displayName ?? undefined,
+        },
+      },
     };
 
     this.saveTrip(trip);

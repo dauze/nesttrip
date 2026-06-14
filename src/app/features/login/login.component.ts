@@ -31,9 +31,10 @@ export class LoginComponent {
 
   email = '';
   password = '';
+  firstName = '';
+  lastName = '';
   isRegister = signal(false);
   loading = signal(false);
-  showPassword = false;
   errorMsg = signal('');
 
   toggleMode() {
@@ -61,11 +62,16 @@ export class LoginComponent {
       this.errorMsg.set('Veuillez remplir tous les champs.');
       return;
     }
+    if (this.isRegister() && (!this.firstName || !this.lastName)) {
+      this.errorMsg.set('Veuillez renseigner votre nom et prénom.');
+      return;
+    }
+
     this.loading.set(true);
     this.errorMsg.set('');
 
     const action$ = this.isRegister()
-      ? this.authService.registerWithEmail(this.email, this.password)
+      ? this.authService.registerWithEmail(this.email, this.password, this.firstName, this.lastName)
       : this.authService.loginWithEmail(this.email, this.password);
 
     action$
