@@ -1,12 +1,26 @@
 @if (activity(); as activity) {
-  <p-panel [toggleable]="true" [collapsed]="true" [ngClass]="'booking ' + bookingMeta().className">
+  <div class="ac-card" [ngClass]="'booking-' + bookingMeta().className">
 
-    <ng-template pTemplate="header">
-      <div class="flex align-items-center gap-2">
-        <span cdkDragHandle><i class="pi pi-bars"></i></span>
-        <i [class]="activityTypeMeta[activity.type]?.icon"></i>
+    <!-- ══════════════════════════════════════════
+         HEADER (toujours visible)
+    ══════════════════════════════════════════ -->
+    <div class="ac-header" (click)="toggle()">
 
-        <!-- Title HORS form pour éviter conflit ngModel/ReactiveForm -->
+      <span cdkDragHandle class="ac-drag" (click)="$event.stopPropagation()">
+        <i class="pi pi-bars"></i>
+      </span>
+
+      <!-- Miniature : première photo Google ou icône de type -->
+      <div class="ac-thumb">
+        @if (displayPhotos()[0]) {
+          <img [src]="displayPhotos()[0]" [alt]="activity.title" />
+        } @else {
+          <i [class]="'pi ' + activityTypeMeta[activity.type]?.icon"></i>
+        }
+      </div>
+
+      <!-- Infos 2 lignes -->
+      <div class="ac-header-info" (click)="$event.stopPropagation()">
         <p-autoComplete
           [suggestions]="places()"
           [(ngModel)]="title"
@@ -17,113 +31,316 @@
           [dropdown]="false"
           [autoHighlight]="true"
           placeholder="Nom de l'activité"
-          [inputStyleClass]="'flex-1 font-bold min-w-0'">
-          <ng-template #item let-place>{{ place.name }}</ng-template>
+          styleClass="ac-autocomplete"
+          [inputStyleClass]="'ac-title-input'">
+          <ng-template #item let-place>
+            <div class="ac-suggestion-item">
+              <div class="ac-suggestion-thumb">
+                @if (place.photos?.[0]) {
+                  <img [src]="place.photos[0]" [alt]="place.name" />
+                } @else {
+                  <i class="pi pi-map-marker"></i>
+                }
+              </div>
+              <div class="ac-suggestion-text">
+                <span class="ac-suggestion-name">{{ place.name }}</span>
+                <span class="ac-suggestion-address">{{ place.address }}</span>
+              </div>
+            </div>
+          </ng-template>
         </p-autoComplete>
 
-        <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
-          <i class="pi pi-clock"></i>
-          <span>{{ activity.duration | duration }}</span>
+        <div class="ac-header-meta">
+          <span class="ac-chip">
+            <i class="pi pi-clock"></i>
+            {{ activity.duration | duration }}
+          </span>
+          @if (activity.price?.amount) {
+            <span class="ac-chip">
+              <i class="pi pi-euro"></i>
+              {{ activity.price.amount }} {{ activity.price.currency }}
+            </span>
+          }
+          <span class="ac-booking-badge" [ngClass]="bookingMeta().className">
+            {{ bookingMeta().label }}
+          </span>
         </div>
       </div>
-    </ng-template>
 
-    <!-- Tout le reste dans le form ReactiveForm -->
-    <form [formGroup]="form">
-      <div class="grid">
-        <!-- TYPE -->
-        <div class="col-12 md:col-6">
-          <div class="flex align-items-center gap-2">
-            <label class="flex align-items-center gap-2">
-              <i class="pi pi-tag"></i><span>Type</span>
-            </label>
-            <p-select [options]="activityTypeOptions" formControlName="type" />
-          </div>
-        </div>
+      <i class="pi ac-chevron" [ngClass]="expanded() ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+    </div>
 
-        <!-- DURATION -->
-        <div class="col-12 md:col-6">
-          <div class="flex align-items-center gap-2">
-            <label class="flex align-items-center gap-2">
-              <i class="pi pi-clock"></i><span>Durée</span>
-            </label>
-            <p-inputMask
-              mask="99h99"
-              [unmask]="false"
-              [ngModel]="durationDisplay()"
-              (ngModelChange)="onDurationChange($event)"
-              [ngModelOptions]="{standalone: true}"
-              placeholder="0h00"
-            />
-          </div>
-        </div>
+    <!-- ══════════════════════════════════════════
+         BODY (visible seulement si expanded)
+    ══════════════════════════════════════════ -->
+    @if (expanded()) {
+      <div class="ac-body">
 
-        <!-- BOOKING -->
-        <div class="col-12 md:col-6" formGroupName="booking">
-          <div class="flex align-items-center gap-2">
-            <label class="flex align-items-center gap-2">
-              <i class="pi pi-bookmark"></i><span>Réservation</span>
-            </label>
-            <p-select [options]="bookingStatusOptions" formControlName="status"
-              optionLabel="label" optionValue="value" appendTo="body" />
-          </div>
-        </div>
-
-        <!-- DEADLINE -->
-        @if (showDeadline()) {
-          <div class="col-12 md:col-6" formGroupName="booking">
-            <div class="flex align-items-center gap-2">
-              <label class="flex align-items-center gap-2"
-                [class.text-yellow-700]="isDeadlineSoon()"
-                [class.text-color-secondary]="!isDeadlineSoon()">
-                <i class="pi pi-calendar"></i><span>Deadline</span>
-              </label>
-              <p-datepicker class="w-12rem" formControlName="deadline"
-                dateFormat="dd/mm/yy" [showIcon]="true"
-                appendTo="body" placeholder="Aucune deadline" />
+        <!-- ── CAROUSEL PHOTOS GOOGLE ── -->
+        @if (hasGoogleData() && displayPhotos().length) {
+          <div class="ac-photos">
+            <div class="ac-photo-main">
+              <img [src]="displayPhotos()[activePhotoIndex()]" [alt]="activity.title" />
             </div>
+            @if (displayPhotos().length > 1) {
+              <div class="ac-photo-strip">
+                @for (photo of displayPhotos(); track $index) {
+                  <div
+                    class="ac-photo-thumb"
+                    [class.active]="activePhotoIndex() === $index"
+                    (click)="setActivePhoto($index)">
+                    <img [src]="photo" [alt]="activity.title + ' photo ' + ($index + 1)" />
+                  </div>
+                }
+              </div>
+            }
           </div>
         }
 
-        <!-- PRICE -->
-        <div class="col-12 md:col-6" formGroupName="price">
-          <div class="flex align-items-center gap-2">
-            <label class="flex align-items-center gap-2">
-              <i class="pi pi-euro"></i><span>Prix</span>
-            </label>
-            <p-inputNumber formControlName="amount" [min]="0"
-              [minFractionDigits]="0" [maxFractionDigits]="2" />
-            <p-select [options]="currencyOptions" formControlName="currency" />
+        <!-- ── CHAMPS PRINCIPAUX ── -->
+        <form [formGroup]="form" class="ac-form">
+          <div class="ac-fields-grid">
+
+            <!-- TYPE -->
+            <div class="ac-field">
+              <label class="ac-field-label">
+                <i class="pi pi-tag"></i>
+                <span>Type</span>
+              </label>
+              <p-select
+                [options]="activityTypeOptions"
+                formControlName="type"
+                styleClass="ac-select" />
+            </div>
+
+            <!-- DURÉE -->
+            <div class="ac-field">
+              <label class="ac-field-label">
+                <i class="pi pi-clock"></i>
+                <span>Durée</span>
+              </label>
+              <p-inputMask
+                mask="99h99"
+                [unmask]="false"
+                [ngModel]="durationDisplay()"
+                (ngModelChange)="onDurationChange($event)"
+                [ngModelOptions]="{standalone: true}"
+                placeholder="0h00"
+                styleClass="ac-inputmask" />
+            </div>
+
+            <!-- RÉSERVATION -->
+            <div class="ac-field">
+              <label class="ac-field-label">
+                <i class="pi pi-bookmark"></i>
+                <span>Réservation</span>
+              </label>
+              <p-select
+                [options]="bookingStatusOptions"
+                formControlName="status"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                styleClass="ac-select"
+                formGroupName="booking" />
+            </div>
+
+            <!-- PRIX -->
+            <div class="ac-field ac-field--price">
+              <label class="ac-field-label">
+                <i class="pi pi-euro"></i>
+                <span>Prix</span>
+              </label>
+              <div class="ac-price-row" formGroupName="price">
+                <p-inputNumber
+                  formControlName="amount"
+                  [min]="0"
+                  [minFractionDigits]="0"
+                  [maxFractionDigits]="2"
+                  styleClass="ac-inputnumber" />
+                <p-select
+                  [options]="currencyOptions"
+                  formControlName="currency"
+                  styleClass="ac-select ac-select--currency" />
+              </div>
+            </div>
+
+            <!-- DEADLINE -->
+            @if (showDeadline()) {
+              <div class="ac-field ac-field--full" formGroupName="booking">
+                <label class="ac-field-label" [class.ac-field-label--warn]="isDeadlineSoon()">
+                  <i class="pi pi-calendar"></i>
+                  <span>Deadline</span>
+                </label>
+                <p-datepicker
+                  formControlName="deadline"
+                  dateFormat="dd/mm/yy"
+                  [showIcon]="true"
+                  appendTo="body"
+                  placeholder="Aucune deadline"
+                  styleClass="ac-datepicker" />
+              </div>
+            }
+
+          </div>
+
+          <!-- ── NOTES ── -->
+          <div class="ac-section">
+            <div class="ac-section-label">
+              <i class="pi pi-pencil"></i>
+              <span>Notes</span>
+            </div>
+            <textarea
+              pTextarea
+              formControlName="notes"
+              placeholder="Ajouter une note…"
+              rows="2"
+              autoResize="true"
+              class="ac-textarea w-full">
+            </textarea>
+          </div>
+
+        </form>
+
+        <!-- ── BLOC GOOGLE ── -->
+        @if (hasGoogleData()) {
+          <div class="ac-google-section">
+            <div class="ac-section-divider"></div>
+
+            <!-- Rating + liens -->
+            <div class="ac-google-header">
+              @if (activity.rating) {
+                <div class="ac-rating">
+                  <span class="ac-stars">{{ starsFor(activity.rating) }}</span>
+                  <span class="ac-rating-val">{{ activity.rating | number:'1.1-1' }}</span>
+                  @if (activity.reviewCount) {
+                    <span class="ac-rating-count">({{ activity.reviewCount }})</span>
+                  }
+                </div>
+              }
+              <div class="ac-google-links">
+                @if (activity.phone) {
+                  <a [href]="'tel:' + activity.phone" class="ac-icon-link" pTooltip="Appeler">
+                    <i class="pi pi-phone"></i>
+                  </a>
+                }
+                @if (activity.website) {
+                  <a [href]="activity.website" target="_blank" rel="noopener" class="ac-icon-link" pTooltip="Site web">
+                    <i class="pi pi-external-link"></i>
+                  </a>
+                }
+              </div>
+            </div>
+
+            <!-- Statut ouvert/fermé -->
+            @if (isOpenNow() !== null) {
+              <div class="ac-open-badge" [class.ac-open-badge--closed]="!isOpenNow()">
+                <i class="pi" [ngClass]="isOpenNow() ? 'pi-check-circle' : 'pi-times-circle'"></i>
+                {{ isOpenNow() ? 'Ouvert maintenant' : 'Fermé en ce moment' }}
+              </div>
+            }
+
+            <!-- Horaires dépliables -->
+            @if (activity.openingHours?.length) {
+              <div class="ac-expandable">
+                <button type="button" class="ac-expandable-toggle" (click)="toggleHours()">
+                  <i class="pi pi-clock"></i>
+                  <span>Horaires</span>
+                  <i class="pi ac-expandable-chevron"
+                     [ngClass]="hoursExpanded() ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                </button>
+                @if (hoursExpanded()) {
+                  <ul class="ac-hours-list">
+                    @for (line of activity.openingHours; track $index) {
+                      <li [class.ac-hours-today]="line.startsWith(todayHoursLabel() ?? '__none__')">
+                        {{ line }}
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+
+            <!-- Avis dépliables -->
+            @if (activity.reviews?.length) {
+              <div class="ac-expandable">
+                <button type="button" class="ac-expandable-toggle" (click)="toggleReviews()">
+                  <i class="pi pi-comments"></i>
+                  <span>Avis ({{ activity.reviews!.length }})</span>
+                  <i class="pi ac-expandable-chevron"
+                     [ngClass]="reviewsExpanded() ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                </button>
+                @if (reviewsExpanded()) {
+                  <div class="ac-reviews-list">
+                    @for (review of activity.reviews; track review.author) {
+                      <div class="ac-review">
+                        <div class="ac-review-header">
+                          <span class="ac-review-author">{{ review.author }}</span>
+                          <span class="ac-review-stars">{{ starsFor(review.rating) }}</span>
+                        </div>
+                        <p class="ac-review-text">{{ review.comment }}</p>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── FICHIERS ── -->
+        <div class="ac-section">
+          <div class="ac-section-divider"></div>
+          <div class="ac-section-label">
+            <i class="pi pi-paperclip"></i>
+            <span>Fichiers</span>
+          </div>
+          <div class="ac-files">
+            @for (file of activity.files; track file.path; let i = $index) {
+              <span class="ac-file-chip">
+                <i [class]="fileIcon(file.name)"></i>
+                <a [href]="file.url" [download]="file.name">{{ file.name }}</a>
+                <button
+                  type="button"
+                  class="ac-file-remove"
+                  (click)="removeFile(i)"
+                  [attr.aria-label]="'Supprimer ' + file.name">
+                  <i class="pi pi-times"></i>
+                </button>
+              </span>
+            }
+            <p-fileUpload
+              mode="basic"
+              chooseLabel="Ajouter"
+              chooseIcon="pi pi-upload"
+              [multiple]="true"
+              [auto]="true"
+              (onSelect)="onFileSelect($event)"
+              styleClass="ac-fileupload" />
           </div>
         </div>
-      </div>
 
-      <!-- NOTES -->
-      <div class="flex flex-column gap-2">
-        <label class="flex align-items-center gap-2">
-          <i class="pi pi-pencil"></i><span>Notes</span>
-        </label>
-        <textarea pTextarea formControlName="notes" placeholder="Ajouter une note…"
-          rows="3" autoResize="true" class="w-full">
-        </textarea>
-      </div>
+        <!-- ══════════════════════════════════════════
+             FOOTER ACTIONS
+        ══════════════════════════════════════════ -->
+        <div class="ac-footer">
+          <button
+            type="button"
+            class="ac-footer-btn ac-footer-btn--ai"
+            (click)="onAiEnrichClick()">
+            <i class="pi pi-sparkles"></i>
+            <span>Remplir avec l'IA</span>
+          </button>
+          <button
+            type="button"
+            class="ac-footer-btn ac-footer-btn--delete"
+            (click)="onDeleteClick()">
+            <i class="pi pi-trash"></i>
+            <span>Supprimer</span>
+          </button>
+        </div>
 
-      <!-- FILES -->
-      <div class="flex flex-column gap-2">
-        <label class="flex align-items-center gap-2">
-          <i class="pi pi-paperclip"></i><span>Fichiers</span>
-        </label>
-        @for (file of activity.files; track file.path; let i = $index) {
-          <div>
-            <i class="pi pi-file"></i>
-            <a [href]="file.url" [download]="file.name">{{ file.name }}</a>
-            <p-button icon="pi pi-times" severity="danger" [text]="true" [rounded]="true" (onClick)="removeFile(i)" />
-          </div>
-        }
-        <p-fileUpload mode="basic" chooseLabel="Ajouter" chooseIcon="pi pi-upload"
-          [multiple]="true" [auto]="true" (onSelect)="onFileSelect($event)" />
       </div>
-    </form>
-
-  </p-panel>
+    }
+  </div>
 }

@@ -12,6 +12,12 @@ export interface Activity {
   files: ActivityFile[];
     //Google
   placeId: string;
+  reviews?:{
+    author: string;
+    rating: number;
+    comment: string;
+}[] | undefined;
+  reviewCount?: number;
   address?: string;
   latitude?: number;
   longitude?: number;

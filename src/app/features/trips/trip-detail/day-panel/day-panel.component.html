@@ -2,7 +2,7 @@
 <div class="flex flex-column gap-2">
   <app-timeline [activities]="activities()" />
   <p-panel [toggleable]="true" [collapsed]="false">
-    <ng-template pTemplate="header">
+    <ng-template  #header>
       <div class="flex align-items-center gap-2">
         <i class="pi pi-calendar"></i>
         <span>Activités</span>

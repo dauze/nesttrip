@@ -6,6 +6,7 @@ import { searchPlacesHandler } from './places/search-places.handler';
 import { getPlaceHandler } from './places/get-place.handler';
 import { addCollaboratorHandler } from './collaborators/add-collaborator.handler';
 import { authMiddleware } from './shared/auth.middleware';
+import { getPlacePhotoHandler } from './places/photo.handler';
 
 admin.initializeApp();
 
@@ -27,6 +28,7 @@ app.use(authMiddleware); // ← toutes les routes en dessous sont protégées
 app.get('/api/etablissements', (req, res) => searchPlacesHandler(req, res, googleApiKey.value()));
 app.get('/api/etablissements/:id', (req, res) => getPlaceHandler(req, res, googleApiKey.value()));
 app.post('/api/collaborators', (req, res) => addCollaboratorHandler(req, res));
+app.get('/api/photos/*', (req, res) =>  getPlacePhotoHandler(req, res, googleApiKey.value()));
 
 export const api = onRequest(
   { secrets: [googleApiKey], region: 'europe-west1' },

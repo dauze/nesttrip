@@ -27,6 +27,7 @@
   --p-textarea-shadow: none;
   --p-textarea-hover-border-color: transparent;
   --p-textarea-focus-border-color: transparent;
+  --p-textarea-disabled-background: transparent;
 }
 
 .p-dialog-header {
@@ -49,3 +50,46 @@
   display: block;
   width: 6px;
 }
+
+.p-inputtext {
+  --p-inputtext-border-color: transparent;
+  --p-inputtext-hover-border-color: transparent;
+  --p-inputtext-focus-border-color: transparent;
+  --p-inputtext-shadow: none;
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-disabled-color: transparent;
+  --p-inputtext-disabled-border-color: transparent;
+}
+
+.p-select {
+  --p-select-border-color: transparent;
+  --p-select-hover-border-color: transparent;
+  --p-select-focus-border-color: transparent;
+  --p-select-shadow: none;
+  --p-select-background: transparent;
+  --p-select-disabled-background: transparent;
+  --p-select-disabled-color: transparent;
+  --p-select-disabled-border-color: transparent;
+}
+
+.p-inputnumber{
+  --p-inputnumber-border-color: transparent;
+  --p-inputnumber-hover-border-color:transparent;
+  --p-inputnumber-shadow: none;
+}
+
+.p-datepicker{
+  --p-datepicker-border-color: transparent;
+  --p-datepicker-hover-border-color:transparent;
+  --p-datepicker-shadow: none;
+  --p-datepicker-background: transparent;
+}
+.p-autocomplete{
+  --p-autocomplete-border-color: transparent;
+  --p-autocomplete-hover-border-color:transparent;
+  --p-autocomplete-shadow: none;
+  --p-autocomplete-background: transparent;
+}
+
+ 

@@ -46,12 +46,12 @@ export class GooglePlaceService {
         catchError(() => of({status: 'error'} as LoadingState<Partial<Place>[]>))
       )
     ),
-    startWith({status: 'idle'} as LoadingState<Pick<Place, 'placeId' | 'name'>[]>),
+    startWith({status: 'idle'} as LoadingState<Pick<Place, 'placeId' | 'name' | 'address' | 'photos'>[]>),
     shareReplay({bufferSize: 1, refCount: true})
   );
 
   readonly placesState = toSignal(this.placesState$,
-    {initialValue: {status: 'idle'} as LoadingState<Pick<Place, 'placeId' | 'name'>[]>}
+    {initialValue: {status: 'idle'} as LoadingState<Pick<Place, 'placeId' | 'name' | 'address' | 'photos'>[]>}
   );
 
   readonly places  = computed(() => {
