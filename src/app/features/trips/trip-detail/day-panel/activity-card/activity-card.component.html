@@ -2,9 +2,7 @@
    <p-panel
       [ngClass]="'trip booking ' + bookingMeta().className"
       [toggleable]="true"
-      [collapsed]="false"
-      (onAfterToggle)="onPanelToggle($event)">
-
+      [collapsed]="true">
       <!-- ═══ HEADER ═══ -->
       <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2 w-full min-w-0">
@@ -82,7 +80,6 @@
       </ng-template>
 
       <!-- ═══ BODY ═══ -->
-
       <!-- Spinner chargement Google data -->
       @if (googleDataLoading()) {
         <div class="flex justify-content-center py-3">
@@ -157,7 +154,7 @@
             </div>
           </div>
         
-          <p-divider class="m-1" />
+          <p-divider class="mt-1 mb-1" />
         
           <!-- RÉSA -->
           <div class="col-6 p-0 overflow-hidden" formGroupName="booking">
@@ -218,44 +215,69 @@
 
         <!-- ── BLOC GOOGLE DATA ── -->
         @if (hasPlaceId() && !googleDataLoading() && lazyGoogleData(); as gd) {
-          <p-divider />
+          <p-divider class="mt-1" />
           <span>GOOGLE MAPS</span>
 
-          <!-- Rating + liens -->
-          <div class="flex align-items-center justify-content-between gap-2 mb-2 mt-2 flex-wrap">
-            <div class="flex align-items-center gap-2">
-              @if (activity.rating) {
-                <span class="text-yellow-500 text-sm">{{ starsFor(activity.rating) }}</span>
-                <span class="font-semibold text-sm">{{ activity.rating | number:'1.1-1' }}</span>
-                @if (activity.reviewCount) {
-                  <span class="text-color-secondary text-xs">({{ activity.reviewCount }} avis)</span>
-                }
-              }
-            </div>
-            <div class="flex align-items-center gap-2">
-              @if (mapsUrl()) {
-                <a [href]="mapsUrl()!" target="_blank" rel="noopener"
-                   class="flex align-items-center gap-1 no-underline text-color-secondary text-xs">
-                  <i class="pi pi-map-marker text-xs"></i>
-                  <span>Maps</span>
-                </a>
-              }
-              @if (activity.phone) {
-                <a [href]="'tel:' + activity.phone"
-                   class="text-color-secondary no-underline"
-                   [pTooltip]="activity.phone">
-                  <i class="pi pi-phone text-sm"></i>
-                </a>
-              }
-              @if (activity.website) {
-                <a [href]="activity.website" target="_blank" rel="noopener"
-                   class="text-color-secondary no-underline"
-                   pTooltip="Site web">
-                  <i class="pi pi-external-link text-sm"></i>
-                </a>
-              }
-            </div>
-          </div>
+      <!-- Rating -->
+      <div class="flex align-items-center gap-2 mt-3 mb-2">
+        @if (activity.rating) {
+          <span class="text-yellow-400 text-sm">
+            {{ starsFor(activity.rating) }}
+          </span>
+          <span class="font-semibold text-sm">
+            {{ activity.rating | number:'1.1-1' }}
+          </span>
+          @if (activity.reviewCount) {
+            <span class="text-color-secondary text-xs">
+              ({{ activity.reviewCount }} avis)
+            </span>
+          }
+        }
+      </div>
+
+      <!-- Infos -->
+      <div class="flex flex-column gap-2 text-sm pb-2">
+
+        <!-- Adresse -->
+        @if (mapsUrl()) {
+          <a [href]="mapsUrl()!" target="_blank"
+            class="flex align-items-start gap-2 flex-wrap no-underline text-color-secondary line-height-3 hover:text-primary transition-colors">
+          
+            <i class="pi pi-map-marker mt-1 text-primary"></i>
+          
+            <span class="flex-1">
+              {{ activity.address || 'Voir sur Maps' }}
+            </span>
+          </a>
+        }
+
+        <!-- Téléphone -->
+        @if (activity.phone) {
+          <a [href]="'tel:' + activity.phone"
+            class="flex align-items-center gap-2 no-underline text-color-secondary hover:text-primary transition-colors">
+
+            <i class="pi pi-phone text-primary"></i>
+
+            <span>
+              {{ activity.phone }}
+            </span>
+          </a>
+        }
+
+        <!-- Site web -->
+        @if (activity.website) {
+          <a [href]="activity.website" target="_blank"
+            class="flex align-items-center gap-2 flex-wrap no-underline text-color-secondary hover:text-primary transition-colors">
+        
+            <i class="pi pi-external-link text-primary"></i>
+        
+            <span class="flex-1 break-words">
+              {{ activity.website }}
+            </span>
+          </a>
+        }
+
+      </div>
 
           <!-- Ouvert / Fermé -->
           @if (isOpenNow() !== null) {
@@ -333,20 +355,13 @@
 
         <div class="flex flex-wrap gap-2 align-items-center">
           @for (file of activity.files; track file.path; let i = $index) {
-            <span class="flex align-items-center gap-1 surface-100 border-round-xl px-2 py-1 text-sm">
-              <i [class]="fileIcon(file.name)"></i>
-              <a [href]="file.url" [download]="file.name"
-                 class="no-underline text-color"
-                 style="max-width:8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block">
-                {{ file.name }}
-              </a>
-              <p-button
-                icon="pi pi-times"
-                severity="secondary"
-                size="small"
-                (onClick)="removeFile(i)"
-                [style]="{ padding: '0', width: '1rem', height: '1rem' }" />
-            </span>
+            <p-chip
+              [label]="file.name"
+              [icon]="fileIcon(file.name)"
+              removable="true"
+              (onRemove)="removeFile(i)"
+              class="surface-100 text-sm"
+            />
           }
           <p-fileUpload
             mode="basic"
@@ -357,30 +372,10 @@
             (onSelect)="onFileSelect($event)"  
             [chooseButtonProps]="{
               severity: 'secondary',
-              rounded: true
+              rounded: true,
             }"
-            styleClass="p-button-text p-button-sm p-button-secondary p-button-rounded" />
+            styleClass="p-0" />
         </div>
       </div>
-
-      <!-- ═══ FOOTER ACTIONS ═══ -->
-      <ng-template pTemplate="footer">
-        <div class="flex align-items-center justify-content-between">
-          <p-button
-            label="Remplir avec l'IA"
-            icon="pi pi-sparkles"
-            severity="secondary"
-            [text]="true"
-            size="small"
-            (onClick)="onAiEnrichClick()" />
-          <p-button
-            label="Supprimer"
-            icon="pi pi-trash"
-            severity="danger"
-            [text]="true"
-            size="small"
-            (onClick)="onDeleteClick()" />
-        </div>
-      </ng-template>
     </p-panel>
 }

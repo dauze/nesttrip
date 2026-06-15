@@ -11,12 +11,7 @@ export interface Activity {
   notes: string;
   files: ActivityFile[];
     //Google
-  placeId: string;
-  reviews?:{
-    author: string;
-    rating: number;
-    comment: string;
-}[] | undefined;
+  placeId?: string;
   reviewCount?: number;
   address?: string;
   latitude?: number;
@@ -27,7 +22,6 @@ export interface Activity {
   website?: string;
   types?: string[];
   priceLevel?: number;
-  photos?: string[];
 }
 
 export interface Price {

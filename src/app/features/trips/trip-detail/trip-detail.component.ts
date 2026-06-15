@@ -132,9 +132,16 @@ readonly tripTitle = computed(() => {
   readonly tabs = computed(() => {
     const trip = this.facade.activeTrip();
     if (!trip) return [{ id: 'info', label: 'Général' }];
+  
     return [
       { id: 'info', label: 'Général' },
-      ...trip.days.map((d) => ({ id: d.id.toISOString(), label: this.formatDate(d.id) })),
+      ...trip.days
+        .slice()
+        .sort((a, b) => a.id.getTime() - b.id.getTime())
+        .map(d => ({
+          id: d.id.toISOString(),
+          label: this.formatDate(d.id)
+        })),
     ];
   });
 

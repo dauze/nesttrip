@@ -8,6 +8,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+
+import { ChipModule } from 'primeng/chip';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -28,7 +30,7 @@ import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { GalleriaModule } from 'primeng/galleria';
 
-import { combineLatest, map } from 'rxjs';
+import { combineLatest, map, switchMap, of,shareReplay,catchError } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { BookingStatus } from '@core/enums/booking.status';
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
@@ -44,8 +46,8 @@ import {
   BOOKING_STATUS_META,
 } from './activity.constants';
 import { TripStore } from '@app/features/trips/trip-store.service';
-import { environment } from '@environnements/environnement';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 /** Max photos shown in carousel — change freely */
 const MAX_PHOTOS = 6;
@@ -75,6 +77,7 @@ const MAX_PHOTOS = 6;
     DurationPipe,
     AutoComplete,
     InputMask,
+    ChipModule
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -106,6 +109,7 @@ export class ActivityCardComponent {
    * Fetched on first panel expand. NOT stored in Firestore (Google TOS §3.2.3b).
    */
   readonly lazyGoogleData = signal<Place | null>(null);
+  private lazyGoogleData$ = toObservable(this.lazyGoogleData);
   readonly googleDataLoading = signal(false);
   private googleDataLoaded = false;
 
@@ -143,24 +147,32 @@ export class ActivityCardComponent {
   });
 
   /** Gallery images built from lazy photo refs, proxied through Firebase Function */
-  private readonly galleryImages$ = combineLatest(
-    (this.lazyGoogleData()?.photos ?? [])
-      .slice(0, MAX_PHOTOS)
-      .map((ref) =>
-        combineLatest({
-          itemImageSrc: this.getPhotoUrl$(ref, 800),
-          thumbnailImageSrc: this.getPhotoUrl$(ref, 150),
-          alt: [this.activity()?.title ?? ''] // valeur sync
-        })
-      )
-  ).pipe(
-    map((images) =>
+  private readonly galleryImages$ = this.lazyGoogleData$.pipe(
+    map(data => data?.photos ?? []),
+    map(photos => photos.slice(0, MAX_PHOTOS)),
+  
+    switchMap((photos) => {
+      if (!photos.length) return of([]);
+  
+      return combineLatest(
+        photos.map((ref) =>
+          combineLatest({
+            itemImageSrc: this.getPhotoUrl$(ref, 800),
+            thumbnailImageSrc: this.getPhotoUrl$(ref, 150),
+            alt: of(this.activity()?.title ?? '')
+          })
+        )
+      );
+    }),
+  
+    map(images =>
       images.map(img => ({
         itemImageSrc: img.itemImageSrc,
         thumbnailImageSrc: img.thumbnailImageSrc,
-        alt: img.alt[0]
+        alt: img.alt
       }))
-    )
+    ),
+    shareReplay(1)
   );
   
   readonly galleryImages = toSignal(this.galleryImages$, { initialValue: [] });
@@ -243,22 +255,20 @@ export class ActivityCardComponent {
         price: value.price ?? activity.price,
       });
     });
-  }
 
-  /** Triggered by p-panel (onAfterToggle). Loads Google data lazily on first open. */
-  onPanelToggle(event: { collapsed?: boolean }): void {
-    if (event.collapsed !== false) return;
-    const placeId = this.activity()?.placeId;
-    if (!placeId || this.googleDataLoaded || this.googleDataLoading()) return;
-
-    this.googleDataLoading.set(true);
-    this.googlePlaceService.getPlaceDetail(placeId).subscribe({
-      next: (place) => {
-        this.lazyGoogleData.set(place);
-        this.googleDataLoaded = true;
-        this.googleDataLoading.set(false);
-      },
-      error: () => this.googleDataLoading.set(false),
+    effect(() => {
+      const placeId = this.activity()?.placeId;
+      if (!placeId || this.googleDataLoaded || this.googleDataLoading()) return;
+  
+      this.googleDataLoading.set(true);
+      this.googlePlaceService.getPlaceDetail(placeId).subscribe({
+        next: (place) => {
+          this.lazyGoogleData.set(place);
+          this.googleDataLoaded = true;
+          this.googleDataLoading.set(false);
+        },
+        error: () => this.googleDataLoading.set(false),
+      });
     });
   }
 
@@ -288,21 +298,19 @@ export class ActivityCardComponent {
       const activity = this.activity();
       if (!activity) return;
 
-      // ⚠️  photos & reviews NOT stored — Google TOS §3.2.3b forbids caching
       this.tripStore.updateActivity(this.tripId(), this.dayId(), {
         ...activity,
         title: p.name,
-        placeId: p.placeId,
-        address: p.address,
-        latitude: p.latitude,
-        longitude: p.longitude,
-        rating: p.rating,
-        reviewCount: p.reviewCount,
-        openingHours: p.openingHours,
-        phone: p.phone,
-        website: p.website,
-        types: p.types,
-        priceLevel: p.priceLevel,
+        placeId: p.placeId ?? '',
+        address: p.address ?? '',
+        latitude: p.latitude ?? 0,
+        longitude: p.longitude ?? 0,
+        rating: p.rating ?? 0,
+        reviewCount: p.reviewCount ?? 0,
+        openingHours: p.openingHours ?? [],
+        phone: p.phone ?? '',
+        website: p.website ?? '',
+        priceLevel: p.priceLevel ?? 0,
       });
 
       // Cache locally for this session only
@@ -359,7 +367,9 @@ export class ActivityCardComponent {
 
   /** Proxy URL for a Google Places photo reference */
   getPhotoUrl$(ref: string, maxWidth = 800) {
-    return this.googlePhotoService.getPhoto$(this.extractPhotoRef(ref), maxWidth);
+    return this.googlePhotoService.getPhoto$(this.extractPhotoRef(ref), maxWidth).pipe(
+      catchError(() => '')
+    );
   }
 
   starsFor(rating: number): string {

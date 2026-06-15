@@ -16,7 +16,7 @@ import { Request, Response } from 'express';
 export async function getPlacePhotoHandler(req: Request, res: Response, apiKey: string) {
   // Reconstruit la référence complète depuis le path
   // Le router doit être monté avec app.get('/api/photos/*', ...)
-  const photoRef = (req.params as any)[0] as string | undefined;
+  const photoRef = req.params.photoRef;
 
   if (!photoRef) {
     res.status(400).json({ error: 'Photo reference requise' });

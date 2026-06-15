@@ -12,17 +12,16 @@ export interface ActivityFirebase {
   files?: FileFirebase[];
 
   //Google
-  placeId: string;
+  placeId?: string;
   address?: string;
   latitude?: number;
   longitude?: number;
   rating?: number;
+  reviewCount?:number;
   openingHours?: string[];
   phone?: string;
   website?: string;
-  types?: string[];
   priceLevel?: number;
-  photos?: string[];
 }
 export interface PriceFirebase {
   amount: number;

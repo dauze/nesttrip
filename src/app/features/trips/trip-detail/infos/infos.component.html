@@ -15,7 +15,7 @@
             (keydown.arrowdown)="focusRow(item.id, 0, 0)"
           ></textarea>
           <div class="flex gap-1 flex-shrink-0">
-            <p-button [rounded]="true"
+            <p-button
               icon="pi pi-trash"
               [rounded]="true"
               [text]="true"
@@ -23,7 +23,7 @@
               [outlined]="true"
               (onClick)="confirmDelete(item)"
             />
-            <p-button [rounded]="true"
+            <p-button
               [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
               [rounded]="true"
               [text]="true"
@@ -75,7 +75,7 @@
               [attr.data-item-id]="item.id"
               [attr.data-index]="$index"
             ></textarea>
-            <p-button [rounded]="true"
+            <p-button
               icon="pi pi-times"
               [rounded]="true"
               [text]="true"
@@ -89,7 +89,7 @@
           }
         }
         <div class="pl-2">
-          <p-button [rounded]="true"
+          <p-button
               label="Élément de liste"
               icon="pi pi-plus"
               [text]="true"
@@ -138,7 +138,7 @@
                     [attr.data-item-id]="item.id"
                     [attr.data-index]="$index"
                   ></textarea>
-                  <p-button [rounded]="true"
+                  <p-button
                     icon="pi pi-times"
                     [rounded]="true"
                     [text]="true"
@@ -157,6 +157,6 @@
     </p-panel>
   }
   <div class="flex justify-content-center w-full">
-    <p-button [rounded]="true" icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
+    <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
   </div>
 </div>
