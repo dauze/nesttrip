@@ -33,12 +33,12 @@
     }
   </div>
   <ng-template #footer>
-    <p-button
+    <p-button [rounded]="true"
       label="Annuler"
       severity="secondary"
       [outlined]="true"
       (onClick)="closeInviteDialog()" />
-    <p-button
+    <p-button [rounded]="true"
       label="Inviter"
       [loading]="inviteLoading()"
       [disabled]="!inviteeEmail"
@@ -73,7 +73,7 @@
         }
       </p-avatarGroup>
 
-      <p-button
+      <p-button [rounded]="true"
         icon="pi pi-user-plus"
         [rounded]="true"
         [text]="true"

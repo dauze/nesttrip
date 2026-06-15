@@ -1,7 +1,7 @@
 <p-toolbar>
   <ng-template #start>
     @if (showBack()) {
-      <p-button
+      <p-button [rounded]="true"
         icon="pi pi-arrow-left"
         [text]="true"
         [rounded]="true"
@@ -14,7 +14,7 @@
   </ng-template>
   <ng-template #end>
     <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
-    <p-button (click)="menu.toggle($event)" icon="pi pi-user" [rounded]="true" [text]="true" />
+    <p-button [rounded]="true" (click)="menu.toggle($event)" icon="pi pi-user" [rounded]="true" [text]="true" />
   </ng-template>
 </p-toolbar>
 <router-outlet />

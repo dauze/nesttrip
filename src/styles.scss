@@ -43,15 +43,20 @@
 }
 
 .p-panel-content {
-  --p-panel-content-padding: 0 0.5rem 0.5rem 0.5rem;
+  --p-panel-content-padding: 0 0.7rem 0.7rem 0.7rem;
 }
 
 .pi-ellipsis-v {
   display: block;
   width: 6px;
 }
+.p-select-dropdown {
+  display: none;
+}
 
-.p-inputtext {
+
+*:has(.trip) .p-inputtext
+ {
   --p-inputtext-border-color: transparent;
   --p-inputtext-hover-border-color: transparent;
   --p-inputtext-focus-border-color: transparent;

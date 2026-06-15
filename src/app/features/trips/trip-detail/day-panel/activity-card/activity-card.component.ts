@@ -28,6 +28,8 @@ import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { GalleriaModule } from 'primeng/galleria';
 
+import { combineLatest, map } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { BookingStatus } from '@core/enums/booking.status';
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
 import { FileService } from '@core/services/file.service';
@@ -43,6 +45,7 @@ import {
 } from './activity.constants';
 import { TripStore } from '@app/features/trips/trip-store.service';
 import { environment } from '@environnements/environnement';
+import { GooglePhotoService } from '@app/core/services/google-photo.service';
 
 /** Max photos shown in carousel — change freely */
 const MAX_PHOTOS = 6;
@@ -80,6 +83,7 @@ export class ActivityCardComponent {
   private readonly tripStore = inject(TripStore);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
+  private readonly googlePhotoService = inject(GooglePhotoService);
   private readonly fb = inject(FormBuilder);
 
   readonly tripId = input.required<string>();
@@ -139,15 +143,27 @@ export class ActivityCardComponent {
   });
 
   /** Gallery images built from lazy photo refs, proxied through Firebase Function */
-  readonly galleryImages = computed(() => {
-    const photos = this.lazyGoogleData()?.photos ?? [];
-    return photos.slice(0, MAX_PHOTOS).map((ref) => ({
-      itemImageSrc: this.photoUrl(ref, 800),
-      thumbnailImageSrc: this.photoUrl(ref, 150),
-      alt: this.activity()?.title ?? '',
-    }));
-  });
-
+  private readonly galleryImages$ = combineLatest(
+    (this.lazyGoogleData()?.photos ?? [])
+      .slice(0, MAX_PHOTOS)
+      .map((ref) =>
+        combineLatest({
+          itemImageSrc: this.getPhotoUrl$(ref, 800),
+          thumbnailImageSrc: this.getPhotoUrl$(ref, 150),
+          alt: [this.activity()?.title ?? ''] // valeur sync
+        })
+      )
+  ).pipe(
+    map((images) =>
+      images.map(img => ({
+        itemImageSrc: img.itemImageSrc,
+        thumbnailImageSrc: img.thumbnailImageSrc,
+        alt: img.alt[0]
+      }))
+    )
+  );
+  
+  readonly galleryImages = toSignal(this.galleryImages$, { initialValue: [] });
   readonly hasPlaceId = computed(() => !!this.activity()?.placeId);
 
   readonly mapsUrl = computed(() => {
@@ -342,8 +358,8 @@ export class ActivityCardComponent {
   onAiEnrichClick(): void { this.aiEnrichRequest.emit(); }
 
   /** Proxy URL for a Google Places photo reference */
-  photoUrl(ref: string, maxWidth = 800): string {
-    return `${environment.apiUrl}/api/photos/${ref}?maxWidth=${maxWidth}`;
+  getPhotoUrl$(ref: string, maxWidth = 800) {
+    return this.googlePhotoService.getPhoto$(this.extractPhotoRef(ref), maxWidth);
   }
 
   starsFor(rating: number): string {
@@ -359,5 +375,9 @@ export class ActivityCardComponent {
       doc: 'pi-file-word', docx: 'pi-file-word',
     };
     return `pi ${map[ext] ?? 'pi-file'}`;
+  }
+
+  private extractPhotoRef(fullRef: string): string {
+    return fullRef.split('/photos/')[1];
   }
 }

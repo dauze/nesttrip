@@ -1,21 +1,18 @@
-// ─────────────────────────────────────────────────────────────
-// activity-card.component.scss
-//
-// Intentionnellement minimal.
-// Tout ce qui peut être fait avec PrimeFlex est dans le HTML.
-// Ici uniquement ce qui est impossible autrement :
-//   1. Le bord gauche coloré (impossible à faire avec PrimeFlex seul)
-//   2. Le wrapping du p-panel pour porter ce bord
-// ─────────────────────────────────────────────────────────────
+.booking  {border-left-width: 0.4rem;}
+.to_book    { border-left-color: var(--p-red-500); }
+.booked     { border-left-color: var(--p-green-500); }
+.not_needed { border-left-color: var(--p-blue-500); }
+.waitlist   { border-left-color: var(--p-yellow-500); }
 
-.booking-border {
-  border-left: 4px solid var(--booking-color, var(--p-surface-300));
-  border-radius: 0 var(--p-border-radius) var(--p-border-radius) 0;
-  overflow: hidden;
 
-  &--not-needed  { --booking-color: var(--p-surface-300); }
-  &--to-book     { --booking-color: var(--p-amber-400); }
-  &--booked      { --booking-color: var(--p-green-500); }
-  &--waitlist    { --booking-color: var(--p-blue-400); }
-  &--cancelled   { --booking-color: var(--p-red-400); }
-}
+
+:host ::ng-deep .p-select .p-select-dropdown {
+    display: none !important;
+  }
+  :host ::ng-deep .p-datepicker .p-datepicker-dropdown {
+    display: none !important;
+  }
+  
+  
+
+  

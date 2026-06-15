@@ -1,7 +1,6 @@
 @if (activity(); as activity) {
-  <div [ngClass]="'booking-border booking-border--' + bookingMeta().className">
-
-    <p-panel
+   <p-panel
+      [ngClass]="'trip booking ' + bookingMeta().className"
       [toggleable]="true"
       [collapsed]="false"
       (onAfterToggle)="onPanelToggle($event)">
@@ -20,7 +19,7 @@
           <div class="flex-shrink-0 border-round overflow-hidden surface-100 flex align-items-center justify-content-center"
                style="width:3rem;height:3rem">
             @if (lazyGoogleData()?.photos?.[0]) {
-              <img [src]="photoUrl(lazyGoogleData()!.photos![0], 120)"
+              <img *ngIf="getPhotoUrl$(lazyGoogleData()!.photos![0], 120) | async as url" [src]="url"
                    [alt]="activity.title"
                    style="width:100%;height:100%;object-fit:cover" />
             } @else {
@@ -49,7 +48,7 @@
                   <div class="border-round overflow-hidden surface-100 flex align-items-center justify-content-center flex-shrink-0"
                        style="width:2.5rem;height:2.5rem">
                     @if (place.photos?.[0]) {
-                      <img [src]="photoUrl(place.photos[0], 80)" [alt]="place.name"
+                      <img *ngIf="getPhotoUrl$(lazyGoogleData()!.photos![0], 120) | async as url" [src]="url" [alt]="place.name"
                            style="width:100%;height:100%;object-fit:cover" />
                     } @else {
                       <i class="pi pi-map-marker text-color-secondary text-sm"></i>
@@ -63,21 +62,18 @@
               </ng-template>
             </p-autoComplete>
 
-            <!-- Ligne 2 : durée + prix + badge statut -->
+            <!-- Ligne 2 : durée + prix -->
             <div class="flex align-items-center gap-2 flex-wrap">
               <span class="text-color-secondary text-xs flex align-items-center gap-1">
                 <i class="pi pi-clock" style="font-size:0.65rem"></i>
                 {{ activity.duration | duration }}
               </span>
-              @if (activity.price?.amount) {
+              @if (activity.price.amount) {
                 <span class="text-color-secondary text-xs flex align-items-center gap-1">
                   <i class="pi pi-euro" style="font-size:0.65rem"></i>
                   {{ activity.price.amount }} {{ activity.price.currency }}
                 </span>
               }
-              <p-tag
-                [value]="bookingMeta().label"
-                styleClass="text-xs py-0 px-2" />
             </div>
 
           </div>
@@ -97,42 +93,51 @@
       <!-- ── CAROUSEL PHOTOS (en haut du body) ── -->
       @if (galleryImages().length) {
         <p-galleria
-          [value]="galleryImages()"
-          [numVisible]="4"
-          [showThumbnails]="true"
-          [showIndicators]="false"
-          [showItemNavigators]="true"
-          [circular]="true"
-          [containerStyle]="{ 'width': '100%', 'margin-bottom': '0.5rem' }"
-          thumbnailsPosition="bottom">
-          <ng-template pTemplate="item" let-img>
-            <img [src]="img.itemImageSrc" [alt]="img.alt"
-                 style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--p-border-radius)" />
-          </ng-template>
-          <ng-template pTemplate="thumbnail" let-img>
-            <img [src]="img.thumbnailImageSrc" [alt]="img.alt"
-                 style="width:3rem;height:2.2rem;object-fit:cover" />
-          </ng-template>
-        </p-galleria>
+        [value]="galleryImages()"
+        [numVisible]="4"
+        [showThumbnails]="true"
+        [showIndicators]="false"
+        [showItemNavigators]="true"
+        [circular]="true"
+        thumbnailsPosition="bottom"
+        [containerStyle]="{ width: '100%' }">
+
+        <ng-template pTemplate="item" let-img>
+          <img
+            [src]="img.itemImageSrc"
+            [alt]="img.alt"
+            class="galleria-main-img"
+          />
+        </ng-template>
+
+        <ng-template pTemplate="thumbnail" let-img>
+          <img
+            [src]="img.thumbnailImageSrc"
+            [alt]="img.alt"
+            class="galleria-thumb"
+          />
+        </ng-template>
+
+      </p-galleria>
+
         <p-divider />
       }
 
       <!-- ── CHAMPS PRINCIPAUX ── -->
       <form [formGroup]="form">
-        <div class="grid">
-
+        <div class="grid m-0">
           <!-- TYPE -->
-          <div class="col-6">
+          <div class="col-6 m-0 p-0">
             <div class="flex align-items-center gap-2">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-tag text-xs"></i>Type
               </label>
-              <p-select [options]="activityTypeOptions" formControlName="type" styleClass="flex-1 min-w-0" />
+              <p-select [options]="activityTypeOptions" formControlName="type" styleClass="min-w-0" />
             </div>
           </div>
 
           <!-- DURÉE -->
-          <div class="col-6">
+          <div class="col-6 m-0 p-0">
             <div class="flex align-items-center gap-2">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-clock text-xs"></i>Durée
@@ -144,14 +149,14 @@
                 (ngModelChange)="onDurationChange($event)"
                 [ngModelOptions]="{standalone: true}"
                 placeholder="0h00"
-                styleClass="flex-1 min-w-0" />
+                styleClass="w-6rem" />
             </div>
           </div>
 
-           <p-divider />
+           <p-divider class="m-1" />
 
           <!-- RÉSERVATION -->
-          <div class="col-6" formGroupName="booking">
+          <div class="col-6 m-0 p-0" formGroupName="booking">
             <div class="flex align-items-center gap-2">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-bookmark text-xs"></i>Résa
@@ -162,12 +167,12 @@
                 optionLabel="label"
                 optionValue="value"
                 appendTo="body"
-                styleClass="flex-1 min-w-0" />
+                styleClass="min-w-0" />
             </div>
           </div>
 
           <!-- PRIX -->
-          <div class="col-6" formGroupName="price">
+          <div class="col-6 m-0 p-0" formGroupName="price">
             <div class="flex align-items-center gap-2">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-euro text-xs"></i>Prix
@@ -181,7 +186,7 @@
               <p-select
                 [options]="currencyOptions"
                 formControlName="currency"
-                styleClass="w-4rem" />
+                styleClass="min-w-0" />
             </div>
           </div>
 
@@ -199,7 +204,7 @@
                   [showIcon]="true"
                   appendTo="body"
                   placeholder="Aucune deadline"
-                  styleClass="flex-1" />
+                  styleClass="w-10rem" />
               </div>
             </div>
           }
@@ -212,7 +217,7 @@
           <span>GOOGLE MAPS</span>
 
           <!-- Rating + liens -->
-          <div class="flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+          <div class="flex align-items-center justify-content-between gap-2 mb-2 mt-2 flex-wrap">
             <div class="flex align-items-center gap-2">
               @if (activity.rating) {
                 <span class="text-yellow-500 text-sm">{{ starsFor(activity.rating) }}</span>
@@ -227,8 +232,7 @@
                 <a [href]="mapsUrl()!" target="_blank" rel="noopener"
                    class="flex align-items-center gap-1 no-underline text-color-secondary text-xs">
                   <i class="pi pi-map-marker text-xs"></i>
-                  <span>Google Maps</span>
-                  <i class="pi pi-external-link text-xs"></i>
+                  <span>Maps</span>
                 </a>
               }
               @if (activity.phone) {
@@ -251,7 +255,7 @@
           <!-- Ouvert / Fermé -->
           @if (isOpenNow() !== null) {
             <p-tag
-              [value]="isOpenNow() ? 'Ouvert maintenant' : 'Fermé en ce moment'"
+              [value]="isOpenNow() ? 'Ouvert' : 'Fermé'"
               [severity]="isOpenNow() ? 'success' : 'danger'"
               styleClass="mb-2 text-xs" />
           }
@@ -333,9 +337,9 @@
               </a>
               <p-button
                 icon="pi pi-times"
-                severity="danger"
                 [text]="true"
                 [rounded]="true"
+                severity="secondary"
                 size="small"
                 (onClick)="removeFile(i)"
                 [style]="{ padding: '0', width: '1rem', height: '1rem' }" />
@@ -371,7 +375,5 @@
             (onClick)="onDeleteClick()" />
         </div>
       </ng-template>
-
     </p-panel>
-  </div>
 }
