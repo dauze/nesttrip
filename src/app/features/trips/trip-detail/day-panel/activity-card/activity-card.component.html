@@ -126,38 +126,42 @@
       <!-- ── CHAMPS PRINCIPAUX ── -->
       <form [formGroup]="form">
         <div class="grid m-0">
+
           <!-- TYPE -->
-          <div class="col-6 m-0 p-0">
-            <div class="flex align-items-center gap-2">
+          <div class="col-6 p-0 overflow-hidden">
+            <div class="flex align-items-center gap-1 w-full overflow-hidden">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-tag text-xs"></i>Type
               </label>
-              <p-select [options]="activityTypeOptions" formControlName="type" styleClass="min-w-0" />
+              <p-select
+                [options]="activityTypeOptions"
+                formControlName="type"
+                appendTo="body"
+                styleClass="flex-1 min-w-0 w-full" />
             </div>
           </div>
-
+        
           <!-- DURÉE -->
-          <div class="col-6 m-0 p-0">
-            <div class="flex align-items-center gap-2">
+          <div class="col-6 p-0 overflow-hidden">
+            <div class="flex align-items-center gap-1">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-clock text-xs"></i>Durée
               </label>
               <p-inputMask
                 mask="99h99"
-                [unmask]="false"
                 [ngModel]="durationDisplay()"
                 (ngModelChange)="onDurationChange($event)"
                 [ngModelOptions]="{standalone: true}"
                 placeholder="0h00"
-                styleClass="w-6rem" />
+                styleClass="w-6rem text-center" />
             </div>
           </div>
-
-           <p-divider class="m-1" />
-
-          <!-- RÉSERVATION -->
-          <div class="col-6 m-0 p-0" formGroupName="booking">
-            <div class="flex align-items-center gap-2">
+        
+          <p-divider class="m-1" />
+        
+          <!-- RÉSA -->
+          <div class="col-6 p-0 overflow-hidden" formGroupName="booking">
+            <div class="flex align-items-center gap-1 w-full overflow-hidden">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-bookmark text-xs"></i>Résa
               </label>
@@ -167,37 +171,38 @@
                 optionLabel="label"
                 optionValue="value"
                 appendTo="body"
-                styleClass="min-w-0" />
+                styleClass="flex-1 min-w-0 w-full" />
             </div>
           </div>
-
+        
           <!-- PRIX -->
-          <div class="col-6 m-0 p-0" formGroupName="price">
-            <div class="flex align-items-center gap-2">
+          <div class="col-6 p-0 overflow-hidden" formGroupName="price">
+            <div class="flex align-items-center gap-1 w-full overflow-hidden">
               <label class="text-color-secondary text-sm flex-shrink-0 flex align-items-center gap-1">
                 <i class="pi pi-euro text-xs"></i>Prix
               </label>
+        
               <p-inputNumber
                 formControlName="amount"
-                [min]="0"
-                [minFractionDigits]="0"
-                [maxFractionDigits]="2"
-                styleClass="flex-1 min-w-0" />
+                styleClass="flex-1 min-w-0 w-full" />
+        
               <p-select
                 [options]="currencyOptions"
                 formControlName="currency"
-                styleClass="min-w-0" />
+                appendTo="body"
+                styleClass="flex-shrink-0 w-5rem" />
             </div>
           </div>
-
+        
           <!-- DEADLINE -->
           @if (showDeadline()) {
-            <div class="col-12" formGroupName="booking">
+            <div class="col-12 p-0"  formGroupName="booking">
               <div class="flex align-items-center gap-2">
                 <label class="text-sm flex-shrink-0 flex align-items-center gap-1"
                   [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
                   <i class="pi pi-calendar text-xs"></i>Deadline
                 </label>
+        
                 <p-datepicker
                   formControlName="deadline"
                   dateFormat="dd/mm/yy"
@@ -208,7 +213,7 @@
               </div>
             </div>
           }
-
+        
         </div>
 
         <!-- ── BLOC GOOGLE DATA ── -->
@@ -337,8 +342,6 @@
               </a>
               <p-button
                 icon="pi pi-times"
-                [text]="true"
-                [rounded]="true"
                 severity="secondary"
                 size="small"
                 (onClick)="removeFile(i)"
@@ -351,8 +354,12 @@
             chooseIcon="pi pi-upload"
             [multiple]="true"
             [auto]="true"
-            (onSelect)="onFileSelect($event)"
-            styleClass="p-button-text p-button-sm" />
+            (onSelect)="onFileSelect($event)"  
+            [chooseButtonProps]="{
+              severity: 'secondary',
+              rounded: true
+            }"
+            styleClass="p-button-text p-button-sm p-button-secondary p-button-rounded" />
         </div>
       </div>
 

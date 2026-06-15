@@ -33,12 +33,12 @@
     }
   </div>
   <ng-template #footer>
-    <p-button [rounded]="true"
+    <p-button
       label="Annuler"
       severity="secondary"
       [outlined]="true"
       (onClick)="closeInviteDialog()" />
-    <p-button [rounded]="true"
+    <p-button
       label="Inviter"
       [loading]="inviteLoading()"
       [disabled]="!inviteeEmail"
@@ -46,7 +46,7 @@
   </ng-template>
 </p-dialog>
 
-<div class="flex flex-column gap-2 pt-2">
+<div class="flex flex-column gap-2 pt-2" style="min-width: 24rem;">
   @if (!facade.activeTripLoading()) {
     <p-card>
       <ng-template #header>
@@ -73,7 +73,7 @@
         }
       </p-avatarGroup>
 
-      <p-button [rounded]="true"
+      <p-button
         icon="pi pi-user-plus"
         [rounded]="true"
         [text]="true"
