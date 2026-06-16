@@ -1,5 +1,6 @@
 <div class="flex justify-content-center align-items-center min-h-screen bg-transparent p-3">
   <p-card class="w-full max-w-28rem p-2">
+    <form [formGroup]="form" (ngSubmit)="submitEmail()">
     <div class="text-center mb-5">
       <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
       <h1 class="text-2xl font-bold text-900 m-0 mb-2">
@@ -32,9 +33,11 @@
             pInputText
             id="firstName"
             type="text"
-            [(ngModel)]="firstName"
+            formControlName="firstName"
+            name="firstName"
             placeholder="Jean"
             autocomplete="given-name"
+            [invalid]="form.controls.firstName.touched && form.controls.firstName.invalid"
             class="w-full" />
         </div>
         <div class="flex flex-column gap-2 flex-1">
@@ -43,8 +46,10 @@
             pInputText
             id="lastName"
             type="text"
-            [(ngModel)]="lastName"
+            formControlName="lastName"
+            name="lastName"
             placeholder="Dupont"
+            [invalid]="form.controls.lastName.touched && form.controls.lastName.invalid"
             autocomplete="family-name"
             class="w-full" />
         </div>
@@ -56,10 +61,11 @@
           pInputText
           id="email"
           type="email"
-          [(ngModel)]="email"
+          name="email"
+          formControlName="email"
           placeholder="vous@exemple.com"
           autocomplete="email"
-          [invalid]="!!errorMsg()"
+          [invalid]="form.controls.email.touched && form.controls.email.invalid"
           class="w-full" />
       </div>
 
@@ -67,15 +73,29 @@
         <label for="password" class="font-medium text-900">Mot de passe</label>
         <p-password
           id="password"
-          [(ngModel)]="password"
+          name="password"
+          formControlName="password"
           [toggleMask]="true"
           [feedback]="false"
           placeholder="••••••••"
           autocomplete="current-password"
           styleClass="w-full"
           inputStyleClass="w-full"
-          [invalid]="!!errorMsg()">
+          [invalid]="form.controls.password.touched && form.controls.password.invalid">
         </p-password>
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <small class="text-red-500">
+            @if (form.controls.password.errors?.['required']) {
+              Mot de passe requis
+            }
+            @if (form.controls.password.errors?.['pattern']) {
+              Doit contenir au moins :
+              1 majuscule, 1 minuscule, 1 chiffre et 1 symbole
+            }
+          </small>
+        }
+
+
       </div>
 
       @if (errorMsg()) {
@@ -83,10 +103,10 @@
       }
 
       <p-button
+        type="submit"
         [label]="isRegister() ? 'Créer mon compte' : 'Se connecter'"
         styleClass="w-full justify-content-center mt-2"
-        [loading]="loading()"
-        (onClick)="submitEmail()">
+        [loading]="loading()">
       </p-button>
 
       <p class="text-center text-color-secondary m-0 mt-2">
@@ -99,5 +119,6 @@
         </p-button>
       </p>
     </div>
+    </form>
   </p-card>
 </div>
