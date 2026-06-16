@@ -1,170 +1,97 @@
+/* styles.css */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+
 :root {
-    --red: #c8102e;
-    --red-light: #fdecea;
-    --red-mid: #f09595;
-    --gold: #b8860b;
-    --gold-light: #fff7e6;
-    --gold-mid: #fcd34d;
-    --jade: #1d6b4a;
-    --jade-light: #eaf3de;
-    --jade-mid: #6ee7b7;
-    --blue: #1d4ed8;
-    --blue-light: #e6f0ff;
-    --blue-mid: #93c5fd;
-    --bg: #f7f5f2;
-    --surface: #ffffff;
-    --surface2: #f1efe8;
-    --border: #d3d1c7;
-    --border-light: #e8e6de;
-    --text: #1a1a1a;
-    --text2: #555550;
-    --text3: #888780;
-    --radius: 10px;
-    --radius-sm: 6px;
-    --shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --p-font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--p-font-family), serif;
+  font-size: 16px;
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+@media screen and (max-width: 768px) {
+  :root {
     font-size: 15px;
-    line-height: 1.6;
-    padding-bottom: 0.5rem;
-}
-
-.btn-primary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
-    width: 100%;
-    padding: .75rem;
-    background: linear-gradient(135deg, #6366f1, #882c2c);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: .92rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .2s, transform .15s;
-    margin-top: .2rem;
-}
-
-.badge {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
-    margin-left: 6px;
-    vertical-align: middle;
-}
-
-.badge-zone {
-    background: var(--blue-light);
-    color: var(--blue);
-}
-
-.badge-new {
-    background: var(--gold-light);
-    color: var(--gold);
-    border: 1px solid var(--gold-mid);
-}
-
-.badge-file {
-    cursor: pointer;
-    background: var(--gold-light);
-    color: var(--gold);
-    border: 1px solid var(--gold-mid);
-    height: 100%;
-}
-
-
-.pill {
-    font-size: 0.65rem;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 20px;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    button {
-    display: inline-flex;
-    align-items: center;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    color: inherit;      // hérite la couleur du pill
-    opacity: 0.6;
-    line-height: 1;
-
-    &:hover {
-      opacity: 1;
-    }
-
-    i {
-      font-size: 0.85em;
-    }
   }
 }
 
-.badge-tobook {
-    background: var(--red-light);
-    color: #9b1c1c;
-    border: 1px solid var(--red-mid);
+.p-card {
+  --p-card-body-padding: 0.5rem;
 }
 
-.badge-free {
-    background: var(--jade-light);
-    color: #166534;
-    border: 1px solid var(--jade-mid);
+.p-tabpanels {
+  --p-tabs-tabpanel-padding: 0.5rem;
 }
 
-.badge-duration {
-    background: var(--surface2);
-    color: var(--text2);
-    border: 1px solid var(--border);
+.p-textarea {
+  --p-textarea-background: transparent;
+  --p-textarea-border-color: transparent;
+  --p-textarea-shadow: none;
+  --p-textarea-hover-border-color: transparent;
+  --p-textarea-focus-border-color: transparent;
+  --p-textarea-disabled-background: transparent;
+}
+
+.p-dialog-header {
+  --p-dialog-header-padding: 0.5rem;
+}
+
+.p-dialog-footer {
+  --p-dialog-footer-padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.p-dialog-content {
+  --p-dialog-content-padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.p-panel-content {
+  --p-panel-content-padding: 0 0.5rem 0.5rem 0.5rem; 
+}
+
+.pi-ellipsis-v {
+  display: block;
+  width: 6px;
 }
 
 
-
-
-/* PRINT */
-@media print {
-
-    .day-nav,
-    .site-header {
-        position: static;
-    }
-
-    .day-panel {
-        display: block !important;
-        page-break-before: always;
-    }
-
-    .day-panel:first-of-type {
-        page-break-before: avoid;
-    }
+*:has(.trip) .p-inputtext
+ {
+  --p-inputtext-border-color: transparent;
+  --p-inputtext-hover-border-color: transparent;
+  --p-inputtext-focus-border-color: transparent;
+  --p-inputtext-shadow: none;
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-disabled-color: transparent;
+  --p-inputtext-disabled-border-color: transparent;
 }
 
-.rounded-btn{
-  width: fit-content; 
-  padding: 0.3rem;
-  padding-top: 0.1rem;
-  padding-bottom: 0.1rem;
+.p-select {
+  --p-select-border-color: transparent;
+  --p-select-hover-border-color: transparent;
+  --p-select-focus-border-color: transparent;
+  --p-select-shadow: none;
+  --p-select-background: transparent;
+  --p-select-disabled-background: transparent;
+  --p-select-disabled-color: transparent;
+  --p-select-disabled-border-color: transparent;
 }
-input, textarea, div, span, li,h3 {
-  &:focus {
-    outline: none;
-    box-shadow: none;
-  }
+
+.p-inputnumber{
+  --p-inputnumber-border-color: transparent;
+  --p-inputnumber-hover-border-color:transparent;
+  --p-inputnumber-shadow: none;
 }
+
+.p-datepicker{
+  --p-datepicker-border-color: transparent;
+  --p-datepicker-hover-border-color:transparent;
+  --p-datepicker-shadow: none;
+  --p-datepicker-background: transparent;
+}
+.p-autocomplete{
+  --p-autocomplete-border-color: transparent;
+  --p-autocomplete-hover-border-color:transparent;
+  --p-autocomplete-shadow: none;
+  --p-autocomplete-background: transparent;
+}
+
+ 

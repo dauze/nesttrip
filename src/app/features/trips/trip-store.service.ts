@@ -1,0 +1,255 @@
+import { computed, Injectable, Signal, signal } from '@angular/core';
+import { inject } from '@angular/core';
+import { Trip, Day } from './trip.model';
+import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
+import { Item } from './trip-detail/infos/info.models';
+import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
+import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
+import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
+
+type TripEntities = Record<string, Trip>;
+type DayEntities = Record<string, Day>;
+type ActivityEntities = Record<string, Activity>;
+
+@Injectable({ providedIn: 'root' })
+export class TripStore {
+  private readonly activityPersistenceService = inject(ActivityPersistenceService); //TODO à voir pour déguager
+  private readonly infoPersistenceService = inject(InfosPersistenceService); //TODO à voir pour déguager
+  private readonly tripPersistenceService = inject(TripPersistenceService);
+
+  // ── État normalisé ────────────────────────────────────────────────────────
+
+  /** @internal — écrit uniquement par TripLoaderService */
+  readonly _trips = signal<TripEntities>({});
+  /** @internal */
+  readonly _days = signal<DayEntities>({});
+  /** @internal */
+  readonly _activities = signal<ActivityEntities>({});
+  /** @internal */
+  readonly _tripDays = signal<Record<string, string[]>>({});
+  /** @internal */
+  readonly _dayActivities = signal<Record<string, string[]>>({});
+  /** @internal */
+  readonly _infoItems = signal<Record<string, Item>>({});
+  /** @internal */
+  readonly _tripInfoItems = signal<Record<string, string[]>>({});
+  /** @internal */
+ readonly _tripsResult = signal<Pick<Trip, 'id' | 'title'>[] | undefined>(undefined);
+  // ── UI state ──────────────────────────────────────────────────────────────
+  readonly _activeTripId = signal<string | null>(null);
+  readonly activeTripLoading = signal<boolean>(false);
+
+  // ── Liste des trips (dashboard) ───────────────────────────────────────────
+ 
+  readonly trips = computed(() => this._tripsResult() ?? []);
+  readonly tripsLoading = computed(() => this._tripsResult() === undefined);    
+
+  hasTrip(id: string): boolean {
+    return id in this._trips();
+  }
+
+  // ── Sélecteur — trip actif reconstitué ───────────────────────────────────
+
+  readonly activeTrip = computed(() => {
+    const id = this._activeTripId();
+    if (!id) return null;
+
+    const trip = this._trips()[id];
+    if (!trip) return null;
+
+    const dayKeys = this._tripDays()[id] ?? [];
+    const daysMap = this._days();
+
+    return {
+      ...trip,
+      days: dayKeys.map((key) => daysMap[key]),
+    };
+  });
+
+  setActiveTrip(id: string): void {
+    this._activeTripId.set(id);
+  }
+
+  clearActiveTrip(): void {
+    this._activeTripId.set(null);
+  }
+
+  // ── Sélecteurs memorisés par entité ───────────────────────────────────────
+
+  private readonly activitiesByDay = new Map<string, Signal<Activity[]>>();
+  private readonly activitiesById = new Map<string, Signal<Activity>>();
+
+  getActivities(dayId: Date): Signal<Activity[]> {
+    const key = dayId.toISOString();
+    if (!this.activitiesByDay.has(key)) {
+      this.activitiesByDay.set(
+        key,
+        computed(() => {
+          const ids = this._dayActivities()[key] ?? [];
+          const map = this._activities();
+          return ids.map((id) => map[id]);
+        }),
+      );
+    }
+    return this.activitiesByDay.get(key)!;
+  }
+
+  getActivity(activityId: string): Signal<Activity> {
+    if (!this.activitiesById.has(activityId)) {
+      this.activitiesById.set(
+        activityId,
+        computed(() => this._activities()[activityId]),
+      );
+    }
+    return this.activitiesById.get(activityId)!;
+  }
+
+  // ── Commandes — Activities ────────────────────────────────────────────────
+
+  createActivity(tripId: string, dayId: Date, activity: Activity): void {
+    const dayKey = dayId.toISOString();
+
+    this._activities.update((a) => ({ ...a, [activity.id]: activity }));
+    this._dayActivities.update((d) => ({
+      ...d,
+      [dayKey]: [...(d[dayKey] ?? []), activity.id],
+    }));
+
+    this.syncDay(tripId, dayId);
+  }
+
+  updateActivity(tripId: string, dayId: Date, activity: Activity): void {
+    this._activities.update((a) => ({ ...a, [activity.id]: activity }));
+    this.syncDay(tripId, dayId);
+  }
+
+  removeActivity(tripId: string, dayId: Date, activityId: string): void {
+    const dayKey = dayId.toISOString();
+
+    this._activities.update((a) => {
+      const copy = { ...a };
+      delete copy[activityId];
+      return copy;
+    });
+
+    this._dayActivities.update((d) => ({
+      ...d,
+      [dayKey]: (d[dayKey] ?? []).filter((id) => id !== activityId),
+    }));
+
+    this.syncDay(tripId, dayId);
+  }
+
+  reorderActivities(tripId: string, dayId: Date, ids: string[]): void {
+    const dayKey = dayId.toISOString();
+    this._dayActivities.update((d) => ({ ...d, [dayKey]: ids }));
+    this.syncDay(tripId, dayId);
+  }
+
+  private syncDay(tripId: string, dayId: Date): void {
+    const dayKey = dayId.toISOString();
+    const activityIds = this._dayActivities()[dayKey] ?? [];
+    const activitiesMap = this._activities();
+
+    const list = activityIds.map((id) => activitiesMap[id]);
+    this.activityPersistenceService.queueUpdate(tripId, dayId, list);
+  }
+
+  // ── Commandes — Info items ────────────────────────────────────────────────
+
+  getInfoItems(tripId: string): Signal<Item[]> {
+    return computed(() => {
+      const ids = this._tripInfoItems()[tripId] ?? [];
+      const map = this._infoItems();
+      return ids.map((id) => map[id]);
+    });
+  }
+
+  createItem(tripId: string, item: Item): void {
+    this._infoItems.update((items) => ({ ...items, [item.id]: item }));
+    this._tripInfoItems.update((map) => ({
+      ...map,
+      [tripId]: [...(map[tripId] ?? []), item.id],
+    }));
+    this.syncInfo(tripId);
+  }
+
+  updateItem(tripId: string, itemId: string, patch: Partial<Item>): void {
+    const current = this._infoItems()[itemId];
+    if (!current) return;
+
+    this._infoItems.update((items) => ({
+      ...items,
+      [itemId]: { ...current, ...patch },
+    }));
+    this.syncInfo(tripId);
+  }
+
+  removeItem(tripId: string, itemId: string): void {
+    this._infoItems.update((items) => {
+      const copy = { ...items };
+      delete copy[itemId];
+      return copy;
+    });
+
+    this._tripInfoItems.update((map) => ({
+      ...map,
+      [tripId]: (map[tripId] ?? []).filter((id) => id !== itemId),
+    }));
+    this.syncInfo(tripId);
+  }
+
+  reorderItems(tripId: string, ids: string[]): void {
+    this._tripInfoItems.update((map) => ({ ...map, [tripId]: ids }));
+    this.syncInfo(tripId);
+  }
+
+  private syncInfo(tripId: string): void {
+    const ids = this._tripInfoItems()[tripId] ?? [];
+    const items = this._infoItems();
+
+    const list = ids.map((id) => items[id]);
+    this.infoPersistenceService.queueUpdate(tripId, list);
+  }
+
+saveTrip(trip: Trip): void {
+  // 1. Hydratation optimiste des signals locaux
+  // _tripsResult : ajout dans la liste du dashboard
+  this._tripsResult.update((list) => [
+    ...(list ?? []),
+    { id: trip.id, title: trip.title },
+  ]);
+
+  // _trips : entité complète
+  this._trips.update((trips) => ({ ...trips, [trip.id]: trip }));
+
+  // _days + _tripDays : un entry par jour
+  const dayKeys: string[] = [];
+  this._days.update((days) => {
+    const copy = { ...days };
+    for (const day of trip.days) {
+      const key = day.id.toISOString();
+      copy[key] = day;
+      dayKeys.push(key);
+    }
+    return copy;
+  });
+  this._tripDays.update((map) => ({ ...map, [trip.id]: dayKeys }));
+
+  // _infoItems + _tripInfoItems : items de l'info (vides à la création)
+  const itemIds = trip.info.items.map((item) => item.id);
+  this._infoItems.update((items) => {
+    const copy = { ...items };
+    for (const item of trip.info.items) {
+      copy[item.id] = item;
+    }
+    return copy;
+  });
+  this._tripInfoItems.update((map) => ({ ...map, [trip.id]: itemIds }));
+
+  // 2. Persistance Firestore (fire & forget — pas de debounce sur une création)
+  this.tripPersistenceService.createTrip(trip).catch((err) => {
+    console.error('[TripStore] Erreur création trip Firestore :', err);
+  });
+}
+}

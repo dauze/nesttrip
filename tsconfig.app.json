@@ -4,12 +4,14 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
-    "types": []
+    "types": [],
+    "paths": {
+      "@app/*": ["./src/app/*"],
+      "@core/*": ["./src/app/core/*"],
+      "@features/*": ["./src/app/features/*"],
+      "@environnements/*": ["./src/environnements/*"],
+    }
   },
-  "include": [
-    "src/**/*.ts"
-, "src/app/scripts/seed-firestore.ts"  ],
-  "exclude": [
-    "src/**/*.spec.ts"
-  ]
+  "include": ["src/**/*.ts", "src/app/scripts/seed-firestore.ts", "functions/src/places/get-place.handler.ts", "functions/src/places/search-places.handler.ts"],
+  "exclude": ["src/**/*.spec.ts","functions" ]
 }

@@ -1,0 +1,116 @@
+<p-confirmDialog />
+<p-dialog
+  header="Inviter un collaborateur"
+  [(visible)]="showInviteDialog"
+  [modal]="true"
+  [draggable]="false">
+  <div class="flex flex-column gap-3 pt-2">
+    <div class="flex flex-column gap-2">
+      <label for="inviteeEmail">Adresse email</label>
+      <input
+  pInputText
+  id="inviteeEmail"
+  name="inviteeEmail"
+  [(ngModel)]="inviteeEmail"
+  placeholder="collaborateur@email.com"
+  [disabled]="inviteLoading()"
+  class="w-full" />
+    </div>
+    <div class="flex flex-column gap-2">
+      <label for="inviteeRole">Rôle</label>
+      <p-select
+        id="inviteeRole"
+        name="inviteeRole"
+        [(ngModel)]="inviteeRole"
+        [options]="roleOptions"
+        optionLabel="label"
+        optionValue="value"
+        [disabled]="inviteLoading()" />
+    </div>
+    @if (inviteError()) {
+      <p-message severity="error" [text]="inviteError()!" />
+    }
+  </div>
+  <ng-template #footer>
+    <p-button
+      label="Annuler"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="closeInviteDialog()" />
+    <p-button
+      label="Inviter"
+      [loading]="inviteLoading()"
+      [disabled]="!inviteeEmail"
+      (onClick)="inviteCollaborator()" />
+  </ng-template>
+</p-dialog>
+
+<div class="flex flex-column gap-2 p-2">
+  @if (!facade.activeTripLoading()) {
+    <p-card>
+      <ng-template #header>
+        <div class="flex align-items-center justify-content-between px-3 pt-3">
+          <span class="text-xl font-semibold">{{ tripTitle() }}</span>
+<div class="flex align-items-center gap-3">
+
+  <p-avatarGroup>
+    @for (entry of getVisibleMembers(); track entry[0]) {
+  <p-avatar
+    [label]="getInitials(entry[1])"
+    shape="circle"
+    size="normal"
+    [pTooltip]="entry[1].email"
+    tooltipEvent="both"
+    tooltipPosition="bottom" />
+}
+        @if (getExtraCount() > 0) {
+          <p-avatar
+            [label]="'+' + getExtraCount()"
+            shape="circle"
+            size="normal"
+            [pTooltip]="getExtraTooltip()"
+            tooltipPosition="bottom" />
+        }
+      </p-avatarGroup>
+
+      <p-button
+        icon="pi pi-user-plus"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="openInviteDialog()" />
+
+    </div>
+        </div>
+      </ng-template>
+    </p-card>
+    @if (facade.activeTrip(); as trip) {
+      <p-tabs scrollable [value]="activeDay()">
+          <p-tablist>
+            @for (tab of tabs(); track tab.id) {
+              <p-tab [value]="tab.id" (click)="onTabChange(tab.id)">{{ tab.label }}</p-tab>
+            }
+          </p-tablist>
+          <div cdkSwipe>
+             <p-tabpanels>
+              <p-tabpanel value="info">
+                @if (visitedDays().has('info')) {
+                  <app-infos [info]="trip.info" [tripId]="trip.id" />
+                }
+              </p-tabpanel>
+              @for (day of trip.days; track day.id) {
+                <p-tabpanel [value]="day.id.toISOString()">
+                  @if (visitedDays().has(day.id.toISOString())) {
+                    <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
+                  }
+                </p-tabpanel>
+              }
+            </p-tabpanels>
+          </div>
+        </p-tabs>
+    }
+  } @else {
+    <p-skeleton height="2.2rem"/>
+    <app-infos-skeleton />
+  }
+</div>

@@ -1,0 +1,77 @@
+<div class="flex flex-column gap-3 p-2">
+  <p-card>
+    <ng-template pTemplate="header">
+      <span class="text-2xl font-semibold m-2">Nouveau voyage</span>
+    </ng-template>
+
+    <p-fluid>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
+
+        <!-- Nom -->
+        <div class="flex flex-column gap-2">
+          <label for="title" class="font-medium">Nom du voyage</label>
+          <input
+            pInputText
+            id="title"
+            formControlName="title"
+            placeholder="Ex : Road trip Islande"
+          />
+          @if (form.controls.title.touched && form.controls.title.hasError('required')) {
+            <small class="text-red-500">Le nom est requis.</small>
+          }
+        </div>
+
+        <!-- Ville -->
+        <div class="flex flex-column gap-2">
+          <label for="ville" class="font-medium">Ville / Destination</label>
+          <input
+            pInputText
+            id="ville"
+            formControlName="ville"
+            placeholder="Ex : Reykjavik"
+          />
+          @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
+            <small class="text-red-500">La destination est requise.</small>
+          }
+        </div>
+
+        <!-- Date RANGE -->
+        <div class="flex flex-column gap-2">
+          <label for="dates" class="font-medium">Dates du voyage</label>
+
+          <p-datepicker
+            inputId="dates"
+            formControlName="dates"
+            selectionMode="range"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            placeholder="Sélectionner une période"
+            class="w-full"
+          />
+
+          @if (form.controls.dates.touched && form.controls.dates.hasError('required')) {
+            <small class="text-red-500">Les dates sont requises.</small>
+          }
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-content-end gap-2 pt-2">
+          <p-button
+            label="Annuler"
+            severity="secondary"
+            [outlined]="true"
+            type="button"
+            (onClick)="onCancel()"
+          />
+          <p-button
+            label="Créer le voyage"
+            icon="pi pi-check"
+            type="submit"
+          />
+        </div>
+
+      </form>
+    </p-fluid>
+
+  </p-card>
+</div>

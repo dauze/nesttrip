@@ -1,15 +1,15 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
   GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
-  onAuthStateChanged,
-  User
+  updateProfile,
+  User,
 } from 'firebase/auth';
-import { Observable, from } from 'rxjs';
+import { from, Observable, switchMap } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { firebaseAuth } from '../../app.config';
 
@@ -17,30 +17,32 @@ import { firebaseAuth } from '../../app.config';
 export class AuthService {
   private router = inject(Router);
 
-  // Observable du user courant via onAuthStateChanged
-  readonly currentUser$ = new Observable<User | null>(subscriber => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, user => {
-      subscriber.next(user);
-    });
-    return unsubscribe; // cleanup auto au unsubscribe
-  });
+  getCurrentUser(): User | null {
+    return firebaseAuth.currentUser;
+  }
 
   loginWithEmail(email: string, password: string): Observable<any> {
     return from(signInWithEmailAndPassword(firebaseAuth, email, password)).pipe(
-      tap(() => this.router.navigate(['/app']))
+      tap(() => this.router.navigate(['/app'])),
     );
   }
 
-  registerWithEmail(email: string, password: string): Observable<any> {
+  registerWithEmail(email: string, password: string, firstName: string, lastName: string): Observable<any> {
     return from(createUserWithEmailAndPassword(firebaseAuth, email, password)).pipe(
-      tap(() => this.router.navigate(['/app']))
+      switchMap((credential) =>
+        from(updateProfile(credential.user, {
+          displayName: `${firstName} ${lastName}`,
+        }))
+      ),
+      tap(() => this.router.navigate(['/app'])),
     );
   }
 
   loginWithGoogle(): Observable<any> {
     const provider = new GoogleAuthProvider();
     return from(signInWithPopup(firebaseAuth, provider)).pipe(
-      tap(() => this.router.navigate(['/app']))
+      // Google remplit displayName automatiquement, rien à faire
+      tap(() => this.router.navigate(['/app'])),
     );
   }
 
@@ -51,10 +53,10 @@ export class AuthService {
   }
 
   getToken(): Observable<string | null> {
-    return new Observable(subscriber => {
+    return new Observable((subscriber) => {
       const currentUser = firebaseAuth.currentUser;
       if (currentUser) {
-        currentUser.getIdToken().then(token => {
+        currentUser.getIdToken().then((token) => {
           subscriber.next(token);
           subscriber.complete();
         });

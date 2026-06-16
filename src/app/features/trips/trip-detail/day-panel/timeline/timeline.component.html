@@ -1,0 +1,34 @@
+<p-panel [toggleable]="true" [collapsed]="false">
+  <ng-template pTemplate="header">
+    <div class="flex align-items-center gap-2">
+      <i class="pi pi-calendar"></i>
+      <span>Vue d'ensemble de la journée</span>
+    </div>
+  </ng-template>
+
+  <div class="flex flex-column gap-2">
+    @for (activity of activities(); track activity.id) {
+      <div class="grid align-items-center">
+
+        <!-- durée -->
+
+        <span class="col-3">
+          ~ {{ activity.duration | duration }}
+        </span>
+
+
+        <!-- icône -->
+        <span class="col-1">
+        <i [class]="ACTIVITY_TYPE_META[activity.type]?.icon" class="text-lg text-primary"></i>
+        </span>
+
+        <!-- titre -->
+        <span class="col-8">
+          {{ activity.title }}
+        </span>
+
+      </div>
+      <p-divider styleClass="m-0"></p-divider>
+    }
+  </div>
+</p-panel>

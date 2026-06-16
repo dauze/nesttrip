@@ -1,0 +1,22 @@
+
+<div class="flex flex-column gap-2">
+  <app-timeline [activities]="activities()" />
+  <p-panel [toggleable]="true" [collapsed]="false">
+    <ng-template  #header>
+      <div class="flex align-items-center gap-2">
+        <i class="pi pi-calendar"></i>
+        <span>Activités</span>
+      </div>
+    </ng-template>
+    <div class="flex flex-column gap-2">
+      <div cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
+        @for (activity of activities(); track activity.id) {
+            <app-activity-card cdkDrag [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
+        }
+      </div>
+      <div class="flex justify-content-center w-full">
+        <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addActivity()" />
+      </div>
+    </div>
+  </p-panel>
+</div>

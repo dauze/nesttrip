@@ -1,0 +1,162 @@
+<div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
+  @for (item of items(); track item.id) {
+    <p-panel [toggleable]="true" cdkDrag>
+      <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
+          <span cdkDragHandle class="flex-shrink-0 cursor-move"><i class="pi pi-bars"></i></span>
+          <textarea
+            pTextarea
+            class="flex-1 overflow-hidden font-bold min-w-0"
+            [autoResize]="true"
+            [rows]="1"
+            [value]="item.title"
+            (blur)="updateTitle(item, $any($event.target).value.trim())"
+            [attr.data-title-id]="item.id"
+            (keydown.arrowdown)="focusRow(item.id, 0, 0)"
+          ></textarea>
+          <div class="flex gap-1 flex-shrink-0">
+            <p-button
+              icon="pi pi-trash"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="confirmDelete(item)"
+            />
+            <p-button
+              [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="toggleType(item)"
+            />
+          </div>
+        </div>
+      </ng-template>
+      <div
+        cdkDropList
+        [cdkDropListData]="item.elements"
+        (cdkDropListDropped)="onDropPoint(item, $event)"
+        class="flex flex-column"
+      >
+        @for (point of item.elements; track point.id) {
+          @if(item.type !== InfoType.TODO || !point.checked){
+          <div class="flex align-items-center gap-2 w-full pl-3 pr-2"
+          cdkDrag>
+            <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem">
+              <i class="pi pi-ellipsis-v"></i>
+              <i class="pi pi-ellipsis-v"></i>
+            </span>
+            @if (item.type === InfoType.TODO) {
+              <p-checkbox
+                class="flex-shrink-0"
+                [binary]="true"
+                [ngModel]="point.checked"
+                (ngModelChange)="toggleCheck(item, $index)"
+              />
+            }
+            <textarea
+              pTextarea
+              [autoResize]="true"
+              [rows]="1"
+              [value]="point.text"
+              class="flex-1 overflow-hidden min-w-0"
+              [class.line-through]="item.type === InfoType.TODO && point.checked"
+              [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
+              (input)="onTextChange(item, $index, $any($event.target).value)"
+              (keydown.enter)="onEnterRow(item, $index, $any($event))"
+              (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
+              (keydown.delete)="onDeleteRow(item, $index, $any($event))"
+              (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
+              (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
+              (focus)="activePointId.set(point.id)"
+              (blur)="activePointId.set(null)"
+              [attr.data-item-id]="item.id"
+              [attr.data-index]="$index"
+            ></textarea>
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              size="small"
+              (mousedown)="$event.preventDefault()"
+              [style.display]="activePointId() === point.id ? 'flex' : 'none'"
+              (onClick)="removePoint(item, $index)"
+            />
+          </div>
+          }
+        }
+        <div class="pl-2">
+          <p-button
+              label="Élément de liste"
+              icon="pi pi-plus"
+              [text]="true"
+              severity="secondary"
+              (onClick)="addPoint(item)"
+            />
+        </div>
+        @if (item.type === InfoType.TODO && item.elements.some(p => p.checked)) {
+          <p-fieldset [toggleable]="true" [collapsed]="true" styleClass="completed-fieldset border-none p-2">
+            <ng-template #header>
+              <span class="text-sm text-color-secondary">
+                {{ item.elements.filter(p => p.checked).length }} éléments terminés
+              </span>
+            </ng-template>
+            <ng-template #expandicon>
+              <i class="pi pi-chevron-down"></i>
+            </ng-template>
+            <ng-template #collapseicon>
+                <i class="pi pi-chevron-up"></i>
+            </ng-template>
+            @for (point of item.elements; track point.id) {
+              @if (point.checked) {
+                <div class="flex align-items-center gap-2 w-full opacity-70 pl-2">
+                  <span class="w-1rem"></span>
+                  <p-checkbox
+                    [binary]="true"
+                    [ngModel]="point.checked"
+                    (ngModelChange)=" toggleCheck(item, item.elements.indexOf(point))"
+                  />
+                  <textarea
+                    pTextarea
+                    [autoResize]="true"
+                    [rows]="1"
+                    [value]="point.text"
+                    class="flex-1 overflow-hidden min-w-0"
+                    [class.line-through]="item.type === InfoType.TODO && point.checked"
+                    [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
+                    (input)="onTextChange(item, $index, $any($event.target).value)"
+                    (keydown.enter)="onEnterRow(item, $index, $any($event))"
+                    (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
+                    (keydown.delete)="onDeleteRow(item, $index, $any($event))"
+                    (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
+                    (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
+                    (focus)="activePointId.set(point.id)"
+                    (blur)="activePointId.set(null)"
+                    [attr.data-item-id]="item.id"
+                    [attr.data-index]="$index"
+                  ></textarea>
+                  <p-button
+                    icon="pi pi-times"
+                    [rounded]="true"
+                    [text]="true"
+                    severity="secondary"
+                    size="small"
+                    (mousedown)="$event.preventDefault()"
+                    [style.display]="activePointId() === point.id ? 'flex' : 'none'"
+                    (onClick)="removePoint(item, $index)"
+                  />
+                </div>
+              }
+            }
+          </p-fieldset>
+        }
+      </div>
+    </p-panel>
+  }
+  <div class="flex justify-content-center w-full">
+    <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
+  </div>
+</div>
