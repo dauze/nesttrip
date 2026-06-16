@@ -3,7 +3,6 @@
   header="Inviter un collaborateur"
   [(visible)]="showInviteDialog"
   [modal]="true"
-  [style]="{ width: '400px' }"
   [draggable]="false">
   <div class="flex flex-column gap-3 pt-2">
     <div class="flex flex-column gap-2">
@@ -46,7 +45,7 @@
   </ng-template>
 </p-dialog>
 
-<div class="flex flex-column gap-2 pt-2">
+<div class="flex flex-column gap-2 p-2">
   @if (!facade.activeTripLoading()) {
     <p-card>
       <ng-template #header>

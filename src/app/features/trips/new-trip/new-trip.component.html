@@ -1,93 +1,90 @@
-<div class="flex justify-content-center p-4">
-  <div class="w-full">
+<div class="flex flex-column gap-3 p-2">
+  <p-card >
+    <ng-template #header>
+        <span class="text-2xl font-semibold m-2">Nouveau voyage</span>
+    </ng-template>
 
-    <p-card>
-      <ng-template #header>
-          <span class="text-2xl font-semibold m-2">Nouveau voyage</span>
-      </ng-template>
+    <p-fluid>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
 
-      <p-fluid>
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
+        <!-- Nom du voyage -->
+        <div class="flex flex-column gap-2">
+          <label for="title" class="font-medium">Nom du voyage</label>
+          <input
+            pInputText
+            id="title"
+            formControlName="title"
+            placeholder="Ex : Road trip Islande"
+          />
+          @if (form.controls.title.touched && form.controls.title.hasError('required')) {
+            <small class="text-red-500">Le nom est requis.</small>
+          }
+        </div>
 
-          <!-- Nom du voyage -->
-          <div class="flex flex-column gap-2">
-            <label for="title" class="font-medium">Nom du voyage</label>
-            <input
-              pInputText
-              id="title"
-              formControlName="title"
-              placeholder="Ex : Road trip Islande"
+        <!-- Ville -->
+        <div class="flex flex-column gap-2">
+          <label for="ville" class="font-medium">Ville / Destination</label>
+          <input
+            pInputText
+            id="ville"
+            formControlName="ville"
+            placeholder="Ex : Reykjavik"
+          />
+          @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
+            <small class="text-red-500">La destination est requise.</small>
+          }
+        </div>
+
+        <!-- Dates -->
+        <div class="grid">
+          <div class="col-12 md:col-6 flex flex-column gap-2">
+            <label for="dateDebut" class="font-medium">Date de début</label>
+            <p-datepicker
+              inputId="dateDebut"
+              formControlName="dateDebut"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              placeholder="jj/mm/aaaa"
             />
-            @if (form.controls.title.touched && form.controls.title.hasError('required')) {
-              <small class="text-red-500">Le nom est requis.</small>
+            @if (form.controls.dateDebut.touched && form.controls.dateDebut.hasError('required')) {
+              <small class="text-red-500">La date de début est requise.</small>
             }
           </div>
 
-          <!-- Ville -->
-          <div class="flex flex-column gap-2">
-            <label for="ville" class="font-medium">Ville / Destination</label>
-            <input
-              pInputText
-              id="ville"
-              formControlName="ville"
-              placeholder="Ex : Reykjavik"
+          <div class="col-12 md:col-6 flex flex-column gap-2">
+            <label for="dateFin" class="font-medium">Date de fin</label>
+            <p-datepicker
+              inputId="dateFin"
+              formControlName="dateFin"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              [minDate]="minDateFin"
+              placeholder="jj/mm/aaaa"
             />
-            @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
-              <small class="text-red-500">La destination est requise.</small>
+            @if (form.controls.dateFin.touched && form.controls.dateFin.hasError('required')) {
+              <small class="text-red-500">La date de fin est requise.</small>
             }
           </div>
+        </div>
 
-          <!-- Dates -->
-          <div class="grid">
-            <div class="col-12 md:col-6 flex flex-column gap-2">
-              <label for="dateDebut" class="font-medium">Date de début</label>
-              <p-datepicker
-                inputId="dateDebut"
-                formControlName="dateDebut"
-                dateFormat="dd/mm/yy"
-                [showIcon]="true"
-                placeholder="jj/mm/aaaa"
-              />
-              @if (form.controls.dateDebut.touched && form.controls.dateDebut.hasError('required')) {
-                <small class="text-red-500">La date de début est requise.</small>
-              }
-            </div>
+        <!-- Actions -->
+        <div class="flex justify-content-end gap-2 pt-2">
+          <p-button
+            label="Annuler"
+            severity="secondary"
+            [outlined]="true"
+            type="button"
+            (onClick)="onCancel()"
+          />
+          <p-button
+            label="Créer le voyage"
+            icon="pi pi-check"
+            type="submit"
+          />
+        </div>
 
-            <div class="col-12 md:col-6 flex flex-column gap-2">
-              <label for="dateFin" class="font-medium">Date de fin</label>
-              <p-datepicker
-                inputId="dateFin"
-                formControlName="dateFin"
-                dateFormat="dd/mm/yy"
-                [showIcon]="true"
-                [minDate]="minDateFin"
-                placeholder="jj/mm/aaaa"
-              />
-              @if (form.controls.dateFin.touched && form.controls.dateFin.hasError('required')) {
-                <small class="text-red-500">La date de fin est requise.</small>
-              }
-            </div>
-          </div>
+      </form>
+    </p-fluid>
 
-          <!-- Actions -->
-          <div class="flex justify-content-end gap-2 pt-2">
-            <p-button
-              label="Annuler"
-              severity="secondary"
-              [outlined]="true"
-              type="button"
-              (onClick)="onCancel()"
-            />
-            <p-button
-              label="Créer le voyage"
-              icon="pi pi-check"
-              type="submit"
-            />
-          </div>
-
-        </form>
-      </p-fluid>
-
-    </p-card>
-  </div>
+  </p-card>
 </div>

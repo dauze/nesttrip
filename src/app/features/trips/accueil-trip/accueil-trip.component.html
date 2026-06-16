@@ -1,54 +1,67 @@
-<div class="flex flex-column gap-3 p-4">
+<div class="p-2">
 
-  <!-- Header -->
-  <div class="flex justify-content-between align-items-center">
-    <span class="text-2xl font-semibold">Mes voyages</span>
-  </div>
+  <p-card>
+    <!-- Header card -->
+    <ng-template pTemplate="title">
+      <div class="flex justify-content-between align-items-center w-full">
+        <span class="text-2xl font-semibold">Mes voyages</span>
+        <p-button
+          label="Ajouter"
+          icon="pi pi-plus"
+          size="small"
+          routerLink="/trips/new"
+        />
+      </div>
+    </ng-template>
 
-  <!-- Skeleton -->
-  @if (tripsLoading()) {
-    <div class="grid">
-      @for (i of [1, 2, 3]; track i) {
-        <div class="col-12 md:col-6 lg:col-4">
-          <p-card>
-            <p-skeleton height="1.5rem" styleClass="mb-2" />
-            <p-skeleton height="1rem" width="60%" />
-          </p-card>
-        </div>
-      }
-    </div>
-{{trips()}}
-  <!-- Empty state -->
-  } @else if (trips().length === 0) {
-    <p-message
-      severity="info"
-      text="Aucun voyage pour l'instant."
-      styleClass="w-full"
-    />
+    <!-- Content -->
+    <div class="mt-3">
 
-  <!-- Trip list -->
-  } @else {
-    <div class="grid">
-      @for (trip of trips(); track trip.id) {
-        <div class="col-12 md:col-6 lg:col-4">
-          <p-card
-            styleClass="cursor-pointer hover:surface-100 transition-colors transition-duration-200 w-full"
-            (click)="selectTrip(trip.id)"
-          >
-            <div class="flex justify-content-between align-items-center">
-              <span class="font-medium text-lg">{{ trip.title }}</span>
-              <i class="pi pi-arrow-right text-color-secondary"></i>
+      <!-- Loading -->
+      @if (tripsLoading()) {
+        <div class="grid">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="col-12 md:col-6 lg:col-4">
+              <p-card class="h-full">
+                <p-skeleton height="1.5rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton height="1rem" width="60%"></p-skeleton>
+              </p-card>
             </div>
-          </p-card>
+          }
+        </div>
+
+      <!-- Empty -->
+      } @else if (trips().length === 0) {
+        <div class="flex justify-content-center align-items-center">
+          <p-message
+            severity="info"
+            text="Aucun voyage pour l'instant."
+            styleClass="w-full md:w-6"
+          />
+        </div>
+
+      <!-- List -->
+      } @else {
+        <div class="grid">
+          @for (trip of trips(); track trip.id) {
+            <div class="col-12 md:col-6 lg:col-4">
+              <p-card
+                styleClass="cursor-pointer w-full h-full hover:surface-100 transition-colors transition-duration-200"
+                (click)="selectTrip(trip.id)"
+              >
+                <div class="flex justify-content-between align-items-center">
+                  <span class="font-medium text-lg">
+                    {{ trip.title }}
+                  </span>
+                  <i class="pi pi-arrow-right text-color-secondary"></i>
+                </div>
+              </p-card>
+            </div>
+          }
         </div>
       }
+
     </div>
-  }
-    <p-button
-    label="Ajouter un voyage"
-    icon="pi pi-plus"
-    styleClass="w-full"
-    routerLink="/trips/new"
-  />
+  </p-card>
 
 </div>
