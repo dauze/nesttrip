@@ -46,7 +46,7 @@
                   <div class="border-round overflow-hidden surface-100 flex align-items-center justify-content-center flex-shrink-0"
                        style="width:2.5rem;height:2.5rem">
                     @if (place.photos?.[0]) {
-                      <img *ngIf="getPhotoUrl$(lazyGoogleData()!.photos![0], 120) | async as url" [src]="url" [alt]="place.name"
+                      <img *ngIf="place.photos?.[0] && (getPhotoUrl$(place.photos[0], 120) | async) as url" [src]="url" [alt]="place.name"
                            style="width:100%;height:100%;object-fit:cover" />
                     } @else {
                       <i class="pi pi-map-marker text-color-secondary text-sm"></i>
@@ -87,36 +87,30 @@
         </div>
       }
 
-      <!-- ── CAROUSEL PHOTOS (en haut du body) ── -->
-      @if (galleryImages().length) {
-        <p-galleria
-        [value]="galleryImages()"
-        [numVisible]="4"
-        [showThumbnails]="true"
-        [showIndicators]="false"
-        [showItemNavigators]="true"
-        [circular]="true"
-        thumbnailsPosition="bottom"
-        [containerStyle]="{ width: '100%' }">
-
-        <ng-template pTemplate="item" let-img>
+     @if (galleryImages().length) {
+        <div class="photo-carousel">
           <img
-            [src]="img.itemImageSrc"
-            [alt]="img.alt"
-            class="galleria-main-img"
+            [src]="galleryImages()[currentPhotoIndex].itemImageSrc"
+            [alt]="galleryImages()[currentPhotoIndex].alt"
+            class="photo-carousel__img"
           />
-        </ng-template>
 
-        <ng-template pTemplate="thumbnail" let-img>
-          <img
-            [src]="img.thumbnailImageSrc"
-            [alt]="img.alt"
-            class="galleria-thumb"
-          />
-        </ng-template>
+          @if (currentPhotoIndex > 0) {
+            <button class="photo-carousel__nav photo-carousel__nav--left" (click)="prevPhoto()">
+              <i class="pi pi-chevron-left"></i>
+            </button>
+          }
 
-      </p-galleria>
+          @if (currentPhotoIndex < galleryImages().length - 1) {
+            <button class="photo-carousel__nav photo-carousel__nav--right" (click)="nextPhoto()">
+              <i class="pi pi-chevron-right"></i>
+            </button>
+          }
 
+          <span class="photo-carousel__counter">
+            {{ currentPhotoIndex + 1 }} / {{ galleryImages().length }}
+          </span>
+        </div>
         <p-divider />
       }
 

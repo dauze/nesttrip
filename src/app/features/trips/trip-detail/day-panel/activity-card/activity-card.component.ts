@@ -16,6 +16,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
+import { Image } from 'primeng/image';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -30,7 +31,7 @@ import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { GalleriaModule } from 'primeng/galleria';
 
-import { combineLatest, map, switchMap, of,shareReplay,catchError } from 'rxjs';
+import { combineLatest, map, switchMap, of,shareReplay,catchError, Observable } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { BookingStatus } from '@core/enums/booking.status';
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
@@ -77,6 +78,7 @@ const MAX_PHOTOS = 6;
     DurationPipe,
     AutoComplete,
     InputMask,
+    Image,
     ChipModule
   ],
   templateUrl: './activity-card.component.html',
@@ -121,6 +123,12 @@ export class ActivityCardComponent {
   readonly currencyOptions = CURRENCY_OPTIONS;
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
   readonly places = this.googlePlaceService.places;
+  private readonly photoUrlCache = new Map<string, Observable<string>>();
+
+  currentPhotoIndex = 0;
+
+  prevPhoto(): void { this.currentPhotoIndex--; }
+  nextPhoto(): void { this.currentPhotoIndex++; }
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -156,20 +164,20 @@ export class ActivityCardComponent {
   
       return combineLatest(
         photos.map((ref) =>
-          combineLatest({
-            itemImageSrc: this.getPhotoUrl$(ref, 800),
-            thumbnailImageSrc: this.getPhotoUrl$(ref, 150),
-            alt: of(this.activity()?.title ?? '')
-          })
+          this.getPhotoUrl$(ref, 800).pipe(
+            map(url => ({
+              itemImageSrc: url,
+              alt: this.activity()?.title ?? ''
+            }))
+          )
         )
       );
     }),
-  
     map(images =>
       images.map(img => ({
         itemImageSrc: img.itemImageSrc,
-        thumbnailImageSrc: img.thumbnailImageSrc,
         alt: img.alt
+        // thumbnailImageSrc supprimé
       }))
     ),
     shareReplay(1)
@@ -273,6 +281,7 @@ export class ActivityCardComponent {
   }
 
   onTitleBlur(): void {
+     this.currentPhotoIndex = 0;
     const activity = this.activity();
     if (!activity) return;
     this.tripStore.updateActivity(this.tripId(), this.dayId(), {
@@ -292,7 +301,7 @@ export class ActivityCardComponent {
     this.title = place.name ?? '';
     this.lazyGoogleData.set(null);
     this.googleDataLoaded = false;
-
+    this.photoUrlCache.clear();
     this.googlePlaceService.getPlaceDetail(place.placeId).subscribe((p) => {
       this.title = p.name;
       const activity = this.activity();
@@ -365,11 +374,18 @@ export class ActivityCardComponent {
   onDeleteClick(): void { this.deleteRequest.emit(); }
   onAiEnrichClick(): void { this.aiEnrichRequest.emit(); }
 
-  /** Proxy URL for a Google Places photo reference */
-  getPhotoUrl$(ref: string, maxWidth = 800) {
-    return this.googlePhotoService.getPhoto$(this.extractPhotoRef(ref), maxWidth).pipe(
-      catchError(() => '')
-    );
+  getPhotoUrl$(ref: string, maxWidth = 800): Observable<string> {
+    const key = `${ref}__${maxWidth}`;
+    if (!this.photoUrlCache.has(key)) {
+      this.photoUrlCache.set(
+        key,
+        this.googlePhotoService.getPhoto$(ref, maxWidth).pipe(
+          catchError(() => of('')),
+          shareReplay(1)
+        )
+      );
+    }
+    return this.photoUrlCache.get(key)!;
   }
 
   starsFor(rating: number): string {
@@ -385,9 +401,5 @@ export class ActivityCardComponent {
       doc: 'pi-file-word', docx: 'pi-file-word',
     };
     return `pi ${map[ext] ?? 'pi-file'}`;
-  }
-
-  private extractPhotoRef(fullRef: string): string {
-    return fullRef.split('/photos/')[1];
   }
 }

@@ -85,27 +85,29 @@
       </ng-template>
     </p-card>
     @if (facade.activeTrip(); as trip) {
-      <p-card>
-        <p-tabs scrollable (activeValueChange)="onTabChange()" [(value)]="activeDay">
+      <p-tabs scrollable [value]="activeDay()">
           <p-tablist>
             @for (tab of tabs(); track tab.id) {
-              <p-tab [value]="tab.id">{{ tab.label }}</p-tab>
+              <p-tab [value]="tab.id" (click)="onTabChange(tab.id)">{{ tab.label }}</p-tab>
             }
           </p-tablist>
-          <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
-            <p-tabpanels>
-              <p-tabpanel value="info" [lazy]="true">
-                <app-infos [info]="trip.info" [tripId]="trip.id" />
+          <div cdkSwipe>
+             <p-tabpanels>
+              <p-tabpanel value="info">
+                @if (visitedDays().has('info')) {
+                  <app-infos [info]="trip.info" [tripId]="trip.id" />
+                }
               </p-tabpanel>
               @for (day of trip.days; track day.id) {
-                <p-tabpanel [value]="day.id.toISOString()" [lazy]="true">
-                  <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
+                <p-tabpanel [value]="day.id.toISOString()">
+                  @if (visitedDays().has(day.id.toISOString())) {
+                    <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
+                  }
                 </p-tabpanel>
               }
             </p-tabpanels>
           </div>
         </p-tabs>
-      </p-card>
     }
   } @else {
     <p-skeleton height="2.2rem"/>

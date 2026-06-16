@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { mapPlaceSummary } from './place.mapper';
 
-const SEARCH_FIELD_MASK = ['places.id', 'places.displayName'].join(',');
+const SEARCH_FIELD_MASK = ['places.id', 'places.displayName', 'places.formattedAddress', 'places.photos'].join(',');
 
 export async function searchPlacesHandler(req: Request, res: Response, apiKey: string) {
   const q = req.query['q'];

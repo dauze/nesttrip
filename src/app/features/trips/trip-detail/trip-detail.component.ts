@@ -12,7 +12,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { ConfirmationService } from 'primeng/api';
-import { SwipeDirective } from '@app/shared/directives/swipe.directive';
 import { Trip, TripMember } from '../trip.model';
 import { TripRole } from '../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
@@ -42,7 +41,6 @@ import { TooltipModule } from 'primeng/tooltip';
     MessageModule,
     InfosComponent,
     DayPanelComponent,
-    SwipeDirective,
     InfosSkeletonComponent,
     AvatarModule, 
     AvatarGroupModule,
@@ -65,6 +63,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly inviteError = signal<string | null>(null);
   protected objectEntries = Object.entries;
   private readonly MAX_VISIBLE = 5;
+
+readonly visitedDays = signal<Set<string>>(new Set());
+
 
     getInitials(member: TripMember): string {
   if (member.displayName) {
@@ -120,11 +121,13 @@ readonly tripTitle = computed(() => {
   private initialized = false;
 
   constructor() {
-    // dans le constructor effect :
     effect(() => {
       const trip = this.facade.activeTrip();
       if (!trip || this.initialized) return;
-      this.activeDay.set(this.getTodayId(trip));
+
+      const todayId = this.getTodayId(trip);
+      this.activeDay.set(todayId);
+      this.visitedDays.set(new Set(['info', todayId]));
       this.initialized = true;
     });
   }
@@ -183,7 +186,9 @@ readonly tripTitle = computed(() => {
   nextTab(): void { this.moveTab(1); }
   prevTab(): void { this.moveTab(-1); }
 
-  protected onTabChange(): void {
+  protected onTabChange(value: string): void {
+    this.visitedDays.update(s => new Set(s).add(value));
+    this.activeDay.set(value);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 

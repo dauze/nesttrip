@@ -8,11 +8,11 @@ export class GooglePhotoService {
   private http = inject(HttpClient);
 
   getPhoto$(ref: string, maxWidth = 400): Observable<string> {
-    const url = `${environment.apiUrl}/photos/${ref}?maxWidth=${maxWidth}`;
+    const encodedRef = encodeURIComponent(ref);
+    const url = `${environment.apiUrl}/photos/${encodedRef}?maxWidth=${maxWidth}`;
 
     return this.http.get(url, { responseType: 'blob' }).pipe(
-      map((blob) => URL.createObjectURL(blob)),
-      shareReplay(1)
+      map((blob) => URL.createObjectURL(blob))
     );
   }
 }
