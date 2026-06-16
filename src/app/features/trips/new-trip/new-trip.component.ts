@@ -31,15 +31,10 @@ export class NewTripComponent {
   private readonly authService = inject(AuthService);
 
   readonly form = this.fb.group({
-    title: ['', Validators.required],
-    ville: ['', Validators.required],
-    dateDebut: [null as Date | null, Validators.required],
-    dateFin: [null as Date | null, Validators.required],
-  });
-
-  get minDateFin(): Date | null {
-    return this.form.value.dateDebut ?? null;
-  }
+  title: ['', Validators.required],
+  ville: ['', Validators.required],
+  dates: [null, Validators.required]
+});
 
   onSubmit(): void {
     if (this.form.invalid) {
@@ -50,17 +45,12 @@ export class NewTripComponent {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { title, ville, dateDebut, dateFin } = this.form.value as {
-      title: string;
-      ville: string;
-      dateDebut: Date;
-      dateFin: Date;
-    };
+    const [dateDebut, dateFin] = this.form.value.dates || [];
 
     const trip: Trip = {
       id: crypto.randomUUID(),
-      title,
-      ville,
+      title : this.form.value.title ?? "" ,
+      ville : this.form.value.ville ?? "",
       days: this.buildDays(dateDebut, dateFin),
       info: this.buildInfo(),
       ownerId: user.uid,
@@ -76,7 +66,7 @@ export class NewTripComponent {
     this.saveTrip(trip);
   }
 
-  private buildDays(start: Date, end: Date): Day[] {
+  private   buildDays(start: Date, end: Date): Day[] {
     const days: Day[] = [];
     const current = new Date(start);
     current.setHours(0, 0, 0, 0);
