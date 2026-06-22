@@ -22,14 +22,7 @@
   --p-tabs-tabpanel-padding: 0.5rem 0.5rem 0.5rem 0.5rem;
 }
 
-.p-textarea {
-  --p-textarea-background: transparent;
-  --p-textarea-border-color: transparent;
-  --p-textarea-shadow: none;
-  --p-textarea-hover-border-color: transparent;
-  --p-textarea-focus-border-color: transparent;
-  --p-textarea-disabled-background: transparent;
-}
+
 
 .p-dialog-header {
   --p-dialog-header-padding: 0.5rem;
@@ -52,6 +45,14 @@
   width: 6px;
 }
 
+.transparent-textarea {
+  --p-textarea-background: transparent;
+  --p-textarea-border-color: transparent;
+  --p-textarea-shadow: none;
+  --p-textarea-hover-border-color: transparent;
+  --p-textarea-focus-border-color: transparent;
+  --p-textarea-disabled-background: transparent;
+}
 
 *:has(.trip) .p-inputtext
  {

@@ -6,7 +6,7 @@
           <span cdkDragHandle class="flex-shrink-0 cursor-move"><i class="pi pi-bars"></i></span>
           <textarea
             pTextarea
-            class="flex-1 overflow-hidden font-bold min-w-0"
+            class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
             [autoResize]="true"
             [rows]="1"
             [value]="item.title"
@@ -61,7 +61,7 @@
               [autoResize]="true"
               [rows]="1"
               [value]="point.text"
-              class="flex-1 overflow-hidden min-w-0"
+              class="flex-1 overflow-hidden min-w-0 transparent-textarea"
               [class.line-through]="item.type === InfoType.TODO && point.checked"
               [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
@@ -124,7 +124,7 @@
                     [autoResize]="true"
                     [rows]="1"
                     [value]="point.text"
-                    class="flex-1 overflow-hidden min-w-0"
+                    class="flex-1 overflow-hidden min-w-0  transparent-textarea"
                     [class.line-through]="item.type === InfoType.TODO && point.checked"
                     [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
                     (input)="onTextChange(item, $index, $any($event.target).value)"

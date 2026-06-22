@@ -16,7 +16,6 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
-import { Image } from 'primeng/image';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -49,6 +48,7 @@ import {
 import { TripStore } from '@app/features/trips/trip-store.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { toObservable } from '@angular/core/rxjs-interop';
+import { ActivityFile } from './activity.model';
 
 /** Max photos shown in carousel — change freely */
 const MAX_PHOTOS = 6;
@@ -78,7 +78,6 @@ const MAX_PHOTOS = 6;
     DurationPipe,
     AutoComplete,
     InputMask,
-    Image,
     ChipModule
   ],
   templateUrl: './activity-card.component.html',
@@ -401,5 +400,9 @@ export class ActivityCardComponent {
       doc: 'pi-file-word', docx: 'pi-file-word',
     };
     return `pi ${map[ext] ?? 'pi-file'}`;
+  }
+
+  openFile(file: ActivityFile) {
+    window.open(file.url, '_blank', 'noopener');
   }
 }
