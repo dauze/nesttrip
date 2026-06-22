@@ -18,7 +18,8 @@
 }
 
 .p-tabpanels {
-  --p-tabs-tabpanel-padding: 0.5rem;
+  display: block;
+  --p-tabs-tabpanel-padding: 0.5rem 0.5rem 0.5rem 0.5rem;
 }
 
 .p-textarea {
