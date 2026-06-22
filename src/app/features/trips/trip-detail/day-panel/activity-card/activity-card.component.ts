@@ -186,8 +186,12 @@ export class ActivityCardComponent {
   readonly hasPlaceId = computed(() => !!this.activity()?.placeId);
 
   readonly mapsUrl = computed(() => {
-    const placeId = this.activity()?.placeId;
-    return placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : null;
+    const address = this.lazyGoogleData()?.address;
+    if (!address?.length) return null;
+    const name = this.lazyGoogleData()?.name;
+    if (!name?.length) return null;
+    const query = encodeURIComponent(address || name);
+    return `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${this.activity().placeId}`;
   });
 
   /**
@@ -302,7 +306,9 @@ export class ActivityCardComponent {
     this.googleDataLoaded = false;
     this.photoUrlCache.clear();
     this.googlePlaceService.getPlaceDetail(place.placeId).subscribe((p) => {
-      this.title = p.name;
+        setTimeout(() => {
+        this.title = p.name;
+      });
       const activity = this.activity();
       if (!activity) return;
 

@@ -116,7 +116,7 @@
 
       <!-- ── CHAMPS PRINCIPAUX ── -->
       <form [formGroup]="form" class=" min-w-0">
-        <div class="grid m-0 grid-label">
+        <div class="m-0 grid-label">
           <div class="grid m-0">
             <!-- TYPE -->
             <div class="col-6 p-0 min-w-0 overflow-hidden">
@@ -146,7 +146,7 @@
                   styleClass="w-full min-w-0" />
               </div>
             </div>
-            <p-divider class="mt-1 mb-1" />
+            <p-divider/>
             <!-- RÉSA -->
             <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
               <div class="flex flex-column gap-1 w-full min-w-0">
@@ -184,7 +184,8 @@
             </div>
             <!-- DEADLINE -->
             @if (showDeadline()) {
-              <div class="col-12 p-0 min-w-0" formGroupName="booking">
+              <p-divider />
+              <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
                 <div class="flex flex-column gap-1 w-full min-w-0">
                   <label class="text-xs flex align-items-center gap-1"
                     [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
@@ -202,11 +203,64 @@
             }
           </div>
         </div>
+        <p-divider />
+        <!-- ── NOTES (avant les fichiers) ── -->
+        <div class="flex flex-column gap-1 mb-3">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-pencil text-xs"></i>Notes
+          </label>
+          <textarea pTextarea formControlName="notes"
+            placeholder="Ajouter une note…"
+            rows="2" autoResize="true" class="w-full">
+          </textarea>
+        </div>
+        <!-- ── FICHIERS ── -->
+        <p-divider />
+        <div class="flex flex-column gap-2">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-paperclip text-xs"></i>Fichiers
+          </label>
+
+          @if (uploadingFiles().size > 0) {
+            <div class="flex align-items-center gap-2 text-color-secondary text-sm ">
+              <p-progressSpinner strokeWidth="3" [style]="{ width: '1.25rem', height: '1.25rem' }" />
+              <span>{{ uploadingFiles().size }} fichier(s) en cours d'envoi…</span>
+            </div>
+          }
+
+          <div class="flex flex-wrap gap-2 align-items-center">
+            @for (file of activity.files; track file.path; let i = $index) {
+              <p-chip
+                [icon]="fileIcon(file.name)"
+                removable="true"
+                (click)="openFile(file)"
+                (onRemove)="removeFile(i)"
+                class="surface-100 text-sm cursor-pointer"
+                >
+                <span class="file-name" [title]="file.name">
+                  {{ file.name }}
+                </span>
+              </p-chip>
+            }
+            <p-fileUpload
+              mode="basic"
+              chooseLabel="Ajouter"
+              chooseIcon="pi pi-upload"
+              [multiple]="true"
+              [auto]="true"
+              (onSelect)="onFileSelect($event)"  
+              [chooseButtonProps]="{
+                severity: 'secondary',
+                rounded: true,
+              }"
+              styleClass="p-0" />
+          </div>
+        </div>
 
         <!-- ── BLOC GOOGLE DATA ── -->
         @if (hasPlaceId() && !googleDataLoading() && lazyGoogleData(); as gd) {
-          <p-divider class="mt-1" />
-          <span>GOOGLE MAPS</span>
+          <p-divider/>
+          <span>GOOGLE</span>
         <!-- Rating -->
         <div class="flex align-items-center gap-2 mt-3 mb-2">
           @if (activity.rating) {
@@ -300,59 +354,6 @@
             </p-panel>
           }
         }
-        <p-divider />
-        <!-- ── NOTES (avant les fichiers) ── -->
-        <div class="flex flex-column gap-1 mb-3">
-          <label class="text-color-secondary text-sm flex align-items-center gap-1">
-            <i class="pi pi-pencil text-xs"></i>Notes
-          </label>
-          <textarea pTextarea formControlName="notes"
-            placeholder="Ajouter une note…"
-            rows="2" autoResize="true" class="w-full">
-          </textarea>
-        </div>
-      </form>
-      <!-- ── FICHIERS ── -->
-      <p-divider />
-      <div class="flex flex-column gap-2">
-        <label class="text-color-secondary text-sm flex align-items-center gap-1">
-          <i class="pi pi-paperclip text-xs"></i>Fichiers
-        </label>
-
-        @if (uploadingFiles().size > 0) {
-          <div class="flex align-items-center gap-2 text-color-secondary text-sm">
-            <p-progressSpinner strokeWidth="3" [style]="{ width: '1.25rem', height: '1.25rem' }" />
-            <span>{{ uploadingFiles().size }} fichier(s) en cours d'envoi…</span>
-          </div>
-        }
-
-        <div class="flex flex-wrap gap-2 align-items-center">
-          @for (file of activity.files; track file.path; let i = $index) {
-            <p-chip
-              [icon]="fileIcon(file.name)"
-              removable="true"
-              (click)="openFile(file)"
-              (onRemove)="removeFile(i)"
-              class="surface-100 text-sm"
-              >
-              <span class="file-name" [title]="file.name">
-                {{ file.name }}
-              </span>
-            </p-chip>
-          }
-          <p-fileUpload
-            mode="basic"
-            chooseLabel="Ajouter"
-            chooseIcon="pi pi-upload"
-            [multiple]="true"
-            [auto]="true"
-            (onSelect)="onFileSelect($event)"  
-            [chooseButtonProps]="{
-              severity: 'secondary',
-              rounded: true,
-            }"
-            styleClass="p-0" />
-        </div>
-      </div>
-    </p-panel>
+    </form>
+  </p-panel>
 }
