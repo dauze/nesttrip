@@ -5,6 +5,7 @@ import {
   inject,
   input,
   output,
+  Signal,
   signal,
   untracked,
 } from '@angular/core';
@@ -49,6 +50,7 @@ import { TripStore } from '@app/features/trips/trip-store.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivityFile } from './activity.model';
+import { ActivityType } from '@app/core/enums/activites-type.enum';
 
 /** Max photos shown in carousel — change freely */
 const MAX_PHOTOS = 6;
@@ -97,7 +99,23 @@ export class ActivityCardComponent {
   readonly deleteRequest = output<void>();
   readonly aiEnrichRequest = output<void>();
 
-  readonly form: FormGroup;
+  readonly form = this.fb.group({
+    type: this.fb.nonNullable.control<ActivityType>(ActivityType.ACTIVITE),
+    duration: this.fb.nonNullable.control<number>(0),
+    notes: this.fb.nonNullable.control<string>(''),
+    booking: this.fb.group({
+      status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
+      deadline: this.fb.control<Date | null>(null),
+    }),
+    price: this.fb.group({
+      amount: this.fb.nonNullable.control<number>(0),
+      currency: this.fb.nonNullable.control<string>('EUR'),
+    }),
+  });
+
+  private readonly formValue = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  }) as Signal<ReturnType<typeof this.form.getRawValue>>;
 
   /** Title managed separately to avoid ngModel/ReactiveForm conflict with p-autoComplete */
   title = '';
@@ -129,21 +147,21 @@ export class ActivityCardComponent {
   prevPhoto(): void { this.currentPhotoIndex--; }
   nextPhoto(): void { this.currentPhotoIndex++; }
 
-  readonly bookingMeta = computed(() => {
-    const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
-    return BOOKING_STATUS_META[status];
+  readonly showDeadline = computed(() => {
+    const status = this.formValue().booking.status;
+    return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(status);
   });
 
   readonly isDeadlineSoon = computed(() => {
-    const deadline = this.form.get('booking.deadline')?.value;
+    const deadline = this.formValue()?.booking.deadline;
     if (!deadline) return false;
     const diff = new Date(deadline).getTime() - Date.now();
-    return diff > 0 && diff < 7 * 24 * 60 * 60 * 1000;
+    return diff < 7 * 24 * 60 * 60 * 1000;
   });
 
-  readonly showDeadline = computed(() => {
-    const status = this.form.get('booking.status')?.value ?? BookingStatus.NOT_NEEDED;
-    return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(status);
+  readonly bookingMeta = computed(() => {
+    const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
+    return BOOKING_STATUS_META[status];
   });
 
   readonly durationDisplay = computed(() => {
@@ -230,41 +248,31 @@ export class ActivityCardComponent {
   });
 
   constructor() {
-    this.form = this.fb.group({
-      type: [''],
-      duration: [0],
-      notes: [''],
-      booking: this.fb.group({
-        status: [BookingStatus.NOT_NEEDED],
-        deadline: [null],
-      }),
-      price: this.fb.group({
-        amount: [0],
-        currency: ['EUR'],
-      }),
-    });
-
     effect(() => {
       const a = this.tripStore.getActivity(this.activityId())();
       if (a && !this.initialized) {
         this.initialized = true;
         untracked(() => {
-          this.form.patchValue(a, { emitEvent: false });
+          this.form.patchValue(a);
           this.title = a.title;
         });
       }
     });
 
-    this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
+    this.form.valueChanges.pipe(debounceTime(300)).subscribe(() => {
       const activity = this.activity();
       if (!activity) return;
-      this.tripStore.updateActivity(this.tripId(), this.dayId(), {
-        ...activity,
-        ...value,
-        title: this.title,
-        booking: value.booking ?? activity.booking,
-        price: value.price ?? activity.price,
-      });
+      this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
+          const activity = this.activity();
+          if (!activity) return;
+          this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+            ...activity,
+            ...value,
+            title: this.title,
+            booking: { ...activity.booking, ...value.booking, deadline: value.booking?.deadline ?? undefined },
+            price: { ...activity.price, ...value.price },
+          });
+        });
     });
 
     effect(() => {
