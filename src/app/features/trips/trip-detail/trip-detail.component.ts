@@ -23,6 +23,7 @@ import { CollaborationService } from '@app/core/services/collaboration.service';
 import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { TooltipModule } from 'primeng/tooltip';
+import { SwipeDirective } from '@app/shared/directives/swipe.directive';
 
 @Component({
   selector: 'app-trip-detail',
@@ -44,7 +45,8 @@ import { TooltipModule } from 'primeng/tooltip';
     InfosSkeletonComponent,
     AvatarModule, 
     AvatarGroupModule,
-    TooltipModule
+    TooltipModule,
+    SwipeDirective
   ],
   providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',
@@ -200,7 +202,7 @@ readonly tripTitle = computed(() => {
     const list = this.tabs().map((t) => t.id);
     const i = list.indexOf(this.activeDay());
     const next = list[i + offset];
-    if (next) this.activeDay.set(next);
+    if (next) this.onTabChange(next);
   }
 
   private getTodayId(trip: Trip): string {

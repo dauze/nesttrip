@@ -91,7 +91,7 @@
               <p-tab [value]="tab.id" (click)="onTabChange(tab.id)">{{ tab.label }}</p-tab>
             }
           </p-tablist>
-          <div cdkSwipe>
+          <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
              <p-tabpanels>
               <p-tabpanel value="info">
                 @if (visitedDays().has('info')) {
