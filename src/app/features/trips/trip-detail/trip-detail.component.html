@@ -51,19 +51,25 @@
     <p-card>
       <ng-template #header>
         <div class="flex align-items-center justify-content-between px-3 pt-3">
-          <span class="text-xl font-semibold">{{ tripTitle() }}</span>
-<div class="flex align-items-center gap-3">
-
-  <p-avatarGroup>
-    @for (entry of getVisibleMembers(); track entry[0]) {
-  <p-avatar
-    [label]="getInitials(entry[1])"
-    shape="circle"
-    size="normal"
-    [pTooltip]="entry[1].email"
-    tooltipEvent="both"
-    tooltipPosition="bottom" />
-}
+          <textarea
+            pTextarea
+            class="text-xl font-semibold flex-1 overflow-hidden transparent-textarea"
+            [autoResize]="true"
+            [rows]="1"
+            [value]="tripTitle()"
+            (blur)="updateTitle($any($event.target).value.trim())"
+          ></textarea>
+        <div class="flex align-items-center gap-3">
+        <p-avatarGroup>
+        @for (entry of getVisibleMembers(); track entry[0]) {
+          <p-avatar
+            [label]="getInitials(entry[1])"
+            shape="circle"
+            size="normal"
+            [pTooltip]="entry[1].email"
+            tooltipEvent="both"
+            tooltipPosition="bottom" />
+        }
         @if (getExtraCount() > 0) {
           <p-avatar
             [label]="'+' + getExtraCount()"

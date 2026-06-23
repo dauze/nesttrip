@@ -10,25 +10,24 @@ import { AuthService } from '@app/core/services/auth.service';
 @Injectable({ providedIn: 'root' })
 export class TripDataSource {
   private readonly db = inject(FirebaseService).db;
-private readonly authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
   
+  getTrips$(): Observable<Pick<Trip, 'id' | 'title'>[]> {
+    return new Observable((observer) => {
+      const user = this.authService.getCurrentUser(); // lecture directe, Firebase garantit qu'il est résolu après le guard
+      if (!user) { observer.error('User not authenticated'); return; }
 
-getTrips$(): Observable<Pick<Trip, 'id' | 'title'>[]> {
-  return new Observable((observer) => {
-    const user = this.authService.getCurrentUser(); // lecture directe, Firebase garantit qu'il est résolu après le guard
-    if (!user) { observer.error('User not authenticated'); return; }
-
-    const unsub = onSnapshot(
-      query(collection(this.db, 'trips'), where(`members.${user.uid}`, '!=', null)),
-      (snap) => observer.next(snap.docs.map((d) => {
-        const { id, title } = d.data() as TripFirebase;
-        return { id, title };
-      })),
-      (err) => observer.error(err)
-    );
-    return () => unsub();
-  });
-}
+      const unsub = onSnapshot(
+        query(collection(this.db, 'trips'), where(`members.${user.uid}`, '!=', null)),
+        (snap) => observer.next(snap.docs.map((d) => {
+          const { id, title } = d.data() as TripFirebase;
+          return { id, title };
+        })),
+        (err) => observer.error(err)
+      );
+      return () => unsub();
+    });
+  }
   getTrip$(id: string) {
     return new Observable<Trip>((observer) => {
       const unsub = onSnapshot(

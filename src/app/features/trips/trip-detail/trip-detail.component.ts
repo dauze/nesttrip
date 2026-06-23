@@ -24,6 +24,8 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { TooltipModule } from 'primeng/tooltip';
 import { SwipeDirective } from '@app/shared/directives/swipe.directive';
+import { AutoResizeFixDirective } from '@app/shared/pipes/auto-resize-area.pipe';
+import { Textarea } from 'primeng/textarea';
 
 @Component({
   selector: 'app-trip-detail',
@@ -46,7 +48,9 @@ import { SwipeDirective } from '@app/shared/directives/swipe.directive';
     AvatarModule, 
     AvatarGroupModule,
     TooltipModule,
-    SwipeDirective
+    Textarea,
+    SwipeDirective,
+    AutoResizeFixDirective
   ],
   providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',
@@ -187,6 +191,18 @@ readonly tripTitle = computed(() => {
   // — tabs
   nextTab(): void { this.moveTab(1); }
   prevTab(): void { this.moveTab(-1); }
+
+  updateTitle(title: string) {
+    const trip = this.facade.activeTrip();
+    if (!trip || !title || title === trip.title) {
+      return;
+    }
+
+    this.facade.updateTrip({
+      ...trip,
+      title
+    });
+  }
 
   protected onTabChange(value: string): void {
     this.visitedDays.update(s => new Set(s).add(value));

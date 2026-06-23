@@ -62,6 +62,10 @@ export class TripFacade {
     this.store.saveTrip(trip);
   }
 
+  updateTrip(trip: Trip): void {
+    this.store.updateTrip(trip);
+  }
+
   createActivity(tripId: string, dayId: Date, activity: Activity): void {
     this.store.createActivity(tripId, dayId, activity);
   }
