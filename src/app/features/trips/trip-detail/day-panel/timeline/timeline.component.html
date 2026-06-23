@@ -1,3 +1,4 @@
+ @if (activities().length > 0) {
 <p-panel [toggleable]="true" [collapsed]="false">
   <ng-template pTemplate="header">
     <div class="flex align-items-center gap-2">
@@ -7,7 +8,7 @@
   </ng-template>
 
   <div class="flex flex-column gap-2">
-    @for (activity of activities(); track activity.id) {
+    @for (activity of activities(); track activity.id; let last = $last) {
       <div class="grid align-items-center"  (click)="activitySelected.emit(activity.id)">
         <!-- durée -->
         <span class="col-3">
@@ -23,7 +24,10 @@
         </span>
 
       </div>
-      <p-divider styleClass="m-0"></p-divider>
+       @if (!last) {
+      <p-divider class="m-0"></p-divider>
+       }
     }
   </div>
 </p-panel>
+ }

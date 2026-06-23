@@ -11,12 +11,13 @@ import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
 import { AutoResizeFixDirective } from '../../../../shared/pipes/auto-resize-area.pipe';
 import { TripStore } from '../../trip-store.service';
+import { MessageModule } from 'primeng/message';
 
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, AutoResizeFixDirective],
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, AutoResizeFixDirective, MessageModule],
   templateUrl: './infos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

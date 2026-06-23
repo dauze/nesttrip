@@ -8,12 +8,12 @@ import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
 import { TripStore } from '../../trip-store.service';
-import { afterNextRender } from '@angular/core';
+import { MessageModule } from 'primeng/message';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button],
+  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })

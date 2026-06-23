@@ -15,6 +15,14 @@
             <app-activity-card cdkDrag [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
       </div>
+      @if (activities().length === 0) {
+          <p-message
+            severity="info"
+            icon="pi pi-info-circle"
+            text="Aucune activitée pour l'instant, n'hésitez pas à en créer avec le bouton +."
+            class="w-full flex justify-content-center"
+          />
+        }
       <div class="flex justify-content-center w-full">
         <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addActivity()" />
       </div>

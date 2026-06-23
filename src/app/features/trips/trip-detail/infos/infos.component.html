@@ -156,6 +156,14 @@
       </div>
     </p-panel>
   }
+  @if (items().length === 0) {
+    <p-message
+      severity="info"
+      icon="pi pi-info-circle"
+      text="Aucune information pour l'instant, n'hésitez pas à en créer avec le bouton +."
+      class="w-full flex justify-content-center"
+    />
+  }
   <div class="flex justify-content-center w-full">
     <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
   </div>
