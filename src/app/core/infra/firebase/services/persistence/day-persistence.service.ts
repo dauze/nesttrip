@@ -20,7 +20,7 @@ export class DayPersistenceService {
   return updateDoc(
     doc(this.db, 'trips', tripId),
     {
-      [`days.${day.id.toISOString()}`]: {
+      [`days.${day.id.getTime()}`]: {
         activities: []
       }
     }

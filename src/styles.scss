@@ -83,11 +83,11 @@
   --p-inputnumber-shadow: none;
 }
 
-.p-datepicker{
-  --p-datepicker-border-color: transparent;
-  --p-datepicker-hover-border-color:transparent;
-  --p-datepicker-shadow: none;
-  --p-datepicker-background: transparent;
+.transparent-datepicker{
+ --p-inputtext-border-color: transparent;
+  --p-inputtext-hover-border-color:transparent;
+  --p-inputtext-shadow: none;
+  --p-inputtext-background: transparent;
 }
 .p-autocomplete{
   --p-autocomplete-border-color: transparent;

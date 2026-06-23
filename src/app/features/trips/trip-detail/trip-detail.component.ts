@@ -204,7 +204,8 @@ readonly tripTitle = computed(() => {
     if (toDelete.length > 0) {
       this.confirmationService.confirm({
         message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
-        accept: applyChanges
+        accept: applyChanges,
+        reject: () => { this.initTripForm(trip)}
       });
     } else {
       applyChanges();

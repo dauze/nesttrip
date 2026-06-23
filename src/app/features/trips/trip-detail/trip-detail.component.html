@@ -94,12 +94,12 @@
         <div class="flex flex-column gap-2">
           <p-datepicker
             inputId="dates"
+            class="transparent-datepicker"
             formControlName="dates"
             selectionMode="range"
             dateFormat="dd/mm/yy"
             [showIcon]="true"
             placeholder="Sélectionner une période"
-            class="w-full"
             (onSelect)="onDatesChange()"
           />
         </div>
@@ -131,7 +131,7 @@
         </p-tabs>
     }
   } @else {
-    <p-skeleton height="2.2rem"/>
+    <p-skeleton height="6rem"/>
     <app-infos-skeleton />
   }
 </div>
