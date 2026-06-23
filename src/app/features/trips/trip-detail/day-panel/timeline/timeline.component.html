@@ -8,20 +8,15 @@
 
   <div class="flex flex-column gap-2">
     @for (activity of activities(); track activity.id) {
-      <div class="grid align-items-center">
-
+      <div class="grid align-items-center"  (click)="activitySelected.emit(activity.id)">
         <!-- durée -->
-
         <span class="col-3">
           ~ {{ activity.duration | duration }}
         </span>
-
-
         <!-- icône -->
         <span class="col-1">
         <i [class]="ACTIVITY_TYPE_META[activity.type]?.icon" class="text-lg text-primary"></i>
         </span>
-
         <!-- titre -->
         <span class="col-8">
           {{ activity.title }}

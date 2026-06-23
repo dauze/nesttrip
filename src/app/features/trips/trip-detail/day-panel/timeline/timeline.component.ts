@@ -1,5 +1,5 @@
 import { Activity } from '../activity-card/activity.model';
-import { Component, input } from '@angular/core';
+import { Component, EventEmitter, input, Output } from '@angular/core';
 
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +16,7 @@ import { DurationPipe } from '../../../../../shared/pipes/duration.pipe';
   styleUrl: 'timeline.component.scss',
 })
 export class TimelineComponent {
+  @Output() activitySelected = new EventEmitter<string>();
   readonly activities = input.required<Activity[]>();
   readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META;
 }

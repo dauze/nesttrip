@@ -2,12 +2,14 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   output,
   Signal,
   signal,
   untracked,
+  ViewChild,
 } from '@angular/core';
 
 import { ChipModule } from 'primeng/chip';
@@ -92,6 +94,9 @@ export class ActivityCardComponent {
   private readonly googlePhotoService = inject(GooglePhotoService);
   private readonly fb = inject(FormBuilder);
 
+  @ViewChild('cardContainer')
+  cardContainer!: ElementRef<HTMLElement>;
+
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
   readonly activityId = input.required<string>();
@@ -119,6 +124,7 @@ export class ActivityCardComponent {
 
   /** Title managed separately to avoid ngModel/ReactiveForm conflict with p-autoComplete */
   title = '';
+  collapsed = true;
 
   /** Files currently uploading (tracked by filename for spinner display) */
   readonly uploadingFiles = signal<Set<string>>(new Set());
@@ -291,6 +297,21 @@ export class ActivityCardComponent {
     });
   }
 
+openAndScroll() {
+  const wasCollapsed = this.collapsed;
+
+  if (wasCollapsed) {
+    this.collapsed = false;
+
+    // attendre le rendu
+    setTimeout(() => {
+      this.scrollToMe();
+    }, 300); // ajuster selon l'animation PrimeNG
+  } else {
+    this.scrollToMe();
+  }
+}
+
   onTitleBlur(): void {
      this.currentPhotoIndex = 0;
     const activity = this.activity();
@@ -422,5 +443,12 @@ export class ActivityCardComponent {
       return; // clic sur la croix, on ignore
     }
     window.open(file.url, '_blank', 'noopener');
+  }
+
+  private scrollToMe() {
+    this.cardContainer.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   }
 }

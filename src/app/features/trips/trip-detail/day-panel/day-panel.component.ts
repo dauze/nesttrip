@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, Signal } from '@angular/core';
+import { Component, computed, inject, input, QueryList, Signal, ViewChildren } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Activity } from './activity-card/activity.model';
@@ -8,6 +8,7 @@ import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
 import { TripStore } from '../../trip-store.service';
+import { afterNextRender } from '@angular/core';
 
 @Component({
   selector: 'app-day-panel',
@@ -20,6 +21,12 @@ export class DayPanelComponent {
   private readonly tripStore = inject(TripStore);
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
+
+  @ViewChildren(ActivityCardComponent)
+  activityCards!: QueryList<ActivityCardComponent>;
+  
+  activitiesCollapsed = false;
+  private pendingActivityId?: string;
 
   readonly activities: Signal<Activity[]> = computed(() => this.tripStore.getActivities(this.dayId())());
 
@@ -51,5 +58,37 @@ export class DayPanelComponent {
       website: '',
       phone: '',
     });
+  }
+
+
+  focusActivity(activityId: string) {
+    if (this.activitiesCollapsed) {
+      this.activitiesCollapsed = false;
+      queueMicrotask(() => {
+        this.openCard(activityId);
+      });
+      return;
+    }
+
+    this.openCard(activityId);
+  }
+
+  onActivitiesPanelToggled() {
+    if (this.pendingActivityId) {
+      this.openCard(this.pendingActivityId);
+      this.pendingActivityId = undefined;
+    }
+  }
+
+  private openCard(activityId: string): void {
+    const card = this.activityCards.find(
+      c => c.activity()?.id === activityId
+    );
+
+    if (!card) {
+      return;
+    }
+
+    card.openAndScroll();
   }
 }
