@@ -50,7 +50,7 @@
   @if (!facade.activeTripLoading()) {
     <p-card>
       <ng-template #header>
-        <div class="flex align-items-center justify-content-between px-3 pt-3">
+        <div class="flex align-items-center justify-content-between px-2 pt-3">
           <textarea
             pTextarea
             class="text-xl font-semibold flex-1 overflow-hidden transparent-textarea"
@@ -106,13 +106,16 @@
     </form>
     </p-card>
     @if (facade.activeTrip(); as trip) {
-      <p-tabs scrollable [value]="activeDay()">
+      <p-tabs #tabsRef scrollable [value]="activeDay()">
           <p-tablist>
             @for (tab of tabs(); track tab.id) {
               <p-tab [value]="tab.id" (click)="onTabChange(tab.id)">{{ tab.label }}</p-tab>
             }
           </p-tablist>
-          <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()">
+          <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()"
+            class="tab-content-wrapper"
+            [class.slide-left]="direction() === 'left'"
+            [class.slide-right]="direction() === 'right'">
              <p-tabpanels>
               <p-tabpanel value="info">
                 @if (visitedDays().has('info')) {

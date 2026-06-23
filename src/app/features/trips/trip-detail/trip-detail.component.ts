@@ -1,5 +1,5 @@
 import { FormsModule } from '@angular/forms';
-import { Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
@@ -66,6 +66,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly collaborationService = inject(CollaborationService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly fb = inject(FormBuilder);
+
+  @ViewChild('tabsRef', { read: ElementRef }) tabsRef!: ElementRef<HTMLElement>;
 
   // — dialog state
   protected showInviteDialog = false;
@@ -243,11 +245,17 @@ readonly tripTitle = computed(() => {
         this.inviteError.set(message);
       },
     });
-}
+  }
 
-  // — tabs
-  nextTab(): void { this.moveTab(1); }
-  prevTab(): void { this.moveTab(-1); }
+  direction = signal<'left' | 'right' | null>(null);
+
+  nextTab(): void { this.animateSwipe('left'); this.moveTab(1); }
+  prevTab(): void { this.animateSwipe('right'); this.moveTab(-1); }
+
+  private animateSwipe(dir: 'left' | 'right'): void {
+    this.direction.set(dir);
+    setTimeout(() => this.direction.set(null), 250); // doit matcher la durée CSS
+  }
 
   updateTitle(title: string) {
     const trip = this.facade.activeTrip();
@@ -275,8 +283,19 @@ readonly tripTitle = computed(() => {
     const list = this.tabs().map((t) => t.id);
     const i = list.indexOf(this.activeDay());
     const next = list[i + offset];
-    if (next) this.onTabChange(next);
+    if (next) {
+      this.onTabChange(next);
+      this.scrollActiveTabIntoView(i + offset);
+    }
   }
+
+  private scrollActiveTabIntoView(activeIndex: number): void {
+  requestAnimationFrame(() => {
+    const tabs = this.tabsRef?.nativeElement.querySelectorAll('[role="tab"]');
+    const el = tabs?.[activeIndex] as HTMLElement | undefined;
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  });
+}
 
   private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
