@@ -90,6 +90,20 @@
     </div>
         </div>
       </ng-template>
+      <form [formGroup]="tripForm">
+        <div class="flex flex-column gap-2">
+          <p-datepicker
+            inputId="dates"
+            formControlName="dates"
+            selectionMode="range"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            placeholder="Sélectionner une période"
+            class="w-full"
+            (onSelect)="onDatesChange()"
+          />
+        </div>
+    </form>
     </p-card>
     @if (facade.activeTrip(); as trip) {
       <p-tabs scrollable [value]="activeDay()">

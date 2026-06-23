@@ -11,9 +11,9 @@ export class TripPersistenceService {
   createTrip(trip: Trip): Promise<void> {
     return setDoc(doc(this.db, 'trips', trip.id), tripToFb(trip));
   }
-  updateTrip(trip: Trip): Promise<void> {
+  updateTripTitle(trip: Trip): Promise<void> {
   return updateDoc(doc(this.db, 'trips', trip.id),{
       title: trip.title
     });
-}
+  }
 }

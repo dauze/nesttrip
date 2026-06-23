@@ -6,6 +6,7 @@ import { Item } from './trip-detail/infos/info.models';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
+import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
@@ -16,6 +17,7 @@ export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService); //TODO à voir pour déguager
   private readonly infoPersistenceService = inject(InfosPersistenceService); //TODO à voir pour déguager
   private readonly tripPersistenceService = inject(TripPersistenceService);
+  private readonly dayPersistenceService = inject(DayPersistenceService);
 
   // ── État normalisé ────────────────────────────────────────────────────────
 
@@ -253,7 +255,55 @@ export class TripStore {
     });
   }
 
-  updateTrip(trip: Trip): void {
+    // ── Commandes — Day ────────────────────────────────────────────────
+
+  removeDay(tripId: string, dayId: Date): void {
+    const dayKey = dayId.toISOString();
+
+    // état local optimiste
+    this._days.update(days => {
+      const copy = { ...days };
+      delete copy[dayKey];
+      return copy;
+    });
+
+    this._tripDays.update(trips => ({
+      ...trips,
+      [tripId]: (trips[tripId] ?? []).filter(id => id !== dayKey),
+    }));
+
+    // Firestore
+    this.dayPersistenceService.removeDay(tripId, dayId).catch((err) => {
+      console.error('[TripStore] Erreur suppression day Firestore :', err);
+    });
+  }
+
+  addDay(tripId: string, day: Day): void {
+      const dayKey = day.id.toISOString();
+
+      // état local optimiste
+      this._days.update(days => ({
+        ...days,
+        [dayKey]: day,
+      }));
+
+      // ajout de la référence dans le trip
+      this._tripDays.update(trips => ({
+        ...trips,
+        [tripId]: [
+          ...(trips[tripId] ?? []),
+          dayKey,
+        ],
+      }));
+
+      // Firestore
+      this.dayPersistenceService.addDay(tripId, day)
+        .catch((err) => {
+          console.error('[TripStore] Erreur ajout day Firestore :', err);
+        });
+    }
+
+  updateTripTitle(trip: Trip): void {
     // 1. Hydratation optimiste locale
     this._trips.update((trips) => ({
       ...trips,
@@ -268,9 +318,8 @@ export class TripStore {
       ) ?? []
     );
 
-
     // 2. Persistance Firestore
-    this.tripPersistenceService.updateTrip(trip).catch((err) => {
+    this.tripPersistenceService.updateTripTitle(trip).catch((err) => {
       console.error('[TripStore] Erreur update trip Firestore :', err);
     });
   }

@@ -12,7 +12,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { ConfirmationService } from 'primeng/api';
-import { Trip, TripMember } from '../trip.model';
+import { Day, Trip, TripMember } from '../trip.model';
 import { TripRole } from '../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
@@ -26,6 +26,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SwipeDirective } from '@app/shared/directives/swipe.directive';
 import { AutoResizeFixDirective } from '@app/shared/pipes/auto-resize-area.pipe';
 import { Textarea } from 'primeng/textarea';
+import { DatePickerModule } from 'primeng/datepicker';
+import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 
 @Component({
   selector: 'app-trip-detail',
@@ -50,7 +52,9 @@ import { Textarea } from 'primeng/textarea';
     TooltipModule,
     Textarea,
     SwipeDirective,
-    AutoResizeFixDirective
+    AutoResizeFixDirective,
+    DatePickerModule,
+    ReactiveFormsModule
   ],
   providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',
@@ -60,6 +64,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly collaborationService = inject(CollaborationService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly fb = inject(FormBuilder);
 
   // — dialog state
   protected showInviteDialog = false;
@@ -70,7 +76,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected objectEntries = Object.entries;
   private readonly MAX_VISIBLE = 5;
 
-readonly visitedDays = signal<Set<string>>(new Set());
+  readonly visitedDays = signal<Set<string>>(new Set());
+  readonly tripForm = this.fb.group({
+    dates: this.fb.control<Date[] | null>(null),
+  });
 
 
     getInitials(member: TripMember): string {
@@ -134,6 +143,7 @@ readonly tripTitle = computed(() => {
       const todayId = this.getTodayId(trip);
       this.activeDay.set(todayId);
       this.visitedDays.set(new Set(['info', todayId]));
+      this.initTripForm(trip);
       this.initialized = true;
     });
   }
@@ -154,7 +164,54 @@ readonly tripTitle = computed(() => {
     ];
   });
 
-  // — invite dialog
+  confirmDelete(trip: Trip): void {
+    this.confirmationService.confirm({
+      message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
+      accept: () => this.facade.updateTripTitle(trip)
+    });
+  }
+
+  protected onDatesChange(): void {
+    const trip = this.facade.activeTrip();
+    if (!trip) return;
+
+    const dates = this.tripForm.value.dates;
+    if (!dates || !dates[0] || !dates[1]) return;
+
+    const [start, end] = dates;
+
+    const newDays = this.buildDays(start, end, trip.days);
+
+    const toDelete = this.findDaysToDelete(trip.days, newDays);
+    const toAdd = this.findDaysToAdd(trip.days, newDays);
+
+    const applyChanges = () => {
+      for (const day of toDelete) {
+        this.facade.removeDay(
+          trip.id,
+          day.id
+        );
+      }
+
+      for (const day of toAdd) {
+        this.facade.addDay(
+          trip.id,
+          day
+        );
+      }
+    };
+
+    if (toDelete.length > 0) {
+      this.confirmationService.confirm({
+        message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
+        accept: applyChanges
+      });
+    } else {
+      applyChanges();
+    }
+  }
+
+    // — invite dialog
   protected openInviteDialog(): void {
     this.inviteeEmail = '';
     this.inviteeRole = 'editor';
@@ -162,10 +219,9 @@ readonly tripTitle = computed(() => {
     this.showInviteDialog = true;
   }
 
-  protected closeInviteDialog(): void {
+    protected closeInviteDialog(): void {
     this.showInviteDialog = false;
   }
-
   protected inviteCollaborator(): void {
   const tripId = this.route.snapshot.paramMap.get('id');
   if (!tripId || !this.inviteeEmail) return;
@@ -198,7 +254,7 @@ readonly tripTitle = computed(() => {
       return;
     }
 
-    this.facade.updateTrip({
+    this.facade.updateTripTitle({
       ...trip,
       title
     });
@@ -225,5 +281,72 @@ readonly tripTitle = computed(() => {
     const today = new Date().toDateString();
     const day = trip.days.find((d) => new Date(d.id).toDateString() === today);
     return day ? day.id.toISOString() : 'info';
+  }
+
+  private initTripForm(trip: Trip): void {
+    if (!trip.days.length) return;
+
+    const sortedDays = trip.days
+      .slice()
+      .sort((a, b) => a.id.getTime() - b.id.getTime());
+
+    this.tripForm.patchValue({
+      dates: [
+        sortedDays[0].id,
+        sortedDays[sortedDays.length - 1].id
+      ]
+    });
+  }
+
+  private buildDays(start: Date, end: Date, existingDays: Day[]): Day[] {
+    const days: Day[] = [];
+
+    const existingMap = new Map(
+      existingDays.map(day => [
+        day.id.getTime(),
+        day
+      ])
+    );
+
+    const current = new Date(start);
+    current.setHours(0, 0, 0, 0);
+
+    const endNorm = new Date(end);
+    endNorm.setHours(0, 0, 0, 0);
+
+    while (current <= endNorm) {
+      const key = current.getTime();
+
+      days.push(
+        existingMap.get(key) ?? {
+          id: new Date(current),
+          activities: [],
+        }
+      );
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return days;
+  }
+
+  private findDaysToAdd(existingDays: Day[], newDays: Day[]): Day[] {
+    const existingIds = new Set(
+      existingDays.map(d => d.id.getTime())
+    );
+
+    return newDays.filter(
+      d => !existingIds.has(d.id.getTime())
+    );
+  }
+
+  private findDaysToDelete(existingDays: Day[], newDays: Day[]): Day[] {
+    const newIds = new Set(
+      newDays.map(d => d.id.getTime())
+    );
+
+    return existingDays.filter(
+      d => !newIds.has(d.id.getTime())
+    );
   }
 }

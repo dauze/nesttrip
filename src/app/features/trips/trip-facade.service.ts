@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { Trip } from './trip.model';
+import { Day, Trip } from './trip.model';
 import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
 import { Item } from './trip-detail/infos/info.models';
 import { TripStore } from './trip-store.service';
@@ -62,8 +62,15 @@ export class TripFacade {
     this.store.saveTrip(trip);
   }
 
-  updateTrip(trip: Trip): void {
-    this.store.updateTrip(trip);
+  updateTripTitle(trip: Trip): void {
+    this.store.updateTripTitle(trip);
+  }
+
+   removeDay(tripId: string, dayId: Date): void {
+    this.store.removeDay(tripId, dayId);
+  }
+  addDay(tripId: string, day: Day) {
+     this.store.addDay(tripId, day);
   }
 
   createActivity(tripId: string, dayId: Date, activity: Activity): void {
