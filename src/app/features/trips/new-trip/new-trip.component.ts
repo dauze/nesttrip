@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -31,16 +31,40 @@ export class NewTripComponent {
   private readonly authService = inject(AuthService);
 
   readonly form = this.fb.group({
-  title: ['', Validators.required],
-  ville: ['', Validators.required],
-  dates: [null, Validators.required]
-});
+    title: ['', Validators.required],
+    ville: ['', Validators.required],
+    dates: [null, Validators.required]
+  });
+
+  readonly loading = signal(false);
+
+  /** Devient true dès que l'utilisateur tape lui-même dans le champ titre */
+  private titleManuallyEdited = false;
+
+  constructor() {
+    // Préremplissage automatique du titre à partir de la ville
+    this.form.controls.ville.valueChanges.subscribe((ville) => {
+      if (this.titleManuallyEdited) return;
+
+      const suggestion = ville ? `Road trip ${ville}` : '';
+      this.form.controls.title.setValue(suggestion, { emitEvent: false });
+    });
+
+    // Dès que l'utilisateur modifie le titre à la main, on arrête l'auto-fill
+    this.form.controls.title.valueChanges.subscribe(() => {
+      if (!this.titleManuallyEdited) {
+        // On ignore le premier emit qui vient de notre propre setValue (emitEvent: false le bloque déjà)
+        this.titleManuallyEdited = true;
+      }
+    });
+  }
 
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+    this.loading.set(true);
 
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
@@ -49,8 +73,8 @@ export class NewTripComponent {
 
     const trip: Trip = {
       id: crypto.randomUUID(),
-      title : this.form.value.title ?? "" ,
-      ville : this.form.value.ville ?? "",
+      title: this.form.value.title ?? '',
+      ville: this.form.value.ville ?? '',
       days: this.buildDays(dateDebut, dateFin),
       info: this.buildInfo(),
       ownerId: user.uid,
@@ -66,7 +90,7 @@ export class NewTripComponent {
     this.saveTrip(trip);
   }
 
-  private   buildDays(start: Date, end: Date): Day[] {
+  private buildDays(start: Date, end: Date): Day[] {
     const days: Day[] = [];
     const current = new Date(start);
     current.setHours(0, 0, 0, 0);

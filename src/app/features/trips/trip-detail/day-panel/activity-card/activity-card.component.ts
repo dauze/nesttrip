@@ -416,7 +416,11 @@ export class ActivityCardComponent {
     return `pi ${map[ext] ?? 'pi-file'}`;
   }
 
-  openFile(file: ActivityFile) {
+  openFile(file: ActivityFile, event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target.closest('.p-chip-remove-icon')) {
+      return; // clic sur la croix, on ignore
+    }
     window.open(file.url, '_blank', 'noopener');
   }
 }

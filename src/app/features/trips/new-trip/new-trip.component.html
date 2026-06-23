@@ -9,6 +9,20 @@
     <p-fluid>
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
 
+        <!-- Ville -->
+        <div class="flex flex-column gap-2">
+          <label for="ville" class="font-medium">Ville / Pays</label>
+          <input
+            pInputText
+            id="ville"
+            formControlName="ville"
+            placeholder="Ex : Reykjavik"
+          />
+          @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
+            <small class="text-red-500">La destination est requise.</small>
+          }
+        </div>
+
         <!-- Nom -->
         <div class="flex flex-column gap-2">
           <label for="title" class="font-medium">Nom du voyage</label>
@@ -20,20 +34,6 @@
           />
           @if (form.controls.title.touched && form.controls.title.hasError('required')) {
             <small class="text-red-500">Le nom est requis.</small>
-          }
-        </div>
-
-        <!-- Ville -->
-        <div class="flex flex-column gap-2">
-          <label for="ville" class="font-medium">Ville / Destination</label>
-          <input
-            pInputText
-            id="ville"
-            formControlName="ville"
-            placeholder="Ex : Reykjavik"
-          />
-          @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
-            <small class="text-red-500">La destination est requise.</small>
           }
         </div>
 
@@ -69,6 +69,8 @@
             label="Créer le voyage"
             icon="pi pi-check"
             type="submit"
+            [loading]="loading()"
+            [disabled]="form.invalid"
           />
         </div>
 

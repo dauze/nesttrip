@@ -28,37 +28,39 @@
           <!-- 2 lignes : titre + meta -->
           <div class="flex flex-column flex-1 min-w-0 gap-1" (click)="$event.stopPropagation()">
 
-            <!-- Ligne 1 : autocomplete titre -->
-            <p-autoComplete
-              [suggestions]="places()"
-              [(ngModel)]="title"
-              (onBlur)="onTitleBlur()"
-              (completeMethod)="onSearch($event)"
-              (onSelect)="onSelect($event)"
-              field="name"
-              [dropdown]="false"
-              [autoHighlight]="true"
-              placeholder="Nom de l'activité"
-              styleClass="w-full"
-              [inputStyleClass]="'w-full font-semibold border-none shadow-none bg-transparent p-0 text-base'">
-              <ng-template #item let-place>
-                <div class="flex align-items-center gap-2">
-                  <div class="border-round overflow-hidden surface-100 flex align-items-center justify-content-center flex-shrink-0"
-                       style="width:2.5rem;height:2.5rem">
-                    @if (place.photos?.[0]) {
-                      <img *ngIf="place.photos?.[0] && (getPhotoUrl$(place.photos[0], 120) | async) as url" [src]="url" [alt]="place.name"
-                           style="width:100%;height:100%;object-fit:cover" />
-                    } @else {
-                      <i class="pi pi-map-marker text-color-secondary text-sm"></i>
-                    }
-                  </div>
-                  <div class="flex flex-column min-w-0">
-                    <span class="font-medium text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ place.name }}</span>
-                    <span class="text-color-secondary text-xs white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ place.address }}</span>
-                  </div>
+          <!-- Ligne 1 : autocomplete titre -->
+          <p-autoComplete
+            [suggestions]="places()"
+            [(ngModel)]="title"
+            (onBlur)="onTitleBlur()"
+            (completeMethod)="onSearch($event)"
+            (onSelect)="onSelect($event)"
+            field="name"
+            [dropdown]="false"
+            [autoHighlight]="true"
+            placeholder="Nom de l'activité"
+            styleClass="w-full"
+            appendTo="body"
+            panelStyleClass="autocomplete-panel-fix"
+            [inputStyleClass]="'w-full font-semibold border-none shadow-none bg-transparent p-0 text-base'">
+            <ng-template #item let-place>
+              <div class="flex align-items-start gap-2 w-full min-w-0">
+                <div class="border-round overflow-hidden surface-100 flex align-items-center justify-content-center flex-shrink-0"
+                    style="width:2.5rem;height:2.5rem">
+                  @if (place.photos?.[0]) {
+                    <img *ngIf="place.photos?.[0] && (getPhotoUrl$(place.photos[0], 120) | async) as url" [src]="url" [alt]="place.name"
+                        style="width:100%;height:100%;object-fit:cover" />
+                  } @else {
+                    <i class="pi pi-map-marker text-color-secondary text-sm"></i>
+                  }
                 </div>
-              </ng-template>
-            </p-autoComplete>
+                <div class="flex flex-column min-w-0 flex-1">
+                  <span class="font-medium text-sm white-space-normal line-height-3">{{ place.name }}</span>
+                  <span class="text-color-secondary text-xs white-space-normal line-height-2">{{ place.address }}</span>
+                </div>
+              </div>
+            </ng-template>
+          </p-autoComplete>
 
             <!-- Ligne 2 : durée + prix -->
             <div class="flex align-items-center gap-2 flex-wrap">
@@ -121,8 +123,8 @@
             <!-- TYPE -->
             <div class="col-6 p-0 min-w-0 overflow-hidden">
               <div class="flex flex-column gap-1 w-full min-w-0">
-                <label class="text-color-secondary text-xs flex align-items-center gap-1">
-                  <i class="pi pi-tag text-xs"></i>Type
+                <label class="text-color-secondary text-sm flex align-items-center gap-1">
+                  <i class="pi pi-tag text-sm"></i>Type
                 </label>
                 <p-select
                   [options]="activityTypeOptions"
@@ -134,8 +136,8 @@
             <!-- DURÉE -->
             <div class="col-6 p-0 min-w-0 overflow-hidden">
               <div class="flex flex-column gap-1 w-full min-w-0">
-                <label class="text-color-secondary text-xs flex align-items-center gap-1">
-                  <i class="pi pi-clock text-xs"></i>Durée
+                <label class="text-color-secondary text-sm flex align-items-center gap-1">
+                  <i class="pi pi-clock text-sm"></i>Durée
                 </label>
                 <p-inputMask
                   mask="99h99"
@@ -150,8 +152,8 @@
             <!-- RÉSA -->
             <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
               <div class="flex flex-column gap-1 w-full min-w-0">
-                <label class="text-color-secondary text-xs flex align-items-center gap-1">
-                  <i class="pi pi-bookmark text-xs"></i>Résa
+                <label class="text-color-secondary text-sm flex align-items-center gap-1">
+                  <i class="pi pi-bookmark text-sm"></i>Résa
                 </label>
                 <p-select
                   [options]="bookingStatusOptions"
@@ -165,8 +167,8 @@
             <!-- PRIX -->
             <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
               <div class="flex flex-column gap-1 w-full min-w-0">
-                <label class="text-color-secondary text-xs flex align-items-center gap-1">
-                  <i class="pi pi-euro text-xs"></i>Prix
+                <label class="text-color-secondary text-sm flex align-items-center gap-1">
+                  <i class="pi pi-euro text-sm"></i>Prix
                 </label>
                 <div class="flex align-items-center gap-1 w-full min-w-0">
                   <p-inputNumber
@@ -204,8 +206,8 @@
           </div>
         </div>
         <p-divider />
-        <!-- ── NOTES (avant les fichiers) ── -->
-        <div class="flex flex-column gap-1 mb-3">
+        <!-- ── NOTES ── -->
+        <div class="flex flex-column gap-2 mb-3">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-pencil text-xs"></i>Notes
           </label>
@@ -233,7 +235,7 @@
               <p-chip
                 [icon]="fileIcon(file.name)"
                 removable="true"
-                (click)="openFile(file)"
+                (click)="openFile(file, $event)"
                 (onRemove)="removeFile(i)"
                 class="surface-100 text-sm cursor-pointer"
                 >
@@ -260,23 +262,23 @@
         <!-- ── BLOC GOOGLE DATA ── -->
         @if (hasPlaceId() && !googleDataLoading() && lazyGoogleData(); as gd) {
           <p-divider/>
-          <span>GOOGLE</span>
-        <!-- Rating -->
-        <div class="flex align-items-center gap-2 mt-3 mb-2">
-          @if (activity.rating) {
-            <span class="text-yellow-400 text-sm">
-              {{ starsFor(activity.rating) }}
-            </span>
-            <span class="font-semibold text-sm">
-              {{ activity.rating | number:'1.1-1' }}
-            </span>
-            @if (activity.reviewCount) {
-              <span class="text-color-secondary text-xs">
-                ({{ activity.reviewCount }} avis)
+          <div class="flex align-items-center gap-2 mt-3 mb-2 flex-wrap">
+            <span class="font-semibold text-sm">GOOGLE</span>
+
+            @if (activity.rating) {
+              <span class="text-yellow-400 text-sm">
+                {{ starsFor(activity.rating) }}
               </span>
+              <span class="font-semibold text-sm">
+                {{ activity.rating | number:'1.1-1' }}
+              </span>
+              @if (activity.reviewCount) {
+                <span class="text-color-secondary text-xs">
+                  ({{ activity.reviewCount }} avis)
+                </span>
+              }
             }
-          }
-        </div>
+          </div>
         <!-- Infos -->
         <div class="flex flex-column gap-2 text-sm pb-2 min-w-0">
             <!-- Adresse -->

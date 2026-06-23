@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, ApplicationConfig } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, LOCALE_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -10,6 +10,10 @@ import { definePreset } from '@primeuix/themes';
 import {fr} from 'primelocale/fr.json';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import localeFr from '@angular/common/locales/fr';
+import { registerLocaleData } from '@angular/common';
+
+registerLocaleData(localeFr);
 
 const theme = definePreset(Aura, {
     semantic: {
@@ -44,5 +48,6 @@ export const appConfig: ApplicationConfig = {
       },
       translation: fr
         }),
+      { provide: LOCALE_ID, useValue: 'fr-FR' }
   ]
 };
