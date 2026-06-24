@@ -95,3 +95,7 @@
   --p-autocomplete-shadow: none;
   --p-autocomplete-background: transparent;
 }
+
+.p-panel-content-container {
+  grid-template-columns: minmax(0, 1fr);
+}

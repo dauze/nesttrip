@@ -2,7 +2,7 @@ import { FormsModule } from '@angular/forms';
 import { afterNextRender, AfterViewInit, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, OnInit, signal, viewChild, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { TabsModule } from 'primeng/tabs';
+import { Tabs, TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
 import { ToolbarModule } from 'primeng/toolbar';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -70,6 +70,7 @@ export class TripDetailComponent implements OnInit, OnDestroy, AfterViewInit  {
   private readonly injector = inject(Injector);
 
   readonly swiperRef = viewChild<ElementRef<SwiperContainer>>('swiperRef');
+  @ViewChild('tabsRef') tabsComponent!: Tabs;
   @ViewChild('tabsRef', { read: ElementRef }) tabsRef!: ElementRef<HTMLElement>;
 
   protected showInviteDialog = false;
@@ -160,6 +161,13 @@ constructor() {
       const todayIndex = tabs.findIndex(t => t.id === todayId);
       this.preloadAround(todayIndex >= 0 ? todayIndex : 0);
 
+      if (todayIndex >= 0) {
+        setTimeout(() => {
+          this.scrollActiveTabIntoView(todayIndex);
+
+        }, 100);
+      }
+
       this.initTripForm(trip);
       this.initialized = true;
     }
@@ -168,6 +176,7 @@ constructor() {
       this.swiperInitialized = true;
       afterNextRender(() => this.setupSwiper(swiperEl.nativeElement), { injector: this.injector });
     }
+
   });
 }
 
