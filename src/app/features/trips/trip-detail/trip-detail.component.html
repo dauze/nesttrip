@@ -106,14 +106,18 @@
     </form>
     </p-card>
     @if (facade.activeTrip(); as trip) {
-        <p-tabs #tabsRef [value]="activeDay()">
-    <p-tablist>
-      @for (tab of tabs(); track tab.id; let i = $index) {
-        <p-tab [value]="tab.id" (click)="onTabChange(tab.id, i)">{{ tab.label }}</p-tab>
-      }
-    </p-tablist>
-  </p-tabs>
-
+      <p-tabs #tabsRef [value]="activeDay()">
+        <p-tablist>
+          @for (tab of tabs(); track tab.id; let i = $index) {
+            <p-tab
+              [value]="tab.id"
+              [class.is-active]="tab.id === activeDay()"
+              (click)="onTabChange(tab.id, i)">
+              {{ tab.label }}
+            </p-tab>
+          }
+        </p-tablist>
+      </p-tabs>
       <swiper-container
         #swiperRef
         init="false"

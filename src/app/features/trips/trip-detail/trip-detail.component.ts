@@ -148,15 +148,18 @@ readonly tripTitle = computed(() => {
 });
 
 constructor() {
-
-    effect(() => {
+  effect(() => {
     const trip = this.facade.activeTrip();
     if (!trip) return;
 
     if (!this.initialized) {
       const todayId = this.getTodayId(trip);
       this.activeDay.set(todayId);
-      this.visitedDays.set(new Set(['info', todayId]));
+
+      const tabs = this.tabs();
+      const todayIndex = tabs.findIndex(t => t.id === todayId);
+      this.preloadAround(todayIndex >= 0 ? todayIndex : 0);
+
       this.initTripForm(trip);
       this.initialized = true;
     }
@@ -284,7 +287,7 @@ confirmDelete(trip: Trip): void {
     return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
   }
 
-    private scrollActiveTabIntoView(activeIndex: number): void {
+  private scrollActiveTabIntoView(activeIndex: number): void {
     requestAnimationFrame(() => {
       const tabs = this.tabsRef?.nativeElement.querySelectorAll('[role="tab"]');
       const el = tabs?.[activeIndex] as HTMLElement | undefined;
@@ -366,9 +369,12 @@ confirmDelete(trip: Trip): void {
 
 private setupSwiper(swiper: SwiperContainer): void {
   Object.assign(swiper, {
-    speed: 150,
+    speed: 280,
     observer: true,
     observeParents: true,
+    resistanceRatio: 0.85,
+    spaceBetween: 8,
+    cssMode: false,
   });
 
   swiper.initialize();
@@ -378,7 +384,7 @@ private setupSwiper(swiper: SwiperContainer): void {
     swiper.swiper?.slideTo(index, 0);
   }
 
-      swiper.addEventListener('swiperslidechange', () => {
+  swiper.addEventListener('swiperslidechangetransitionstart', () => {
     const index = swiper.swiper?.activeIndex;
     if (index != null) {
       this.selectTab(index);
@@ -390,11 +396,24 @@ private setupSwiper(swiper: SwiperContainer): void {
     const tab = this.tabs()[index];
     if (!tab) return;
     this.activeDay.set(tab.id);
-    this.visitedDays.update(s => {
-      const next = new Set(s);
-      next.add(tab.id);
-      return next;
-    });
+    this.preloadAround(index);
     this.scrollActiveTabIntoView(index);
   }
+
+  private preloadAround(index: number): void {
+    const tabs = this.tabs();
+    const indices = [index - 1, index, index + 1].filter(
+      i => i >= 0 && i < tabs.length
+    );
+
+    this.visitedDays.update(set => {
+      const next = new Set(set);
+      for (const i of indices) {
+        next.add(tabs[i].id);
+      }
+      return next;
+    });
+  }
+
+  
 }
