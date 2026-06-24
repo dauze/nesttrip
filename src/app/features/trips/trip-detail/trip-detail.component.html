@@ -106,35 +106,34 @@
     </form>
     </p-card>
     @if (facade.activeTrip(); as trip) {
-      <p-tabs #tabsRef scrollable [value]="activeDay()">
-          <p-tablist>
-            @for (tab of tabs(); track tab.id) {
-              <p-tab [value]="tab.id" (click)="onTabChange(tab.id)">{{ tab.label }}</p-tab>
+        <p-tabs #tabsRef [value]="activeDay()">
+    <p-tablist>
+      @for (tab of tabs(); track tab.id; let i = $index) {
+        <p-tab [value]="tab.id" (click)="onTabChange(tab.id, i)">{{ tab.label }}</p-tab>
+      }
+    </p-tablist>
+  </p-tabs>
+
+      <swiper-container
+        #swiperRef
+        init="false"
+        class="tab-content-wrapper">
+        <swiper-slide>
+          @if (visitedDays().has('info')) {
+            <app-infos [info]="trip.info" [tripId]="trip.id" />
+          }
+        </swiper-slide>
+        @for (day of sortedDays(); track day.id) {
+          <swiper-slide>
+            @if (visitedDays().has(day.id.toISOString())) {
+              <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
             }
-          </p-tablist>
-          <div cdkSwipe (swipeLeft)="nextTab()" (swipeRight)="prevTab()"
-            class="tab-content-wrapper"
-            [class.slide-left]="direction() === 'left'"
-            [class.slide-right]="direction() === 'right'">
-             <p-tabpanels>
-              <p-tabpanel value="info">
-                @if (visitedDays().has('info')) {
-                  <app-infos [info]="trip.info" [tripId]="trip.id" />
-                }
-              </p-tabpanel>
-              @for (day of trip.days; track day.id) {
-                <p-tabpanel [value]="day.id.toISOString()">
-                  @if (visitedDays().has(day.id.toISOString())) {
-                    <app-day-panel [dayId]="day.id" [tripId]="trip.id" />
-                  }
-                </p-tabpanel>
-              }
-            </p-tabpanels>
-          </div>
-        </p-tabs>
+          </swiper-slide>
+        }
+      </swiper-container>
     }
-  } @else {
-    <p-skeleton height="6rem"/>
-    <app-infos-skeleton />
-  }
+    } @else {
+      <p-skeleton height="6rem"/>
+      <app-infos-skeleton />
+    }
 </div>

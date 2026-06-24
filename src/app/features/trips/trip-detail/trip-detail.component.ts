@@ -1,5 +1,5 @@
 import { FormsModule } from '@angular/forms';
-import { Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { afterNextRender, AfterViewInit, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, OnInit, signal, viewChild, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
@@ -23,15 +23,17 @@ import { CollaborationService } from '@app/core/services/collaboration.service';
 import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { TooltipModule } from 'primeng/tooltip';
-import { SwipeDirective } from '@app/shared/directives/swipe.directive';
 import { AutoResizeFixDirective } from '@app/shared/pipes/auto-resize-area.pipe';
 import { Textarea } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import type { SwiperContainer } from 'swiper/element';
 
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [
     FormsModule,
     ButtonModule,
@@ -51,7 +53,6 @@ import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
     AvatarGroupModule,
     TooltipModule,
     Textarea,
-    SwipeDirective,
     AutoResizeFixDirective,
     DatePickerModule,
     ReactiveFormsModule
@@ -60,16 +61,17 @@ import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
 })
-export class TripDetailComponent implements OnInit, OnDestroy {
+export class TripDetailComponent implements OnInit, OnDestroy, AfterViewInit  {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly collaborationService = inject(CollaborationService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly fb = inject(FormBuilder);
+  private readonly injector = inject(Injector);
 
+  readonly swiperRef = viewChild<ElementRef<SwiperContainer>>('swiperRef');
   @ViewChild('tabsRef', { read: ElementRef }) tabsRef!: ElementRef<HTMLElement>;
 
-  // — dialog state
   protected showInviteDialog = false;
   protected inviteeEmail = '';
   protected inviteeRole: TripRole = 'editor';
@@ -79,12 +81,24 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly MAX_VISIBLE = 5;
 
   readonly visitedDays = signal<Set<string>>(new Set());
+  readonly activeDay = signal<string>('info');
+  private swiperInitialized = false;
+  private initialized = false;
   readonly tripForm = this.fb.group({
     dates: this.fb.control<Date[] | null>(null),
   });
 
+   ngAfterViewInit() {
+    const swiperEl = this.swiperRef()?.nativeElement;
 
-    getInitials(member: TripMember): string {
+    if (swiperEl && !this.swiperInitialized) {
+      this.swiperInitialized = true;
+      this.setupSwiper(swiperEl);
+    }
+  }
+
+
+  getInitials(member: TripMember): string {
   if (member.displayName) {
     return member.displayName
       .split(' ')
@@ -133,45 +147,47 @@ readonly tripTitle = computed(() => {
   return fromList?.title ?? this.facade.activeTrip()?.title ?? '';
 });
 
+constructor() {
 
-  readonly activeDay = signal<string>('info');
-  private initialized = false;
-
-  constructor() {
     effect(() => {
-      const trip = this.facade.activeTrip();
-      if (!trip || this.initialized) return;
+    const trip = this.facade.activeTrip();
+    if (!trip) return;
 
+    if (!this.initialized) {
       const todayId = this.getTodayId(trip);
       this.activeDay.set(todayId);
       this.visitedDays.set(new Set(['info', todayId]));
       this.initTripForm(trip);
       this.initialized = true;
-    });
-  }
-
-  readonly tabs = computed(() => {
-    const trip = this.facade.activeTrip();
-    if (!trip) return [{ id: 'info', label: 'Général' }];
-  
-    return [
-      { id: 'info', label: 'Général' },
-      ...trip.days
-        .slice()
-        .sort((a, b) => a.id.getTime() - b.id.getTime())
-        .map(d => ({
-          id: d.id.toISOString(),
-          label: this.formatDate(d.id)
-        })),
-    ];
+    }
+    const swiperEl = this.swiperRef();
+    if (!this.swiperInitialized && swiperEl?.nativeElement) {
+      this.swiperInitialized = true;
+      afterNextRender(() => this.setupSwiper(swiperEl.nativeElement), { injector: this.injector });
+    }
   });
+}
 
-  confirmDelete(trip: Trip): void {
-    this.confirmationService.confirm({
-      message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
-      accept: () => this.facade.updateTripTitle(trip)
-    });
-  }
+readonly tabs = computed(() => [
+  { id: 'info', label: 'Général' },
+  ...this.sortedDays().map(d => ({
+    id: d.id.toISOString(),
+    label: this.formatDate(d.id)
+  }))
+]);
+
+readonly sortedDays = computed(() =>
+  this.facade.activeTrip()?.days
+    ?.slice()
+    .sort((a, b) => a.id.getTime() - b.id.getTime()) ?? []
+);
+
+confirmDelete(trip: Trip): void {
+  this.confirmationService.confirm({
+    message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
+    accept: () => this.facade.updateTripTitle(trip)
+  });
+}
 
   protected onDatesChange(): void {
     const trip = this.facade.activeTrip();
@@ -222,8 +238,8 @@ readonly tripTitle = computed(() => {
     this.showInviteDialog = true;
   }
 
-    protected closeInviteDialog(): void {
-    this.showInviteDialog = false;
+  protected closeInviteDialog(): void {
+  this.showInviteDialog = false;
   }
   protected inviteCollaborator(): void {
   const tripId = this.route.snapshot.paramMap.get('id');
@@ -247,16 +263,6 @@ readonly tripTitle = computed(() => {
     });
   }
 
-  direction = signal<'left' | 'right' | null>(null);
-
-  nextTab(): void { this.animateSwipe('left'); this.moveTab(1); }
-  prevTab(): void { this.animateSwipe('right'); this.moveTab(-1); }
-
-  private animateSwipe(dir: 'left' | 'right'): void {
-    this.direction.set(dir);
-    setTimeout(() => this.direction.set(null), 250); // doit matcher la durée CSS
-  }
-
   updateTitle(title: string) {
     const trip = this.facade.activeTrip();
     if (!trip || !title || title === trip.title) {
@@ -269,34 +275,22 @@ readonly tripTitle = computed(() => {
     });
   }
 
-  protected onTabChange(value: string): void {
-    this.visitedDays.update(s => new Set(s).add(value));
-    this.activeDay.set(value);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Appelé par le clic sur un onglet custom
+  protected onTabChange(value: string, index: number): void {
+    this.selectTab(index);
+    this.swiperRef()?.nativeElement?.swiper?.slideTo(index);
   }
-
   protected formatDate(date: Date): string {
     return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
   }
 
-  private moveTab(offset: number): void {
-    const list = this.tabs().map((t) => t.id);
-    const i = list.indexOf(this.activeDay());
-    const next = list[i + offset];
-    if (next) {
-      this.onTabChange(next);
-      this.scrollActiveTabIntoView(i + offset);
-    }
+    private scrollActiveTabIntoView(activeIndex: number): void {
+    requestAnimationFrame(() => {
+      const tabs = this.tabsRef?.nativeElement.querySelectorAll('[role="tab"]');
+      const el = tabs?.[activeIndex] as HTMLElement | undefined;
+      el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    });
   }
-
-  private scrollActiveTabIntoView(activeIndex: number): void {
-  requestAnimationFrame(() => {
-    const tabs = this.tabsRef?.nativeElement.querySelectorAll('[role="tab"]');
-    const el = tabs?.[activeIndex] as HTMLElement | undefined;
-    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  });
-}
-
   private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
     const day = trip.days.find((d) => new Date(d.id).toDateString() === today);
@@ -368,5 +362,39 @@ readonly tripTitle = computed(() => {
     return existingDays.filter(
       d => !newIds.has(d.id.getTime())
     );
+  }
+
+private setupSwiper(swiper: SwiperContainer): void {
+  Object.assign(swiper, {
+    speed: 150,
+    observer: true,
+    observeParents: true,
+  });
+
+  swiper.initialize();
+
+  const index = this.tabs().findIndex(t => t.id === this.activeDay());
+  if (index >= 0) {
+    swiper.swiper?.slideTo(index, 0);
+  }
+
+      swiper.addEventListener('swiperslidechange', () => {
+    const index = swiper.swiper?.activeIndex;
+    if (index != null) {
+      this.selectTab(index);
+    }
+  });
+}
+
+  private selectTab(index: number): void {
+    const tab = this.tabs()[index];
+    if (!tab) return;
+    this.activeDay.set(tab.id);
+    this.visitedDays.update(s => {
+      const next = new Set(s);
+      next.add(tab.id);
+      return next;
+    });
+    this.scrollActiveTabIntoView(index);
   }
 }
