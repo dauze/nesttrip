@@ -5,12 +5,12 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { DebounceWriter } from '../../shared/debounced-writer';
 
-type ActivityUpdate = {
+interface ActivityUpdate {
   key: string;
   tripId: string;
   dayId: Date;
   activities: Activity[];
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class ActivityPersistenceService

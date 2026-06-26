@@ -1,13 +1,13 @@
-import { Directive, ElementRef, OnDestroy, OnInit } from '@angular/core';
+import { Directive, ElementRef, inject, OnDestroy, OnInit } from '@angular/core';
 
 @Directive({
   selector: 'textarea[pTextarea][autoResize]',
   standalone: true
 })
 export class AutoResizeFixDirective implements OnInit, OnDestroy {
-  private readonly observer = new ResizeObserver(() => this.resize());
+  private readonly el = inject(ElementRef<HTMLTextAreaElement>);
 
-  constructor(private readonly el: ElementRef<HTMLTextAreaElement>) {}
+  private readonly observer = new ResizeObserver(() => this.resize());
 
   ngOnInit(): void {
     this.observer.observe(this.el.nativeElement);

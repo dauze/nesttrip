@@ -4,11 +4,11 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { DebounceWriter } from '../../shared/debounced-writer';
 
-type InfoUpdate = {
+interface InfoUpdate {
   key: string;
   tripId: string;
   items: Item[];
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class InfosPersistenceService extends DebounceWriter<string, InfoUpdate> {

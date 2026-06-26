@@ -66,7 +66,7 @@ export class TripFacade {
     this.store.updateTripTitle(trip);
   }
 
-   removeDay(tripId: string, dayId: Date): void {
+  removeDay(tripId: string, dayId: Date): void {
     this.store.removeDay(tripId, dayId);
   }
   addDay(tripId: string, day: Day) {
@@ -113,7 +113,7 @@ export class TripFacade {
 
   private hydrate(trip: Trip): void {
     const newTrips = { ...this.store._trips() };
-    const newDays: Record<string, any> = {};
+    const newDays: Record<string, Day> = {};
     const newActivities: Record<string, Activity> = {};
     const newTripDays: Record<string, string[]> = {};
     const newDayActivities: Record<string, string[]> = {};
