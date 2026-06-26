@@ -1,5 +1,5 @@
-import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
-import { Info } from './trip-detail/infos/info.models';
+import { Activity } from './trip-detail/trip-day-swiper/day-panel/activity-card/activity.model';
+import { Info } from './trip-detail/trip-day-swiper/infos/info.models';
 
 export type TripRole = 'owner' | 'editor' | 'viewer';
 export interface Trip {

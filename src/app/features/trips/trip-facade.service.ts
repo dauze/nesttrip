@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { Day, Trip } from './trip.model';
-import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
-import { Item } from './trip-detail/infos/info.models';
+import { Activity } from './trip-detail/trip-day-swiper/day-panel/activity-card/activity.model';
+import { Item } from './trip-detail/trip-day-swiper/infos/info.models';
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 

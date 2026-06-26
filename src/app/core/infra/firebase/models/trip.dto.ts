@@ -1,4 +1,4 @@
-import { Info } from '@app/features/trips/trip-detail/infos/info.models';
+import { Info } from '@app/features/trips/trip-detail/trip-day-swiper/infos/info.models';
 import {ActivityFirebase} from './activity.dto';
 
 export type TripRoleFireBase = 'owner' | 'editor' | 'viewer';

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { activityToFb } from '@core/infra/firebase/mappers/activity.mapper';
-import { Activity } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
+import { Activity } from '@app/features/trips/trip-detail/trip-day-swiper/day-panel/activity-card/activity.model';
 import { updateDoc, doc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { DebounceWriter } from '../../shared/debounced-writer';

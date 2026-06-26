@@ -9,8 +9,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
-import { DayPanelComponent } from '../day-panel/day-panel.component';
-import { InfosComponent } from '../infos/infos.component';
+import { DayPanelComponent } from './day-panel/day-panel.component';
+import { InfosComponent } from './infos/infos.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 

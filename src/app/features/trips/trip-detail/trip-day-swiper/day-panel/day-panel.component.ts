@@ -7,7 +7,7 @@ import { Button } from 'primeng/button';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
-import { TripStore } from '../../trip-store.service';
+import { TripStore } from '../../../trip-store.service';
 import { MessageModule } from 'primeng/message';
 
 @Component({

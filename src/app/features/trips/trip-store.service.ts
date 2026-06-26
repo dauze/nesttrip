@@ -1,8 +1,8 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { Trip, Day } from './trip.model';
-import { Activity } from './trip-detail/day-panel/activity-card/activity.model';
-import { Item } from './trip-detail/infos/info.models';
+import { Activity } from './trip-detail/trip-day-swiper/day-panel/activity-card/activity.model';
+import { Item } from './trip-detail/trip-day-swiper/infos/info.models';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';

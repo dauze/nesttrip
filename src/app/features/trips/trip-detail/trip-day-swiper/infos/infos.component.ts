@@ -9,15 +9,14 @@ import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-dr
 import { ConfirmationService } from 'primeng/api';
 import {InfoType} from '@core/enums/infos.type';
 import {Info, Item, Point} from './info.models';
-import { AutoResizeFixDirective } from '../../../../shared/pipes/auto-resize-area.pipe';
-import { TripStore } from '../../trip-store.service';
+import { TripStore } from '../../../trip-store.service';
 import { MessageModule } from 'primeng/message';
 
 
 @Component({
   selector: 'app-infos',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, AutoResizeFixDirective, MessageModule],
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule],
   templateUrl: './infos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

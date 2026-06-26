@@ -1,6 +1,6 @@
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityFirebase, BookingFirebase } from '../models/activity.dto';
-import { Activity, Booking } from '@app/features/trips/trip-detail/day-panel/activity-card/activity.model';
+import { Activity, Booking } from '@app/features/trips/trip-detail/trip-day-swiper/day-panel/activity-card/activity.model';
 
 export function activityFromFb(a: ActivityFirebase): Activity {
   return {

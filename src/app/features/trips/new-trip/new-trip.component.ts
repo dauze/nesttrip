@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
-import { Info } from '../trip-detail/infos/info.models';
+import { Info } from '../trip-detail/trip-day-swiper/infos/info.models';
 import { TripStore } from '../trip-store.service';
 import { AuthService } from '@app/core/services/auth.service';
 

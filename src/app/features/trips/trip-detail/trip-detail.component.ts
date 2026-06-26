@@ -4,7 +4,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { Day, Trip } from '../trip.model';
-import { InfosSkeletonComponent } from './infos/infos-skeleton.component';
+import { InfosSkeletonComponent } from './trip-day-swiper/infos/infos-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
 import { TripHeaderComponent } from './trip-header/trip-header.component';
 import { TripCollaboratorsComponent } from './trip-collaborators/trip-collaborators.component';
