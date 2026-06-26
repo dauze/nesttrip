@@ -46,12 +46,7 @@ export class TripStore {
   readonly trips = computed(() => this._tripsResult() ?? []);
   readonly tripsLoading = computed(() => this._tripsResult() === undefined);    
 
-  hasTrip(id: string): boolean {
-    return id in this._trips();
-  }
-
   // ── Sélecteur — trip actif reconstitué ───────────────────────────────────
-
   readonly activeTrip = computed(() => {
     const id = this._activeTripId();
     if (!id) return null;
@@ -64,7 +59,9 @@ export class TripStore {
 
     return {
       ...trip,
-      days: dayKeys.map((key) => daysMap[key]),
+      days: dayKeys
+        .map(key => daysMap[key])
+        .filter((day): day is Day => !!day),
     };
   });
 
@@ -282,7 +279,24 @@ export class TripStore {
   removeDay(tripId: string, dayId: Date): void {
     const dayKey = dayId.toISOString();
 
-    // état local optimiste
+    const activityIds = this._dayActivities()[dayKey] ?? [];
+
+    this._activities.update(activities => {
+      const copy = { ...activities };
+
+      for (const id of activityIds) {
+        delete copy[id];
+      }
+
+      return copy;
+    });
+
+    this._dayActivities.update(dayActivities => {
+      const copy = { ...dayActivities };
+      delete copy[dayKey];
+      return copy;
+    });
+
     this._days.update(days => {
       const copy = { ...days };
       delete copy[dayKey];
@@ -294,8 +308,7 @@ export class TripStore {
       [tripId]: (trips[tripId] ?? []).filter(id => id !== dayKey),
     }));
 
-    // Firestore
-    this.dayPersistenceService.removeDay(tripId, dayId).catch((err) => {
+    this.dayPersistenceService.removeDay(tripId, dayId).catch(err => {
       console.error('[TripStore] Erreur suppression day Firestore :', err);
     });
   }
@@ -316,6 +329,11 @@ export class TripStore {
           ...(trips[tripId] ?? []),
           dayKey,
         ],
+      }));
+
+      this._dayActivities.update(dayActivities => ({
+        ...dayActivities,
+        [dayKey]: [],
       }));
 
       // Firestore

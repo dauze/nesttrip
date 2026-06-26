@@ -72,7 +72,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
       const index = this.tabs().findIndex(t => t.id === todayId);
       if (index >= 0) {
-        // léger délai pour laisser le DOM des tabs se stabiliser après le 1er rendu
         setTimeout(() => this.tabsNavRef()?.scrollIntoView(index), 100);
       }
     });

@@ -33,13 +33,8 @@ export class TripFacade {
     this.store.activeTripLoading.set(true);
 
     this.tripSub = this.repo.getTrip$(id).subscribe({
-      next: (trip) => {
-        if (!this.store.hasTrip(trip.id)) {
-          this.hydrate(trip);
-        } else {
-          this.mergeFromRemote(trip);
-        }
-        // set après le cycle CD en cours
+        next: (trip) => {
+        this.hydrate(trip);
         Promise.resolve().then(() => this.store.activeTripLoading.set(false));
       },
       error: (err) => {
@@ -51,6 +46,7 @@ export class TripFacade {
   }
 
   unloadTrip(): void {
+    this.store.activeTripLoading.set(false);
     this.tripSub?.unsubscribe();
     this.tripSub = null;
     this.store._activeTripId.set(null);
@@ -113,12 +109,33 @@ export class TripFacade {
 
   private hydrate(trip: Trip): void {
     const newTrips = { ...this.store._trips() };
-    const newDays: Record<string, Day> = {};
-    const newActivities: Record<string, Activity> = {};
-    const newTripDays: Record<string, string[]> = {};
-    const newDayActivities: Record<string, string[]> = {};
-    const infoItems: Record<string, Item> = {};
-    const tripInfoItems: Record<string, string[]> = {};
+    const newDays = { ...this.store._days() };
+    const newActivities = { ...this.store._activities() };
+    const newTripDays = { ...this.store._tripDays() };
+    const newDayActivities = { ...this.store._dayActivities() };
+    const infoItems = { ...this.store._infoItems() };
+    const tripInfoItems = { ...this.store._tripInfoItems() };
+
+    const previousDayKeys = newTripDays[trip.id] ?? [];
+
+    for (const dayKey of previousDayKeys) {
+      const activityIds = newDayActivities[dayKey] ?? [];
+
+      for (const activityId of activityIds) {
+        delete newActivities[activityId];
+      }
+
+      delete newDayActivities[dayKey];
+      delete newDays[dayKey];
+    }
+
+    const previousItemIds = tripInfoItems[trip.id] ?? [];
+    for (const itemId of previousItemIds) {
+      delete infoItems[itemId];
+    }
+
+    delete tripInfoItems[trip.id];
+    delete newTripDays[trip.id];
 
     newTrips[trip.id] = { ...trip, days: [] };
     newTripDays[trip.id] = [];
@@ -148,28 +165,5 @@ export class TripFacade {
     this.store._dayActivities.set(newDayActivities);
     this.store._infoItems.set(infoItems);
     this.store._tripInfoItems.set(tripInfoItems);
-  }
-
-  private mergeFromRemote(trip: Trip): void {
-    const currentActivities = this.store._activities();
-    const newActivities: Record<string, Activity> = {};
-    const newDayActivities: Record<string, string[]> = {};
-
-    for (const day of trip.days) {
-      const dayKey = day.id.toISOString();
-      newDayActivities[dayKey] = [];
-
-      for (const activity of day.activities) {
-        const current = currentActivities[activity.id];
-        newActivities[activity.id] =
-          current && JSON.stringify(current) === JSON.stringify(activity)
-            ? current
-            : activity;
-        newDayActivities[dayKey].push(activity.id);
-      }
-    }
-
-    this.store._activities.set(newActivities);
-    this.store._dayActivities.set(newDayActivities);
   }
 }
