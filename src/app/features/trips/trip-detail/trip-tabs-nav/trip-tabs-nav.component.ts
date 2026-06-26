@@ -20,7 +20,7 @@ export class TripTabsNavComponent {
     this.tabSelected.emit({ id, index });
   }
 
-  /** Appelée explicitement par le parent (clic sur tab ET swipe), comme dans la version d'origine. */
+  /** Appelée explicitement par le parent (clic sur tab ET swipe) */
   scrollIntoView(index: number): void {
     requestAnimationFrame(() => {
       const tabs = this.tabsListRef()?.nativeElement.querySelectorAll('[role="tab"]');

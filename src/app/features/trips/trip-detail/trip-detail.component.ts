@@ -4,7 +4,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { Day, Trip } from '../trip.model';
-import { InfosSkeletonComponent } from './trip-day-swiper/infos/infos-skeleton.component';
+import { TripDetailSkeletonComponent } from './trip-detail-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
 import { TripHeaderComponent } from './trip-header/trip-header.component';
 import { TripCollaboratorsComponent } from './trip-collaborators/trip-collaborators.component';
@@ -18,7 +18,7 @@ import { TripTab } from './trip-tab.model';
   imports: [
     SkeletonModule,
     ConfirmDialog,
-    InfosSkeletonComponent,
+    TripDetailSkeletonComponent,
     TripHeaderComponent,
     TripCollaboratorsComponent,
     TripTabsNavComponent,
@@ -116,6 +116,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const applyChanges = () => {
       for (const day of toDelete) this.facade.removeDay(trip.id, day.id);
       for (const day of toAdd) this.facade.addDay(trip.id, day);
+      this.activeDay.set('info'); 
+      setTimeout(() => this.tabsNavRef()?.scrollIntoView(0), 100);
     };
 
     if (toDelete.length > 0) {
