@@ -133,6 +133,7 @@ export class ActivityCardComponent {
    * Lazy-loaded Google data (photos + reviews + openingHours).
    * Fetched on first panel expand. NOT stored in Firestore (Google TOS §3.2.3b).
    */
+  readonly searching = signal(false);
   readonly lazyGoogleData = signal<Place | null>(null);
   private lazyGoogleData$ = toObservable(this.lazyGoogleData);
   readonly googleDataLoading = signal(false);
@@ -323,6 +324,7 @@ openAndScroll() {
   }
 
   onSearch(event: AutoCompleteCompleteEvent): void {
+    this.searching.set(true);
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 

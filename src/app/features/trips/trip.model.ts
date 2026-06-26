@@ -10,6 +10,7 @@ export interface Trip {
   members: Record<string, TripMember>;
   days: Day[];
   info: Info;
+  placeId?: string;
 }
 
 export interface Day {

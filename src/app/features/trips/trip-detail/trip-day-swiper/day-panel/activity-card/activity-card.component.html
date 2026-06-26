@@ -40,10 +40,11 @@
               [dropdown]="false"
               [autoHighlight]="true"
               placeholder="Nom de l'activité"
-              styleClass="w-full"
+              class="w-full transparent-inputtext"
               appendTo="body"
               panelStyleClass="autocomplete-panel-fix"
-              [inputStyleClass]="'w-full font-semibold border-none shadow-none bg-transparent p-0 text-base'">
+              [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
+              [inputStyleClass]="'w-full font-semibold p-0 text-base'">
               <ng-template #item let-place>
                 <div class="flex align-items-start gap-2 w-full min-w-0">
                   <div class="border-round overflow-hidden surface-100 flex align-items-center justify-content-center flex-shrink-0"
@@ -130,8 +131,8 @@
                   <p-select
                     [options]="activityTypeOptions"
                     formControlName="type"
-                    appendTo="body"
-                    styleClass="w-full min-w-0" />
+                    class="w-full min-w-0 transparent-select"
+                    appendTo="body" />
                 </div>
               </div>
               <!-- DURÉE -->
@@ -146,7 +147,7 @@
                     (ngModelChange)="onDurationChange($event)"
                     [ngModelOptions]="{standalone: true}"
                     placeholder="0h00"
-                    styleClass="w-full min-w-0" />
+                    styleClass="w-full min-w-0 transparent-inputtext" />
                 </div>
               </div>
               <p-divider/>
@@ -162,7 +163,7 @@
                     optionLabel="label"
                     optionValue="value"
                     appendTo="body"
-                    styleClass="w-full min-w-0" />
+                    class="w-full min-w-0 transparent-select" />
                 </div>
               </div>
               <!-- PRIX -->
@@ -174,14 +175,14 @@
                   <div class="flex align-items-center gap-1 w-full min-w-0">
                     <p-inputNumber
                       formControlName="amount"
-                      class="flex-1 min-w-0 w-0"
+                      class="flex-1 min-w-0 w-0 transparent-inputtext"
                       inputStyleClass="w-full min-w-0 text-sm" />
 
                     <p-select
                       [options]="currencyOptions"
                       formControlName="currency"
                       appendTo="body"
-                      class="flex-shrink-0" />
+                      class="flex-shrink-0 transparent-select" />
                   </div>
                 </div>
               </div>
@@ -200,7 +201,7 @@
                       [showIcon]="true"
                       appendTo="body"
                       placeholder="Aucune deadline"
-                      styleClass="w-full" />
+                      class="w-full transparent-inputtext" />
                   </div>
                 </div>
               }

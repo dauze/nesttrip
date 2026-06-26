@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -10,6 +10,12 @@ import { Trip, Day } from '../trip.model';
 import { Info } from '../trip-detail/trip-day-swiper/infos/info.models';
 import { TripStore } from '../trip-store.service';
 import { AuthService } from '@app/core/services/auth.service';
+import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import { GooglePlaceService } from '@app/core/services/google.places.service';
+import { Place } from '@app/core/models/place.dto';
+import { catchError, Observable, of } from 'rxjs';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'app-new-trip',
@@ -21,6 +27,8 @@ import { AuthService } from '@app/core/services/auth.service';
     ButtonModule,
     CardModule,
     FluidModule,
+    AutoComplete,
+    AsyncPipe
   ],
   templateUrl: 'new-trip.component.html',
 })
@@ -29,14 +37,20 @@ export class NewTripComponent {
   private readonly router = inject(Router);
   private readonly tripStore = inject(TripStore);
   private readonly authService = inject(AuthService);
+  private readonly googlePlaceService = inject(GooglePlaceService);
+  private readonly googlePhotoService = inject(GooglePhotoService);
+
+ private readonly rawPlaces = this.googlePlaceService.places;
 
   readonly form = this.fb.group({
     title: ['', Validators.required],
     ville: ['', Validators.required],
+    placeId: [''],
     dates: [null, Validators.required]
   });
 
   readonly loading = signal(false);
+  readonly searching = signal(false);
 
   /** Devient true dès que l'utilisateur tape lui-même dans le champ titre */
   private titleManuallyEdited = false;
@@ -59,6 +73,37 @@ export class NewTripComponent {
     });
   }
 
+  readonly placesWithPhotos = computed(() => {
+    const list = this.rawPlaces();
+    if (!list) return [];
+
+    return list.map(place => {
+      let photoUrl$: Observable<string> | null = null;
+      if (place.photos?.[0]) {
+        photoUrl$ = this.googlePhotoService.getPhoto$(place.photos[0], 120).pipe(
+          catchError(() => of(''))
+        );
+      }
+      // On retourne un nouvel objet qui contient la propriété photoUrl$
+      return { ...place, photoUrl$ };
+    });
+  });
+
+  onSelect(event: AutoCompleteSelectEvent): void {
+    const place = event.value as Place;
+    
+    // On met à jour le formulaire avec les données de l'objet sélectionné
+    this.form.patchValue({
+      ville: place.name,
+      placeId: place.placeId
+    });
+  }
+
+  onSearch(event: AutoCompleteCompleteEvent): void {
+    this.searching.set(true);
+    this.googlePlaceService.setSearchTerm(event.query ?? '');
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -71,10 +116,13 @@ export class NewTripComponent {
 
     const [dateDebut, dateFin] = this.form.value.dates || [];
 
+    
+
     const trip: Trip = {
       id: crypto.randomUUID(),
       title: this.form.value.title ?? '',
       ville: this.form.value.ville ?? '',
+     placeId: this.form.value.placeId ?? '',
       days: this.buildDays(dateDebut, dateFin),
       info: this.buildInfo(),
       ownerId: user.uid,

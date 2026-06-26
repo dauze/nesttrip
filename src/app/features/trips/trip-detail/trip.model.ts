@@ -8,6 +8,7 @@ export interface Trip {
   title: string;
   ownerId: string;
   members: Record<string, TripMember>;
+  placeId?: string;
   days: Day[];
   info: Info;
 }

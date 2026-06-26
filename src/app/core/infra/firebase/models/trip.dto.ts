@@ -16,4 +16,5 @@ export interface TripFirebase {
   title: string;
   days: Record<string, { activities: ActivityFirebase[] }>;
   info: Info;
+  placeId?: string;
 }
