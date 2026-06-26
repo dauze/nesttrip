@@ -1,0 +1,30 @@
+<p-card>
+  <ng-template #header>
+    <div class="flex align-items-center justify-content-between px-2 pt-3">
+      <textarea
+        pTextarea
+        class="text-xl font-semibold flex-1 overflow-hidden transparent-textarea"
+        [autoResize]="true"
+        [rows]="1"
+        [value]="title()"
+        (blur)="onTitleBlur($any($event.target).value)"
+      ></textarea>
+      <ng-content select="[trip-actions]" />
+    </div>
+  </ng-template>
+  <form [formGroup]="dateForm">
+    <div class="flex flex-column gap-2">
+      <p-datepicker
+        inputId="dates"
+        class="transparent-datepicker"
+        formControlName="dates"
+        selectionMode="range"
+        dateFormat="dd/mm/yy"
+        [readonlyInput]="true"
+        [showIcon]="false"
+        placeholder="Sélectionner une période"
+        (onSelect)="onDatesSelected()"
+      />
+    </div>
+  </form>
+</p-card>

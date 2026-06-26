@@ -1,0 +1,12 @@
+<p-tabs #tabsListRef [value]="activeId()">
+  <p-tablist>
+    @for (tab of tabs(); track tab.id; let i = $index) {
+      <p-tab
+        [value]="tab.id"
+        [class.is-active]="tab.id === activeId()"
+        (click)="onTabClick(tab.id, i)">
+        {{ tab.label }}
+      </p-tab>
+    }
+  </p-tablist>
+</p-tabs>

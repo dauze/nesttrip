@@ -1,0 +1,13 @@
+.tab-content-wrapper {
+  width: 100%;
+  display: block;
+}
+
+swiper-slide {
+  height: auto;
+  transition: transform 150ms ease-out;
+}
+
+swiper-slide:active {
+  transform: scale(0.98);
+}

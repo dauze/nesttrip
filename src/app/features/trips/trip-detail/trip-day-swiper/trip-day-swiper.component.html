@@ -1,0 +1,14 @@
+<swiper-container #swiperRef init="false" class="tab-content-wrapper">
+  <swiper-slide>
+    @if (visitedDays().has('info')) {
+      <app-infos [info]="trip().info" [tripId]="trip().id" />
+    }
+  </swiper-slide>
+  @for (day of sortedDays(); track day.id) {
+    <swiper-slide>
+      @if (visitedDays().has(day.id.toISOString())) {
+        <app-day-panel [dayId]="day.id" [tripId]="trip().id" />
+      }
+    </swiper-slide>
+  }
+</swiper-container>
