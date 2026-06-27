@@ -73,6 +73,10 @@ export class TripStore {
     this._activeTripId.set(null);
   }
 
+  hasTrip(id: string): boolean {
+    return id in this._trips();
+  }
+
   // ── Sélecteurs memorisés par entité ───────────────────────────────────────
 
   private readonly activitiesByDay = new Map<string, Signal<Activity[]>>();

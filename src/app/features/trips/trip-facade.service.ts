@@ -34,7 +34,11 @@ export class TripFacade {
 
     this.tripSub = this.repo.getTrip$(id).subscribe({
         next: (trip) => {
-        this.hydrate(trip);
+        if (!this.store.hasTrip(trip.id)) {
+          this.hydrate(trip);
+        } else {
+          this.mergeFromRemote(trip);
+        }
         Promise.resolve().then(() => this.store.activeTripLoading.set(false));
       },
       error: (err) => {
@@ -165,5 +169,28 @@ export class TripFacade {
     this.store._dayActivities.set(newDayActivities);
     this.store._infoItems.set(infoItems);
     this.store._tripInfoItems.set(tripInfoItems);
+  }
+
+   private mergeFromRemote(trip: Trip): void {
+    const currentActivities = this.store._activities();
+    const newActivities: Record<string, Activity> = {};
+    const newDayActivities: Record<string, string[]> = {};
+
+    for (const day of trip.days) {
+      const dayKey = day.id.toISOString();
+      newDayActivities[dayKey] = [];
+
+      for (const activity of day.activities) {
+        const current = currentActivities[activity.id];
+        newActivities[activity.id] =
+          current && JSON.stringify(current) === JSON.stringify(activity)
+            ? current
+            : activity;
+        newDayActivities[dayKey].push(activity.id);
+      }
+    }
+
+    this.store._activities.set(newActivities);
+    this.store._dayActivities.set(newDayActivities);
   }
 }
