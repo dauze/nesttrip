@@ -1,21 +1,32 @@
 <div style="min-width: 24rem;">
   <p-toolbar>
     <ng-template #start>
-      @if (showBack()) {
-        <p-button
-          icon="pi pi-arrow-left"
-          [text]="true"
-          [rounded]="true"
-          (click)="goBack()"
-        />
-      }
+      <div class="w-3rem flex justify-content-center">
+        @if (showBack()) {
+          <p-button
+            icon="pi pi-arrow-left"
+            [text]="true"
+            [rounded]="true"
+            (click)="goBack()"
+          />
+        }
+      </div>
     </ng-template>
+
     <ng-template #center>
       <span class="nesttrip-logo">NestTrip</span>
     </ng-template>
+
     <ng-template #end>
-      <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
-      <p-button (click)="menu.toggle($event)" icon="pi pi-user" [rounded]="true" [text]="true" />
+      <div class="w-3rem flex justify-content-center">
+        <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
+        <p-button
+          (click)="menu.toggle($event)"
+          icon="pi pi-user"
+          [rounded]="true"
+          [text]="true"
+        />
+      </div>
     </ng-template>
   </p-toolbar>
   <router-outlet />
