@@ -11,6 +11,7 @@ import { TripCollaboratorsComponent } from './trip-collaborators/trip-collaborat
 import { TripTabsNavComponent } from './trip-tabs-nav/trip-tabs-nav.component';
 import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.component';
 import { TripTab } from './trip-tab.model';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-trip-detail',
@@ -32,12 +33,14 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly location = inject(Location);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
 
   readonly activeDay = signal<string>('info');
   private initializedTripId: string | null = null;
+  readonly currentDayIndex = signal(0);
 
   readonly tripTitle = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
@@ -67,10 +70,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       if (this.initializedTripId === trip.id) return;
 
       this.initializedTripId = trip.id;
-      const todayId = this.getTodayId(trip);
-      this.activeDay.set(todayId);
 
-      const index = this.tabs().findIndex(t => t.id === todayId);
+      const dayFromUrl = this.getDayIdFromFragment(this.route.snapshot.fragment);
+      const initialDay = dayFromUrl ?? this.getTodayId(trip);
+      this.activeDay.set(initialDay);
+
+      const index = this.tabs().findIndex(t => t.id === initialDay);
       if (index >= 0) {
         setTimeout(() => this.tabsNavRef()?.scrollIntoView(index), 100);
       }
@@ -96,12 +101,14 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected onTabSelected(event: { id: string; index: number }): void {
     this.activeDay.set(event.id);
     this.tabsNavRef()?.scrollIntoView(event.index);
+    this.updateFragment(event.id);
   }
 
   protected onSwiperActiveIdChange(id: string): void {
     this.activeDay.set(id);
     const index = this.tabs().findIndex(t => t.id === id);
     if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
+    this.updateFragment(id);
   }
 
   protected onDatesChange(range: [Date, Date]): void {
@@ -166,5 +173,22 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private findDaysToDelete(existingDays: Day[], newDays: Day[]): Day[] {
     const newIds = new Set(newDays.map(d => d.id.getTime()));
     return existingDays.filter(d => !newIds.has(d.id.getTime()));
+  }
+
+  private getDayIdFromFragment(fragment: string | null): string | null {
+    if (!fragment) return null;
+
+    const match = fragment.match(/^day-(\d+)$/);
+    if (!match) return null;
+
+    const dayIndex = parseInt(match[1], 10) - 1;
+    const day = this.sortedDays()[dayIndex];
+    return day ? day.id.toISOString() : null;
+  }
+
+  private updateFragment(dayId: string): void {
+    const dayNumber = this.sortedDays().findIndex(d => d.id.toISOString() === dayId) + 1;
+    const basePath = this.location.path(false);
+    this.location.replaceState(dayNumber > 0 ? `${basePath}#day-${dayNumber}` : basePath);
   }
 }
