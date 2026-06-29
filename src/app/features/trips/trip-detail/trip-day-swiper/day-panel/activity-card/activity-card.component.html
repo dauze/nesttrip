@@ -143,6 +143,7 @@
                   </label>
                   <p-inputMask
                     mask="99h99"
+                    slotChar="0"
                     [ngModel]="durationDisplay()"
                     (ngModelChange)="onDurationChange($event)"
                     [ngModelOptions]="{standalone: true}"

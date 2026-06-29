@@ -314,12 +314,28 @@ openAndScroll() {
 }
 
   onTitleBlur(): void {
-     this.currentPhotoIndex = 0;
     const activity = this.activity();
     if (!activity) return;
+    if (activity.title === this.title) {
+        return;
+      }
+    this.currentPhotoIndex = 0;
+    this.lazyGoogleData.set(null);
+    this.googleDataLoaded = false;
+    this.photoUrlCache.clear();
     this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
       ...activity,
       title: this.title,
+      placeId: '',
+      address: '',
+      latitude: 0,
+      longitude: 0,
+      rating: 0,
+      reviewCount: 0,
+      openingHours: [],
+      phone: '',
+      website: '',
+      priceLevel: 0,
     });
   }
 
