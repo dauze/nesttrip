@@ -66,6 +66,10 @@ export class TripFacade {
     this.store.updateTripTitle(trip);
   }
 
+  removeTrip(tripId: string): void {
+    this.store.removeTrip(tripId);
+  }
+
   removeDay(tripId: string, dayId: Date): void {
     this.store.removeDay(tripId, dayId);
   }

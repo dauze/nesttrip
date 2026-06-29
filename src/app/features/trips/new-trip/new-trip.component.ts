@@ -8,7 +8,6 @@ import { CardModule } from 'primeng/card';
 import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
 import { Info } from '../trip-detail/trip-day-swiper/infos/info.models';
-import { TripStore } from '../trip-store.service';
 import { AuthService } from '@app/core/services/auth.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
@@ -16,6 +15,7 @@ import { GooglePlaceService } from '@app/core/services/google.places.service';
 import { Place } from '@app/core/models/place.dto';
 import { catchError, Observable, of } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
+import { TripFacade } from '../trip-facade.service';
 
 @Component({
   selector: 'app-new-trip',
@@ -35,7 +35,7 @@ import { AsyncPipe } from '@angular/common';
 export class NewTripComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly tripStore = inject(TripStore);
+  private readonly tripFacade = inject(TripFacade);
   private readonly authService = inject(AuthService);
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly googlePhotoService = inject(GooglePhotoService);
@@ -159,7 +159,7 @@ export class NewTripComponent {
   }
 
   private saveTrip(trip: Trip): void {
-    this.tripStore.saveTrip(trip);
+    this.tripFacade.saveTrip(trip);
     this.router.navigate([`/trips/${trip.id}`]);
   }
 

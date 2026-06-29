@@ -48,11 +48,11 @@ import {
   ACTIVITY_TYPE_META,
   BOOKING_STATUS_META,
 } from './activity.constants';
-import { TripStore } from '@app/features/trips/trip-store.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { ActivityFile } from './activity.model';
 import { ActivityType } from '@app/core/enums/activites-type.enum';
+import { TripFacade } from '@app/features/trips/trip-facade.service';
 
 /** Max photos shown in carousel — change freely */
 const MAX_PHOTOS = 6;
@@ -88,7 +88,7 @@ const MAX_PHOTOS = 6;
   styleUrl: './activity-card.component.scss',
 })
 export class ActivityCardComponent {
-  private readonly tripStore = inject(TripStore);
+  private readonly tripFacade = inject(TripFacade);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly googlePhotoService = inject(GooglePhotoService);
@@ -141,7 +141,7 @@ export class ActivityCardComponent {
 
   private initialized = false;
 
-  readonly activity = computed(() => this.tripStore.getActivity(this.activityId())());
+  readonly activity = computed(() => this.tripFacade.getActivity(this.activityId())());
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
@@ -256,7 +256,7 @@ export class ActivityCardComponent {
 
   constructor() {
     effect(() => {
-      const a = this.tripStore.getActivity(this.activityId())();
+      const a = this.tripFacade.getActivity(this.activityId())();
       if (a && !this.initialized) {
         this.initialized = true;
         untracked(() => {
@@ -272,7 +272,7 @@ export class ActivityCardComponent {
       this.form.valueChanges.pipe(debounceTime(300)).subscribe((value) => {
           const activity = this.activity();
           if (!activity) return;
-          this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+          this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
             ...activity,
             ...value,
             title: this.title,
@@ -317,7 +317,7 @@ openAndScroll() {
      this.currentPhotoIndex = 0;
     const activity = this.activity();
     if (!activity) return;
-    this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+    this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
       ...activity,
       title: this.title,
     });
@@ -343,7 +343,7 @@ openAndScroll() {
       const activity = this.activity();
       if (!activity) return;
 
-      this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+      this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
         ...activity,
         title: p.name,
         placeId: p.placeId ?? '',
@@ -381,7 +381,7 @@ openAndScroll() {
 
       this.fileService.uploadFile(file, path).pipe(
         tap(({ url, name }) => {
-          this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+          this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
             ...activity,
             files: [...(activity.files ?? []), { name, url, path }],
           });
@@ -399,7 +399,7 @@ openAndScroll() {
     const file = activity.files![index];
     this.fileService.deleteFile(file.path).pipe(
       tap(() => {
-        this.tripStore.updateActivity(this.tripId(), this.dayId(), {
+        this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
           ...activity,
           files: (activity.files ?? []).filter((_, i) => i !== index),
         });

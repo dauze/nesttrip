@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { Trip } from '@app/features/trips/trip.model';
 import { tripToFb } from '@core/infra/firebase/mappers/trip.mapper';
@@ -11,9 +11,15 @@ export class TripPersistenceService {
   createTrip(trip: Trip): Promise<void> {
     return setDoc(doc(this.db, 'trips', trip.id), tripToFb(trip));
   }
+  
   updateTripTitle(trip: Trip): Promise<void> {
   return updateDoc(doc(this.db, 'trips', trip.id),{
       title: trip.title
     });
   }
+
+  removeTrip(tripId: string): Promise<void> {
+    return deleteDoc(doc(this.db, 'trips', tripId));
+  }
+
 }

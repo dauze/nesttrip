@@ -171,6 +171,15 @@ export class TripStore {
     });
   }
 
+  removeTrip(tripId: string) {
+    this.tripPersistenceService.removeTrip(tripId);
+    this._trips.update((t) => {
+      const copy = { ...t };
+      delete copy[tripId];
+      return copy;
+    });
+  }
+
   // ── Commandes — Activities ────────────────────────────────────────────────
 
   createActivity(tripId: string, dayId: Date, activity: Activity): void {

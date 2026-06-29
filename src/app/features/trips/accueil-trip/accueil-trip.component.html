@@ -1,16 +1,17 @@
 <div class="pt-2">
 
   <p-card>
-    <!-- Header card -->
+
+    <!-- Header -->
     <ng-template pTemplate="title">
       <div class="flex justify-content-between align-items-center w-full">
-        <span class="text-2xl font-semibold">Mes voyages</span>
-        <p-button
-          label="Ajouter"
-          icon="pi pi-plus"
-          size="small"
-          routerLink="/trips/new"
-        />
+        <span class="text-2xl font-semibold">Mes voyages</span>       
+      <p-button
+        [label]="editMode ? 'Terminer' : 'Modifier'"
+        [icon]="editMode ? 'pi pi-check' : 'pi pi-pencil'"
+        size="small"
+        (click)="toggleEditMode()"
+      />
       </div>
     </ng-template>
 
@@ -47,13 +48,26 @@
             <div class="col-12 md:col-6 lg:col-4">
               <p-card
                 styleClass="cursor-pointer w-full h-full hover:surface-100 transition-colors transition-duration-200"
-                (click)="selectTrip(trip.id)"
+                (click)="editMode ? toggleTripSelection(trip.id) : selectTrip(trip.id)"
               >
                 <div class="flex justify-content-between align-items-center">
-                  <span class="font-medium text-lg">
+
+                  <!-- Checkbox (only in edit mode) -->
+                  @if (editMode) {
+                    <p-checkbox
+                      [binary]="true"
+                      [(ngModel)]="selectedTripsMap[trip.id]"
+                      (click)="$event.stopPropagation()"
+                    ></p-checkbox>
+                  }
+
+                  <span class="font-medium text-lg flex-grow-1 ml-2">
                     {{ trip.title }}
                   </span>
-                  <i class="pi pi-arrow-right text-color-secondary"></i>
+
+                  @if (!editMode) {
+                    <i class="pi pi-arrow-right text-color-secondary"></i>
+                  }
                 </div>
               </p-card>
             </div>
@@ -62,6 +76,35 @@
       }
 
     </div>
+
+    <!-- Footer buttons -->
+    <ng-template pTemplate="footer">
+      <div class="flex justify-content-end gap-2">
+        <!-- Supprimer -->
+        @if (editMode) {
+          <p-button
+            label="Supprimer"
+            icon="pi pi-trash"
+            severity="danger"
+            size="small"
+            [disabled]="!hasSelection()"
+            (click)="confirmDelete()"
+          />
+        }
+        <!-- Ajouter -->
+        <p-button
+          label="Ajouter"
+          icon="pi pi-plus"
+          size="small"
+          routerLink="/trips/new"
+        />
+
+      </div>
+    </ng-template>
+
   </p-card>
+
+  <!-- Confirm dialog -->
+  <p-confirmDialog />
 
 </div>

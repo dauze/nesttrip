@@ -17,8 +17,8 @@ import { TripFacade } from './trip-facade.service';
   imports: [RouterOutlet, ToolbarModule, ButtonModule, MenuModule],
   providers: [
     FirebaseTripRepository,
-    { provide: TripRepository, useExisting: FirebaseTripRepository },
-    TripFacade,
+      TripFacade,
+    { provide: TripRepository, useExisting: FirebaseTripRepository }
   ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',
@@ -26,7 +26,6 @@ import { TripFacade } from './trip-facade.service';
 export class TripsComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
-  private readonly facade = inject(TripFacade); // instanciation
 
   readonly currentUrl = toSignal(
     this.router.events.pipe(

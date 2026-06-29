@@ -8,14 +8,14 @@ swiper-slide {
   transition: transform 150ms ease-out;
 }
 
-swiper-slide:active:not(
-  :has(
-    button:active,
-    textarea:active,
-    input:active,
-    select:active,
-    a:active
-  )
-) {
-  transform: scale(0.98);
-}
+// swiper-slide:active:not(
+//   :has(
+//     button:active,
+//     textarea:active,
+//     input:active,
+//     select:active,
+//     a:active
+//   )
+// ) {
+//   transform: scale(0.98);
+// }
