@@ -10,6 +10,8 @@ export interface ActivityFirebase {
   booking?: BookingFirebase;
   notes?: string;
   files?: FileFirebase[];
+  startTime?:string;
+  endTime?:string;
 
   //Google
   placeId?: string;

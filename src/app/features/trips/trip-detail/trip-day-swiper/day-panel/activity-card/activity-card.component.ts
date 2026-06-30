@@ -5,6 +5,7 @@ import {
   ElementRef,
   inject,
   input,
+  OnInit,
   output,
   Signal,
   signal,
@@ -87,7 +88,7 @@ const MAX_PHOTOS = 6;
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
 })
-export class ActivityCardComponent {
+export class ActivityCardComponent implements OnInit{
   private readonly tripFacade = inject(TripFacade);
   private readonly fileService = inject(FileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
@@ -104,10 +105,32 @@ export class ActivityCardComponent {
   readonly deleteRequest = output<void>();
   readonly aiEnrichRequest = output<void>();
 
+  readonly durationTextControl = this.fb.nonNullable.control('00h00');
+
+  private editCounter = 0;
+  private isProgrammaticUpdate = false;
+
+  private readonly lastEdited: Record<'startTime' | 'endTime' | 'duration', number> = {
+    startTime: 0,
+    endTime: 0,
+    duration: 0,
+  };
+
+  
+  ngOnInit(): void {
+    this.setupTimeDurationSync();
+
+    // Important : synchroniser l'affichage initial
+    this.syncDurationTextFromForm();
+  }
+
+
   readonly form = this.fb.group({
     type: this.fb.nonNullable.control<ActivityType>(ActivityType.ACTIVITE),
     duration: this.fb.nonNullable.control<number>(0),
     notes: this.fb.nonNullable.control<string>(''),
+    startTime: this.fb.control<Date | null>(null),
+    endTime: this.fb.control<Date | null>(null),
     booking: this.fb.group({
       status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
       deadline: this.fb.control<Date | null>(null),
@@ -158,6 +181,25 @@ export class ActivityCardComponent {
     const status = this.formValue().booking.status;
     return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(status);
   });
+
+  onTimeChanged(): void {
+  const start = this.form.controls.startTime.value;
+  const end = this.form.controls.endTime.value;
+
+  if (!start || !end) {
+    return;
+  }
+
+  let diffMinutes =
+    (end.getHours() * 60 + end.getMinutes()) -
+    (start.getHours() * 60 + start.getMinutes());
+
+  // Passage de minuit
+  if (diffMinutes < 0) {
+    diffMinutes += 24 * 60;
+  }
+ this.form.patchValue({ duration: diffMinutes });
+}
 
   readonly isDeadlineSoon = computed(() => {
     const deadline = this.formValue()?.booking.deadline;
@@ -262,6 +304,7 @@ export class ActivityCardComponent {
         untracked(() => {
           this.form.patchValue(a);
           this.title = a.title;
+          this.afterActivityLoaded();
         });
       }
     });
@@ -276,6 +319,8 @@ export class ActivityCardComponent {
             ...activity,
             ...value,
             title: this.title,
+            startTime: value.startTime ?? undefined ,
+            endTime: value.endTime ?? undefined ,
             booking: { ...activity.booking, ...value.booking, deadline: value.booking?.deadline ?? undefined },
             price: { ...activity.price, ...value.price },
           });
@@ -298,20 +343,20 @@ export class ActivityCardComponent {
     });
   }
 
-openAndScroll() {
-  const wasCollapsed = this.collapsed;
+  openAndScroll() {
+    const wasCollapsed = this.collapsed;
 
-  if (wasCollapsed) {
-    this.collapsed = false;
+    if (wasCollapsed) {
+      this.collapsed = false;
 
-    // attendre le rendu
-    setTimeout(() => {
+      // attendre le rendu
+      setTimeout(() => {
+        this.scrollToMe();
+      }, 300); // ajuster selon l'animation PrimeNG
+    } else {
       this.scrollToMe();
-    }, 300); // ajuster selon l'animation PrimeNG
-  } else {
-    this.scrollToMe();
+    }
   }
-}
 
   onTitleBlur(): void {
     const activity = this.activity();
@@ -380,12 +425,92 @@ openAndScroll() {
     });
   }
 
-  onDurationChange(value: string): void {
-    const match = value.match(/^(\d{2})h(\d{2})$/);
-    if (!match) return;
-    const minutes = Number(match[1]) * 60 + Number(match[2]);
-    this.form.patchValue({ duration: minutes });
+  onDurationEdited(): void {
+    const value = this.durationTextControl.value;
+    const minutes = this.parseDuration(value);
+
+    if (minutes === null) {
+      this.syncDurationTextFromForm();
+      return;
+    }
+
+    this.lastEdited.duration = ++this.editCounter;
+
+    this.form.controls.duration.setValue(minutes, { emitEvent: false });
+
+    this.recalculateFrom('duration');
   }
+
+  onTimeEdited(control: 'startTime' | 'endTime'): void {
+    const value = this.form.controls[control].value;
+
+    if (!value) {
+      return;
+    }
+
+    this.lastEdited[control] = ++this.editCounter;
+
+    this.recalculateFrom(control);
+  }
+
+private recalculateFrom(changed: 'startTime' | 'endTime' | 'duration'): void {
+  const start = this.form.controls.startTime.value;
+  const end = this.form.controls.endTime.value;
+  const duration = this.form.controls.duration.value;
+
+  this.isProgrammaticUpdate = true;
+
+  if (changed === 'duration') {
+    if (start) {
+      this.setEndFromStartAndDuration(start, duration);
+    } else if (end) {
+      this.setStartFromEndAndDuration(end, duration);
+    }
+
+    this.syncDurationTextFromForm();
+    this.isProgrammaticUpdate = false;
+    return;
+  }
+
+  if (changed === 'startTime') {
+    if (!start) {
+      this.isProgrammaticUpdate = false;
+      return;
+    }
+
+    const shouldKeepEnd =
+      !!end &&
+      this.lastEdited.endTime >= this.lastEdited.duration;
+
+    if (shouldKeepEnd) {
+      this.setDurationFromStartAndEnd(start, end);
+    } else {
+      this.setEndFromStartAndDuration(start, duration);
+    }
+
+    this.isProgrammaticUpdate = false;
+    return;
+  }
+
+  if (changed === 'endTime') {
+    if (!end) {
+      this.isProgrammaticUpdate = false;
+      return;
+    }
+
+    const shouldKeepStart =
+      !!start &&
+      this.lastEdited.startTime >= this.lastEdited.duration;
+
+    if (shouldKeepStart) {
+      this.setDurationFromStartAndEnd(start, end);
+    } else {
+      this.setStartFromEndAndDuration(end, duration);
+    }
+
+    this.isProgrammaticUpdate = false;
+  }
+}
 
   onFileSelect(event: { files: File[] }): void {
     const activity = this.activity();
@@ -469,4 +594,147 @@ openAndScroll() {
       block: 'start'
     });
   }
+
+  private updateEndTimeFromDuration(): void {
+    const start = this.form.controls.startTime.value;
+    const duration = this.form.controls.duration.value;
+
+    if (!start) {
+      return;
+    }
+
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + duration);
+    this.form.patchValue({ endTime: end });
+  }
+
+  private setDurationFromStartAndEnd(start: Date, end: Date): void {
+  let diffMinutes =
+    this.toMinutes(end) - this.toMinutes(start);
+
+  // Passage de minuit
+  if (diffMinutes < 0) {
+    diffMinutes += 24 * 60;
+  }
+
+  this.form.controls.duration.setValue(diffMinutes, { emitEvent: false });
+  this.syncDurationTextFromForm();
+  }
+
+  private setEndFromStartAndDuration(start: Date, duration: number): void {
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + duration);
+
+    this.form.controls.endTime.setValue(end, { emitEvent: false });
+  }
+
+  private parseDuration(value: string): number | null {
+  const match = value.match(/^(\d{2})h(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (minutes >= 60) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
 }
+
+private syncDurationTextFromForm(): void {
+  const duration = this.form.controls.duration.value;
+  const text = this.formatDuration(duration);
+
+  this.durationTextControl.setValue(text, { emitEvent: false });
+}
+
+private formatDuration(totalMinutes: number): string {
+  const safeMinutes = Math.max(0, totalMinutes ?? 0);
+
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+
+  return `${hours.toString().padStart(2, '0')}h${minutes
+    .toString()
+    .padStart(2, '0')}`;
+}
+
+
+private setStartFromEndAndDuration(end: Date, duration: number): void {
+  const start = new Date(end);
+  start.setMinutes(start.getMinutes() - duration);
+
+  this.form.controls.startTime.setValue(start, { emitEvent: false });
+}
+
+private toMinutes(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+
+private setupTimeDurationSync(): void {
+  this.durationTextControl.valueChanges.subscribe(value => {
+    if (this.isProgrammaticUpdate) {
+      return;
+    }
+
+    const minutes = this.parseDuration(value);
+
+    if (minutes === null) {
+      return;
+    }
+
+    this.lastEdited.duration = ++this.editCounter;
+
+    this.isProgrammaticUpdate = true;
+    this.form.controls.duration.setValue(minutes, { emitEvent: false });
+    this.isProgrammaticUpdate = false;
+
+    this.recalculateFrom('duration');
+  });
+
+  this.form.controls.startTime.valueChanges.subscribe(start => {
+    if (this.isProgrammaticUpdate || !start) {
+      return;
+    }
+
+    this.lastEdited.startTime = ++this.editCounter;
+    this.recalculateFrom('startTime');
+  });
+
+  this.form.controls.endTime.valueChanges.subscribe(end => {
+    if (this.isProgrammaticUpdate || !end) {
+      return;
+    }
+
+    this.lastEdited.endTime = ++this.editCounter;
+    this.recalculateFrom('endTime');
+  });
+}
+
+private afterActivityLoaded(): void {
+  const start = this.form.controls.startTime.value;
+  const end = this.form.controls.endTime.value;
+  const duration = this.form.controls.duration.value;
+
+  if (duration > 0) {
+    this.syncDurationTextFromForm();
+    return;
+  }
+
+  if (start && end) {
+    this.isProgrammaticUpdate = true;
+    this.setDurationFromStartAndEnd(start, end);
+    this.isProgrammaticUpdate = false;
+    return;
+  }
+
+  this.syncDurationTextFromForm();
+}
+}
+
+

@@ -11,6 +11,8 @@ export function activityFromFb(a: ActivityFirebase): Activity {
     notes: a.notes ?? '',
     website: a.website ?? '',
     phone: a.phone ?? '',
+    startTime: a.startTime ? new Date(Number(a.startTime)) : new Date(),
+    endTime: a.endTime ? new Date(Number(a.endTime)) : new Date()
   };
 }
 
@@ -19,6 +21,8 @@ export function activityToFb(a: Activity): ActivityFirebase {
     ...a,
     booking: bookingToFb(a.booking),
     files: a.files ?? [],
+    startTime: a.startTime ? String(a.startTime.getTime()) : '',
+    endTime: a.endTime ? String(a.endTime.getTime()) : '',
   };
 }
 

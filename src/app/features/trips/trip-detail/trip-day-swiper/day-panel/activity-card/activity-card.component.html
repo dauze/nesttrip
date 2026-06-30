@@ -9,8 +9,7 @@
           <div class="flex align-items-center gap-2 w-full min-w-0">
 
             <!-- Drag handle -->
-            <span cdkDragHandle class="cursor-move text-color-secondary flex-shrink-0"
-                  (click)="$event.stopPropagation()">
+            <span cdkDragHandle class="cursor-move text-color-secondary flex-shrink-0">
               <i class="pi pi-bars"></i>
             </span>
 
@@ -144,14 +143,43 @@
                   <p-inputMask
                     mask="99h99"
                     slotChar="0"
-                    [ngModel]="durationDisplay()"
-                    (ngModelChange)="onDurationChange($event)"
-                    [ngModelOptions]="{standalone: true}"
+                    [formControl]="durationTextControl"
                     placeholder="0h00"
-                    styleClass="w-full min-w-0 transparent-inputtext" />
+                    styleClass="w-full min-w-0 transparent-inputtext"/>
                 </div>
               </div>
               <p-divider/>
+              <!-- DÉBUT -->
+              <div class="col-6 p-0 min-w-0 overflow-hidden">
+                <div class="flex flex-column gap-1 w-full min-w-0">
+                  <label class="text-color-secondary text-sm flex align-items-center gap-1">
+                    <i class="pi pi-calendar text-sm"></i>Début
+                  </label>
+
+                  <p-datepicker
+                    formControlName="startTime"
+                    timeOnly
+                    appendTo="body"
+                    class="w-full transparent-inputtext" />
+                </div>
+              </div>
+
+              <!-- FIN -->
+              <div class="col-6 p-0 min-w-0 overflow-hidden">
+                <div class="flex flex-column gap-1 w-full min-w-0">
+                  <label class="text-color-secondary text-sm flex align-items-center gap-1">
+                    <i class="pi pi-calendar-times text-sm"></i>Fin
+                  </label>
+
+                  <p-datepicker
+                    formControlName="endTime"
+                    timeOnly
+                    appendTo="body"
+                    class="w-full transparent-inputtext" />
+                </div>
+              </div>
+              <p-divider/>
+
               <!-- RÉSA -->
               <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
                 <div class="flex flex-column gap-1 w-full min-w-0">
@@ -199,10 +227,10 @@
                     <p-datepicker
                       formControlName="deadline"
                       dateFormat="dd/mm/yy"
-                      [showIcon]="true"
+                      [showIcon]="false"
                       appendTo="body"
                       placeholder="Aucune deadline"
-                      class="w-full transparent-inputtext" />
+                      class="w-max transparent-inputtext" />
                   </div>
                 </div>
               }

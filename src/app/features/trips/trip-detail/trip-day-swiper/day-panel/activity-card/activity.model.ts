@@ -6,6 +6,8 @@ export interface Activity {
   title: string;
   type: ActivityType;
   duration: number;
+  startTime?: Date;
+  endTime?: Date;
   price: Price;
   booking: Booking;
   notes: string;

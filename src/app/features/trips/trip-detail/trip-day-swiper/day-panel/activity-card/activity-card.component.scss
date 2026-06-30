@@ -1,4 +1,4 @@
-.booking  {border-left-width: 0.4rem;}
+.booking    {border-left-width: 0.4rem;}
 .to_book    { border-left-color: var(--p-red-500); }
 .booked     { border-left-color: var(--p-green-500); }
 .not_needed { border-left-color: var(--p-blue-500); }
@@ -23,9 +23,6 @@
       min-width: 0;
       padding: 0.25rem 0.25rem !important;
     }
-  }
-  .p-datepicker .p-datepicker-dropdown {
-  display: none !important;
   }
   .p-select .p-select-dropdown {
     display: none !important;
