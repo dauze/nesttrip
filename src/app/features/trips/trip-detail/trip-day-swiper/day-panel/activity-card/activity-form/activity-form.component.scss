@@ -1,0 +1,22 @@
+:host ::ng-deep {
+  .grid-label {
+    .p-select-label {
+      padding: 0.25rem 0.25rem !important;
+      width: auto;
+      min-width: 0;
+    }
+    .p-select-dropdown {
+      width: auto;
+      min-width: 0;
+      width: 1.25rem;
+    }
+    .p-inputtext {
+      width: auto;
+      min-width: 0;
+      padding: 0.25rem 0.25rem !important;
+    }
+  }
+  .p-select .p-select-dropdown {
+    display: none !important;
+  }
+}

@@ -1,0 +1,22 @@
+@if (photoRefs().length) {
+  <div class="photo-carousel">
+    @if (getPhotoUrl$(photoRefs()[currentIndex()], 800) | async; as url) {
+      <img [src]="url" [alt]="altText()" class="photo-carousel__img" />
+    }
+
+    @if (currentIndex() > 0) {
+      <button class="photo-carousel__nav photo-carousel__nav--left" (click)="prevPhoto()">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+    }
+
+    @if (currentIndex() < photoRefs().length - 1) {
+      <button class="photo-carousel__nav photo-carousel__nav--right" (click)="nextPhoto()">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+    }
+
+    <span class="photo-carousel__counter">{{ currentIndex() + 1 }} / {{ photoRefs().length }}</span>
+  </div>
+  <p-divider />
+}

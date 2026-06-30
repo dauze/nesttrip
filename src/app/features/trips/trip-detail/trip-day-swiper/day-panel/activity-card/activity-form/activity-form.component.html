@@ -1,0 +1,78 @@
+<form [formGroup]="form" class="min-w-0">
+  <div class="m-0 grid-label">
+    <div class="grid m-0">
+      <div class="col-6 p-0 min-w-0 overflow-hidden">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-tag text-sm"></i>Type
+          </label>
+          <p-select [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" appendTo="body" />
+        </div>
+      </div>
+      <div class="col-6 p-0 min-w-0 overflow-hidden">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-clock text-sm"></i>Durée
+          </label>
+          <p-inputMask mask="99h99" slotChar="0" [formControl]="durationTextControl" placeholder="0h00" styleClass="w-full min-w-0 transparent-inputtext"/>
+        </div>
+      </div>
+      <p-divider/>
+      <div class="col-6 p-0 min-w-0 overflow-hidden">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-calendar text-sm"></i>Début
+          </label>
+          <p-datepicker formControlName="startTime" timeOnly appendTo="body" class="w-full transparent-inputtext" />
+        </div>
+      </div>
+      <div class="col-6 p-0 min-w-0 overflow-hidden">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-calendar-times text-sm"></i>Fin
+          </label>
+          <p-datepicker formControlName="endTime" timeOnly appendTo="body" class="w-full transparent-inputtext" />
+        </div>
+      </div>
+      <p-divider/>
+      <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-bookmark text-sm"></i>Résa
+          </label>
+          <p-select [options]="bookingStatusOptions" formControlName="status" optionLabel="label" optionValue="value" appendTo="body" class="w-full min-w-0 transparent-select" />
+        </div>
+      </div>
+      <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label class="text-color-secondary text-sm flex align-items-center gap-1">
+            <i class="pi pi-euro text-sm"></i>Prix
+          </label>
+          <div class="flex align-items-center gap-1 w-full min-w-0">
+            <p-inputNumber formControlName="amount" class="flex-1 min-w-0 w-0 transparent-inputtext" inputStyleClass="w-full min-w-0 text-sm" />
+            <p-select [options]="currencyOptions" formControlName="currency" appendTo="body" class="flex-shrink-0 transparent-select" />
+          </div>
+        </div>
+      </div>
+      @if (showDeadline()) {
+        <p-divider />
+        <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
+          <div class="flex flex-column gap-1 w-full min-w-0">
+            <label class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
+              <i class="pi pi-calendar text-xs"></i>Deadline
+            </label>
+            <p-datepicker formControlName="deadline" dateFormat="dd/mm/yy" [showIcon]="false" appendTo="body" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider />
+  <div class="flex flex-column gap-2 mb-3">
+    <label class="text-color-secondary text-sm flex align-items-center gap-1">
+      <i class="pi pi-pencil text-xs"></i>Notes
+    </label>
+    <textarea pTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" autoResize="true" class="w-full"></textarea>
+  </div>
+</form>

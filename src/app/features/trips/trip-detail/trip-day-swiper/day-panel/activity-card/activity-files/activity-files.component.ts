@@ -1,0 +1,82 @@
+import { Component, inject, input, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ChipModule } from 'primeng/chip';
+import { FileUploadModule } from 'primeng/fileupload';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { tap } from 'rxjs/operators';
+
+import { FileService } from '@core/services/file.service';
+import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { Activity, ActivityFile } from '../activity.model';
+
+@Component({
+  selector: 'app-activity-files',
+  standalone: true,
+  imports: [CommonModule, ChipModule, FileUploadModule, ProgressSpinnerModule],
+  templateUrl: './activity-files.component.html',
+  styleUrl: './activity-files.component.scss',
+})
+export class ActivityFilesComponent {
+  private readonly fileService = inject(FileService);
+  private readonly tripFacade = inject(TripFacade);
+
+  readonly tripId = input.required<string>();
+  readonly dayId = input.required<Date>();
+  readonly activity = input.required<Activity>();
+
+  readonly uploadingFiles = signal<Set<string>>(new Set());
+
+  onFileSelect(event: { files: File[] }): void {
+    const activity = this.activity();
+
+    for (const file of event.files) {
+      const path = `trips/${this.tripId()}/${this.dayId().getTime()}/${activity.id}/${file.name}`;
+      this.uploadingFiles.update((s) => new Set(s).add(file.name));
+
+      this.fileService.uploadFile(file, path).pipe(
+        tap(({ url, name }) => {
+          this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+            ...activity,
+            files: [...(activity.files ?? []), { name, url, path }],
+          });
+        }),
+      ).subscribe({
+        complete: () => this.stopUploading(file.name),
+        error: () => this.stopUploading(file.name),
+      });
+    }
+  }
+
+  removeFile(index: number): void {
+    const activity = this.activity();
+    const file = activity.files![index];
+    this.fileService.deleteFile(file.path).pipe(
+      tap(() => {
+        this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+          ...activity,
+          files: (activity.files ?? []).filter((_, i) => i !== index),
+        });
+      }),
+    ).subscribe();
+  }
+
+  openFile(file: ActivityFile, event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('.p-chip-remove-icon')) return;
+    window.open(file.url, '_blank', 'noopener');
+  }
+
+  fileIcon(name: string): string {
+    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+    const map: Record<string, string> = {
+      pdf: 'pi-file-pdf',
+      jpg: 'pi-image', jpeg: 'pi-image', png: 'pi-image', webp: 'pi-image',
+      doc: 'pi-file-word', docx: 'pi-file-word',
+    };
+    return `pi ${map[ext] ?? 'pi-file'}`;
+  }
+
+  private stopUploading(name: string): void {
+    this.uploadingFiles.update((s) => { const n = new Set(s); n.delete(name); return n; });
+  }
+}
