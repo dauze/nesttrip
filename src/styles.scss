@@ -43,6 +43,42 @@
   width: 6px;
 }
 
+.panel-overflow-hidden {
+  .p-panel-content,
+  .p-panel-content-wrapper {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+.compact-form {
+  .p-select-label,
+  .p-inputtext {
+    padding: 0.25rem !important;
+    min-width: 0;
+    width: auto;
+  }
+
+  .p-select-dropdown {
+    display: none;
+  }
+}
+
+.tabs-pop {
+  p-tab.is-active,
+  p-tab.is-active > * {
+    animation: tab-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+@keyframes tab-pop {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
 .transparent-textarea {
   --p-textarea-background: transparent;
   --p-textarea-border-color: transparent;

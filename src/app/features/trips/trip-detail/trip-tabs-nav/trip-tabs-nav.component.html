@@ -1,4 +1,4 @@
-<p-tabs #tabsListRef [value]="activeId()">
+<p-tabs #tabsListRef [value]="activeId()" class="tabs-pop">
   <p-tablist>
     @for (tab of tabs(); track tab.id; let i = $index) {
       <p-tab

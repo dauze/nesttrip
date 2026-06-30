@@ -80,7 +80,7 @@ export class NewTripComponent {
     return list.map(place => {
       let photoUrl$: Observable<string> | null = null;
       if (place.photos?.[0]) {
-        photoUrl$ = this.googlePhotoService.getPhoto$(place.photos[0], 120).pipe(
+        photoUrl$ = this.googlePhotoService.getPhotoUrl$(place.photos[0], 120).pipe(
           catchError(() => of(''))
         );
       }

@@ -1,4 +1,4 @@
-<form [formGroup]="form" class="min-w-0">
+<form [formGroup]="form" class="min-w-0 compact-form">
   <div class="m-0 grid-label">
     <div class="grid m-0">
       <div class="col-6 p-0 min-w-0 overflow-hidden">
@@ -49,9 +49,16 @@
             <i class="pi pi-euro text-sm"></i>Prix
           </label>
           <div class="flex align-items-center gap-1 w-full min-w-0">
-            <p-inputNumber formControlName="amount" class="flex-1 min-w-0 w-0 transparent-inputtext" inputStyleClass="w-full min-w-0 text-sm" />
-            <p-select [options]="currencyOptions" formControlName="currency" appendTo="body" class="flex-shrink-0 transparent-select" />
-          </div>
+                <p-inputNumber
+                formControlName="amount"
+                class="flex-1 min-w-0 transparent-inputtext"
+                inputStyleClass="w-full min-w-0 text-sm" />
+                <p-select
+                [options]="currencyOptions"
+                formControlName="currency"
+                appendTo="body"
+                class="flex-none transparent-select" />
+            </div>
         </div>
       </div>
       @if (showDeadline()) {

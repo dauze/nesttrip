@@ -1,6 +1,7 @@
 @if (activity(); as activity) {
   <div #cardContainer>
     <p-panel
+        class="panel-overflow-hidden"
         [ngClass]="'trip booking ' + bookingMeta().className"
         [toggleable]="true"
         [(collapsed)]="collapsed">

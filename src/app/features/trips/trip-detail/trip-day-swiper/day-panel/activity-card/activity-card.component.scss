@@ -3,13 +3,3 @@
 .booked     { border-left-color: var(--p-green-500); }
 .not_needed { border-left-color: var(--p-blue-500); }
 .waitlist   { border-left-color: var(--p-yellow-500); }
-
-:host ::ng-deep {
-  .p-panel-content,
-  .p-panel-content-wrapper {
-    min-width: 0;
-    max-width: 100%;
-    width: 100%;
-    overflow: hidden;
-  }
-}

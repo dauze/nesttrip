@@ -8,8 +8,9 @@
         <span class="text-2xl font-semibold">Mes voyages</span> 
         @if (trips().length > 0){      
           <p-button
-            [label]="editMode ? 'Terminer' : 'Modifier'"
-            [icon]="editMode ? 'pi pi-check' : 'pi pi-pencil'"
+            [label]="editMode ? 'Annuler' : 'Modifier'"
+            [icon]="editMode ? 'pi pi-times' : 'pi pi-pencil'"
+            [severity]="editMode ? 'secondary' : 'primary'"
             size="small"
             (click)="toggleEditMode()"
           />}
