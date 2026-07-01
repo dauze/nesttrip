@@ -75,6 +75,14 @@ export class ActivityCardComponent {
     });
   }
 
+    // activity-card.component.ts
+  onCardPointerDown(event: MouseEvent | TouchEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.drag-handle')) {
+      event.stopPropagation();
+    }
+  }
+
   /** API publique — appelée depuis la liste parente pour déplier la carte et scroller dessus. */
   openAndScroll(): void {
     if (this.collapsed()) {
