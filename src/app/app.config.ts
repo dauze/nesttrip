@@ -1,4 +1,4 @@
-import { ApplicationConfig, LOCALE_ID } from '@angular/core';
+import { ApplicationConfig, inject, LOCALE_ID, provideAppInitializer } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -12,6 +12,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import localeFr from '@angular/common/locales/fr';
 import { registerLocaleData } from '@angular/common';
+import { GoogleMapsLoaderService } from './core/services/google-maps-loader.service';
 
 registerLocaleData(localeFr);
 
@@ -48,6 +49,7 @@ export const appConfig: ApplicationConfig = {
       },
       translation: fr
         }),
-      { provide: LOCALE_ID, useValue: 'fr-FR' }
+    { provide: LOCALE_ID, useValue: 'fr-FR' },
+    provideAppInitializer(() => inject(GoogleMapsLoaderService).load()),
   ]
 };

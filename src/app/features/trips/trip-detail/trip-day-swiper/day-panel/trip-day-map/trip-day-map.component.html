@@ -1,0 +1,27 @@
+<p-panel [toggleable]="true" [collapsed]="false">
+    <ng-template #header>
+      <div class="flex align-items-center gap-2">
+        <i class="pi pi-calendar"></i>
+        <span>Carte</span>
+      </div>
+    </ng-template>
+
+    <div class="flex flex-column gap-2 swiper-no-swiping">
+      <google-map
+        height="350px"
+        width="100%"
+        [center]="center()"
+        [zoom]="zoom()"
+        [options]="mapOptions"
+      >
+        @for (point of points(); track point.activityId) {
+          <map-advanced-marker
+            [position]="{ lat: point.latitude, lng: point.longitude }"
+            [title]="point.name"
+            [content]="markerContent(point)"
+            (mapClick)="onMarkerClick(point)"
+          />
+        }
+  </google-map>
+  </div>
+</p-panel>

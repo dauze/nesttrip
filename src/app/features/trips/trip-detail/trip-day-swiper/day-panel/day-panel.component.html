@@ -1,6 +1,10 @@
 
 <div class="flex flex-column gap-2">
   @if (activities().length > 0) {
+    <app-trip-day-map
+    [points]="dayMapPoints()"
+    (activitySelected)="onMapPointClick($event)"
+  />
   <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
   }
   <p-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"

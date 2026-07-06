@@ -9,11 +9,13 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { DayMapPoint } from '@app/core/models/day-map-point';
+import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule],
+  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule, TripDayMapComponent],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })
@@ -29,6 +31,20 @@ export class DayPanelComponent {
   private pendingActivityId?: string;
 
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getActivities(this.dayId())());
+
+  dayMapPoints = computed<DayMapPoint[]>(() => {
+    const activities = this.activities();
+    return activities
+      .filter(a => a.placeId && a.latitude && a.longitude)
+      .map((a, i) => ({
+        activityId: a.id,
+        placeId: a.placeId!,
+        name: a.title,
+        latitude: a.latitude!,
+        longitude: a.longitude!,
+        order: i + 1,
+      }));
+  });
 
   onDrop(event: CdkDragDrop<Activity[]>): void {
     moveItemInArray(this.activities(), event.previousIndex, event.currentIndex);
@@ -90,5 +106,9 @@ export class DayPanelComponent {
     }
 
     card.openAndScroll();
+  }
+  
+  onMapPointClick(point: DayMapPoint) {
+    this.focusActivity(point.activityId);
   }
 }
