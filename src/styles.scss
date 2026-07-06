@@ -38,6 +38,10 @@
   --p-panel-content-padding: 0 0.5rem 0.5rem 0.5rem; 
 }
 
+.p-panel-content-container {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .pi-ellipsis-v {
   display: block;
   width: 6px;
@@ -123,6 +127,6 @@
   --p-autocomplete-background: transparent;
 }
 
-.p-panel-content-container {
-  grid-template-columns: minmax(0, 1fr);
+.p-confirmdialog.p-dialog {
+  width: min(28rem, 95vw);
 }
