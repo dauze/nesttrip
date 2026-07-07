@@ -7,12 +7,24 @@
         [(collapsed)]="collapsed">
 
       <ng-template pTemplate="header">
-        <app-activity-header
-          [activity]="activity"
-          [lazyGoogleData]="lazyGoogleData()"
-          (placeSelected)="onPlaceSelected($event)"
-          (titleEdited)="onTitleChanged($event)" />
-      </ng-template>
+  <div class="flex align-items-center w-full">
+    <app-activity-header
+      class="flex-1 min-w-0"
+      [activity]="activity"
+      [lazyGoogleData]="lazyGoogleData()"
+      (placeSelected)="onPlaceSelected($event)"
+      (titleEdited)="onTitleChanged($event)" />
+
+    <p-button
+      icon="pi pi-trash"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="ml-2 flex-shrink-0"
+      (onClick)="confirmDelete(); $event.stopPropagation()"
+    />
+  </div>
+</ng-template>
 
       @if (googleDataLoading()) {
         <div class="flex justify-content-center py-3">
@@ -34,4 +46,5 @@
         [dayId]="dayId()" />
     </p-panel>
   </div>
+  <p-confirmDialog />
 }

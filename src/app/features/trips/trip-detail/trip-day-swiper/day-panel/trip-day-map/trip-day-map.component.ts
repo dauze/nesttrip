@@ -1,5 +1,5 @@
 // trip-day-map.component.ts
-import { Component, input, output, computed } from '@angular/core';
+import { Component, input, output, computed, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { environment } from '@environnements/environnement';
@@ -15,13 +15,16 @@ export class TripDayMapComponent {
   points = input.required<DayMapPoint[]>();
   selectedActivityId = input<string | null>(null);
   zoom = input(13);
+  focusZoom = input(17); // niveau de zoom au clic sur un point
 
   activitySelected = output<DayMapPoint>();
+
+  private mapRef = viewChild(GoogleMap);
 
   mapOptions: google.maps.MapOptions = {
     mapId: environment.googleMapsMapId,
     disableDefaultUI: false,
-    gestureHandling: 'greedy', // évite le conflit scroll/zoom en mobile
+    gestureHandling: 'greedy',
   };
 
   center = computed(() => {
@@ -34,7 +37,6 @@ export class TripDayMapComponent {
 
   markerContent(point: DayMapPoint): HTMLElement {
     const isSelected = point.activityId === this.selectedActivityId();
-
     const pin = new google.maps.marker.PinElement({
       glyph: String(point.order),
       glyphColor: '#ffffff',
@@ -42,11 +44,19 @@ export class TripDayMapComponent {
       borderColor: isSelected ? '#b71c1c' : '#283593',
       scale: isSelected ? 1.2 : 1,
     });
-
     return pin.element;
   }
 
   onMarkerClick(point: DayMapPoint) {
+    this.focusOnPoint(point);
     this.activitySelected.emit(point);
+  }
+
+  private focusOnPoint(point: DayMapPoint): void {
+    const map = this.mapRef()?.googleMap;
+    if (!map) return;
+
+    map.panTo({ lat: point.latitude, lng: point.longitude });
+    map.setZoom(this.focusZoom());
   }
 }

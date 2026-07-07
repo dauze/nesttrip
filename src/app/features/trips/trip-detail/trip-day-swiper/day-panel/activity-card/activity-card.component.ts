@@ -16,6 +16,9 @@ import { ActivityFilesComponent } from './activity-files/activity-files.componen
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGalleryComponent } from './activity-gallery/activity-gallery.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
+import { Button } from 'primeng/button';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-activity-card',
@@ -26,18 +29,22 @@ import { ActivityGoogleInfoComponent } from './activity-google-info/activity-goo
     DividerModule,
     ProgressSpinnerModule,
     DragDropModule,
+    Button,
     ActivityHeaderComponent,
     ActivityGalleryComponent,
     ActivityFormComponent,
     ActivityFilesComponent,
     ActivityGoogleInfoComponent,
+    ConfirmDialog
   ],
+  providers: [ConfirmationService],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
 })
 export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
+private readonly confirmationService = inject(ConfirmationService);
 
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
@@ -146,4 +153,12 @@ export class ActivityCardComponent {
   private scrollToMe(): void {
     this.cardContainer().nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+    confirmDelete(): void {
+    this.confirmationService.confirm({
+      message: 'Supprimer cette activitée ?',
+      accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId())
+    });
+  }
+
 }
