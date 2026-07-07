@@ -15,7 +15,7 @@ export class TripDayMapComponent {
   points = input.required<DayMapPoint[]>();
   selectedActivityId = input<string | null>(null);
   zoom = input(13);
-  focusZoom = input(17); // niveau de zoom au clic sur un point
+  focusZoom = input(17);
 
   activitySelected = output<DayMapPoint>();
 
