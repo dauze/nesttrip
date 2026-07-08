@@ -14,6 +14,7 @@
       </app-trip-header>
 
       <app-trip-tabs-nav
+        class="sticky top-0 z-5"
         [tabs]="tabs()"
         [activeId]="activeDay()"
         (tabSelected)="onTabSelected($event)" />
