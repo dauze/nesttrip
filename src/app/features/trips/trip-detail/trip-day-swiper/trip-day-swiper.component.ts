@@ -82,6 +82,7 @@ export class TripDaySwiperComponent implements AfterViewInit {
       speed: 280,
       observer: true,
       observeParents: true,
+      autoHeight: true,
       resistanceRatio: 0.85,
       spaceBetween: 8,
       cssMode: false,
