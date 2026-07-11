@@ -131,16 +131,16 @@ export class TripDayMapComponent {
   const ratio = Math.max(0, (distanceMeters - 50) / 450);
   zoomDrop = this.lerp(0, 0.2, ratio);
 
-} else if (distanceMeters < 3000) {
-  // Distance moyenne (500m à 3km) : dézoom léger à modéré (entre 0.4 et 1.5 niveaux de zoom)
-  const ratio = (distanceMeters - 500) / 2500;
-  zoomDrop = this.lerp(0.2, 1, ratio);
+  } else if (distanceMeters < 3000) {
+    // Distance moyenne (500m à 3km) : dézoom léger à modéré (entre 0.4 et 1.5 niveaux de zoom)
+    const ratio = (distanceMeters - 500) / 2500;
+    zoomDrop = this.lerp(0.2, 1, ratio);
 
-} else {
-  // Longue distance (Plus de 3km) : dézoom maximum bloqué à 2.5 niveaux de zoom
-  const ratio = (distanceMeters - 3000) / 10000;
-  zoomDrop = Math.min(2.5, this.lerp(1, 10000, ratio));
-}
+  } else {
+    // Longue distance (Plus de 3km) : dézoom maximum bloqué à 2.5 niveaux de zoom
+    const ratio = (distanceMeters - 3000) / 10000;
+    zoomDrop = Math.min(2.5, this.lerp(1, 10000, ratio));
+  }
 
     // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
     const arc = 4 * t * (1 - t);
@@ -163,7 +163,7 @@ export class TripDayMapComponent {
     return a + (b - a) * t;
   }
 
-get googleMap(): google.maps.Map | undefined {
-  return this.mapRef()?.googleMap;
-}
+  get googleMap(): google.maps.Map | undefined {
+    return this.mapRef()?.googleMap;
+  }
 }
