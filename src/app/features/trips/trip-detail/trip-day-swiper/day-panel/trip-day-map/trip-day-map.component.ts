@@ -14,7 +14,7 @@ export class TripDayMapComponent {
   points = input.required<DayMapPoint[]>();
   selectedActivityId = input<string | null>(null);
   zoom = input(13);
-  focusZoom = input(17);
+  readonly focusZoom = input(14);
 
   activitySelected = output<DayMapPoint>();
 
@@ -28,10 +28,7 @@ export class TripDayMapComponent {
 
   center = computed(() => {
     const pts = this.points();
-
-    if (!pts.length) {
-      return { lat: 48.8566, lng: 2.3522 };
-    }
+    if (!pts.length) return { lat: 48.8566, lng: 2.3522 };
 
     return {
       lat: pts.reduce((sum, p) => sum + p.latitude, 0) / pts.length,
@@ -58,16 +55,91 @@ export class TripDayMapComponent {
 
   private focusOnPoint(point: DayMapPoint): void {
     const map = this.mapRef()?.googleMap;
+    if (!map) return;
 
-    if (!map) {
-      return;
+    // Utilisation de moveCamera pour le clic également
+    map.moveCamera({
+      center: { lat: point.latitude, lng: point.longitude },
+      zoom: this.focusZoom()
+    });
+  }
+
+  // Configuration de l'effet cinématique
+  private readonly MIN_ZOOM_DROP = 0.6;
+  private readonly MAX_ZOOM_DROP = 3.5;
+  private readonly DISTANCE_ZOOM_FACTOR = 0.8;
+
+  /**
+   * Appelé en direct par la boucle de scroll globale (déjà en OutsideAngular)
+   * On vire la boucle rAF locale pour appliquer directement les coordonnées vectorielles.
+   */
+  followScroll(from: DayMapPoint, to: DayMapPoint, t: number): void {
+    const map = this.mapRef()?.googleMap;
+    if (!map) return;
+
+    // Interpolation linéaire du centre en fonction du scroll t
+    const targetCenter = {
+      lat: this.lerp(from.latitude, to.latitude, t),
+      lng: this.lerp(from.longitude, to.longitude, t),
+    };
+
+    // Calcul du recul
+    const targetZoom = this.computeCinematicZoom(from, to, t);
+
+    // MOVE CAMERA : La magie vectorielle opère ici en une seule passe ultra-rapide
+    map.moveCamera({
+      center: targetCenter,
+      zoom: targetZoom
+    });
+  }
+
+  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
+    const baseZoom = this.focusZoom();
+    
+    // 1. Calcul de la distance réelle
+    const distanceMeters = this.haversineDistance(
+      from.latitude, from.longitude,
+      to.latitude, to.longitude
+    );
+
+    // 2. Configuration fine de l'effet selon la distance
+    // Si les points sont à moins de 50 mètres, aucun dézoom nécessaire (valeur 0)
+    if (distanceMeters < 50) {
+      return baseZoom;
     }
 
-    map.panTo({
-      lat: point.latitude,
-      lng: point.longitude,
-    });
+    // On définit dynamiquement l'amplitude du dézoom (zoomDrop) selon la distance
+    let zoomDrop = 0;
 
-    map.setZoom(this.focusZoom());
+    if (distanceMeters < 500) {
+      // Très proche (50m à 500m) : dézoom très léger (entre 0 et 1 niveau de zoom max)
+      zoomDrop = this.lerp(0, 1, (distanceMeters - 50) / 450);
+    } else if (distanceMeters < 3000) {
+      // Distance moyenne (500m à 3km) : dézoom modéré (entre 1 et 2.5 niveaux de zoom)
+      zoomDrop = this.lerp(1, 2.5, (distanceMeters - 500) / 2500);
+    } else {
+      // Longue distance (Plus de 3km) : gros dézoom (bloqué au max à 4 niveaux de zoom)
+      zoomDrop = Math.min(4.0, this.lerp(2.5, 4.0, (distanceMeters - 3000) / 10000));
+    }
+
+    // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
+    const arc = 4 * t * (1 - t);
+
+    return baseZoom - (zoomDrop * arc);
+  }
+
+  private haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000;
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  private lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
   }
 }

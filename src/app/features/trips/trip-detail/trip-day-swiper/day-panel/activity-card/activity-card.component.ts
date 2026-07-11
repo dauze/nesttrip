@@ -186,4 +186,8 @@ export class ActivityCardComponent {
     const target = event.target as HTMLElement;
     this.cdkDrag.disabled = !target.closest('.drag-handle');
   };
+
+  get element(): HTMLElement {
+    return this.cardContainer().nativeElement;
+  }
 }
