@@ -86,6 +86,11 @@ export class TripDaySwiperComponent implements AfterViewInit {
       resistanceRatio: 0.85,
       spaceBetween: 8,
       cssMode: false,
+      injectStyles: [`
+         .swiper {
+            overflow: clip;
+          }
+      `]
     });
 
     swiperEl.initialize();

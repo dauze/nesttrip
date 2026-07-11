@@ -131,3 +131,9 @@ body {
 .p-tablist-tab-list {
   --p-tabs-tablist-border-width: 0;
 }
+
+swiper-container,
+swiper-slide,
+.swiper-wrapper {
+  overflow-x:0 visible !important;
+}

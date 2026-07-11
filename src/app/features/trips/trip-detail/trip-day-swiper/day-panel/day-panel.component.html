@@ -2,10 +2,12 @@
 <div class="flex flex-column gap-2">
   @if (activities().length > 0) {
     <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
-    <app-trip-day-map
-    [points]="dayMapPoints()"
-    (activitySelected)="onMapPointClick($event)"
-  />
+    <div class="sticky-map">
+      <app-trip-day-map
+        [points]="dayMapPoints()"
+        (activitySelected)="onMapPointClick($event)"
+      />
+    </div>
   }
   <p-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
   (onAfterToggle)="onActivitiesPanelToggled()">
