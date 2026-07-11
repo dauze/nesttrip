@@ -59,7 +59,7 @@ private readonly confirmationService = inject(ConfirmationService);
     return BOOKING_STATUS_META[status];
   });
 
-  readonly collapsed = signal(true);
+  readonly collapsed = signal(false);
   readonly lazyGoogleData = signal<Place | null>(null);
   readonly googleDataLoading = signal(false);
 
