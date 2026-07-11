@@ -3,10 +3,7 @@
   @if (activities().length > 0) {
     <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
     <div #stickyMap class="sticky-map">
-      <app-trip-day-map
-        [points]="dayMapPoints()"
-        (activitySelected)="onMapPointClick($event)"
-      />
+      <div [cdkPortalOutlet]="mapPortal()" (attached)="onMapAttached($event)"></div>
     </div>
   }
   <p-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"

@@ -1,4 +1,19 @@
-import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, input, NgZone, Signal, signal, viewChild, viewChildren } from '@angular/core';
+import { 
+  afterNextRender, 
+  Component, 
+  ComponentRef, 
+  computed, 
+  DestroyRef, 
+  effect, 
+  ElementRef, 
+  inject, 
+  input, 
+  NgZone, 
+  Signal, 
+  signal, 
+  viewChild, 
+  viewChildren 
+} from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Activity } from './activity-card/activity.model';
@@ -10,13 +25,14 @@ import { ActivityCardComponent } from './activity-card/activity-card.component';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
-import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
+import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
+import { CdkPortalOutlet, ComponentPortal, PortalModule } from '@angular/cdk/portal';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule, TripDayMapComponent],
+  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule, PortalModule],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })
@@ -24,13 +40,19 @@ export class DayPanelComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly lockService = inject(SwiperLockService);
   private readonly zone = inject(NgZone);
-  readonly tripId = input.required<string>();
-  readonly dayId = input.required<Date>();
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly tripId = input.required<string>();
+  readonly dayId = input.required<Date>();
+  readonly mapPortal = input.required<ComponentPortal<TripDayMapComponent>>();
+  readonly sharedMap = input<TripDayMapComponent>();
+
   private readonly activityCards = viewChildren(ActivityCardComponent);
-  private readonly mapRef = viewChild(TripDayMapComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
+  readonly portalOutlet = viewChild(CdkPortalOutlet);
+
+  private readonly activeMapComponent = signal<TripDayMapComponent | null>(null);
+  private mapSubscription?: { unsubscribe: () => void };
 
   readonly stickyHeight = signal(0);
   readonly stickyOffset = this.stickyHeight.asReadonly();
@@ -39,7 +61,6 @@ export class DayPanelComponent {
   private lastScrollY = -1;
   private idleFrames = 0;
   private readonly IDLE_THRESHOLD = 30;
-  private cardOffsetsCache: { card: ActivityCardComponent; top: number; height: number }[] = [];
 
   activitiesCollapsed = false;
   private pendingActivityId?: string;
@@ -47,8 +68,7 @@ export class DayPanelComponent {
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getActivities(this.dayId())());
 
   readonly dayMapPoints = computed<DayMapPoint[]>(() => {
-    const activities = this.activities();
-    return activities
+    return this.activities()
       .filter(a => a.placeId && a.latitude && a.longitude)
       .map((a, i) => ({
         activityId: a.id,
@@ -61,48 +81,111 @@ export class DayPanelComponent {
   });
 
   constructor() {
+    // 1. Gestionnaire réactif pour mettre à jour les points de la carte
+    effect(() => {
+      const map = this.activeMapComponent();
+      if (map) {
+        map.points.set(this.dayMapPoints());
+      }
+    });
+
     afterNextRender(() => {
       const el = this.stickyMap()?.nativeElement;
       if (!el) return;
 
-      // 1. Observer la map pour sa hauteur sticky
-      const mapObserver = new ResizeObserver(entries => {
-        this.stickyHeight.set(entries[0].contentRect.height);
-      });
-      mapObserver.observe(el);
-
-      // 2. OBTENIR LE CONTENEUR PARENT GLOBAL
-      // On remonte au parent direct (la div principale qui contient la timeline, la map et le panel)
       const mainContainer = el.parentElement; 
       let globalObserver: ResizeObserver | undefined;
 
       if (mainContainer) {
-        globalObserver = new ResizeObserver(() => {
-          // Dès que n'importe quoi (Timeline, Carte, Map) change de taille dans ce composant,
-          // on recalcule TOUS les offsets des cartes.
-          this.recomputeCardOffsets();
-        });
+        // Le conteneur change de taille -> on recalcule la cinématique à la volée via wakeLoop
+        globalObserver = new ResizeObserver(() => this.wakeLoop());
         globalObserver.observe(mainContainer);
       }
 
-      // Événements globaux du navigateur
-      this.recomputeCardOffsets();
-      window.addEventListener('resize', this.recomputeCardOffsets, { passive: true });
+      // Écouteurs globaux branchés directement sur la boucle cinématique dynamique
+      this.wakeLoop();
+      window.addEventListener('resize', this.wakeLoop, { passive: true });
       window.addEventListener('scroll', this.wakeLoop, { passive: true });
       window.addEventListener('touchstart', this.wakeLoop, { passive: true });
       window.addEventListener('touchmove', this.wakeLoop, { passive: true });
       window.addEventListener('wheel', this.wakeLoop, { passive: true });
 
+      // Gestion de l'arrivée dynamique du composant Carte via le Portail CDK
+      let mapObserver: ResizeObserver | undefined;
+      const outlet = this.portalOutlet();
+      
+      if (outlet) {
+        outlet.attached.subscribe((ref) => {
+          if (ref && ref instanceof ComponentRef) {
+            const mapComponent = ref.instance as TripDayMapComponent;
+            this.activeMapComponent.set(mapComponent);
+
+            // Reconnexion de l'événement de clic sur un marqueur
+            this.mapSubscription?.unsubscribe();
+            this.mapSubscription = mapComponent.activitySelected.subscribe((point) => {
+              this.onMapPointClick(point);
+            });
+
+            if (mapObserver) mapObserver.disconnect();
+            
+            // On observe la vraie hauteur HTML du composant injecté
+            mapObserver = new ResizeObserver(entries => {
+              if (entries[0]) {
+                window.requestAnimationFrame(() => {
+                  this.stickyHeight.set(entries[0].contentRect.height);
+                  this.wakeLoop(); 
+                });
+              }
+            });
+            
+            mapObserver.observe(mapComponent.elementRef.nativeElement);
+
+            // Correction d'affichage de l'API Google Maps après transfert du DOM
+            setTimeout(() => {
+              const nativeMap = mapComponent.googleMap;
+              if (nativeMap) {
+                google.maps.event.trigger(nativeMap, 'resize');
+              }
+            }, 100);
+          }
+        });
+      }
+
+      // Nettoyage complet à la destruction du composant
       this.destroyRef.onDestroy(() => {
-        mapObserver.disconnect();
+        this.mapSubscription?.unsubscribe();
+        if (mapObserver) mapObserver.disconnect();
         if (globalObserver) globalObserver.disconnect();
-        window.removeEventListener('resize', this.recomputeCardOffsets);
+        window.removeEventListener('resize', this.wakeLoop);
         window.removeEventListener('scroll', this.wakeLoop);
         window.removeEventListener('touchstart', this.wakeLoop);
         window.removeEventListener('touchmove', this.wakeLoop);
         window.removeEventListener('wheel', this.wakeLoop);
         if (this.rafLoop) cancelAnimationFrame(this.rafLoop);
       });
+    });
+  }
+
+  protected onMapAttached(ref: any): void {
+    // Le CdkPortalOutlet renvoie un ComponentRef quand il instancie/attache un composant
+    const mapComponent = ref.instance as TripDayMapComponent;
+    this.activeMapComponent.set(mapComponent);
+
+    // Force le recalcul de géométrie de l'API Google Maps
+    setTimeout(() => {
+      const nativeMap = mapComponent.googleMap;
+      if (nativeMap) {
+        google.maps.event.trigger(nativeMap, 'resize');
+        if (mapComponent.center()) {
+          nativeMap.setCenter(mapComponent.center());
+        }
+      }
+    }, 50);
+
+    // Reconnexion de l'événement de clic (activitySelected)
+    this.mapSubscription?.unsubscribe();
+    this.mapSubscription = mapComponent.activitySelected.subscribe((point) => {
+      this.onMapPointClick(point);
     });
   }
 
@@ -113,8 +196,7 @@ export class DayPanelComponent {
       this.dayId(),
       this.activities().map((a) => a.id),
     );
-    // Le DOM change après un reorder : les positions des cartes ne sont plus valides.
-    queueMicrotask(() => this.recomputeCardOffsets());
+    queueMicrotask(() => this.wakeLoop());
   }
 
   addActivity() {
@@ -123,61 +205,58 @@ export class DayPanelComponent {
       title: '',
       type: ActivityType.ACTIVITE,
       duration: 0,
-      price: {
-        amount: 0,
-        currency: 'EUR',
-      },
+      price: { amount: 0, currency: 'EUR' },
       placeId: '',
-      booking: {
-        status: BookingStatus.NOT_NEEDED,
-        deadline: undefined,
-      },
+      booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
       notes: '',
       files: [],
       website: '',
       phone: '',
     });
-    queueMicrotask(() => this.recomputeCardOffsets());
+    queueMicrotask(() => this.wakeLoop());
   }
 
-  focusActivity(activityId: string) {
-  if (this.activitiesCollapsed) {
-    this.activitiesCollapsed = false;
-    queueMicrotask(() => {
-      this.openCard(activityId);
-      // Laisse le temps à la carte de s'ouvrir, puis recalcule
-      setTimeout(() => this.recomputeCardOffsets(), 300); 
+  focusActivity(activityId: string): void {
+  // 1. On calcule les positions réelles et fraîches des cartes à l'instant T
+  const freshOffsets = this.getFreshCardOffsets();
+  
+  // 2. On trouve la carte cible
+  const target = freshOffsets.find(item => item.card.activity().id === activityId);
+  
+  if (target) {
+    // 3. Récupérer l'élément HTML du conteneur sticky global (qui englobe Map + Timeline)
+    const stickyElement = this.stickyMap()?.nativeElement;
+    
+    // Si on a le conteneur, on prend sa hauteur réelle complète, sinon on se rabat sur la hauteur de la carte
+    const totalStickyHeight = stickyElement 
+      ? stickyElement.getBoundingClientRect().height 
+      : this.stickyHeight();
+
+    // 4. Position idéale : le top absolu de l'activité MOINS tout le bloc figé en haut (Map + Timeline)
+    const scrollToPosition = target.top - totalStickyHeight - 5;
+
+    // 5. On effectue le scroll fluide au pixel près
+    window.scrollTo({
+      top: scrollToPosition,
+      behavior: 'smooth'
     });
-    return;
   }
-
-  this.openCard(activityId);
-  setTimeout(() => this.recomputeCardOffsets(), 300);
 }
 
-onActivitiesPanelToggled() {
-  if (this.pendingActivityId) {
-    this.openCard(this.pendingActivityId);
-    this.pendingActivityId = undefined;
+  onActivitiesPanelToggled() {
+    if (this.pendingActivityId) {
+      this.openCard(this.pendingActivityId);
+      this.pendingActivityId = undefined;
+    }
+    // Laisse le temps à l'animation PrimeNG de se terminer avant d'ajuster le scroll
+    setTimeout(() => this.wakeLoop(), 300);
   }
-  // Recalcule les positions car le panel s'est ouvert/fermé
-  setTimeout(() => this.recomputeCardOffsets(), 300);
-}
 
   private openCard(activityId: string): void {
-    const card = this.activityCards().find(
-      c => c.activity()?.id === activityId
-    );
-
-    if (!card) {
-      return;
+    const card = this.activityCards().find(c => c.activity()?.id === activityId);
+    if (card) {
+      card.openAndScroll();
     }
-
-    card.openAndScroll();
-  }
-
-  onMapPointClick(point: DayMapPoint) {
-    this.focusActivity(point.activityId);
   }
 
   onDragStarted() {
@@ -188,65 +267,68 @@ onActivitiesPanelToggled() {
     this.lockService.unlock();
   }
 
-  private recomputeCardOffsets = (): void => {
-    const cards = this.activityCards();
-    this.cardOffsetsCache = cards.map(card => {
-      const rect = card.element.getBoundingClientRect();
-      return {
-        card,
-        top: rect.top + window.scrollY,
-        height: rect.height,
-      };
-    });
+  onMapPointClick(point: DayMapPoint) {
+    this.focusActivity(point.activityId);
+  }
+
+  private wakeLoop = (): void => {
+    this.idleFrames = 0;
+    if (!this.rafLoop) {
+      this.zone.runOutsideAngular(() => {
+        this.rafLoop = requestAnimationFrame(this.tick);
+      });
+    }
   };
 
- private wakeLoop = (): void => {
-  this.idleFrames = 0;
-  if (!this.rafLoop) {
-    this.zone.runOutsideAngular(() => {
+  private tick = (): void => {
+    const currentScrollY = window.scrollY;
+
+    if (currentScrollY !== this.lastScrollY) {
+      this.lastScrollY = currentScrollY;
+      this.idleFrames = 0;
+      this.updateMapFromScroll(currentScrollY);
+    } else {
+      this.idleFrames++;
+    }
+
+    if (this.idleFrames < this.IDLE_THRESHOLD) {
       this.rafLoop = requestAnimationFrame(this.tick);
-    });
-  }
-};
-
-private tick = (): void => {
-  const currentScrollY = window.scrollY;
-
-  if (currentScrollY !== this.lastScrollY) {
-    this.lastScrollY = currentScrollY;
-    this.idleFrames = 0;
-    this.updateMapFromScroll(currentScrollY);
-  } else {
-    this.idleFrames++;
-  }
-
-  if (this.idleFrames < this.IDLE_THRESHOLD) {
-    this.rafLoop = requestAnimationFrame(this.tick);
-  } else {
-    this.rafLoop = undefined;
-  }
-};
+    } else {
+      this.rafLoop = undefined;
+    }
+  };
 
 private updateMapFromScroll(scrollY: number) {
-  if (this.cardOffsetsCache.length === 0) return;
+  const freshOffsets = this.getFreshCardOffsets();
+  if (freshOffsets.length === 0) return;
 
-  // 1. Récupérer l'élément HTML de la map
   const mapElement = this.stickyMap()?.nativeElement;
   if (!mapElement) return;
 
-  // 2. Calculer la position absolue du BAS de la map dans le document
-  const mapRect = mapElement.getBoundingClientRect();
-  const triggerLine = scrollY + mapRect.bottom; // C'est le bas réel de la map à l'écran !
+  // 1. Récupérer la hauteur réelle de la carte via son composant actif
+  const activeMapComponent = this.activeMapComponent();
+  const mapHeight = activeMapComponent?.elementRef?.nativeElement?.getBoundingClientRect().height || this.stickyHeight();
 
-  // On cherche la toute PREMIÈRE carte qui se trouve EN DESSOUS de cette ligne
-  const upcomingIndex = this.cardOffsetsCache.findIndex(c => c.top > triggerLine);
+  // 2. Récupérer la hauteur du conteneur sticky global (qui contient ta timeline)
+  // Comme getBoundingClientRect().height reste vraie même en sticky, on l'utilise !
+  const stickyContainerHeight = mapElement.getBoundingClientRect().height;
+
+  // 3. LA LIGNE DE DÉCLENCHEMENT EXACTE (SANS PIÈGE DU STICKY) :
+  // C'est le scroll actuel + l'espace total occupé par tes éléments fixes à l'écran.
+  // Si la map et la timeline sont l'une sur l'autre dans le bloc sticky, stickyContainerHeight englobe déjà le tout.
+  // Par sécurité, on s'assure de prendre au moins la hauteur de la map.
+  const totalStickyShield = Math.max(stickyContainerHeight, mapHeight);
+  const triggerLine = scrollY + totalStickyShield;
+
+  // 4. Trouver l'index de la carte par rapport à cette ligne
+  const upcomingIndex = freshOffsets.findIndex(offset => offset.top > triggerLine);
 
   let fromIndex = 0;
   let toIndex = 0;
   let t = 0;
 
   if (upcomingIndex === -1) {
-    fromIndex = this.cardOffsetsCache.length - 1;
+    fromIndex = freshOffsets.length - 1;
     toIndex = fromIndex;
     t = 1;
   } else if (upcomingIndex === 0) {
@@ -257,17 +339,16 @@ private updateMapFromScroll(scrollY: number) {
     fromIndex = upcomingIndex - 1;
     toIndex = upcomingIndex;
 
-    const fromCard = this.cardOffsetsCache[fromIndex];
-    const toCard = this.cardOffsetsCache[toIndex];
+    const fromCard = freshOffsets[fromIndex];
+    const toCard = freshOffsets[toIndex];
 
-    // Le trajet (span) se fait entre le haut de la carte précédente et le haut de la carte suivante
     const span = toCard.top - fromCard.top;
     t = span !== 0 ? (triggerLine - fromCard.top) / span : 0;
     t = Math.min(1, Math.max(0, t));
   }
 
-  const from = this.cardOffsetsCache[fromIndex];
-  const to = this.cardOffsetsCache[toIndex];
+  const from = freshOffsets[fromIndex];
+  const to = freshOffsets[toIndex];
 
   const fromId = from.card.activity()?.id;
   const toId = to.card.activity()?.id;
@@ -279,4 +360,22 @@ private updateMapFromScroll(scrollY: number) {
 
   this.mapRef()?.followScroll(fromPoint, toPoint, t);
 }
+
+  private get mapRef(): () => TripDayMapComponent | null {
+    return () => this.activeMapComponent();
+  }
+
+  getFreshCardOffsets(): { card: ActivityCardComponent; top: number; height: number }[] {
+    const cards = this.activityCards();
+    const currentScrollY = window.scrollY;
+
+    return cards.map(card => {
+      const rect = card.element.getBoundingClientRect();
+      return {
+        card,
+        top: rect.top + currentScrollY, 
+        height: rect.height,
+      };
+    });
+  }
 }

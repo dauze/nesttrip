@@ -18,12 +18,14 @@ import { InfosComponent } from './infos/infos.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
+import { ComponentPortal } from '@angular/cdk/portal';
+import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.component';
 
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, InfosComponent],
+  imports: [DayPanelComponent, InfosComponent, TripDayMapComponent],
   providers: [SwiperLockService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
@@ -31,6 +33,7 @@ import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 export class TripDaySwiperComponent implements AfterViewInit {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
+  readonly mapPortal = new ComponentPortal(TripDayMapComponent);
 
   readonly trip = input.required<Trip>();
   readonly tabs = input<TripTab[]>([]);

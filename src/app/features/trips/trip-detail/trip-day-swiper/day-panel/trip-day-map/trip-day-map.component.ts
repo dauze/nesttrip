@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { environment } from '@environnements/environnement';
@@ -12,12 +12,16 @@ import { Panel } from 'primeng/panel';
   styleUrl: 'trip-day-map.component.scss',
 })
 export class TripDayMapComponent {
-  points = input.required<DayMapPoint[]>();
-  selectedActivityId = input<string | null>(null);
+  readonly points = signal<DayMapPoint[]>([]);
+  readonly selectedActivityId = signal<string | null>(null);
   zoom = input(13);
   readonly focusZoom = input(14);
 
-  activitySelected = output<DayMapPoint>();
+
+  // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
+  public readonly elementRef = inject(ElementRef);
+
+  readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -125,17 +129,17 @@ export class TripDayMapComponent {
   // Très proche (50m à 500m) : dézoom infime (entre 0 et 0.4 niveau de zoom max)
   // On s'assure aussi de ne pas avoir de valeur négative si distanceMeters < 50
   const ratio = Math.max(0, (distanceMeters - 50) / 450);
-  zoomDrop = this.lerp(0, 0.4, ratio);
+  zoomDrop = this.lerp(0, 0.2, ratio);
 
 } else if (distanceMeters < 3000) {
   // Distance moyenne (500m à 3km) : dézoom léger à modéré (entre 0.4 et 1.5 niveaux de zoom)
   const ratio = (distanceMeters - 500) / 2500;
-  zoomDrop = this.lerp(0.4, 1.5, ratio);
+  zoomDrop = this.lerp(0.2, 1, ratio);
 
 } else {
   // Longue distance (Plus de 3km) : dézoom maximum bloqué à 2.5 niveaux de zoom
   const ratio = (distanceMeters - 3000) / 10000;
-  zoomDrop = Math.min(2.5, this.lerp(1.5, 2.5, ratio));
+  zoomDrop = Math.min(2.5, this.lerp(1, 10000, ratio));
 }
 
     // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
@@ -158,4 +162,8 @@ export class TripDayMapComponent {
   private lerp(a: number, b: number, t: number): number {
     return a + (b - a) * t;
   }
+
+get googleMap(): google.maps.Map | undefined {
+  return this.mapRef()?.googleMap;
+}
 }

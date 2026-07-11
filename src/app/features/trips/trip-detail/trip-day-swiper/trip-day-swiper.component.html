@@ -7,7 +7,11 @@
   @for (day of sortedDays(); track day.id) {
     <swiper-slide>
       @if (visitedDays().has(day.id.toISOString())) {
-        <app-day-panel [dayId]="day.id" [tripId]="trip().id" />
+        <app-day-panel 
+          [dayId]="day.id" 
+          [tripId]="trip().id" 
+          [mapPortal]="mapPortal"
+        />
       }
     </swiper-slide>
   }
