@@ -2,7 +2,7 @@
 <div class="flex flex-column gap-2">
   @if (activities().length > 0) {
     <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
-    <div class="sticky-map">
+    <div #stickyMap class="sticky-map">
       <app-trip-day-map
         [points]="dayMapPoints()"
         (activitySelected)="onMapPointClick($event)"
@@ -20,7 +20,7 @@
     <div class="flex flex-column gap-2">
       <div cdkDropList class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
         @for (activity of activities(); track activity.id) {
-            <app-activity-card cdkDrag (cdkDragStarted)="onDragStarted()"
+            <app-activity-card cdkDrag (cdkDragStarted)="onDragStarted()" [scrollOffset]="stickyOffset()"
       (cdkDragEnded)="onDragEnded()" [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
       </div>

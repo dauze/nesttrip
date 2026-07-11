@@ -44,8 +44,8 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
-private readonly confirmationService = inject(ConfirmationService);
- private cdkDrag = inject(CdkDrag, { self: true });
+  private readonly confirmationService = inject(ConfirmationService);
+  private cdkDrag = inject(CdkDrag, { self: true });
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
   readonly tripId = input.required<string>();
@@ -63,6 +63,7 @@ private readonly confirmationService = inject(ConfirmationService);
   readonly lazyGoogleData = signal<Place | null>(null);
   readonly googleDataLoading = signal(false);
   protected dragDisabled = signal(true); 
+  readonly scrollOffset = input(0);
 
   constructor() {
     // Récupère les données Google complètes dès qu'un placeId est connu et pas encore en cache.
@@ -158,7 +159,19 @@ private readonly confirmationService = inject(ConfirmationService);
   }
 
   private scrollToMe(): void {
-    this.cardContainer().nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const element = this.cardContainer().nativeElement;
+    const offset = this.scrollOffset();
+
+    const y =
+      window.scrollY +
+      element.getBoundingClientRect().top -
+      offset -
+      8;
+
+    window.scrollTo({
+      top: y,
+      behavior: 'smooth'
+    });
   }
 
     confirmDelete(): void {

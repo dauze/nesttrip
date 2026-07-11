@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, QueryList, Signal, ViewChildren } from '@angular/core';
+import { afterNextRender, Component, computed, ElementRef, inject, input, QueryList, signal, Signal, viewChild, ViewChildren } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Activity } from './activity-card/activity.model';
@@ -28,13 +28,31 @@ export class DayPanelComponent {
 
   @ViewChildren(ActivityCardComponent)
   activityCards!: QueryList<ActivityCardComponent>;
+
+  private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
+  readonly stickyHeight = signal(0);
+  readonly stickyOffset = this.stickyHeight.asReadonly();
   
   activitiesCollapsed = false;
   private pendingActivityId?: string;
 
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getActivities(this.dayId())());
 
-  dayMapPoints = computed<DayMapPoint[]>(() => {
+  constructor() {
+    afterNextRender(() => {
+      const el = this.stickyMap()?.nativeElement;
+      if (!el) return;
+
+      const observer = new ResizeObserver(entries => {
+        const height = entries[0].contentRect.height;
+        this.stickyHeight.set(height);
+      });
+
+      observer.observe(el);
+    });
+  }
+
+  readonly dayMapPoints = computed<DayMapPoint[]>(() => {
     const activities = this.activities();
     return activities
       .filter(a => a.placeId && a.latitude && a.longitude)

@@ -1,5 +1,4 @@
-// trip-day-map.component.ts
-import { Component, input, output, computed, viewChild } from '@angular/core';
+import { Component, computed, input, output, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { environment } from '@environnements/environnement';
@@ -29,16 +28,21 @@ export class TripDayMapComponent {
 
   center = computed(() => {
     const pts = this.points();
-    if (!pts.length) return { lat: 48.8566, lng: 2.3522 };
-    const lat = pts.reduce((s, p) => s + p.latitude, 0) / pts.length;
-    const lng = pts.reduce((s, p) => s + p.longitude, 0) / pts.length;
-    return { lat, lng };
+
+    if (!pts.length) {
+      return { lat: 48.8566, lng: 2.3522 };
+    }
+
+    return {
+      lat: pts.reduce((sum, p) => sum + p.latitude, 0) / pts.length,
+      lng: pts.reduce((sum, p) => sum + p.longitude, 0) / pts.length,
+    };
   });
 
   markerContent(point: DayMapPoint): HTMLElement {
     const isSelected = point.activityId === this.selectedActivityId();
     const pin = new google.maps.marker.PinElement({
-      glyph: String(point.order),
+      glyphText: String(point.order),
       glyphColor: '#ffffff',
       background: isSelected ? '#e53935' : '#3f51b5',
       borderColor: isSelected ? '#b71c1c' : '#283593',
@@ -47,16 +51,23 @@ export class TripDayMapComponent {
     return pin.element;
   }
 
-  onMarkerClick(point: DayMapPoint) {
+  onMarkerClick(point: DayMapPoint): void {
     this.focusOnPoint(point);
     this.activitySelected.emit(point);
   }
 
   private focusOnPoint(point: DayMapPoint): void {
     const map = this.mapRef()?.googleMap;
-    if (!map) return;
 
-    map.panTo({ lat: point.latitude, lng: point.longitude });
+    if (!map) {
+      return;
+    }
+
+    map.panTo({
+      lat: point.latitude,
+      lng: point.longitude,
+    });
+
     map.setZoom(this.focusZoom());
   }
 }
