@@ -1,4 +1,4 @@
-import { Component, computed, input, output, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { environment } from '@environnements/environnement';
@@ -17,26 +17,47 @@ export class TripDayMapComponent {
   readonly focusZoom = input(14);
 
   activitySelected = output<DayMapPoint>();
-
   private mapRef = viewChild(GoogleMap);
+  private readonly destroyRef = inject(DestroyRef);
 
-  mapOptions: google.maps.MapOptions = {
-    mapId: environment.googleMapsMapId,
-    disableDefaultUI: false,
-    gestureHandling: 'greedy',
-  };
+  // Écoute directe du mode sombre globale du système/navigateur utilisé par le preset Aura
+  isDarkMode = signal(false);
+
+  // Les options de la carte deviennent un computed réactif
+  mapOptions = computed<google.maps.MapOptions>(() => {
+    return {
+      // Tu laisses l'ID de carte classique (raster ou vectoriel de base)
+      mapId: environment.googleMapsMapId, 
+      colorScheme: this.isDarkMode() ? 'DARK' : 'LIGHT',
+      disableDefaultUI: false,
+      gestureHandling: 'greedy',
+    };
+  });
 
   center = computed(() => {
     const pts = this.points();
     if (!pts.length) return { lat: 48.8566, lng: 2.3522 };
-
     return {
       lat: pts.reduce((sum, p) => sum + p.latitude, 0) / pts.length,
       lng: pts.reduce((sum, p) => sum + p.longitude, 0) / pts.length,
     };
   });
 
+  constructor() {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    this.isDarkMode.set(mediaQuery.matches);
+
+    const listener = (e: MediaQueryListEvent) => this.isDarkMode.set(e.matches);
+    mediaQuery.addEventListener('change', listener);
+    this.destroyRef.onDestroy(() => mediaQuery.removeEventListener('change', listener));
+  }
+
   markerContent(point: DayMapPoint): HTMLElement {
+    // Protection indispensable au cas où Google Maps n'est pas encore totalement instancié dans le DOM
+    if (typeof google === 'undefined' || !google.maps || !google.maps.marker) {
+      return document.createElement('div');
+    }
+
     const isSelected = point.activityId === this.selectedActivityId();
     const pin = new google.maps.marker.PinElement({
       glyphText: String(point.order),
@@ -56,28 +77,16 @@ export class TripDayMapComponent {
   private focusOnPoint(point: DayMapPoint): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
-
-    // Utilisation de moveCamera pour le clic également
     map.moveCamera({
       center: { lat: point.latitude, lng: point.longitude },
       zoom: this.focusZoom()
     });
   }
 
-  // Configuration de l'effet cinématique
-  private readonly MIN_ZOOM_DROP = 0.6;
-  private readonly MAX_ZOOM_DROP = 3.5;
-  private readonly DISTANCE_ZOOM_FACTOR = 0.8;
-
-  /**
-   * Appelé en direct par la boucle de scroll globale (déjà en OutsideAngular)
-   * On vire la boucle rAF locale pour appliquer directement les coordonnées vectorielles.
-   */
   followScroll(from: DayMapPoint, to: DayMapPoint, t: number): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
-    // Interpolation linéaire du centre en fonction du scroll t
     const targetCenter = {
       lat: this.lerp(from.latitude, to.latitude, t),
       lng: this.lerp(from.longitude, to.longitude, t),

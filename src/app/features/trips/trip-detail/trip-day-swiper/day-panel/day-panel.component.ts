@@ -26,6 +26,7 @@ export class DayPanelComponent {
   private readonly zone = inject(NgZone);
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
   private readonly mapRef = viewChild(TripDayMapComponent);
@@ -71,13 +72,12 @@ export class DayPanelComponent {
 
       this.recomputeCardOffsets();
       window.addEventListener('resize', this.recomputeCardOffsets, { passive: true });
-
       window.addEventListener('scroll', this.wakeLoop, { passive: true });
       window.addEventListener('touchstart', this.wakeLoop, { passive: true });
       window.addEventListener('touchmove', this.wakeLoop, { passive: true });
       window.addEventListener('wheel', this.wakeLoop, { passive: true });
 
-      inject(DestroyRef).onDestroy(() => {
+      this.destroyRef.onDestroy(() => {
         observer.disconnect();
         window.removeEventListener('resize', this.recomputeCardOffsets);
         window.removeEventListener('scroll', this.wakeLoop);

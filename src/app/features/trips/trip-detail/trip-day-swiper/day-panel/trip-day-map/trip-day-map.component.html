@@ -12,7 +12,7 @@
         width="100%"
         [center]="center()"
         [zoom]="zoom()"
-        [options]="mapOptions"
+        [options]="mapOptions()"
       >
         @for (point of points(); track point.activityId) {
           <map-advanced-marker
