@@ -166,7 +166,7 @@ export class ActivityCardComponent {
       window.scrollY +
       element.getBoundingClientRect().top -
       offset -
-      8;
+      13;
 
     window.scrollTo({
       top: y,
