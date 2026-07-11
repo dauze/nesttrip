@@ -9,6 +9,7 @@ import { Panel } from 'primeng/panel';
   standalone: true,
   imports: [GoogleMap, MapAdvancedMarker, Panel],
   templateUrl: 'trip-day-map.component.html',
+  styleUrl: 'trip-day-map.component.scss',
 })
 export class TripDayMapComponent {
   points = input.required<DayMapPoint[]>();
@@ -120,16 +121,22 @@ export class TripDayMapComponent {
     // On définit dynamiquement l'amplitude du dézoom (zoomDrop) selon la distance
     let zoomDrop = 0;
 
-    if (distanceMeters < 500) {
-      // Très proche (50m à 500m) : dézoom très léger (entre 0 et 1 niveau de zoom max)
-      zoomDrop = this.lerp(0, 1, (distanceMeters - 50) / 450);
-    } else if (distanceMeters < 3000) {
-      // Distance moyenne (500m à 3km) : dézoom modéré (entre 1 et 2.5 niveaux de zoom)
-      zoomDrop = this.lerp(1, 2.5, (distanceMeters - 500) / 2500);
-    } else {
-      // Longue distance (Plus de 3km) : gros dézoom (bloqué au max à 4 niveaux de zoom)
-      zoomDrop = Math.min(4.0, this.lerp(2.5, 4.0, (distanceMeters - 3000) / 10000));
-    }
+  if (distanceMeters < 500) {
+  // Très proche (50m à 500m) : dézoom infime (entre 0 et 0.4 niveau de zoom max)
+  // On s'assure aussi de ne pas avoir de valeur négative si distanceMeters < 50
+  const ratio = Math.max(0, (distanceMeters - 50) / 450);
+  zoomDrop = this.lerp(0, 0.4, ratio);
+
+} else if (distanceMeters < 3000) {
+  // Distance moyenne (500m à 3km) : dézoom léger à modéré (entre 0.4 et 1.5 niveaux de zoom)
+  const ratio = (distanceMeters - 500) / 2500;
+  zoomDrop = this.lerp(0.4, 1.5, ratio);
+
+} else {
+  // Longue distance (Plus de 3km) : dézoom maximum bloqué à 2.5 niveaux de zoom
+  const ratio = (distanceMeters - 3000) / 10000;
+  zoomDrop = Math.min(2.5, this.lerp(1.5, 2.5, ratio));
+}
 
     // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
     const arc = 4 * t * (1 - t);

@@ -65,11 +65,27 @@ export class DayPanelComponent {
       const el = this.stickyMap()?.nativeElement;
       if (!el) return;
 
-      const observer = new ResizeObserver(entries => {
+      // 1. Observer la map pour sa hauteur sticky
+      const mapObserver = new ResizeObserver(entries => {
         this.stickyHeight.set(entries[0].contentRect.height);
       });
-      observer.observe(el);
+      mapObserver.observe(el);
 
+      // 2. OBTENIR LE CONTENEUR PARENT GLOBAL
+      // On remonte au parent direct (la div principale qui contient la timeline, la map et le panel)
+      const mainContainer = el.parentElement; 
+      let globalObserver: ResizeObserver | undefined;
+
+      if (mainContainer) {
+        globalObserver = new ResizeObserver(() => {
+          // Dès que n'importe quoi (Timeline, Carte, Map) change de taille dans ce composant,
+          // on recalcule TOUS les offsets des cartes.
+          this.recomputeCardOffsets();
+        });
+        globalObserver.observe(mainContainer);
+      }
+
+      // Événements globaux du navigateur
       this.recomputeCardOffsets();
       window.addEventListener('resize', this.recomputeCardOffsets, { passive: true });
       window.addEventListener('scroll', this.wakeLoop, { passive: true });
@@ -78,7 +94,8 @@ export class DayPanelComponent {
       window.addEventListener('wheel', this.wakeLoop, { passive: true });
 
       this.destroyRef.onDestroy(() => {
-        observer.disconnect();
+        mapObserver.disconnect();
+        if (globalObserver) globalObserver.disconnect();
         window.removeEventListener('resize', this.recomputeCardOffsets);
         window.removeEventListener('scroll', this.wakeLoop);
         window.removeEventListener('touchstart', this.wakeLoop);
@@ -124,23 +141,28 @@ export class DayPanelComponent {
   }
 
   focusActivity(activityId: string) {
-    if (this.activitiesCollapsed) {
-      this.activitiesCollapsed = false;
-      queueMicrotask(() => {
-        this.openCard(activityId);
-      });
-      return;
-    }
-
-    this.openCard(activityId);
+  if (this.activitiesCollapsed) {
+    this.activitiesCollapsed = false;
+    queueMicrotask(() => {
+      this.openCard(activityId);
+      // Laisse le temps à la carte de s'ouvrir, puis recalcule
+      setTimeout(() => this.recomputeCardOffsets(), 300); 
+    });
+    return;
   }
 
-  onActivitiesPanelToggled() {
-    if (this.pendingActivityId) {
-      this.openCard(this.pendingActivityId);
-      this.pendingActivityId = undefined;
-    }
+  this.openCard(activityId);
+  setTimeout(() => this.recomputeCardOffsets(), 300);
+}
+
+onActivitiesPanelToggled() {
+  if (this.pendingActivityId) {
+    this.openCard(this.pendingActivityId);
+    this.pendingActivityId = undefined;
   }
+  // Recalcule les positions car le panel s'est ouvert/fermé
+  setTimeout(() => this.recomputeCardOffsets(), 300);
+}
 
   private openCard(activityId: string): void {
     const card = this.activityCards().find(
@@ -208,10 +230,15 @@ private tick = (): void => {
 private updateMapFromScroll(scrollY: number) {
   if (this.cardOffsetsCache.length === 0) return;
 
-  // La ligne de déclenchement est PILE le bas de la carte collée
-  const triggerLine = scrollY + this.stickyOffset();
+  // 1. Récupérer l'élément HTML de la map
+  const mapElement = this.stickyMap()?.nativeElement;
+  if (!mapElement) return;
 
-  // On cherche la toute PREMIÈRE carte qui se trouve EN DESSOUS de la ligne (qui va arriver)
+  // 2. Calculer la position absolue du BAS de la map dans le document
+  const mapRect = mapElement.getBoundingClientRect();
+  const triggerLine = scrollY + mapRect.bottom; // C'est le bas réel de la map à l'écran !
+
+  // On cherche la toute PREMIÈRE carte qui se trouve EN DESSOUS de cette ligne
   const upcomingIndex = this.cardOffsetsCache.findIndex(c => c.top > triggerLine);
 
   let fromIndex = 0;
@@ -219,17 +246,14 @@ private updateMapFromScroll(scrollY: number) {
   let t = 0;
 
   if (upcomingIndex === -1) {
-    // Si toutes les cartes ont dépassé le bas de la map, on reste bloqué sur la dernière
     fromIndex = this.cardOffsetsCache.length - 1;
     toIndex = fromIndex;
     t = 1;
   } else if (upcomingIndex === 0) {
-    // Si même la première carte n'a pas encore atteint le bas de la map, on reste sur la première
     fromIndex = 0;
     toIndex = 0;
     t = 0;
   } else {
-    // Cas nominal : on transite entre la carte qui vient de passer (from) et celle qui arrive (to)
     fromIndex = upcomingIndex - 1;
     toIndex = upcomingIndex;
 
@@ -253,7 +277,6 @@ private updateMapFromScroll(scrollY: number) {
   const toPoint = this.dayMapPoints().find(p => p.activityId === toId);
   if (!fromPoint || !toPoint) return;
 
-  // On envoie les bons points et le ratio t parfaitement synchronisé
   this.mapRef()?.followScroll(fromPoint, toPoint, t);
 }
 }
