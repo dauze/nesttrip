@@ -7,22 +7,27 @@ import {
   output,
   signal,
   viewChild,
+  inject,
+  AfterViewInit,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
 import { InfosComponent } from './infos/infos.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
+import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [DayPanelComponent, InfosComponent],
+  providers: [SwiperLockService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
 })
-export class TripDaySwiperComponent {
+export class TripDaySwiperComponent implements AfterViewInit {
+  private readonly lockService = inject(SwiperLockService);
   readonly trip = input.required<Trip>();
   readonly tabs = input<TripTab[]>([]);
   readonly activeId = input<string>('');
@@ -57,7 +62,7 @@ export class TripDaySwiperComponent {
 
       const isFirstSync = !this.hasPositioned;
       this.hasPositioned = true; // posé avant le early-return ci-dessous
-
+      swiperInstance.allowTouchMove = !this.lockService.isLocked();
       if (swiperInstance.activeIndex === index) return;
       swiperInstance.slideTo(index, isFirstSync ? 0 : undefined);
     });

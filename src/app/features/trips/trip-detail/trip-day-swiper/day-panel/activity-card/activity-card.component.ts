@@ -1,9 +1,9 @@
-import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, afterNextRender, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDrag, DragDropModule } from '@angular/cdk/drag-drop';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GooglePlaceService } from '@core/services/google.places.service';
@@ -45,7 +45,7 @@ export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
 private readonly confirmationService = inject(ConfirmationService);
-
+ private cdkDrag = inject(CdkDrag, { self: true });
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
   readonly tripId = input.required<string>();
@@ -62,6 +62,7 @@ private readonly confirmationService = inject(ConfirmationService);
   readonly collapsed = signal(false);
   readonly lazyGoogleData = signal<Place | null>(null);
   readonly googleDataLoading = signal(false);
+  protected dragDisabled = signal(true); 
 
   constructor() {
     // Récupère les données Google complètes dès qu'un placeId est connu et pas encore en cache.
@@ -80,15 +81,21 @@ private readonly confirmationService = inject(ConfirmationService);
         error: () => this.googleDataLoading.set(false),
       });
     });
+
+    afterNextRender(() => {
+      const el = this.cardContainer()?.nativeElement;
+      if (!el) return;
+
+      el.addEventListener('mousedown', this.updateDragState, { capture: true });
+      el.addEventListener('touchstart', this.updateDragState, { capture: true, passive: true });
+    });
   }
 
     // activity-card.component.ts
   onCardPointerDown(event: MouseEvent | TouchEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.drag-handle')) {
-      event.stopPropagation();
-    }
-  }
+  const target = event.target as HTMLElement;
+  this.dragDisabled.set(!target.closest('.drag-handle'));
+}
 
   /** API publique — appelée depuis la liste parente pour déplier la carte et scroller dessus. */
   openAndScroll(): void {
@@ -161,4 +168,9 @@ private readonly confirmationService = inject(ConfirmationService);
     });
   }
 
+
+  private updateDragState = (event: MouseEvent | TouchEvent) => {
+    const target = event.target as HTMLElement;
+    this.cdkDrag.disabled = !target.closest('.drag-handle');
+  };
 }

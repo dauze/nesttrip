@@ -11,6 +11,7 @@ import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
+import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -21,6 +22,7 @@ import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
 })
 export class DayPanelComponent {
   private readonly tripFacade = inject(TripFacade);
+  private readonly lockService = inject(SwiperLockService);
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
 
@@ -110,5 +112,13 @@ export class DayPanelComponent {
   
   onMapPointClick(point: DayMapPoint) {
     this.focusActivity(point.activityId);
+  }
+
+  onDragStarted() {
+    this.lockService.lock();
+  }
+
+  onDragEnded() {
+    this.lockService.unlock();
   }
 }

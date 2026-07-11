@@ -47,16 +47,6 @@
   width: 6px;
 }
 
-.panel-overflow-hidden {
-  .p-panel-content,
-  .p-panel-content-wrapper {
-    min-width: 0;
-    max-width: 100%;
-    width: 100%;
-    overflow: hidden;
-  }
-}
-
 .compact-form {
   .p-select-label,
   .p-inputtext {
@@ -129,4 +119,11 @@
 
 .p-confirmdialog.p-dialog {
   width: min(28rem, 95vw);
+}
+
+.p-tab {
+--p-tabs-tab-border-width: 2px 0 0 0;
+}
+.p-tablist-tab-list {
+  --p-tabs-tablist-border-width: 0;
 }

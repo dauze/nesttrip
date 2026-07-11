@@ -1,7 +1,6 @@
 @if (activity(); as activity) {
   <div #cardContainer (mousedown)="onCardPointerDown($event)" (touchstart)="onCardPointerDown($event)">
     <p-panel
-        class="panel-overflow-hidden"
         [ngClass]="'trip booking ' + bookingMeta().className"
         [toggleable]="true"
         [(collapsed)]="collapsed">
