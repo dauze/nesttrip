@@ -42,6 +42,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private initializedTripId: string | null = null;
   readonly currentDayIndex = signal(0);
 
+  readonly contentReady = signal(false);
+  private readyFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
   readonly tripTitle = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
     const fromList = this.facade.trips().find(t => t.id === id);
@@ -62,7 +65,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     })),
   ]);
 
-   constructor() {
+  constructor() {
     effect(() => {
       const trip = this.facade.activeTrip();
       const loading = this.facade.activeTripLoading();
@@ -80,6 +83,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         setTimeout(() => this.tabsNavRef()?.scrollIntoView(index), 100);
       }
     });
+
+    effect(() => {
+      const id = this.facade.activeTrip()?.id;
+      if (!id) return;
+
+      this.contentReady.set(false);
+      this.clearReadyFallback();
+
+      // Filet de sécurité : si le swiper n'a jamais émis `ready` (bug,
+      // tab introuvable, event raté) on débloque quand même l'UI après 4s
+      // plutôt que de laisser le skeleton tourner indéfiniment.
+      this.readyFallbackTimer = setTimeout(() => {
+        this.contentReady.set(true);
+      }, 4000);
+    });
   }
 
   ngOnInit(): void {
@@ -90,6 +108,19 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.facade.unloadTrip();
+    this.clearReadyFallback();
+  }
+
+  protected onSwiperReady(): void {
+    this.contentReady.set(true);
+    this.clearReadyFallback();
+  }
+
+  private clearReadyFallback(): void {
+    if (this.readyFallbackTimer) {
+      clearTimeout(this.readyFallbackTimer);
+      this.readyFallbackTimer = null;
+    }
   }
 
   protected onTitleChange(title: string): void {
@@ -123,7 +154,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const applyChanges = () => {
       for (const day of toDelete) this.facade.removeDay(trip.id, day.id);
       for (const day of toAdd) this.facade.addDay(trip.id, day);
-      this.activeDay.set('info'); 
+      this.activeDay.set('info');
       setTimeout(() => this.tabsNavRef()?.scrollIntoView(0), 100);
     };
 

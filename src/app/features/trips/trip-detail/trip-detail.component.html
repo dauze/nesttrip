@@ -1,7 +1,7 @@
 <p-confirmDialog />
-<div class="flex flex-column gap-2 pt-2">
-  @if (!facade.activeTripLoading()) {
-    @if (facade.activeTrip(); as trip) {
+<div class="flex flex-column gap-2 pt-2 relative">
+  @if (facade.activeTrip(); as trip) {
+    <div [class.invisible-content]="!contentReady()">
       <app-trip-header
         [trip]="trip"
         [title]="tripTitle()"
@@ -23,9 +23,12 @@
         [trip]="trip"
         [tabs]="tabs()"
         [activeId]="activeDay()"
-        (activeIdChange)="onSwiperActiveIdChange($event)" />
-    }
-  } @else {
-    <app-trip-detail-skeleton />
+        (activeIdChange)="onSwiperActiveIdChange($event)"
+        (ready)="onSwiperReady()" />
+    </div>
+  }
+
+  @if (facade.activeTripLoading() || !contentReady()) {
+    <app-trip-detail-skeleton/>
   }
 </div>

@@ -9,6 +9,8 @@ import {
   viewChild,
   inject,
   AfterViewInit,
+  Injector,
+  afterNextRender,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
@@ -28,10 +30,13 @@ import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 })
 export class TripDaySwiperComponent implements AfterViewInit {
   private readonly lockService = inject(SwiperLockService);
+  private readonly injector = inject(Injector);
+
   readonly trip = input.required<Trip>();
   readonly tabs = input<TripTab[]>([]);
   readonly activeId = input<string>('');
   readonly activeIdChange = output<string>();
+  readonly ready = output<void>();
 
   readonly sortedDays = signal<Trip['days']>([]);
   readonly visitedDays = signal<Set<string>>(new Set());
@@ -39,9 +44,9 @@ export class TripDaySwiperComponent implements AfterViewInit {
   private readonly swiperRef = viewChild<ElementRef<SwiperContainer>>('swiperRef');
   private readonly viewReady = signal(false);
   private hasPositioned = false;
+  private hasEmittedReady = false;
 
   constructor() {
-    // Garde sortedDays synchronisé avec l'input trip (recalculé à chaque changement de trip()).
     effect(() => {
       const days = this.trip().days.slice().sort((a, b) => a.id.getTime() - b.id.getTime());
       this.sortedDays.set(days);
@@ -61,16 +66,36 @@ export class TripDaySwiperComponent implements AfterViewInit {
       if (!swiperInstance) return;
 
       const isFirstSync = !this.hasPositioned;
-      this.hasPositioned = true; // posé avant le early-return ci-dessous
+      this.hasPositioned = true;
       swiperInstance.allowTouchMove = !this.lockService.isLocked();
-      if (swiperInstance.activeIndex === index) return;
-      swiperInstance.slideTo(index, isFirstSync ? 0 : undefined);
+      if (swiperInstance.activeIndex !== index) {
+        swiperInstance.slideTo(index, isFirstSync ? 0 : undefined);
+      }
+
+      // Le slide actif est bien monté ET positionné : on attend encore
+      // deux frames pour laisser autoHeight et le contenu enfant (images,
+      // map) se stabiliser avant de prévenir le parent.
+      if (isFirstSync && !this.hasEmittedReady) {
+        this.waitForStableLayout();
+      }
     });
   }
 
   ngAfterViewInit(): void {
     const swiperEl = this.swiperRef()?.nativeElement;
     if (swiperEl) this.setupSwiper(swiperEl);
+  }
+
+  private waitForStableLayout(): void {
+    // 1er afterNextRender : le DOM du slide vient d'être inséré par le @if,
+    // mais autoHeight/observer peuvent avoir encore un recalcul en attente.
+    afterNextRender(() => {
+      afterNextRender(() => {
+        if (this.hasEmittedReady) return;
+        this.hasEmittedReady = true;
+        this.ready.emit();
+      }, { injector: this.injector });
+    }, { injector: this.injector });
   }
 
   protected dayFor(id: string) {
