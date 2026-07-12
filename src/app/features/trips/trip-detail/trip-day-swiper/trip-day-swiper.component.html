@@ -12,6 +12,7 @@
           [dayId]="day.id" 
           [tripId]="trip().id" 
           [mapPortal]="mapPortal"
+          [active]="activeId() === day.id.toISOString()"
         />
       }
     </swiper-slide>

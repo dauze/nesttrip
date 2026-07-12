@@ -8,3 +8,7 @@
   padding-top: 0.5rem;
   border-radius: 0 0 6px 6px;
 }
+
+:host {
+  scroll-margin-top: var(--sticky-height, 0px);
+}

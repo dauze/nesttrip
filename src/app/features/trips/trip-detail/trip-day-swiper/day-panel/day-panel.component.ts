@@ -51,16 +51,23 @@ export class DayPanelComponent {
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
   readonly portalOutlet = viewChild(CdkPortalOutlet);
 
+
+  private scrollTimeout?: number;
+  private isTouching = false;
+  private isAutoScrolling = false;
   private readonly activeMapComponent = signal<TripDayMapComponent | null>(null);
   private mapSubscription?: { unsubscribe: () => void };
 
   readonly stickyHeight = signal(0);
   readonly stickyOffset = this.stickyHeight.asReadonly();
-
+  readonly active = input(false);
   private rafLoop?: number;
   private lastScrollY = -1;
   private idleFrames = 0;
   private readonly IDLE_THRESHOLD = 30;
+  private readonly ACTIVITY_SCROLL_GAP = 8;
+    private readonly SNAP_DELAY = 500;
+  private readonly SNAP_DISTANCE = 60;
 
   activitiesCollapsed = false;
   private pendingActivityId?: string;
@@ -105,7 +112,23 @@ export class DayPanelComponent {
       // Écouteurs globaux branchés directement sur la boucle cinématique dynamique
       this.wakeLoop();
       window.addEventListener('resize', this.wakeLoop, { passive: true });
-      window.addEventListener('scroll', this.wakeLoop, { passive: true });
+      window.addEventListener(
+          'scroll',
+          this.onWindowScroll,
+          { passive: true }
+        );
+
+        window.addEventListener(
+          'touchstart',
+          this.onTouchStart,
+          { passive: true }
+        );
+
+        window.addEventListener(
+          'touchend',
+          this.onTouchEnd,
+          { passive: true }
+        );
       window.addEventListener('touchstart', this.wakeLoop, { passive: true });
       window.addEventListener('touchmove', this.wakeLoop, { passive: true });
       window.addEventListener('wheel', this.wakeLoop, { passive: true });
@@ -157,8 +180,20 @@ export class DayPanelComponent {
         if (mapObserver) mapObserver.disconnect();
         if (globalObserver) globalObserver.disconnect();
         window.removeEventListener('resize', this.wakeLoop);
-        window.removeEventListener('scroll', this.wakeLoop);
-        window.removeEventListener('touchstart', this.wakeLoop);
+       window.removeEventListener(
+          'scroll',
+          this.onWindowScroll
+        );
+
+        window.removeEventListener(
+          'touchstart',
+          this.onTouchStart
+        );
+
+        window.removeEventListener(
+          'touchend',
+          this.onTouchEnd
+        );
         window.removeEventListener('touchmove', this.wakeLoop);
         window.removeEventListener('wheel', this.wakeLoop);
         if (this.rafLoop) cancelAnimationFrame(this.rafLoop);
@@ -233,7 +268,7 @@ export class DayPanelComponent {
       : this.stickyHeight();
 
     const targetScroll =
-      target.top - stickyHeight - 5;
+      target.top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
 
     this.smoothScrollTo(targetScroll, 700);
   }
@@ -293,7 +328,10 @@ export class DayPanelComponent {
     }
   };
 
-private updateMapFromScroll(scrollY: number) {
+  private updateMapFromScroll(scrollY: number) {
+    if (!this.active()) {
+      return;
+    }
   const freshOffsets = this.getFreshCardOffsets();
   if (freshOffsets.length === 0) return;
 
@@ -375,6 +413,11 @@ private updateMapFromScroll(scrollY: number) {
   }
 
   private smoothScrollTo(targetY: number, duration = 600): void {
+      if (!this.active()) {
+    return;
+  }
+
+  this.isAutoScrolling = true;
   const startY = window.scrollY;
   const distance = targetY - startY;
 
@@ -394,11 +437,96 @@ private updateMapFromScroll(scrollY: number) {
       startY + distance * eased
     );
 
-    if (progress < 1) {
+   if (progress < 1) {
       requestAnimationFrame(animate);
+    } else {
+      this.isAutoScrolling = false;
     }
   };
 
   requestAnimationFrame(animate);
 }
+
+
+  private readonly onWindowScroll = (): void => {
+
+    if (!this.active() || this.isTouching || this.isAutoScrolling) {
+      return;
+    }
+
+    clearTimeout(this.scrollTimeout);
+
+    this.scrollTimeout = window.setTimeout(() => {
+      this.trySnapActivity();
+    }, this.SNAP_DELAY);
+  };
+
+
+  private readonly onTouchStart = (): void => {
+    this.isTouching = true;
+  };
+
+
+  private readonly onTouchEnd = (): void => {
+    this.isTouching = false;
+
+    clearTimeout(this.scrollTimeout);
+
+    this.scrollTimeout = window.setTimeout(() => {
+      this.trySnapActivity();
+    }, this.SNAP_DELAY);
+  };
+
+
+  private trySnapActivity(): void {
+    if (!this.active()) {
+      return;
+    }
+    const stickyElement = this.stickyMap()?.nativeElement;
+
+    if (!stickyElement) {
+      return;
+    }
+
+    const stickyHeight =
+      stickyElement.getBoundingClientRect().height;
+
+    const anchor = window.scrollY + stickyHeight;
+
+    const cards = this.getFreshCardOffsets();
+
+    if (!cards.length) {
+      return;
+    }
+
+  const candidate = cards.find(card => {
+    const distance = card.top - anchor;
+
+    return Math.abs(distance) <= this.SNAP_DISTANCE;
+  });
+
+  if (!candidate) {
+    return;
+  }
+
+  const delta = candidate.top - anchor;
+
+    if (Math.abs(delta) > this.SNAP_DISTANCE) {
+      return;
+    }
+
+    const maxScroll =
+      document.documentElement.scrollHeight -
+      window.innerHeight;
+
+    // Ne jamais perturber l'accès au bouton +
+    if (window.scrollY >= maxScroll - 200) {
+      return;
+    }
+
+    this.smoothScrollTo(
+      candidate.top - stickyHeight - 5,
+      400
+    );
+  }
 }
