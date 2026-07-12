@@ -137,3 +137,19 @@ swiper-slide,
 .swiper-wrapper {
   overflow-x:0 visible !important;
 }
+
+.to_book {
+  --booking-status-color: var(--p-red-500);
+}
+
+.booked {
+  --booking-status-color: var(--p-green-500);
+}
+
+.not_needed {
+  --booking-status-color: var(--p-blue-500);
+}
+
+.waitlist {
+  --booking-status-color: var(--p-yellow-500);
+}

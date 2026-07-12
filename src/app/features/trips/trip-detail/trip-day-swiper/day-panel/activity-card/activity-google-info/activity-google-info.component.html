@@ -1,7 +1,7 @@
 @if (isVisible()) {
-  <p-divider/>
+  <p-divider class="m-1"/>
   
-  <div class="flex flex-column gap-2 mt-3 mb-3">
+  <div class="flex flex-column gap-2 mb-1">
     <span class="font-semibold text-sm text-color-secondary">GOOGLE</span>
     @if (mapsUrl(); as url) {
       <a [href]="url" target="_blank" class="flex align-items-center gap-2 no-underline text-color line-height-3 hover:text-primary transition-colors text-sm font-medium">
@@ -15,7 +15,7 @@
     header="Plus d'infos (Photos, Horaires, avis...)" 
     [toggleable]="true" 
     [collapsed]="true" 
-    class="mb-2 shadow-1"
+    class="shadow-1"
     (onBeforeToggle)="onPanelToggle($event)">
 
     <!-- C'est ici la magie PrimeNG : le template retarde l'instanciation du DOM -->

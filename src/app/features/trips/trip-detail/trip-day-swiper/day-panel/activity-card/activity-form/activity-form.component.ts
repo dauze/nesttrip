@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/operators';
@@ -15,14 +15,14 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
-import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
+import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 
 @Component({
   selector: 'app-activity-form',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
+    CommonModule, ReactiveFormsModule, NgClass,
     SelectModule, InputNumberModule, DatePickerModule, InputMask, DividerModule, TextareaModule,
   ],
   templateUrl: './activity-form.component.html',
@@ -56,6 +56,12 @@ export class ActivityFormComponent {
     }),
   });
 
+
+  readonly bookingMeta = computed(() => {
+    const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
+    return BOOKING_STATUS_META[status];
+  });
+  
   readonly durationTextControl = this.fb.nonNullable.control('00h00');
 
   private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });

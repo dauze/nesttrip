@@ -9,15 +9,15 @@
           <p-select [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" appendTo="body" />
         </div>
       </div>
-      <div class="col-6 p-0 min-w-0 overflow-hidden">
+      <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
-            <i class="pi pi-clock text-sm"></i>Durée
+            <i class="pi pi-bookmark text-sm"></i>Résa
           </label>
-          <p-inputMask mask="99h99" slotChar="0" [formControl]="durationTextControl" placeholder="0h00" styleClass="w-full min-w-0 transparent-inputtext"/>
+          <p-select [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" optionLabel="label" optionValue="value" appendTo="body" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
-      <p-divider/>
+      <p-divider class="m-2"/>
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
@@ -34,13 +34,13 @@
           <p-datepicker formControlName="endTime" timeOnly appendTo="body" class="w-full transparent-inputtext" />
         </div>
       </div>
-      <p-divider/>
-      <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
+      <p-divider class="m-2"/>
+      <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
-            <i class="pi pi-bookmark text-sm"></i>Résa
+            <i class="pi pi-clock text-sm"></i>Durée
           </label>
-          <p-select [options]="bookingStatusOptions" formControlName="status" optionLabel="label" optionValue="value" appendTo="body" class="w-full min-w-0 transparent-select" />
+          <p-inputMask mask="99h99" slotChar="0" [formControl]="durationTextControl" placeholder="0h00" styleClass="w-full min-w-0 transparent-inputtext"/>
         </div>
       </div>
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
@@ -62,7 +62,7 @@
         </div>
       </div>
       @if (showDeadline()) {
-        <p-divider />
+        <p-divider class="m-2" />
         <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
           <div class="flex flex-column gap-1 w-full min-w-0">
             <label class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
@@ -75,8 +75,8 @@
     </div>
   </div>
 
-  <p-divider />
-  <div class="flex flex-column gap-2 mb-3">
+  <p-divider class="m-2" />
+  <div class="flex flex-column gap-2 mb-2">
     <label class="text-color-secondary text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes
     </label>

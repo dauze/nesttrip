@@ -1,6 +1,5 @@
 :host { display: block; } 
-.booking    { border-left-width: 0.4rem; }
-.to_book    { border-left-color: var(--p-red-500); }
-.booked     { border-left-color: var(--p-green-500); }
-.not_needed { border-left-color: var(--p-blue-500); }
-.waitlist   { border-left-color: var(--p-yellow-500); }
+.booking    { 
+    border-left-width: 0.4rem;
+    border-left-color: var(--booking-status-color); 
+}
