@@ -47,7 +47,7 @@ export class ActivityGoogleInfoComponent {
   );
 
   onReviewsPanelToggle(event: PanelBeforeToggleEvent): void {
-    if (event.collapsed !== false) return;
+    if (!event.collapsed) return;
     this.shouldLoadReviews.set(true);
   }
 

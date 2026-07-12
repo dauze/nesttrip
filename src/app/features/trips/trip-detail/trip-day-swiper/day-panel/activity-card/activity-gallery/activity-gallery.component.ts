@@ -50,7 +50,7 @@ export class ActivityGalleryComponent {
   readonly currentIndex = signal(0);
 
   onPanelToggle(event: PanelBeforeToggleEvent): void {
-    if (event.collapsed !== false) return;
+     if (!event.collapsed) return;
     this.shouldLoad.set(true);
   }
 
