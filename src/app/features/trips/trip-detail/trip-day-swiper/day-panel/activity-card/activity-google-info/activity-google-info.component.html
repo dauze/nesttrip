@@ -2,11 +2,13 @@
   <p-divider/>
   <div class="flex align-items-center gap-2 mt-3 mb-2 flex-wrap">
     <span class="font-semibold text-sm">GOOGLE</span>
-    @if (activity().rating) {
-      <span class="text-yellow-400 text-sm">{{ starsFor(activity().rating!) }}</span>
-      <span class="font-semibold text-sm">{{ activity().rating | number:'1.1-1' }}</span>
-      @if (activity().reviewCount) {
-        <span class="text-color-secondary text-xs">({{ activity().reviewCount }} avis)</span>
+    @if (atmosphereLoading()) {
+      <i class="pi pi-spin pi-spinner text-color-secondary text-sm"></i>
+    } @else if (atmosphere()?.rating) {
+      <span class="text-yellow-400 text-sm">{{ starsFor(atmosphere()!.rating) }}</span>
+      <span class="font-semibold text-sm">{{ atmosphere()!.rating | number:'1.1-1' }}</span>
+      @if (atmosphere()!.reviewCount) {
+        <span class="text-color-secondary text-xs">({{ atmosphere()!.reviewCount }} avis)</span>
       }
     }
   </div>
@@ -18,13 +20,13 @@
         <span class="flex-1">{{ activity().address || 'Voir sur Maps' }}</span>
       </a>
     }
-    @if (activity().phone; as phone) {
+    @if (contact()?.phone; as phone) {
       <a [href]="'tel:' + phone" class="flex align-items-center gap-2 no-underline text-color-secondary hover:text-primary transition-colors">
         <i class="pi pi-phone text-primary"></i>
         <span>{{ phone }}</span>
       </a>
     }
-    @if (activity().website; as website) {
+    @if (contact()?.website; as website) {
       <a [href]="website" target="_blank" class="flex align-items-center gap-2 no-underline text-color-secondary hover:text-primary transition-colors w-full min-w-0">
         <i class="pi pi-external-link text-primary flex-shrink-0"></i>
         <span class="flex-1 min-w-0 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ website }}</span>
@@ -36,10 +38,10 @@
     <p-tag [value]="isOpenNow() ? 'Ouvert' : 'Fermé'" [severity]="isOpenNow() ? 'success' : 'danger'" styleClass="mb-2 text-xs" />
   }
 
-  @if (lazyGoogleData()?.openingHours?.length) {
+  @if (contact()?.openingHours?.length) {
     <p-panel header="Horaires" [toggleable]="true" [collapsed]="true" styleClass="mb-2">
       <ul class="list-none p-0 m-0">
-        @for (line of lazyGoogleData()!.openingHours; track $index) {
+        @for (line of contact()!.openingHours; track $index) {
           <li class="py-1 text-sm" [ngClass]="line.toLowerCase().startsWith(todayDayName()) ? 'font-semibold text-primary' : 'text-color-secondary'">
             {{ line }}
           </li>
@@ -48,22 +50,27 @@
     </p-panel>
   }
 
-  @if (lazyGoogleData()?.reviews?.length) {
-    <p-panel [header]="'Avis (' + lazyGoogleData()!.reviews!.length + ')'" [toggleable]="true" [collapsed]="true" styleClass="mb-2">
-      <div class="flex flex-column gap-2">
-        @for (review of lazyGoogleData()!.reviews; track review.author) {
-          <div class="surface-50 border-round p-2">
-            <div class="flex align-items-center justify-content-between mb-1">
-              <span class="font-medium text-sm">{{ review.author }}</span>
-              <span class="text-yellow-500 text-xs">{{ starsFor(review.rating) }}</span>
+  @if (atmosphere()?.reviewCount) {
+    <p-panel header="Avis" [toggleable]="true" [collapsed]="true" styleClass="mb-2"
+             (onBeforeToggle)="onReviewsPanelToggle($event)">
+      @if (reviewsLoading()) {
+        <i class="pi pi-spin pi-spinner text-color-secondary text-sm"></i>
+      } @else if (reviews(); as list) {
+        <div class="flex flex-column gap-2">
+          @for (review of list; track review.author) {
+            <div class="surface-50 border-round p-2">
+              <div class="flex align-items-center justify-content-between mb-1">
+                <span class="font-medium text-sm">{{ review.author }}</span>
+                <span class="text-yellow-500 text-xs">{{ starsFor(review.rating) }}</span>
+              </div>
+              <p class="text-sm text-color-secondary m-0 line-height-3"
+                style="-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">
+                {{ review.comment }}
+              </p>
             </div>
-            <p class="text-sm text-color-secondary m-0 line-height-3"
-              style="-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">
-              {{ review.comment }}
-            </p>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      }
     </p-panel>
   }
 }

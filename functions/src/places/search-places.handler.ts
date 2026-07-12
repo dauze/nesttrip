@@ -1,7 +1,14 @@
 import { Request, Response } from 'express';
 import { mapPlaceSummary } from './place.mapper';
 
-const SEARCH_FIELD_MASK = ['places.id', 'places.displayName', 'places.formattedAddress', 'places.photos'].join(',');
+// Uniquement Basic Data → aucun Data SKU additionnel, tarif Pro de base seulement
+const SEARCH_FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.location',
+  'places.photos',
+].join(',');
 
 export async function searchPlacesHandler(req: Request, res: Response, apiKey: string) {
   const q = req.query['q'];

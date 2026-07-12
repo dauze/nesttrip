@@ -1,13 +1,18 @@
-import { Component, ElementRef, afterNextRender, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import {
+  Component, ElementRef, afterNextRender, computed, inject,
+  input, signal, viewChild
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { CdkDrag, DragDropModule } from '@angular/cdk/drag-drop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { distinctUntilChanged, of, switchMap } from 'rxjs';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { GooglePlaceService } from '@core/services/google.places.service';
-import { Place } from '@app/core/models/place.dto';
+import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { LoadingState, PlaceContact, PlaceAtmosphere, PlaceSummary } from '@app/core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
 import { BOOKING_STATUS_META } from './activity.constants';
 
@@ -24,18 +29,9 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule,
-    PanelModule,
-    DividerModule,
-    ProgressSpinnerModule,
-    DragDropModule,
-    Button,
-    ActivityHeaderComponent,
-    ActivityGalleryComponent,
-    ActivityFormComponent,
-    ActivityFilesComponent,
-    ActivityGoogleInfoComponent,
-    ConfirmDialog
+    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, DragDropModule, Button,
+    ActivityHeaderComponent, ActivityGalleryComponent, ActivityFormComponent,
+    ActivityFilesComponent, ActivityGoogleInfoComponent, ConfirmDialog,
   ],
   providers: [ConfirmationService],
   templateUrl: './activity-card.component.html',
@@ -60,87 +56,81 @@ export class ActivityCardComponent {
   });
 
   readonly collapsed = signal(false);
-  readonly lazyGoogleData = signal<Place | null>(null);
-  readonly googleDataLoading = signal(false);
-  protected dragDisabled = signal(true); 
+  protected dragDisabled = signal(true);
   readonly scrollOffset = input(0);
 
-  constructor() {
-    // Récupère les données Google complètes dès qu'un placeId est connu et pas encore en cache.
-    // Pas de flag "loaded" séparé : on dérive l'état "déjà chargé" de lazyGoogleData() !== null.
-    effect(() => {
+  // Émet le placeId uniquement quand la carte est dépliée, null/'' sinon.
+  // toSignal() est appelé ici dans le contexte d'injection de la classe (pas dans un effect),
+  // ce qui est parfaitement légal — c'est l'équivalent d'un champ initialisé dans le constructeur.
+  private readonly activeId$ = toObservable(
+    computed(() => {
       const placeId = this.activity()?.placeId;
-      if (!placeId || this.lazyGoogleData() !== null || this.googleDataLoading()) {
-        return;
-      }
-      this.googleDataLoading.set(true);
-      this.googlePlaceService.getPlaceDetail(placeId).subscribe({
-        next: (place) => {
-          this.lazyGoogleData.set(place);
-          this.googleDataLoading.set(false);
-        },
-        error: () => this.googleDataLoading.set(false),
-      });
-    });
+      return !this.collapsed() && placeId ? placeId : '';
+    })
+  ).pipe(distinctUntilChanged());
 
+  readonly contactState = toSignal(
+    this.activeId$.pipe(
+      switchMap((id): ReturnType<typeof this.googlePlaceService.getPlaceContact$> =>
+        id ? this.googlePlaceService.getPlaceContact$(id)
+           : of({ status: 'idle' as const })
+      )
+    ),
+    { initialValue: { status: 'idle' as const } as LoadingState<PlaceContact> }
+  );
+
+  readonly atmosphereState = toSignal(
+    this.activeId$.pipe(
+      switchMap((id): ReturnType<typeof this.googlePlaceService.getPlaceAtmosphere$> =>
+        id ? this.googlePlaceService.getPlaceAtmosphere$(id)
+           : of({ status: 'idle' as const })
+      )
+    ),
+    { initialValue: { status: 'idle' as const } as LoadingState<PlaceAtmosphere> }
+  );
+
+  constructor() {
     afterNextRender(() => {
       const el = this.cardContainer()?.nativeElement;
       if (!el) return;
-
       el.addEventListener('mousedown', this.updateDragState, { capture: true });
       el.addEventListener('touchstart', this.updateDragState, { capture: true, passive: true });
     });
   }
 
-    // activity-card.component.ts
   onCardPointerDown(event: MouseEvent | TouchEvent): void {
-  const target = event.target as HTMLElement;
-  this.dragDisabled.set(!target.closest('.drag-handle'));
-}
+    const target = event.target as HTMLElement;
+    this.dragDisabled.set(!target.closest('.drag-handle'));
+  }
 
-  /** API publique — appelée depuis la liste parente pour déplier la carte et scroller dessus. */
   openAndScroll(): void {
     if (this.collapsed()) {
       this.collapsed.set(false);
-      // attendre le rendu
-      setTimeout(() => {
-        this.scrollToMe();
-      }, 300);
+      setTimeout(() => this.scrollToMe(), 300);
     } else {
       this.scrollToMe();
     }
   }
-  onPlaceSelected(place: Partial<Place>): void {
+
+  // Aucun appel réseau ici : tout vient du PlaceSummary (Basic Data, déjà dans les résultats de recherche)
+  onPlaceSelected(place: PlaceSummary): void {
     const activity = this.activity();
     if (!activity || !place.placeId) return;
 
-    this.lazyGoogleData.set(null);
-
-    this.googlePlaceService.getPlaceDetail(place.placeId).subscribe((p) => {
-      this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
-        ...activity,
-        title: p.name,
-        placeId: p.placeId ?? '',
-        address: p.address ?? '',
-        latitude: p.latitude ?? 0,
-        longitude: p.longitude ?? 0,
-        rating: p.rating ?? 0,
-        reviewCount: p.reviewCount ?? 0,
-        openingHours: p.openingHours ?? [],
-        phone: p.phone ?? '',
-        website: p.website ?? '',
-        priceLevel: p.priceLevel ?? 0,
-      });
-      this.lazyGoogleData.set(p);
+    this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+      ...activity,
+      title: place.name,
+      placeId: place.placeId,
+      address: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      photoRef: place.photoRef?.name ?? '',
     });
   }
 
-  /** Titre édité librement (sans sélection dans l'autocomplete) -> on déconnecte le lieu Google. */
   onTitleChanged(newTitle: string): void {
     const activity = this.activity();
     if (!activity) return;
-
-    this.lazyGoogleData.set(null);
 
     this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
       ...activity,
@@ -149,38 +139,23 @@ export class ActivityCardComponent {
       address: '',
       latitude: 0,
       longitude: 0,
-      rating: 0,
-      reviewCount: 0,
-      openingHours: [],
-      phone: '',
-      website: '',
-      priceLevel: 0,
+      photoRef: '',
     });
   }
 
   private scrollToMe(): void {
     const element = this.cardContainer().nativeElement;
     const offset = this.scrollOffset();
-
-    const y =
-      window.scrollY +
-      element.getBoundingClientRect().top -
-      offset -
-      13;
-
-    window.scrollTo({
-      top: y,
-      behavior: 'smooth'
-    });
+    const y = window.scrollY + element.getBoundingClientRect().top - offset - 13;
+    window.scrollTo({ top: y, behavior: 'smooth' });
   }
 
-    confirmDelete(): void {
+  confirmDelete(): void {
     this.confirmationService.confirm({
       message: 'Supprimer cette activitée ?',
-      accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId())
+      accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId()),
     });
   }
-
 
   private updateDragState = (event: MouseEvent | TouchEvent) => {
     const target = event.target as HTMLElement;

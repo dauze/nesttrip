@@ -6,32 +6,25 @@
         [(collapsed)]="collapsed">
 
       <ng-template pTemplate="header">
-  <div class="flex align-items-center w-full">
-    <app-activity-header
-      class="flex-1 min-w-0"
-      [activity]="activity"
-      [lazyGoogleData]="lazyGoogleData()"
-      (placeSelected)="onPlaceSelected($event)"
-      (titleEdited)="onTitleChanged($event)" />
+        <div class="flex align-items-center w-full">
+          <app-activity-header
+            class="flex-1 min-w-0"
+            [activity]="activity"
+            (placeSelected)="onPlaceSelected($event)"
+            (titleEdited)="onTitleChanged($event)" />
 
-    <p-button
-      icon="pi pi-trash"
-      [rounded]="true"
-      [text]="true"
-      severity="secondary"
-      class="ml-2 flex-shrink-0"
-      (onClick)="confirmDelete(); $event.stopPropagation()"
-    />
-  </div>
-</ng-template>
-
-      @if (googleDataLoading()) {
-        <div class="flex justify-content-center py-3">
-          <p-progressSpinner strokeWidth="3" [style]="{ width: '2rem', height: '2rem' }" />
+          <p-button
+            icon="pi pi-trash"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            class="ml-2 flex-shrink-0"
+            (onClick)="confirmDelete(); $event.stopPropagation()"
+          />
         </div>
-      }
+      </ng-template>
 
-      <app-activity-gallery [lazyGoogleData]="lazyGoogleData()" [altText]="activity.title" />
+      <app-activity-gallery [placeId]="activity.placeId ?? ''" [altText]="activity.title" />
 
       <app-activity-form [tripId]="tripId()" [dayId]="dayId()" [activity]="activity" />
 
@@ -40,9 +33,9 @@
 
       <app-activity-google-info
         [activity]="activity"
-        [lazyGoogleData]="lazyGoogleData()"
-        [loading]="googleDataLoading()"
-        [dayId]="dayId()" />
+        [dayId]="dayId()"
+        [contactState]="contactState()"
+        [atmosphereState]="atmosphereState()" />
     </p-panel>
   </div>
   <p-confirmDialog />

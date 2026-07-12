@@ -1,34 +1,44 @@
 import { Request, Response } from 'express';
-import { mapPlaceDetail } from './place.mapper';
+import { mapPlaceContact, mapPlaceAtmosphere, mapPlaceReviews, mapPlacePhotos } from './place.mapper';
 
-const DETAIL_FIELD_MASK = [
-  'id', 'displayName', 'formattedAddress', 'location', 'rating',
-  'userRatingCount', 'reviews', 'regularOpeningHours', 'types',
-  'priceLevel', 'internationalPhoneNumber', 'websiteUri', 'photos',
-].join(',');
+const FIELD_MASKS = {
+  contact: ['id', 'regularOpeningHours', 'internationalPhoneNumber', 'nationalPhoneNumber', 'websiteUri'].join(','),
+  atmosphere: ['id', 'rating', 'userRatingCount', 'priceLevel'].join(','),
+  reviews: ['id', 'reviews'].join(','),
+  photos: ['id', 'photos'].join(','), // Basic Data — aucun Data SKU additionnel
+} as const;
 
-export async function getPlaceHandler(req: Request, res: Response, apiKey: string) {
-  const id = req.params['id'];
-  if (!id) { res.status(400).json({ error: 'Place ID requis' }); return; }
+const MAPPERS = {
+  contact: mapPlaceContact,
+  atmosphere: mapPlaceAtmosphere,
+  reviews: mapPlaceReviews,
+  photos: mapPlacePhotos,
+} as const;
 
-  try {
-    const response = await fetch(`https://places.googleapis.com/v1/places/${id}`, {
-      headers: {
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': DETAIL_FIELD_MASK,
-        'Accept-Language': 'fr',
-      },
-    });
+type DetailKind = keyof typeof FIELD_MASKS;
 
-    if (!response.ok) {
-      console.error('Google Places detail error:', await response.json());
-      res.status(response.status).json({ error: 'Lieu introuvable' });
+async function fetchPlaceDetail(placeId: string, kind: DetailKind, apiKey: string) {
+  const response = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+    headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': FIELD_MASKS[kind] },
+  });
+  if (!response.ok) throw new Error(`Google Places ${kind} error: ${response.status}`);
+  return response.json();
+}
+
+export function makePlaceDetailHandler(kind: DetailKind) {
+  return async (req: Request, res: Response, apiKey: string) => {
+    const { id } = req.params;
+
+    if (!id || Array.isArray(id)) {
+      res.status(400).json({ error: 'placeId requis' });
       return;
     }
-
-    res.json(mapPlaceDetail(await response.json()));
-  } catch (err) {
-    console.error('getPlace network error:', err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
+    try {
+      const raw = await fetchPlaceDetail(id, kind, apiKey);
+      res.json(MAPPERS[kind](raw));
+    } catch (err) {
+      console.error(`place-${kind} error:`, err);
+      res.status(500).json({ error: 'Erreur serveur' });
+    }
+  };
 }

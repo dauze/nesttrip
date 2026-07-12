@@ -18,12 +18,7 @@ export interface ActivityFirebase {
   address?: string;
   latitude?: number;
   longitude?: number;
-  rating?: number;
-  reviewCount?:number;
-  openingHours?: string[];
-  phone?: string;
-  website?: string;
-  priceLevel?: number;
+  photoRef?: string;
 }
 export interface PriceFirebase {
   amount: number;

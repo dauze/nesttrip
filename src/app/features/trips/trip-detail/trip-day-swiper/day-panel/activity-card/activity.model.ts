@@ -14,16 +14,11 @@ export interface Activity {
   files: ActivityFile[];
     //Google
   placeId?: string;
-  reviewCount?: number;
   address?: string;
   latitude?: number;
   longitude?: number;
-  rating?: number;
-  openingHours?: string[];
-  phone?: string;
-  website?: string;
   types?: string[];
-  priceLevel?: number;
+  photoRef: string;
 }
 
 export interface Price {

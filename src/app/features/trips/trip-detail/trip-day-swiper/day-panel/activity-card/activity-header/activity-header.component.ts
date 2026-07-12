@@ -1,15 +1,15 @@
-import { Component, computed, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
-import { GooglePlaceService } from '@core/services/google.places.service';
-import { Place } from '@app/core/models/place.dto';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_META } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { PlaceSummary } from '@app/core/models/place.dto';
 
 @Component({
   selector: 'app-activity-header',
@@ -22,33 +22,32 @@ export class ActivityHeaderComponent {
   private readonly photoCache = inject(GooglePhotoService);
 
   readonly activity = input.required<Activity>();
-  readonly lazyGoogleData = input<Place | null>(null);
 
-  readonly placeSelected = output<Partial<Place>>();
+  readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
   readonly places = this.googlePlaceService.places;
-  readonly searching = signal(false);
+  readonly searching = this.googlePlaceService.searching;
 
-  /** Copie locale éditable, initialisée une seule fois depuis l'activité chargée. */
   readonly title = signal('');
 
-  readonly firstPhotoRef = computed(() => this.lazyGoogleData()?.photos?.[0]);
+  // La miniature vient directement du champ persisté (Basic Data, écrit à la sélection) —
+  // plus aucune dépendance à un fetch async ici, plus de flicker.
+  readonly firstPhotoRef = computed(() => this.activity().photoRef || null);
 
   constructor() {
     runOnceReady(this.activity, (a) => this.title.set(a.title));
   }
 
   onSearch(event: AutoCompleteCompleteEvent): void {
-    this.searching.set(true);
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 
   onSelect(event: AutoCompleteSelectEvent): void {
-    const place = event.value as Partial<Place>;
+    const place = event.value as PlaceSummary;
     if (!place.placeId) return;
-    this.title.set(place.name ?? '');
+    this.title.set(place.name);
     this.placeSelected.emit(place);
   }
 

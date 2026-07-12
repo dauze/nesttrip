@@ -25,7 +25,7 @@ import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.compo
   selector: 'app-trip-day-swiper',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, InfosComponent, TripDayMapComponent],
+  imports: [DayPanelComponent, InfosComponent],
   providers: [SwiperLockService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',

@@ -5,13 +5,12 @@
 
   <div class="flex-shrink-0 border-round overflow-hidden surface-100 flex align-items-center justify-content-center"
       style="width:3rem;height:3rem">
-    @if (firstPhotoRef(); as ref) {
-      <img *ngIf="getPhotoUrl$(ref, 120) | async as url" [src]="url"
-          [alt]="activity().title"
-          style="width:100%;height:100%;object-fit:cover" />
-    } @else {
-      <i [class]="'pi text-xl text-color-secondary ' + activityTypeMeta[activity().type]?.icon"></i>
-    }
+        @if (firstPhotoRef(); as ref) {
+          <img *ngIf="getPhotoUrl$(ref, 120) | async as url" [src]="url" [alt]="activity().title"
+              style="width:100%;height:100%;object-fit:cover" />
+        } @else {
+          <i [class]="'pi text-xl text-color-secondary ' + activityTypeMeta[activity().type]?.icon"></i>
+        }
   </div>
 
   <div class="flex flex-column flex-1 min-w-0 gap-1" (click)="$event.stopPropagation()">
@@ -34,7 +33,7 @@
         <div class="flex align-items-start gap-2 w-full min-w-0">
           <div class="border-round overflow-hidden surface-100 flex align-items-center justify-content-center flex-shrink-0"
               style="width:2.5rem;height:2.5rem">
-            @if (place.photos?.[0]; as ref) {
+            @if (place.photoRef?.name; as ref) {
               <img *ngIf="getPhotoUrl$(ref, 120) | async as url" [src]="url" [alt]="place.name"
                   style="width:100%;height:100%;object-fit:cover" />
             } @else {

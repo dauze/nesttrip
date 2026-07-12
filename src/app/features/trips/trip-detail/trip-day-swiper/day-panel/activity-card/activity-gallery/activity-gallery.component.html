@@ -1,22 +1,30 @@
-@if (photoRefs().length) {
-  <div class="photo-carousel">
-    @if (getPhotoUrl$(photoRefs()[currentIndex()], 800) | async; as url) {
-      <img [src]="url" [alt]="altText()" class="photo-carousel__img" />
-    }
+@if (placeId()) {
+  <p-panel header="Photos" [toggleable]="true" [collapsed]="true"
+           (onBeforeToggle)="onPanelToggle($event)" styleClass="mb-2">
+    @if (loading()) {
+      <div class="flex justify-content-center py-3">
+        <p-progressSpinner strokeWidth="3" [style]="{ width: '2rem', height: '2rem' }" />
+      </div>
+    } @else if (photoRefs().length) {
+      <div class="photo-carousel">
+        @if (getPhotoUrl$(photoRefs()[currentIndex()].name, 800) | async; as url) {
+          <img [src]="url" [alt]="altText()" class="photo-carousel__img" />
+        }
 
-    @if (currentIndex() > 0) {
-      <button class="photo-carousel__nav photo-carousel__nav--left" (click)="prevPhoto()">
-        <i class="pi pi-chevron-left"></i>
-      </button>
-    }
+        @if (currentIndex() > 0) {
+          <button class="photo-carousel__nav photo-carousel__nav--left" (click)="prevPhoto()">
+            <i class="pi pi-chevron-left"></i>
+          </button>
+        }
 
-    @if (currentIndex() < photoRefs().length - 1) {
-      <button class="photo-carousel__nav photo-carousel__nav--right" (click)="nextPhoto()">
-        <i class="pi pi-chevron-right"></i>
-      </button>
-    }
+        @if (currentIndex() < photoRefs().length - 1) {
+          <button class="photo-carousel__nav photo-carousel__nav--right" (click)="nextPhoto()">
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        }
 
-    <span class="photo-carousel__counter">{{ currentIndex() + 1 }} / {{ photoRefs().length }}</span>
-  </div>
-  <p-divider />
+        <span class="photo-carousel__counter">{{ currentIndex() + 1 }} / {{ photoRefs().length }}</span>
+      </div>
+    }
+  </p-panel>
 }

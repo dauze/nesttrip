@@ -10,9 +10,9 @@ import { Trip, Day } from '../trip.model';
 import { Info } from '../trip-detail/trip-day-swiper/infos/info.models';
 import { AuthService } from '@app/core/services/auth.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
-import { GooglePlaceService } from '@app/core/services/google.places.service';
-import { Place } from '@app/core/models/place.dto';
+import { PlaceSummary } from '@app/core/models/place.dto';
 import { catchError, Observable, of } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
 import { TripFacade } from '../trip-facade.service';
@@ -21,14 +21,8 @@ import { TripFacade } from '../trip-facade.service';
   selector: 'app-new-trip',
   standalone: true,
   imports: [
-    ReactiveFormsModule,
-    InputTextModule,
-    DatePickerModule,
-    ButtonModule,
-    CardModule,
-    FluidModule,
-    AutoComplete,
-    AsyncPipe
+    ReactiveFormsModule, InputTextModule, DatePickerModule, ButtonModule,
+    CardModule, FluidModule, AutoComplete, AsyncPipe,
   ],
   templateUrl: 'new-trip.component.html',
 })
@@ -40,36 +34,29 @@ export class NewTripComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly googlePhotoService = inject(GooglePhotoService);
 
- private readonly rawPlaces = this.googlePlaceService.places;
+  private readonly rawPlaces = this.googlePlaceService.places;
 
   readonly form = this.fb.group({
     title: ['', Validators.required],
     ville: ['', Validators.required],
     placeId: [''],
-    dates: [null, Validators.required]
+    dates: [null, Validators.required],
   });
 
   readonly loading = signal(false);
-  readonly searching = signal(false);
+  readonly searching = this.googlePlaceService.searching;
 
-  /** Devient true dès que l'utilisateur tape lui-même dans le champ titre */
   private titleManuallyEdited = false;
 
   constructor() {
-    // Préremplissage automatique du titre à partir de la ville
     this.form.controls.ville.valueChanges.subscribe((ville) => {
       if (this.titleManuallyEdited) return;
-
       const suggestion = ville ? `Road trip ${ville}` : '';
       this.form.controls.title.setValue(suggestion, { emitEvent: false });
     });
 
-    // Dès que l'utilisateur modifie le titre à la main, on arrête l'auto-fill
     this.form.controls.title.valueChanges.subscribe(() => {
-      if (!this.titleManuallyEdited) {
-        // On ignore le premier emit qui vient de notre propre setValue (emitEvent: false le bloque déjà)
-        this.titleManuallyEdited = true;
-      }
+      if (!this.titleManuallyEdited) this.titleManuallyEdited = true;
     });
   }
 
@@ -77,30 +64,26 @@ export class NewTripComponent {
     const list = this.rawPlaces();
     if (!list) return [];
 
-    return list.map(place => {
+    return list.map((place) => {
       let photoUrl$: Observable<string> | null = null;
-      if (place.photos?.[0]) {
-        photoUrl$ = this.googlePhotoService.getPhotoUrl$(place.photos[0], 120).pipe(
+      if (place.photoRef?.name) {
+        photoUrl$ = this.googlePhotoService.getPhotoUrl$(place.photoRef.name, 120).pipe(
           catchError(() => of(''))
         );
       }
-      // On retourne un nouvel objet qui contient la propriété photoUrl$
       return { ...place, photoUrl$ };
     });
   });
 
   onSelect(event: AutoCompleteSelectEvent): void {
-    const place = event.value as Place;
-    
-    // On met à jour le formulaire avec les données de l'objet sélectionné
+    const place = event.value as PlaceSummary;
     this.form.patchValue({
       ville: place.name,
-      placeId: place.placeId
+      placeId: place.placeId,
     });
   }
 
   onSearch(event: AutoCompleteCompleteEvent): void {
-    this.searching.set(true);
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 
@@ -116,22 +99,16 @@ export class NewTripComponent {
 
     const [dateDebut, dateFin] = this.form.value.dates || [];
 
-    
-
     const trip: Trip = {
       id: crypto.randomUUID(),
       title: this.form.value.title ?? '',
       ville: this.form.value.ville ?? '',
-     placeId: this.form.value.placeId ?? '',
+      placeId: this.form.value.placeId ?? '',
       days: this.buildDays(dateDebut, dateFin),
       info: this.buildInfo(),
       ownerId: user.uid,
       members: {
-        [user.uid]: {
-          role: 'owner',
-          email: user.email ?? '',
-          displayName: user.displayName ?? undefined,
-        },
+        [user.uid]: { role: 'owner', email: user.email ?? '', displayName: user.displayName ?? undefined },
       },
     };
 
@@ -142,15 +119,12 @@ export class NewTripComponent {
     const days: Day[] = [];
     const current = new Date(start);
     current.setHours(0, 0, 0, 0);
-
     const endNorm = new Date(end);
     endNorm.setHours(0, 0, 0, 0);
-
     while (current <= endNorm) {
       days.push({ id: new Date(current), activities: [] });
       current.setDate(current.getDate() + 1);
     }
-
     return days;
   }
 
