@@ -23,25 +23,25 @@
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar text-sm"></i>Début
           </label>
-          <p-datepicker formControlName="startTime" timeOnly appendTo="body" class="w-full transparent-inputtext" />
+          <p-datepicker  [hideOnDateTimeSelect]="true" formControlName="startTime" timeOnly appendTo="body" class="transparent-inputtext" />
         </div>
       </div>
       <div class="col-6 p-0 min-w-0 overflow-hidden">
-        <div class="flex flex-column gap-1 w-full min-w-0">
+        <div class="flex flex-column gap-1 min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
-          <p-datepicker formControlName="endTime" timeOnly appendTo="body" class="w-full transparent-inputtext" />
+          <p-datepicker  [hideOnDateTimeSelect]="true" formControlName="endTime" timeOnly appendTo="body" class="transparent-inputtext" />
         </div>
       </div>
       <p-divider class="m-1"/>
       <div class="col-6 p-0 min-w-0 overflow-hidden">
-        <div class="flex flex-column gap-1 w-full min-w-0">
+        <div class="flex flex-column gap-1 min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-clock text-sm"></i>Durée
           </label>
           <!-- Remplacement par p-datepicker en mode timeOnly -->
-          <p-datepicker [formControl]="durationTimeControl" timeOnly appendTo="body" class="w-full transparent-inputtext" />
+          <p-datepicker  [hideOnDateTimeSelect]="true" [formControl]="durationTimeControl" timeOnly appendTo="body" class="transparent-inputtext" />
         </div>
       </div>
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
