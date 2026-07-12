@@ -20,19 +20,22 @@ import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.component';
+import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
+import { SwiperAutoHeightWatchDirective } from '@app/shared/directives/swiper-auto-height-watch.directive';
 
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, InfosComponent],
-  providers: [SwiperLockService],
+  imports: [DayPanelComponent, InfosComponent, SwiperAutoHeightWatchDirective],
+  providers: [SwiperLockService,SwiperHeightSyncService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
 })
 export class TripDaySwiperComponent implements AfterViewInit {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
+  private readonly heightSync = inject(SwiperHeightSyncService);
   readonly mapPortal = new ComponentPortal(TripDayMapComponent);
 
   readonly trip = input.required<Trip>();
@@ -110,18 +113,20 @@ export class TripDaySwiperComponent implements AfterViewInit {
       speed: 280,
       observer: true,
       observeParents: true,
+      observeSlideChildren: true,
       autoHeight: true,
       resistanceRatio: 0.85,
       spaceBetween: 8,
       cssMode: false,
       injectStyles: [`
-         .swiper {
+        .swiper {
             overflow: clip;
           }
       `]
     });
 
     swiperEl.initialize();
+    this.heightSync.register(swiperEl);
 
     swiperEl.addEventListener('swiperslidechangetransitionstart', () => {
       const newIndex = swiperEl.swiper?.activeIndex;
