@@ -34,7 +34,10 @@ export class ActivityHeaderComponent {
 
   // La miniature vient directement du champ persisté (Basic Data, écrit à la sélection) —
   // plus aucune dépendance à un fetch async ici, plus de flicker.
-  readonly firstPhotoRef = computed(() => this.activity().photoRef || null);
+  readonly firstPhotoRef = computed(() => {
+    const refs = this.activity().photoRefs;
+    return refs && refs.length > 0 ? refs[0] : null;
+  });
 
   constructor() {
     runOnceReady(this.activity, (a) => this.title.set(a.title));
@@ -57,7 +60,7 @@ export class ActivityHeaderComponent {
     this.titleEdited.emit(next);
   }
 
-  getPhotoUrl$(ref: string, maxWidth = 800) {
+  getPhotoUrl$(ref: string, maxWidth = 100) {
     return this.photoCache.getPhotoUrl$(ref, maxWidth);
   }
 }

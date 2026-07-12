@@ -1,17 +1,19 @@
 import { Request, Response } from 'express';
-import { mapPlaceContact, mapPlaceAtmosphere, mapPlaceReviews, mapPlacePhotos } from './place.mapper';
+// N'oublie pas de créer ton mapPlaceDetails dans place.mapper.ts
+import {  mapPlaceDetails, mapPlacePhotos } from './place.mapper';
 
 const FIELD_MASKS = {
-  contact: ['id', 'regularOpeningHours', 'internationalPhoneNumber', 'nationalPhoneNumber', 'websiteUri'].join(','),
-  atmosphere: ['id', 'rating', 'userRatingCount', 'priceLevel'].join(','),
-  reviews: ['id', 'reviews'].join(','),
-  photos: ['id', 'photos'].join(','), // Basic Data — aucun Data SKU additionnel
+  details: [
+    'id',
+    'regularOpeningHours', 'internationalPhoneNumber', 'nationalPhoneNumber', 'websiteUri', // Ex-Contact
+    'rating', 'userRatingCount', 'priceLevel', // Ex-Atmosphere
+    'reviews' // Ex-Reviews
+  ].join(','),
+  photos: ['id', 'photos'].join(','),
 } as const;
 
 const MAPPERS = {
-  contact: mapPlaceContact,
-  atmosphere: mapPlaceAtmosphere,
-  reviews: mapPlaceReviews,
+  details: mapPlaceDetails,
   photos: mapPlacePhotos,
 } as const;
 

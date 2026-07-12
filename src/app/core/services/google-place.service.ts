@@ -7,7 +7,7 @@ import {
 } from 'rxjs';
 import { environment } from '../../../environnements/environnement';
 import {
-  LoadingState, PlaceSummary, PlaceContact, PlaceAtmosphere, PlaceReviews, PlacePhotos
+  LoadingState, PlaceSummary, PlaceDetails, PlacePhotos
 } from '../models/place.dto';
 
 @Injectable({ providedIn: 'root' })
@@ -59,27 +59,14 @@ export class GooglePlaceService {
 
   readonly searching = computed(() => this.placesState().status === 'loading');
 
-  // --- Détail lazy : le service expose des Observables mémoïsés.
-  //     Les composants font le toSignal() eux-mêmes dans leur contexte d'injection.
+  // --- Détail : Regroupé en un seul appel ---
 
-  private readonly contactCache  = new Map<string, Observable<LoadingState<PlaceContact>>>();
-  private readonly atmosphereCache = new Map<string, Observable<LoadingState<PlaceAtmosphere>>>();
-  private readonly reviewsCache  = new Map<string, Observable<LoadingState<PlaceReviews>>>();
-  private readonly photosCache   = new Map<string, Observable<LoadingState<PlacePhotos>>>();
+  private readonly detailsCache = new Map<string, Observable<LoadingState<PlaceDetails>>>();
+  private readonly photosCache  = new Map<string, Observable<LoadingState<PlacePhotos>>>();
 
-  getPlaceContact$(placeId: string): Observable<LoadingState<PlaceContact>> {
-    return this.memoize(this.contactCache, placeId,
-      this.http.get<PlaceContact>(`${environment.apiUrl}/etablissements/${placeId}/contact`));
-  }
-
-  getPlaceAtmosphere$(placeId: string): Observable<LoadingState<PlaceAtmosphere>> {
-    return this.memoize(this.atmosphereCache, placeId,
-      this.http.get<PlaceAtmosphere>(`${environment.apiUrl}/etablissements/${placeId}/atmosphere`));
-  }
-
-  getPlaceReviews$(placeId: string): Observable<LoadingState<PlaceReviews>> {
-    return this.memoize(this.reviewsCache, placeId,
-      this.http.get<PlaceReviews>(`${environment.apiUrl}/etablissements/${placeId}/reviews`));
+  getPlaceDetails$(placeId: string): Observable<LoadingState<PlaceDetails>> {
+    return this.memoize(this.detailsCache, placeId,
+      this.http.get<PlaceDetails>(`${environment.apiUrl}/etablissements/${placeId}/details`));
   }
 
   getPlacePhotos$(placeId: string): Observable<LoadingState<PlacePhotos>> {

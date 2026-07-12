@@ -9,12 +9,9 @@ import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
 import { Info } from '../trip-detail/trip-day-swiper/infos/info.models';
 import { AuthService } from '@app/core/services/auth.service';
-import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { PlaceSummary } from '@app/core/models/place.dto';
-import { catchError, Observable, of } from 'rxjs';
-import { AsyncPipe } from '@angular/common';
 import { TripFacade } from '../trip-facade.service';
 
 @Component({
@@ -22,7 +19,7 @@ import { TripFacade } from '../trip-facade.service';
   standalone: true,
   imports: [
     ReactiveFormsModule, InputTextModule, DatePickerModule, ButtonModule,
-    CardModule, FluidModule, AutoComplete, AsyncPipe,
+    CardModule, FluidModule, AutoComplete
   ],
   templateUrl: 'new-trip.component.html',
 })
@@ -32,7 +29,6 @@ export class NewTripComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly authService = inject(AuthService);
   private readonly googlePlaceService = inject(GooglePlaceService);
-  private readonly googlePhotoService = inject(GooglePhotoService);
 
   private readonly rawPlaces = this.googlePlaceService.places;
 
@@ -63,16 +59,7 @@ export class NewTripComponent {
   readonly placesWithPhotos = computed(() => {
     const list = this.rawPlaces();
     if (!list) return [];
-
-    return list.map((place) => {
-      let photoUrl$: Observable<string> | null = null;
-      if (place.photoRef?.name) {
-        photoUrl$ = this.googlePhotoService.getPhotoUrl$(place.photoRef.name, 120).pipe(
-          catchError(() => of(''))
-        );
-      }
-      return { ...place, photoUrl$ };
-    });
+      return list;
   });
 
   onSelect(event: AutoCompleteSelectEvent): void {

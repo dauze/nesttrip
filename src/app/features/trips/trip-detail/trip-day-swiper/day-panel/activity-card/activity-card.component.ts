@@ -8,18 +8,18 @@ import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { CdkDrag, DragDropModule } from '@angular/cdk/drag-drop';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged, of, switchMap } from 'rxjs';
+import { distinctUntilChanged, firstValueFrom, of, switchMap } from 'rxjs';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { LoadingState, PlaceContact, PlaceAtmosphere, PlaceSummary } from '@app/core/models/place.dto';
+// Remplacement des anciens modèles par PlaceDetails
+import { LoadingState, PlaceSummary, PlaceDetails } from '@app/core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
 import { BOOKING_STATUS_META } from './activity.constants';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
 import { ActivityFilesComponent } from './activity-files/activity-files.component';
 import { ActivityFormComponent } from './activity-form/activity-form.component';
-import { ActivityGalleryComponent } from './activity-gallery/activity-gallery.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { Button } from 'primeng/button';
 import { ConfirmationService } from 'primeng/api';
@@ -30,7 +30,7 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   standalone: true,
   imports: [
     CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, DragDropModule, Button,
-    ActivityHeaderComponent, ActivityGalleryComponent, ActivityFormComponent,
+    ActivityHeaderComponent, ActivityFormComponent,
     ActivityFilesComponent, ActivityGoogleInfoComponent, ConfirmDialog,
   ],
   providers: [ConfirmationService],
@@ -59,35 +59,26 @@ export class ActivityCardComponent {
   protected dragDisabled = signal(true);
   readonly scrollOffset = input(0);
 
-  // Émet le placeId uniquement quand la carte est dépliée, null/'' sinon.
-  // toSignal() est appelé ici dans le contexte d'injection de la classe (pas dans un effect),
-  // ce qui est parfaitement légal — c'est l'équivalent d'un champ initialisé dans le constructeur.
-  private readonly activeId$ = toObservable(
-    computed(() => {
-      const placeId = this.activity()?.placeId;
-      return !this.collapsed() && placeId ? placeId : '';
-    })
-  ).pipe(distinctUntilChanged());
+  private readonly requestedPlaceId = signal<string>('');
 
-  readonly contactState = toSignal(
-    this.activeId$.pipe(
-      switchMap((id): ReturnType<typeof this.googlePlaceService.getPlaceContact$> =>
-        id ? this.googlePlaceService.getPlaceContact$(id)
+  // 2. activeId$ écoute désormais CE signal, et plus du tout this.collapsed()
+  private readonly placeId$ = toObservable(this.requestedPlaceId).pipe(distinctUntilChanged());
+
+  // 3. Le detailsState reste identique : il attendra que requestedPlaceId soit rempli
+  readonly detailsState = toSignal(
+    this.placeId$.pipe(
+      switchMap((id): ReturnType<typeof this.googlePlaceService.getPlaceDetails$> =>
+        id ? this.googlePlaceService.getPlaceDetails$(id)
            : of({ status: 'idle' as const })
       )
     ),
-    { initialValue: { status: 'idle' as const } as LoadingState<PlaceContact> }
+    { initialValue: { status: 'idle' as const } as LoadingState<PlaceDetails> }
   );
 
-  readonly atmosphereState = toSignal(
-    this.activeId$.pipe(
-      switchMap((id): ReturnType<typeof this.googlePlaceService.getPlaceAtmosphere$> =>
-        id ? this.googlePlaceService.getPlaceAtmosphere$(id)
-           : of({ status: 'idle' as const })
-      )
-    ),
-    { initialValue: { status: 'idle' as const } as LoadingState<PlaceAtmosphere> }
-  );
+  // 4. On ajoute une méthode pour recevoir l'Output du composant enfant
+  loadGoogleDetails(placeId: string): void {
+    this.requestedPlaceId.set(placeId);
+  }
 
   constructor() {
     afterNextRender(() => {
@@ -112,11 +103,24 @@ export class ActivityCardComponent {
     }
   }
 
-  // Aucun appel réseau ici : tout vient du PlaceSummary (Basic Data, déjà dans les résultats de recherche)
-  onPlaceSelected(place: PlaceSummary): void {
+  async onPlaceSelected(place: PlaceSummary): Promise<void> {
     const activity = this.activity();
     if (!activity || !place.placeId) return;
 
+    let photoRefs: string[] = [];
+    try {
+      const state = await firstValueFrom(this.googlePlaceService.getPlacePhotos$(place.placeId));
+      
+      // Si l'état est un succès et que Google a renvoyé des photos
+      if (state.status === 'success' && state.data?.photos) {
+        // 🎯 On extrait UNIQUEMENT la chaîne 'name' de chaque objet photo
+        photoRefs = state.data.photos.map((p: any) => p.name);
+      }
+    } catch (err) {
+      console.error('Impossible de récupérer les photos du lieu à la sélection', err);
+    }
+
+    // 2. On persiste tout d'un coup dans Firebase via le TripFacade
     this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
       ...activity,
       title: place.name,
@@ -124,7 +128,7 @@ export class ActivityCardComponent {
       address: place.address,
       latitude: place.latitude,
       longitude: place.longitude,
-      photoRef: place.photoRef?.name ?? '',
+      photoRefs: photoRefs // On écrase l'ancien système par le tableau d'IDs
     });
   }
 
@@ -139,7 +143,7 @@ export class ActivityCardComponent {
       address: '',
       latitude: 0,
       longitude: 0,
-      photoRef: '',
+      photoRefs: [],
     });
   }
 
@@ -152,7 +156,7 @@ export class ActivityCardComponent {
 
   confirmDelete(): void {
     this.confirmationService.confirm({
-      message: 'Supprimer cette activitée ?',
+      message: 'Supprimer cette activité ?', // (Coquille corrigée ici au passage)
       accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId()),
     });
   }

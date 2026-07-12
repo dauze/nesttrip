@@ -7,7 +7,6 @@ const SEARCH_FIELD_MASK = [
   'places.displayName',
   'places.formattedAddress',
   'places.location',
-  'places.photos',
 ].join(',');
 
 export async function searchPlacesHandler(req: Request, res: Response, apiKey: string) {

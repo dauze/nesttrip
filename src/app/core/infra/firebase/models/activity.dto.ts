@@ -18,7 +18,7 @@ export interface ActivityFirebase {
   address?: string;
   latitude?: number;
   longitude?: number;
-  photoRef?: string;
+  photoRefs?: string[];
 }
 export interface PriceFirebase {
   amount: number;

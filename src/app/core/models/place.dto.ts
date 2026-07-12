@@ -10,29 +10,16 @@ export interface PlaceSummary {
   address: string;
   latitude: number;
   longitude: number;
-  photoRef: PlacePhotoRef | null;
 }
 
-export interface PlaceContact {
+export interface PlaceDetails {
   openingHours: string[];
   phone: string;
   website: string;
-}
-
-export interface PlaceAtmosphere {
   rating: number;
   reviewCount: number;
   priceLevel: number;
-}
-
-export interface PlaceReview {
-  author: string;
-  rating: number;
-  comment: string;
-}
-
-export interface PlaceReviews {
-  reviews: PlaceReview[];
+  reviews: { author: string; rating: number; comment: string }[];
 }
 
 export interface PlacePhotos {

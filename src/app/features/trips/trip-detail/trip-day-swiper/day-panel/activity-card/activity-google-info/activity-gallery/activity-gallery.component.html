@@ -1,6 +1,6 @@
 @if (placeId()) {
   <p-panel header="Photos" [toggleable]="true" [collapsed]="true"
-           (onBeforeToggle)="onPanelToggle($event)" styleClass="mb-2">
+           (onBeforeToggle)="onPanelToggle($event)">
     @if (loading()) {
       <div class="flex justify-content-center py-3">
         <p-progressSpinner strokeWidth="3" [style]="{ width: '2rem', height: '2rem' }" />

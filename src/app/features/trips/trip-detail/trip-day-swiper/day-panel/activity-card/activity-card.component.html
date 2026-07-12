@@ -24,18 +24,18 @@
         </div>
       </ng-template>
 
-      <app-activity-gallery [placeId]="activity.placeId ?? ''" [altText]="activity.title" />
 
       <app-activity-form [tripId]="tripId()" [dayId]="dayId()" [activity]="activity" />
 
       <p-divider />
       <app-activity-files [tripId]="tripId()" [dayId]="dayId()" [activity]="activity" />
 
+      <!-- L'appel a été simplifié ici -->
       <app-activity-google-info
         [activity]="activity"
         [dayId]="dayId()"
-        [contactState]="contactState()"
-        [atmosphereState]="atmosphereState()" />
+        [detailsState]="detailsState()" 
+        (expandDetails)="loadGoogleDetails($event)"/>
     </p-panel>
   </div>
   <p-confirmDialog />

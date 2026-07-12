@@ -9,7 +9,7 @@ export function activityFromFb(a: ActivityFirebase): Activity {
     booking: a.booking ? bookingFromFb(a.booking) : { status: BookingStatus.NOT_NEEDED },
     files: a.files ?? [],
     notes: a.notes ?? '',
-    photoRef: a.photoRef ?? '',
+    photoRefs: a.photoRefs ?? [],
     startTime: a.startTime ? new Date(Number(a.startTime)) : new Date(),
     endTime: a.endTime ? new Date(Number(a.endTime)) : new Date()
   };

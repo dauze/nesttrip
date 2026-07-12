@@ -10,29 +10,23 @@ export interface PlaceSummary {
   address: string;
   latitude: number;
   longitude: number;
-  photoRef: PlacePhotoRef | null; // une seule photo, jamais un tableau
 }
 
-export interface PlaceContact {
+// --------------------------------------------------------
+// NOUVEAU MODÈLE REGROUPÉ : Contact + Atmosphere + Reviews
+// --------------------------------------------------------
+export interface PlaceDetails {
   openingHours: string[];
   phone: string;
   website: string;
-}
-
-export interface PlaceAtmosphere {
   rating: number;
   reviewCount: number;
   priceLevel: number;
+  reviews: Array<{ author: string; rating: number; comment: string }>;
 }
 
-export interface PlaceReview {
-  author: string;
-  rating: number;
-  comment: string;
-}
-
-export interface PlaceReviews {
-  reviews: PlaceReview[];
+export interface PlacePhotos {
+  photos: PlacePhotoRef[];
 }
 
 export function mapPlaceSummary(place: any): PlaceSummary {
@@ -42,53 +36,31 @@ export function mapPlaceSummary(place: any): PlaceSummary {
     address: place.formattedAddress ?? '',
     latitude: place.location?.latitude ?? 0,
     longitude: place.location?.longitude ?? 0,
-    // on ne garde que la 1ere photo : gain de payload, pas de gain de billing,
-    // mais évite de trimballer un tableau inutile jusqu'au front
-    photoRef: place.photos?.[0]
-      ? { name: place.photos[0].name, widthPx: place.photos[0].widthPx, heightPx: place.photos[0].heightPx }
-      : null,
   };
 }
 
-export function mapPlaceContact(place: any): PlaceContact {
+// --------------------------------------------------------
+// MAPPING REGROUPÉ
+// --------------------------------------------------------
+export function mapPlaceDetails(place: any): PlaceDetails {
   return {
+    // Contact
     openingHours: place.regularOpeningHours?.weekdayDescriptions ?? [],
     phone: place.internationalPhoneNumber ?? place.nationalPhoneNumber ?? '',
     website: place.websiteUri ?? '',
-  };
-}
-
-export function mapPlaceAtmosphere(place: any): PlaceAtmosphere {
-  return {
+    
+    // Atmosphere
     rating: place.rating ?? 0,
     reviewCount: place.userRatingCount ?? 0,
     priceLevel: mapPriceLevel(place.priceLevel),
-  };
-}
-
-export function mapPlaceReviews(place: any): PlaceReviews {
-  return {
+    
+    // Avis
     reviews: (place.reviews ?? []).map((r: any) => ({
       author: r.authorAttribution?.displayName ?? 'Anonyme',
       rating: r.rating ?? 0,
       comment: r.text?.text ?? '',
     })),
   };
-}
-
-function mapPriceLevel(level: string | undefined): number {
-  const map: Record<string, number> = {
-    PRICE_LEVEL_FREE: 0,
-    PRICE_LEVEL_INEXPENSIVE: 1,
-    PRICE_LEVEL_MODERATE: 2,
-    PRICE_LEVEL_EXPENSIVE: 3,
-    PRICE_LEVEL_VERY_EXPENSIVE: 4,
-  };
-  return level ? (map[level] ?? 0) : 0;
-}
-
-export interface PlacePhotos {
-  photos: PlacePhotoRef[];
 }
 
 export function mapPlacePhotos(place: any): PlacePhotos {
@@ -99,4 +71,18 @@ export function mapPlacePhotos(place: any): PlacePhotos {
       heightPx: p.heightPx,
     })),
   };
+}
+
+// --------------------------------------------------------
+// UTILITAIRES
+// --------------------------------------------------------
+function mapPriceLevel(level: string | undefined): number {
+  const map: Record<string, number> = {
+    PRICE_LEVEL_FREE: 0,
+    PRICE_LEVEL_INEXPENSIVE: 1,
+    PRICE_LEVEL_MODERATE: 2,
+    PRICE_LEVEL_EXPENSIVE: 3,
+    PRICE_LEVEL_VERY_EXPENSIVE: 4,
+  };
+  return level ? (map[level] ?? 0) : 0;
 }

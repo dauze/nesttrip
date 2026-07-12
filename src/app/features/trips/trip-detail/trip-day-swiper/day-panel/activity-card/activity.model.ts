@@ -18,7 +18,7 @@ export interface Activity {
   latitude?: number;
   longitude?: number;
   types?: string[];
-  photoRef: string;
+  photoRefs: string[];
 }
 
 export interface Price {

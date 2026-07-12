@@ -210,7 +210,7 @@ export class DayPanelComponent {
       booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
       notes: '',
       files: [],
-      photoRef: ''
+      photoRefs: []
     });
     queueMicrotask(() => this.wakeLoop());
   }
