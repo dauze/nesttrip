@@ -7,7 +7,6 @@ import { debounceTime } from 'rxjs/operators';
 import { SelectModule } from 'primeng/select';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DatePickerModule } from 'primeng/datepicker';
-import { InputMask } from 'primeng/inputmask';
 import { DividerModule } from 'primeng/divider';
 import { TextareaModule } from 'primeng/textarea';
 
@@ -23,7 +22,7 @@ import { runOnceReady } from '@app/shared/utils/run-once-ready';
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
-    SelectModule, InputNumberModule, DatePickerModule, InputMask, DividerModule, TextareaModule,
+    SelectModule, InputNumberModule, DatePickerModule, DividerModule, TextareaModule,
   ],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.scss',
@@ -56,13 +55,13 @@ export class ActivityFormComponent {
     }),
   });
 
-
   readonly bookingMeta = computed(() => {
     const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
     return BOOKING_STATUS_META[status];
   });
   
-  readonly durationTextControl = this.fb.nonNullable.control('00h00');
+  // Remplacement du contrôle texte par un contrôle Date pour le p-datepicker
+  readonly durationTimeControl = this.fb.control<Date | null>(null);
 
   private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
@@ -77,7 +76,6 @@ export class ActivityFormComponent {
     return new Date(deadline).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000;
   });
 
-  // "Dernier champ édité" pour arbitrer les recalculs croisés début/fin/durée.
   private editCounter = 0;
   private readonly lastEdited: Record<'startTime' | 'endTime' | 'duration', number> = {
     startTime: 0, endTime: 0, duration: 0,
@@ -86,11 +84,17 @@ export class ActivityFormComponent {
 
   constructor() {
     runOnceReady(this.activity, (a) => {
-      this.form.patchValue(a);
+      // On force la date de dayId sur le startTime et endTime reçus si présents
+      const patchedActivity = {
+        ...a,
+        startTime: this.applyDayIdDate(a.startTime ? new Date(a.startTime) : null),
+        endTime: this.applyDayIdDate(a.endTime ? new Date(a.endTime) : null),
+      };
+
+      this.form.patchValue(patchedActivity);
       this.initDurationFromForm();
     });
 
-    // Sauvegarde optimiste debouncée — abonnement unique (cf. bug du double subscribe imbriqué corrigé).
     this.form.valueChanges.pipe(
       debounceTime(300),
       takeUntilDestroyed(),
@@ -110,10 +114,11 @@ export class ActivityFormComponent {
   }
 
   private setupTimeDurationSync(): void {
-    this.durationTextControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
-      if (this.isProgrammaticUpdate) return;
-      const minutes = this.parseDuration(value);
-      if (minutes === null) return;
+    // Gestion du changement de la durée via p-datepicker
+    this.durationTimeControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((date) => {
+      if (this.isProgrammaticUpdate || !date) return;
+      
+      const minutes = date.getHours() * 60 + date.getMinutes();
 
       this.lastEdited.duration = ++this.editCounter;
       this.isProgrammaticUpdate = true;
@@ -125,12 +130,26 @@ export class ActivityFormComponent {
 
     this.form.controls.startTime.valueChanges.pipe(takeUntilDestroyed()).subscribe((start) => {
       if (this.isProgrammaticUpdate || !start) return;
+
+      // On s'assure que la date sélectionnée prend bien le jour de dayId()
+      const normalizedStart = this.applyDayIdDate(start)!;
+      this.isProgrammaticUpdate = true;
+      this.form.controls.startTime.setValue(normalizedStart, { emitEvent: false });
+      this.isProgrammaticUpdate = false;
+
       this.lastEdited.startTime = ++this.editCounter;
       this.recalculateFrom('startTime');
     });
 
     this.form.controls.endTime.valueChanges.pipe(takeUntilDestroyed()).subscribe((end) => {
       if (this.isProgrammaticUpdate || !end) return;
+
+      // On s'assure que la date sélectionnée prend bien le jour de dayId()
+      const normalizedEnd = this.applyDayIdDate(end)!;
+      this.isProgrammaticUpdate = true;
+      this.form.controls.endTime.setValue(normalizedEnd, { emitEvent: false });
+      this.isProgrammaticUpdate = false;
+
       this.lastEdited.endTime = ++this.editCounter;
       this.recalculateFrom('endTime');
     });
@@ -146,7 +165,7 @@ export class ActivityFormComponent {
     if (changed === 'duration') {
       if (start) this.setEndFromStartAndDuration(start, duration);
       else if (end) this.setStartFromEndAndDuration(end, duration);
-      this.syncDurationTextFromForm();
+      this.syncDurationTimeControlFromForm();
       this.isProgrammaticUpdate = false;
       return;
     }
@@ -172,43 +191,49 @@ export class ActivityFormComponent {
     let diff = this.toMinutes(end) - this.toMinutes(start);
     if (diff < 0) diff += 24 * 60;
     this.form.controls.duration.setValue(diff, { emitEvent: false });
-    this.syncDurationTextFromForm();
+    this.syncDurationTimeControlFromForm();
   }
 
   private setEndFromStartAndDuration(start: Date, duration: number): void {
     const end = new Date(start);
     end.setMinutes(end.getMinutes() + duration);
-    this.form.controls.endTime.setValue(end, { emitEvent: false });
+    // On s'assure que la date recalculée respecte aussi dayId
+    this.form.controls.endTime.setValue(this.applyDayIdDate(end), { emitEvent: false });
   }
 
   private setStartFromEndAndDuration(end: Date, duration: number): void {
     const start = new Date(end);
     start.setMinutes(start.getMinutes() - duration);
-    this.form.controls.startTime.setValue(start, { emitEvent: false });
+    // On s'assure que la date recalculée respecte aussi dayId
+    this.form.controls.startTime.setValue(this.applyDayIdDate(start), { emitEvent: false });
   }
 
   private toMinutes(date: Date): number {
     return date.getHours() * 60 + date.getMinutes();
   }
 
-  private parseDuration(value: string): number | null {
-    const match = value.match(/^(\d{2})h(\d{2})$/);
-    if (!match) return null;
-    const hours = Number(match[1]);
-    const minutes = Number(match[2]);
-    if (minutes >= 60) return null;
-    return hours * 60 + minutes;
+  /**
+   * Synchronise le composant de saisie p-datepicker de la durée depuis les minutes du formulaire
+   */
+  private syncDurationTimeControlFromForm(): void {
+    const totalMinutes = this.form.controls.duration.value ?? 0;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    const durationDate = new Date();
+    durationDate.setHours(hours, minutes, 0, 0);
+    
+    this.durationTimeControl.setValue(durationDate, { emitEvent: false });
   }
 
-  private syncDurationTextFromForm(): void {
-    this.durationTextControl.setValue(this.formatDuration(this.form.controls.duration.value), { emitEvent: false });
-  }
-
-  private formatDuration(totalMinutes: number): string {
-    const safe = Math.max(0, totalMinutes ?? 0);
-    const h = Math.floor(safe / 60);
-    const m = safe % 60;
-    return `${h.toString().padStart(2, '0')}h${m.toString().padStart(2, '0')}`;
+  /**
+   * Injecte la date (Année/Mois/Jour) du dayId() dans l'objet Date fourni en conservant ses heures/minutes.
+   */
+  private applyDayIdDate(time: Date | null): Date | null {
+    if (!time) return null;
+    const base = new Date(this.dayId());
+    base.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    return base;
   }
 
   private initDurationFromForm(): void {
@@ -216,13 +241,13 @@ export class ActivityFormComponent {
     const end = this.form.controls.endTime.value;
     const duration = this.form.controls.duration.value;
 
-    if (duration > 0) { this.syncDurationTextFromForm(); return; }
+    if (duration > 0) { this.syncDurationTimeControlFromForm(); return; }
     if (start && end) {
       this.isProgrammaticUpdate = true;
       this.setDurationFromStartAndEnd(start, end);
       this.isProgrammaticUpdate = false;
       return;
     }
-    this.syncDurationTextFromForm();
+    this.syncDurationTimeControlFromForm();
   }
 }

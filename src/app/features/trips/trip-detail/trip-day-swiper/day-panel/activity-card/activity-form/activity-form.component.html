@@ -40,7 +40,8 @@
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-clock text-sm"></i>Durée
           </label>
-          <p-inputMask mask="99h99" slotChar="0" [formControl]="durationTextControl" placeholder="0h00" styleClass="w-full min-w-0 transparent-inputtext"/>
+          <!-- Remplacement par p-datepicker en mode timeOnly -->
+          <p-datepicker [formControl]="durationTimeControl" timeOnly appendTo="body" class="w-full transparent-inputtext" />
         </div>
       </div>
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
