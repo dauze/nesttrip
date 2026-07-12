@@ -216,31 +216,27 @@ export class DayPanelComponent {
   }
 
   focusActivity(activityId: string): void {
-  // 1. On calcule les positions réelles et fraîches des cartes à l'instant T
-  const freshOffsets = this.getFreshCardOffsets();
-  
-  // 2. On trouve la carte cible
-  const target = freshOffsets.find(item => item.card.activity().id === activityId);
-  
-  if (target) {
-    // 3. Récupérer l'élément HTML du conteneur sticky global (qui englobe Map + Timeline)
+    const freshOffsets = this.getFreshCardOffsets();
+
+    const target = freshOffsets.find(
+      item => item.card.activity()?.id === activityId
+    );
+
+    if (!target) {
+      return;
+    }
+
     const stickyElement = this.stickyMap()?.nativeElement;
-    
-    // Si on a le conteneur, on prend sa hauteur réelle complète, sinon on se rabat sur la hauteur de la carte
-    const totalStickyHeight = stickyElement 
-      ? stickyElement.getBoundingClientRect().height 
+
+    const stickyHeight = stickyElement
+      ? stickyElement.getBoundingClientRect().height
       : this.stickyHeight();
 
-    // 4. Position idéale : le top absolu de l'activité MOINS tout le bloc figé en haut (Map + Timeline)
-    const scrollToPosition = target.top - totalStickyHeight - 5;
+    const targetScroll =
+      target.top - stickyHeight - 5;
 
-    // 5. On effectue le scroll fluide au pixel près
-    window.scrollTo({
-      top: scrollToPosition,
-      behavior: 'smooth'
-    });
+    this.smoothScrollTo(targetScroll, 700);
   }
-}
 
   onActivitiesPanelToggled() {
     if (this.pendingActivityId) {
@@ -377,4 +373,32 @@ private updateMapFromScroll(scrollY: number) {
       };
     });
   }
+
+  private smoothScrollTo(targetY: number, duration = 600): void {
+  const startY = window.scrollY;
+  const distance = targetY - startY;
+
+  const startTime = performance.now();
+
+  const easeOutCubic = (t: number) =>
+    1 - Math.pow(1 - t, 3);
+
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const eased = easeOutCubic(progress);
+
+    window.scrollTo(
+      0,
+      startY + distance * eased
+    );
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  };
+
+  requestAnimationFrame(animate);
+}
 }
