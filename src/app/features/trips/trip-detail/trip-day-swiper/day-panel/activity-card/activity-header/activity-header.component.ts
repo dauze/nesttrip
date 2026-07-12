@@ -1,6 +1,6 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de ReactiveForms
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
@@ -14,7 +14,7 @@ import { PlaceSummary } from '@app/core/models/place.dto';
 @Component({
   selector: 'app-activity-header',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutoComplete, DurationPipe],
+  imports: [CommonModule, ReactiveFormsModule, AutoComplete, DurationPipe], // Remplacement de FormsModule
   templateUrl: './activity-header.component.html',
 })
 export class ActivityHeaderComponent {
@@ -22,7 +22,6 @@ export class ActivityHeaderComponent {
   private readonly photoCache = inject(GooglePhotoService);
 
   readonly activity = input.required<Activity>();
-
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
 
@@ -30,48 +29,48 @@ export class ActivityHeaderComponent {
   readonly places = this.googlePlaceService.places;
   readonly searching = this.googlePlaceService.searching;
 
-  readonly title = signal('');
+  readonly titleControl = new FormControl('', { nonNullable: true });
 
-  // La miniature vient directement du champ persisté (Basic Data, écrit à la sélection) —
-  // plus aucune dépendance à un fetch async ici, plus de flicker.
   readonly firstPhotoRef = computed(() => {
     const refs = this.activity().photoRefs;
     return refs && refs.length > 0 ? refs[0] : null;
   });
 
   constructor() {
-    runOnceReady(this.activity, (a) => this.title.set(a.title));
+     runOnceReady(this.activity, (a) => this.titleControl.setValue(a.title, { emitEvent: false }));
   }
 
   onSearch(event: AutoCompleteCompleteEvent): void {
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 
-  /**
-   * PrimeNG AutoComplete écrit aussi l'objet complet sélectionné via ngModelChange
-   * (même quand `field` est utilisé pour l'affichage). On ignore volontairement
-   * ces valeurs non-string ici : c'est onSelect() qui a la responsabilité exclusive
-   * de fixer le titre lors d'une sélection. Cela évite qu'un objet PlaceSummary
-   * ne se retrouve stocké dans le signal `title` (=> "[object Object]" affiché).
-   */
-  onModelChange(value: string | PlaceSummary): void {
-    if (typeof value === 'string') {
-      this.title.set(value);
-    }
-  }
-
   onSelect(event: AutoCompleteSelectEvent): void {
-    const place = event.value as PlaceSummary;
-    if (!place?.placeId) return;
-    this.title.set(place.name);
+    const raw = event.value as PlaceSummary;
+    if (!raw?.placeId) return;
+
+    const place: PlaceSummary = { ...raw, name: this.extractPlaceName(raw.name) };
+
+    // En forçant la valeur ici, le FormControl court-circuite le composant 
+    // et lui réinjecte immédiatement la string. Zéro flash global.
+    this.titleControl.setValue(place.name);
+    
     this.placeSelected.emit(place);
   }
 
+  private extractPlaceName(name: unknown): string {
+    if (typeof name === 'string') return name;
+    if (name && typeof name === 'object' && typeof (name as { text?: unknown }).text === 'string') {
+      return (name as { text: string }).text;
+    }
+    return '';
+  }
+
+  displayName(place: { name: unknown }): string {
+    return this.extractPlaceName(place?.name);
+  }
+
   onTitleBlur(): void {
-    const next = this.title();
-    // Garde-fou : si un blur survient pendant une sélection (race condition
-    // PrimeNG), `next` peut transitoirement être un objet plutôt qu'une string.
-    // On ignore plutôt que de propager une valeur invalide au parent.
+    const next = this.titleControl.value;
     if (typeof next !== 'string') return;
 
     const trimmed = next.trim();

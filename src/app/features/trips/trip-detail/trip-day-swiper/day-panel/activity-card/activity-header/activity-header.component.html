@@ -12,11 +12,12 @@
           <i [class]="'pi text-xl text-color-secondary ' + activityTypeMeta[activity().type]?.icon"></i>
         }
   </div>
+  
   <div class="flex flex-column flex-1 min-w-0 gap-1" (click)="$event.stopPropagation()">
+    <!-- Remplacement par [formControl] ici -->
     <p-autoComplete
       [suggestions]="places()"
-      [ngModel]="title()"
-      (ngModelChange)="onModelChange($event)"
+      [formControl]="titleControl"
       (onBlur)="onTitleBlur()"
       (completeMethod)="onSearch($event)"
       (onSelect)="onSelect($event)"
@@ -31,7 +32,7 @@
       [inputStyleClass]="'w-full font-semibold p-0 text-base'">
       <ng-template #item let-place>
           <div class="flex flex-column min-w-0 flex-1">
-            <span class="font-medium text-sm white-space-normal line-height-3">{{ place.name }}</span>
+            <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
             <span class="text-color-secondary text-xs white-space-normal line-height-2">{{ place.address }}</span>
           </div>
       </ng-template>
