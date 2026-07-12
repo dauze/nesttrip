@@ -47,17 +47,36 @@ export class ActivityHeaderComponent {
     this.googlePlaceService.setSearchTerm(event.query ?? '');
   }
 
+  /**
+   * PrimeNG AutoComplete écrit aussi l'objet complet sélectionné via ngModelChange
+   * (même quand `field` est utilisé pour l'affichage). On ignore volontairement
+   * ces valeurs non-string ici : c'est onSelect() qui a la responsabilité exclusive
+   * de fixer le titre lors d'une sélection. Cela évite qu'un objet PlaceSummary
+   * ne se retrouve stocké dans le signal `title` (=> "[object Object]" affiché).
+   */
+  onModelChange(value: string | PlaceSummary): void {
+    if (typeof value === 'string') {
+      this.title.set(value);
+    }
+  }
+
   onSelect(event: AutoCompleteSelectEvent): void {
     const place = event.value as PlaceSummary;
-    if (!place.placeId) return;
+    if (!place?.placeId) return;
     this.title.set(place.name);
     this.placeSelected.emit(place);
   }
 
   onTitleBlur(): void {
     const next = this.title();
-    if (this.activity().title === next) return;
-    this.titleEdited.emit(next);
+    // Garde-fou : si un blur survient pendant une sélection (race condition
+    // PrimeNG), `next` peut transitoirement être un objet plutôt qu'une string.
+    // On ignore plutôt que de propager une valeur invalide au parent.
+    if (typeof next !== 'string') return;
+
+    const trimmed = next.trim();
+    if (this.activity().title === trimmed) return;
+    this.titleEdited.emit(trimmed);
   }
 
   getPhotoUrl$(ref: string, maxWidth = 100) {

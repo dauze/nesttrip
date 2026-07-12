@@ -7,13 +7,13 @@ import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { CdkDrag, DragDropModule } from '@angular/cdk/drag-drop';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged, firstValueFrom, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, distinctUntilChanged, filter, map, of, switchMap, take } from 'rxjs';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 // Remplacement des anciens modèles par PlaceDetails
-import { LoadingState, PlaceSummary, PlaceDetails } from '@app/core/models/place.dto';
+import { LoadingState, PlaceSummary, PlaceDetails, PlacePhotoRef } from '@app/core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
 import { BOOKING_STATUS_META } from './activity.constants';
 
@@ -61,10 +61,8 @@ export class ActivityCardComponent {
 
   private readonly requestedPlaceId = signal<string>('');
 
-  // 2. activeId$ écoute désormais CE signal, et plus du tout this.collapsed()
   private readonly placeId$ = toObservable(this.requestedPlaceId).pipe(distinctUntilChanged());
 
-  // 3. Le detailsState reste identique : il attendra que requestedPlaceId soit rempli
   readonly detailsState = toSignal(
     this.placeId$.pipe(
       switchMap((id): ReturnType<typeof this.googlePlaceService.getPlaceDetails$> =>
@@ -75,10 +73,28 @@ export class ActivityCardComponent {
     { initialValue: { status: 'idle' as const } as LoadingState<PlaceDetails> }
   );
 
-  // 4. On ajoute une méthode pour recevoir l'Output du composant enfant
   loadGoogleDetails(placeId: string): void {
     this.requestedPlaceId.set(placeId);
   }
+
+  // --- Sélection d'un lieu depuis l'autocomplete + récupération des photos ---
+  //
+  // Historique du bug : l'ancienne implémentation faisait un `.subscribe()` manuel
+  // avec `take(1)` directement sur `getPlacePhotos$`. Or ce flux est un état
+  // (idle/loading/success/error), donc `take(1)` pouvait capturer l'état
+  // "loading" au lieu de l'état final "success" selon le timing du cache -> les
+  // photos étaient alors sauvegardées vides de façon aléatoire. De plus,
+  // `activity` était capturé en closure au moment du clic, ce qui pouvait
+  // écraser un état plus récent si l'activité changeait avant la résolution
+  // de l'appel réseau.
+  //
+  // On repasse ici sur un signal + toObservable/switchMap, comme pour
+  // `detailsState`, et on ne filtre que sur les états terminaux du flux photo.
+  private readonly selectedPlace = signal<PlaceSummary | null>(null);
+
+  private readonly selectedPlace$ = toObservable(this.selectedPlace).pipe(
+    filter((place): place is PlaceSummary => !!place?.placeId)
+  );
 
   constructor() {
     afterNextRender(() => {
@@ -87,6 +103,42 @@ export class ActivityCardComponent {
       el.addEventListener('mousedown', this.updateDragState, { capture: true });
       el.addEventListener('touchstart', this.updateDragState, { capture: true, passive: true });
     });
+
+    this.selectedPlace$
+      .pipe(
+        switchMap(place =>
+          this.googlePlaceService.getPlacePhotos$(place.placeId).pipe(
+            // On attend un état terminal (succès ou erreur), jamais "loading"/"idle".
+            filter(state => state.status === 'success' || state.status === 'error'),
+            take(1),
+            map(state => ({
+              place,
+              photoRefs: state.status === 'success' && state.data?.photos
+                ? state.data.photos.map((p: PlacePhotoRef) => p.name)
+                : ([] as string[]),
+            })),
+            catchError(err => {
+              console.error('Impossible de récupérer les photos du lieu à la sélection', err);
+              return of({ place, photoRefs: [] as string[] });
+            })
+          )
+        ),
+        takeUntilDestroyed()
+      )
+      .subscribe(({ place, photoRefs }) => {
+        const activity = this.activity();
+        if (!activity) return;
+
+        this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+          ...activity,
+          title: place.name,
+          placeId: place.placeId,
+          address: place.address,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          photoRefs,
+        });
+      });
   }
 
   onCardPointerDown(event: MouseEvent | TouchEvent): void {
@@ -103,33 +155,9 @@ export class ActivityCardComponent {
     }
   }
 
-  async onPlaceSelected(place: PlaceSummary): Promise<void> {
-    const activity = this.activity();
-    if (!activity || !place.placeId) return;
-
-    let photoRefs: string[] = [];
-    try {
-      const state = await firstValueFrom(this.googlePlaceService.getPlacePhotos$(place.placeId));
-      
-      // Si l'état est un succès et que Google a renvoyé des photos
-      if (state.status === 'success' && state.data?.photos) {
-        // 🎯 On extrait UNIQUEMENT la chaîne 'name' de chaque objet photo
-        photoRefs = state.data.photos.map((p: any) => p.name);
-      }
-    } catch (err) {
-      console.error('Impossible de récupérer les photos du lieu à la sélection', err);
-    }
-
-    // 2. On persiste tout d'un coup dans Firebase via le TripFacade
-    this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
-      ...activity,
-      title: place.name,
-      placeId: place.placeId,
-      address: place.address,
-      latitude: place.latitude,
-      longitude: place.longitude,
-      photoRefs: photoRefs // On écrase l'ancien système par le tableau d'IDs
-    });
+  onPlaceSelected(place: PlaceSummary): void {
+    if (!place.placeId) return;
+    this.selectedPlace.set(place);
   }
 
   onTitleChanged(newTitle: string): void {
@@ -156,7 +184,7 @@ export class ActivityCardComponent {
 
   confirmDelete(): void {
     this.confirmationService.confirm({
-      message: 'Supprimer cette activité ?', // (Coquille corrigée ici au passage)
+      message: 'Supprimer cette activité ?',
       accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId()),
     });
   }
