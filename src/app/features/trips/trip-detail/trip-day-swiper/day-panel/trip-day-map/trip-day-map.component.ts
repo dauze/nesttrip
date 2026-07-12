@@ -16,7 +16,7 @@ export class TripDayMapComponent {
   readonly selectedActivityId = signal<string | null>(null);
   zoom = input(13);
   readonly focusZoom = input(14);
-
+  
 
   // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
   public readonly elementRef = inject(ElementRef);

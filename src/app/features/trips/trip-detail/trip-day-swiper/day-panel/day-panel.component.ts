@@ -313,7 +313,7 @@ export class DayPanelComponent {
   private tick = (): void => {
     const currentScrollY = window.scrollY;
 
-    if (currentScrollY !== this.lastScrollY) {
+   if (currentScrollY !== this.lastScrollY || this.isAutoScrolling) {
       this.lastScrollY = currentScrollY;
       this.idleFrames = 0;
       this.updateMapFromScroll(currentScrollY);
@@ -437,10 +437,14 @@ export class DayPanelComponent {
       startY + distance * eased
     );
 
+     this.wakeLoop();
+
+
    if (progress < 1) {
       requestAnimationFrame(animate);
     } else {
       this.isAutoScrolling = false;
+      this.wakeLoop();
     }
   };
 
