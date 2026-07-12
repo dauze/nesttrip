@@ -153,3 +153,36 @@ swiper-slide,
 .waitlist {
   --booking-status-color: var(--p-yellow-500);
 }
+.p-fileupload-choose-button {
+  --p-button-padding-y: 0.1rem;
+  --p-button-padding-x: 0.6rem;
+}
+.p-chip {
+  --p-chip-padding-y: 0.2rem;
+  --p-chip-padding-x: 0.6rem;
+}
+
+/* Cache les SVG natifs PrimeNG */
+.p-panel-toggle-button .p-icon {
+  display: none;
+}
+
+/* Crée notre chevron */
+.p-panel-toggle-button::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 200ms ease;
+  margin-top: -0.25rem;
+}
+
+.p-panel-header-actions > p-button[aria-expanded="false"] .p-panel-toggle-button::before {
+    transform: rotate(-135deg);
+}
+
+.p-panel-header-actions > p-button[aria-expanded="true"] .p-panel-toggle-button::before {
+    transform: rotate(45deg);
+}
