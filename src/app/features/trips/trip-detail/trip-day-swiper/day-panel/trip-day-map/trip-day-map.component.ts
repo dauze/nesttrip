@@ -15,7 +15,7 @@ export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
   zoom = input(13);
-  readonly focusZoom = input(14);
+  readonly focusZoom = input(13);
   
 
   // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
@@ -42,10 +42,9 @@ export class TripDayMapComponent {
   center = computed(() => {
     const pts = this.points();
     if (!pts.length) return { lat: 48.8566, lng: 2.3522 };
-    return {
-      lat: pts.reduce((sum, p) => sum + p.latitude, 0) / pts.length,
-      lng: pts.reduce((sum, p) => sum + p.longitude, 0) / pts.length,
-    };
+
+    const first = pts[0];
+    return { lat: first.latitude, lng: first.longitude };
   });
 
   constructor() {

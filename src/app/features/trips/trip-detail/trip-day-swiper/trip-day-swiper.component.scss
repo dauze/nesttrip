@@ -8,3 +8,13 @@ swiper-slide {
   height: auto;
   transition: transform 150ms ease-out;
 }
+
+:host {
+  //TODO calculer auto
+  --app-header-height: 205px;
+  --app-daynav-height: 45px;
+}
+
+swiper-slide {
+  min-height: calc(100dvh - var(--app-header-height) - var(--app-daynav-height));
+}
