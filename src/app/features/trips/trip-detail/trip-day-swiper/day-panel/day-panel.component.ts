@@ -1,7 +1,6 @@
 import { 
   afterNextRender, 
   Component, 
-  ComponentRef, 
   computed, 
   DestroyRef, 
   effect, 
@@ -27,13 +26,13 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
-import { CdkPortalOutlet, ComponentPortal, PortalModule } from '@angular/cdk/portal';
 import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
+import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule, PortalModule],
+  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })
@@ -43,22 +42,23 @@ export class DayPanelComponent {
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
   private readonly heightSync = inject(SwiperHeightSyncService);
+  private readonly mapHost = inject(TripDayMapHostService);
 
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
-  readonly mapPortal = input.required<ComponentPortal<TripDayMapComponent>>();
-  readonly sharedMap = input<TripDayMapComponent>();
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
-  readonly portalOutlet = viewChild(CdkPortalOutlet);
-
 
   private scrollTimeout?: number;
   private isTouching = false;
   private isAutoScrolling = false;
-  private readonly activeMapComponent = signal<TripDayMapComponent | null>(null);
+  // Ce jour n'a de carte "à lui" que lorsqu'il est actif : l'instance
+  // partagée (jamais recréée) est alors physiquement déplacée dans son
+  // conteneur sticky par TripDayMapHostService.
+  private readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
   private mapSubscription?: { unsubscribe: () => void };
+  private mapObserver?: ResizeObserver;
 
   readonly stickyHeight = signal(0);
   readonly stickyOffset = this.stickyHeight.asReadonly();
@@ -68,7 +68,7 @@ export class DayPanelComponent {
   private idleFrames = 0;
   private readonly IDLE_THRESHOLD = 30;
   private readonly ACTIVITY_SCROLL_GAP = 8;
-    private readonly SNAP_DELAY = 500;
+  private readonly SNAP_DELAY = 500;
   private readonly SNAP_DISTANCE = 60;
 
   activitiesCollapsed = false;
@@ -96,6 +96,19 @@ export class DayPanelComponent {
       if (map) {
         map.points.set(this.dayMapPoints());
       }
+    });
+
+    // 2. Quand ce jour devient actif, on récupère l'instance UNIQUE de la
+    // carte (créée une seule fois par TripDaySwiperComponent, jamais
+    // recréée) et on la déplace physiquement dans notre conteneur sticky.
+    effect(() => {
+      if (!this.active()) return;
+      const container = this.stickyMap()?.nativeElement;
+      const map = this.mapHost.activeMap();
+      if (!container || !map) return;
+
+      this.mapHost.moveTo(container);
+      this.wireActiveMap(map);
     });
 
     afterNextRender(() => {
@@ -135,51 +148,10 @@ export class DayPanelComponent {
       window.addEventListener('touchmove', this.wakeLoop, { passive: true });
       window.addEventListener('wheel', this.wakeLoop, { passive: true });
 
-      // Gestion de l'arrivée dynamique du composant Carte via le Portail CDK
-      let mapObserver: ResizeObserver | undefined;
-      const outlet = this.portalOutlet();
-      
-      if (outlet) {
-        outlet.attached.subscribe((ref) => {
-          if (ref && ref instanceof ComponentRef) {
-            const mapComponent = ref.instance as TripDayMapComponent;
-            this.activeMapComponent.set(mapComponent);
-
-            // Reconnexion de l'événement de clic sur un marqueur
-            this.mapSubscription?.unsubscribe();
-            this.mapSubscription = mapComponent.activitySelected.subscribe((point) => {
-              this.onMapPointClick(point);
-            });
-
-            if (mapObserver) mapObserver.disconnect();
-            
-            // On observe la vraie hauteur HTML du composant injecté
-            mapObserver = new ResizeObserver(entries => {
-              if (entries[0]) {
-                window.requestAnimationFrame(() => {
-                  this.stickyHeight.set(entries[0].contentRect.height);
-                  this.wakeLoop(); 
-                });
-              }
-            });
-            
-            mapObserver.observe(mapComponent.elementRef.nativeElement);
-
-            // Correction d'affichage de l'API Google Maps après transfert du DOM
-            setTimeout(() => {
-              const nativeMap = mapComponent.googleMap;
-              if (nativeMap) {
-                google.maps.event.trigger(nativeMap, 'resize');
-              }
-            }, 100);
-          }
-        });
-      }
-
       // Nettoyage complet à la destruction du composant
       this.destroyRef.onDestroy(() => {
         this.mapSubscription?.unsubscribe();
-        if (mapObserver) mapObserver.disconnect();
+        this.mapObserver?.disconnect();
         if (globalObserver) globalObserver.disconnect();
         window.removeEventListener('resize', this.wakeLoop);
        window.removeEventListener(
@@ -203,27 +175,36 @@ export class DayPanelComponent {
     });
   }
 
-  protected onMapAttached(ref: any): void {
-    // Le CdkPortalOutlet renvoie un ComponentRef quand il instancie/attache un composant
-    const mapComponent = ref.instance as TripDayMapComponent;
-    this.activeMapComponent.set(mapComponent);
+  /** Branche les listeners propres à l'instance partagée de la carte, une fois qu'elle vient d'être déplacée ici. */
+  private wireActiveMap(map: TripDayMapComponent): void {
+    // Reconnexion de l'événement de clic sur un marqueur
+    this.mapSubscription?.unsubscribe();
+    this.mapSubscription = map.activitySelected.subscribe((point) => {
+      this.onMapPointClick(point);
+    });
 
-    // Force le recalcul de géométrie de l'API Google Maps
+    // On observe la vraie hauteur HTML du composant (ré)injecté
+    this.mapObserver?.disconnect();
+    this.mapObserver = new ResizeObserver(entries => {
+      if (entries[0]) {
+        window.requestAnimationFrame(() => {
+          this.stickyHeight.set(entries[0].contentRect.height);
+          this.wakeLoop();
+        });
+      }
+    });
+    this.mapObserver.observe(map.elementRef.nativeElement);
+
+    // Correction d'affichage de l'API Google Maps après transfert du DOM
     setTimeout(() => {
-      const nativeMap = mapComponent.googleMap;
+      const nativeMap = map.googleMap;
       if (nativeMap) {
         google.maps.event.trigger(nativeMap, 'resize');
-        if (mapComponent.center()) {
-          nativeMap.setCenter(mapComponent.center());
+        if (map.center()) {
+          nativeMap.setCenter(map.center());
         }
       }
     }, 50);
-
-    // Reconnexion de l'événement de clic (activitySelected)
-    this.mapSubscription?.unsubscribe();
-    this.mapSubscription = mapComponent.activitySelected.subscribe((point) => {
-      this.onMapPointClick(point);
-    });
   }
 
   onDrop(event: CdkDragDrop<Activity[]>): void {

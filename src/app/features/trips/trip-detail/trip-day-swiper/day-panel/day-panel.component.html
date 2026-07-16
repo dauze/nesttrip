@@ -1,10 +1,7 @@
-
 <div class="flex flex-column gap-2">
   @if (activities().length > 0) {
     <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
-    <div #stickyMap class="sticky-map">
-      <div [cdkPortalOutlet]="mapPortal()" (attached)="onMapAttached($event)"></div>
-    </div>
+    <div #stickyMap class="sticky-map"></div>
   }
   <p-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
   (onAfterToggle)="onActivitiesPanelToggled()">
