@@ -1,3 +1,4 @@
+// src/app/core/infra/firebase/services/trip-data-source.ts
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
@@ -11,7 +12,7 @@ import { AuthService } from '@app/core/services/auth.service';
 export class TripDataSource {
   private readonly db = inject(FirebaseService).db;
   private readonly authService = inject(AuthService);
-  
+
   getTrips$(): Observable<Pick<Trip, 'id' | 'title'>[]> {
     return new Observable((observer) => {
       const user = this.authService.getCurrentUser(); // lecture directe, Firebase garantit qu'il est résolu après le guard
@@ -28,6 +29,7 @@ export class TripDataSource {
       return () => unsub();
     });
   }
+
   getTrip$(id: string) {
     return new Observable<Trip>((observer) => {
       const unsub = onSnapshot(
@@ -36,6 +38,10 @@ export class TripDataSource {
           const data = snap.data();
           if (data) {
             observer.next(tripFromFb(data as TripFirebase));
+          } else {
+            // Doc supprimé (ou id invalide) : on notifie explicitement plutôt
+            // que de laisser l'observer silencieux indéfiniment.
+            observer.error(new Error(`Trip ${id} not found`));
           }
         },
         (err) => observer.error(err),

@@ -1,5 +1,6 @@
+// src/app/core/infra/firebase/shared/debounced-writer.ts
 import { signal } from "@angular/core";
-import { Subject, debounceTime, tap, switchMap, finalize, EMPTY, from, catchError } from "rxjs";
+import { Subject, debounceTime, tap, switchMap, finalize, EMPTY, from, catchError, timer } from "rxjs";
 
 // base-persistence.service.ts
 export abstract class DebounceWriter<K, T extends { key: K }> {
@@ -8,6 +9,8 @@ export abstract class DebounceWriter<K, T extends { key: K }> {
   readonly syncing = signal(false);
   private readonly pending = new Map<K, T>();
   private readonly trigger$ = new Subject<void>();
+
+  private static readonly RETRY_DELAY_MS = 3000;
 
   constructor() {
     this.trigger$.pipe(
@@ -31,8 +34,11 @@ export abstract class DebounceWriter<K, T extends { key: K }> {
 
     return from(this.write(updates)).pipe(
       catchError((err) => {
-        console.error('Persistence failed', err);
+        console.error('Persistence failed, retry scheduled', err);
         updates.forEach((u) => this.pending.set(u.key, u));
+        // Sans ce retrigger, la queue reste bloquée tant qu'aucune
+        // nouvelle frappe utilisateur n'appelle queue().
+        timer(DebounceWriter.RETRY_DELAY_MS).subscribe(() => this.trigger$.next());
         return EMPTY;
       }),
     );

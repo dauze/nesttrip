@@ -68,22 +68,33 @@ export class TripDaySwiperComponent implements AfterViewInit {
 
       this.preloadAround(index);
 
-      const swiperInstance = this.swiperRef()?.nativeElement?.swiper;
-      if (!swiperInstance) return;
+      // preloadAround() vient d'écrire dans visitedDays : le DOM du slide
+      // ciblé n'est pas encore inséré (le @if ne sera flush qu'à la prochaine
+      // passe de change detection). Si on appelle slideTo() maintenant,
+      // Swiper marque "actif" un slide encore vide et fige sa hauteur à 0.
+      // On attend un flush DOM garanti avant de bouger le swiper.
+      afterNextRender(() => {
+        const swiperInstance = this.swiperRef()?.nativeElement?.swiper;
+        if (!swiperInstance) return;
 
-      const isFirstSync = !this.hasPositioned;
-      this.hasPositioned = true;
-      swiperInstance.allowTouchMove = !this.lockService.isLocked();
-      if (swiperInstance.activeIndex !== index) {
-        swiperInstance.slideTo(index, isFirstSync ? 0 : undefined);
-      }
+        const isFirstSync = !this.hasPositioned;
+        this.hasPositioned = true;
+        swiperInstance.allowTouchMove = !this.lockService.isLocked();
+        if (swiperInstance.activeIndex !== index) {
+          swiperInstance.slideTo(index, isFirstSync ? 0 : undefined);
+        }
 
-      // Le slide actif est bien monté ET positionné : on attend encore
-      // deux frames pour laisser autoHeight et le contenu enfant (images,
-      // map) se stabiliser avant de prévenir le parent.
-      if (isFirstSync && !this.hasEmittedReady) {
-        this.waitForStableLayout();
-      }
+        // Le slide est maintenant positionné sur du contenu réellement monté :
+        // on force un recalcul immédiat plutôt que d'attendre un resize hypothétique.
+        this.heightSync.update(0);
+
+        // Le slide actif est bien monté ET positionné : on attend encore
+        // deux frames pour laisser autoHeight et le contenu enfant (images,
+        // map) se stabiliser avant de prévenir le parent.
+        if (isFirstSync && !this.hasEmittedReady) {
+          this.waitForStableLayout();
+        }
+      }, { injector: this.injector });
     });
   }
 
@@ -135,6 +146,18 @@ export class TripDaySwiperComponent implements AfterViewInit {
       if (!tab) return;
       this.preloadAround(newIndex);
       this.activeIdChange.emit(tab.id);
+    });
+
+    // Filet de sécurité : quelle que soit la raison pour laquelle le
+    // ResizeObserver de SwiperAutoHeightWatchDirective n'a pas (ou pas encore)
+    // corrigé la hauteur, on force un recalcul à la fin de chaque transition,
+    // une fois le layout garanti stable (2 frames, comme waitForStableLayout).
+    swiperEl.addEventListener('swiperslidechangetransitionend', () => {
+      afterNextRender(() => {
+        afterNextRender(() => {
+          this.heightSync.update(0);
+        }, { injector: this.injector });
+      }, { injector: this.injector });
     });
 
     this.viewReady.set(true);

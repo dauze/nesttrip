@@ -28,6 +28,7 @@ import { DayMapPoint } from '@app/core/models/day-map-point';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
 import { CdkPortalOutlet, ComponentPortal, PortalModule } from '@angular/cdk/portal';
+import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -41,6 +42,7 @@ export class DayPanelComponent {
   private readonly lockService = inject(SwiperLockService);
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly heightSync = inject(SwiperHeightSyncService);
 
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
@@ -278,6 +280,11 @@ export class DayPanelComponent {
       this.openCard(this.pendingActivityId);
       this.pendingActivityId = undefined;
     }
+    // Filet de sécurité : force un recalcul de la hauteur du swiper à la fin
+    // de l'animation PrimeNG, indépendamment du ResizeObserver de
+    // SwiperAutoHeightWatchDirective (qui peut manquer sa fenêtre si le
+    // contenu du panel n'a lui-même aucune raison de resize après montage).
+    setTimeout(() => this.heightSync.update(0), 300);
     // Laisse le temps à l'animation PrimeNG de se terminer avant d'ajuster le scroll
     setTimeout(() => this.wakeLoop(), 300);
   }
@@ -313,7 +320,7 @@ export class DayPanelComponent {
   private tick = (): void => {
     const currentScrollY = window.scrollY;
 
-   if (currentScrollY !== this.lastScrollY || this.isAutoScrolling) {
+    if (currentScrollY !== this.lastScrollY) {
       this.lastScrollY = currentScrollY;
       this.idleFrames = 0;
       this.updateMapFromScroll(currentScrollY);
