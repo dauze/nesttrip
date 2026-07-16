@@ -130,18 +130,23 @@ export class TripDaySwiperComponent implements AfterViewInit {
 
   private setupSwiper(swiperEl: SwiperContainer): void {
     Object.assign(swiperEl, {
-      speed: 280,
+      speed: 900,
       observer: true,
       observeParents: true,
       observeSlideChildren: true,
       autoHeight: true,
       resistanceRatio: 0.85,
       spaceBetween: 8,
+      longSwipesRatio: 0.45,
+      longSwipesMs: 250,
       cssMode: false,
       injectStyles: [`
         .swiper {
             overflow: clip;
           }
+        .swiper-wrapper {
+          transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
       `]
     });
 

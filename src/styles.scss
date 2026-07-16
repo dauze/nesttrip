@@ -190,3 +190,8 @@ swiper-slide,
 .p-panel-header-actions > p-button[aria-expanded="true"] .p-panel-toggle-button::before {
   transform: rotate(45deg);
 }
+
+.p-button,
+.p-panel-toggle-button {
+    transition: none !important;
+}

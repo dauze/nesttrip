@@ -108,6 +108,10 @@ export class InfosComponent {
     this.focusRow(item.id, index + 1, 0);
   }
 
+  onBlurPoint() {
+    setTimeout(() => this.activePointId.set(null));
+  }
+
   onBackspaceRow(item: Item, index: number, event: KeyboardEvent): void {
     const el = event.target as HTMLTextAreaElement;
     if ((el.selectionStart ?? 0) !== 0 || index === 0) return;
