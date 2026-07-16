@@ -344,9 +344,9 @@ export class DayPanelComponent {
   // 4. Trouver l'index de la carte par rapport à cette ligne
   const upcomingIndex = freshOffsets.findIndex(offset => offset.top > triggerLine);
 
-  let fromIndex = 0;
-  let toIndex = 0;
-  let t = 0;
+  let fromIndex: number;
+  let toIndex: number;
+  let t: number;
 
   if (upcomingIndex === -1) {
     fromIndex = freshOffsets.length - 1;

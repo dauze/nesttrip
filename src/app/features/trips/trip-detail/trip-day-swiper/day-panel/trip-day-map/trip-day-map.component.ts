@@ -122,7 +122,7 @@ export class TripDayMapComponent {
     }
 
     // On définit dynamiquement l'amplitude du dézoom (zoomDrop) selon la distance
-    let zoomDrop = 0;
+    let zoomDrop: number;
 
   if (distanceMeters < 500) {
   // Très proche (50m à 500m) : dézoom infime (entre 0 et 0.4 niveau de zoom max)
