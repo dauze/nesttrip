@@ -1,7 +1,7 @@
 import { Info } from '@app/features/trips/trip-detail/trip-day-swiper/infos/info.models';
 import {ActivityFirebase} from './activity.dto';
 
-export type TripRoleFireBase = 'owner' | 'editor' | 'viewer';
+export type TripRoleFireBase = 'owner' | 'editor';
 
 export interface TripMember {
   role: TripRoleFireBase;

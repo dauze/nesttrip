@@ -44,19 +44,6 @@
         [disabled]="inviteLoading()"
         class="w-full" />
     </div>
-    <div class="flex flex-column gap-2">
-      <label for="inviteeRole">Rôle</label>
-      <p-select
-        id="inviteeRole"
-        name="inviteeRole"
-        [(ngModel)]="inviteeRole"
-        [options]="roleOptions"
-        optionLabel="label"
-        optionValue="value"
-        appendTo="body"
-        class="transparent-select"
-        [disabled]="inviteLoading()" />
-    </div>
     @if (inviteError()) {
       <p-message severity="error" [text]="inviteError()!" />
     }

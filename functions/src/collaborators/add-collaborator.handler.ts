@@ -4,19 +4,13 @@ import * as admin from 'firebase-admin';
 export async function addCollaboratorHandler(req: Request, res: Response) {
   const uid = (req as any).user.uid;
 
-  const { tripId, inviteeEmail, role } = req.body as {
+  const { tripId, inviteeEmail } = req.body as {
     tripId: string;
     inviteeEmail: string;
-    role: string;
   };
 
-  if (!tripId || !inviteeEmail || !role) {
+  if (!tripId || !inviteeEmail) {
     res.status(400).json({ error: 'tripId, inviteeEmail et role requis' });
-    return;
-  }
-
-  if (!['editor', 'viewer'].includes(role)) {
-    res.status(400).json({ error: 'Role invalide' });
     return;
   }
 
@@ -41,7 +35,7 @@ export async function addCollaboratorHandler(req: Request, res: Response) {
     // Dénormalisation : on stocke role + email + displayName
     await tripRef.update({
       [`members.${invitee.uid}`]: {
-        role,
+        role : 'editor',
         email: invitee.email ?? inviteeEmail,
         displayName: invitee.displayName ?? null,
       },

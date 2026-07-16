@@ -10,7 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { finalize } from 'rxjs';
 import { CollaborationService } from '@app/core/services/collaboration.service';
-import { TripMember, TripRole } from '../../trip.model';
+import { TripMember } from '../../trip.model';
 
 @Component({
   selector: 'app-trip-collaborators',
@@ -38,14 +38,8 @@ export class TripCollaboratorsComponent {
 
   protected showInviteDialog = false;
   protected inviteeEmail = '';
-  protected inviteeRole: TripRole = 'editor';
   readonly inviteLoading = signal(false);
   readonly inviteError = signal<string | null>(null);
-
-  protected readonly roleOptions: { label: string; value: TripRole }[] = [
-    { label: 'Éditeur', value: 'editor' },
-    { label: 'Lecteur', value: 'viewer' },
-  ];
 
   readonly visibleMembers = computed(() =>
     Object.entries(this.members()).slice(0, this.MAX_VISIBLE)
@@ -71,7 +65,6 @@ export class TripCollaboratorsComponent {
 
   protected openInviteDialog(): void {
     this.inviteeEmail = '';
-    this.inviteeRole = 'editor';
     this.inviteError.set(null);
     this.showInviteDialog = true;
   }
@@ -87,7 +80,7 @@ export class TripCollaboratorsComponent {
     this.inviteError.set(null);
 
     this.collaborationService
-      .addCollaborator(this.tripId(), this.inviteeEmail, this.inviteeRole)
+      .addCollaborator(this.tripId(), this.inviteeEmail)
       .pipe(finalize(() => this.inviteLoading.set(false)))
       .subscribe({
         next: () => {
