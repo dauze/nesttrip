@@ -177,15 +177,16 @@ swiper-slide,
   height: 0.55rem;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
   transition: transform 200ms ease;
   margin-top: -0.25rem;
 }
 
+/* Fermé : > */
 .p-panel-header-actions > p-button[aria-expanded="false"] .p-panel-toggle-button::before {
-    transform: rotate(-135deg);
+  transform: rotate(-45deg);
 }
 
+/* Ouvert : v */
 .p-panel-header-actions > p-button[aria-expanded="true"] .p-panel-toggle-button::before {
-    transform: rotate(45deg);
+  transform: rotate(45deg);
 }
