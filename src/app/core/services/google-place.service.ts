@@ -5,7 +5,7 @@ import {
   catchError, debounceTime, distinctUntilChanged, filter,
   map, Observable, of, shareReplay, startWith, switchMap
 } from 'rxjs';
-import { environment } from '@environment/environment';
+import { environment } from '@environments/environment';
 import {
   LoadingState, PlaceSummary, PlaceDetails, PlacePhotos
 } from '../models/place.dto';
