@@ -18,6 +18,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { Activity } from './activity-card/activity.model';
 import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
+import { Skeleton } from 'primeng/skeleton';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from './activity-card/activity-card.component';
@@ -28,11 +29,12 @@ import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
 import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
+import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule],
+  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule, Skeleton],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })
@@ -43,6 +45,9 @@ export class DayPanelComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly heightSync = inject(SwiperHeightSyncService);
   private readonly mapHost = inject(TripDayMapHostService);
+  readonly googleMapPanelService = inject(GoogleMapPanelService);
+  
+  readonly collapsed = this.googleMapPanelService.isCollapsed;
 
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
@@ -56,7 +61,7 @@ export class DayPanelComponent {
   // Ce jour n'a de carte "à lui" que lorsqu'il est actif : l'instance
   // partagée (jamais recréée) est alors physiquement déplacée dans son
   // conteneur sticky par TripDayMapHostService.
-  private readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
+  readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
   private mapSubscription?: { unsubscribe: () => void };
   private mapObserver?: ResizeObserver;
 

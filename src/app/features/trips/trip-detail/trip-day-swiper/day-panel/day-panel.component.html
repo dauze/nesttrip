@@ -1,7 +1,19 @@
 <div class="flex flex-column gap-2">
   @if (activities().length > 0) {
     <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
-    <div #stickyMap class="sticky-map"></div>
+    <div #stickyMap class="sticky-map">
+      @if (!activeMapComponent()) {
+        <p-panel [toggleable]="true" [collapsed]="collapsed()">
+          <ng-template #header>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-calendar"></i>
+              <span>Carte</span>
+            </div>
+          </ng-template>
+          <p-skeleton height="250px" width="100%" borderRadius="3px" />
+        </p-panel>
+      }
+    </div>
   }
   <p-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
   (onAfterToggle)="onActivitiesPanelToggled()">

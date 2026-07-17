@@ -130,7 +130,7 @@ export class TripDaySwiperComponent implements AfterViewInit {
 
   private setupSwiper(swiperEl: SwiperContainer): void {
     Object.assign(swiperEl, {
-      speed: 900,
+      speed: 360,
       observer: true,
       observeParents: true,
       observeSlideChildren: true,

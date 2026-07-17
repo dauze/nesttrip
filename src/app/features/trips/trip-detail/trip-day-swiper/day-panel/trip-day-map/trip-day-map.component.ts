@@ -1,19 +1,22 @@
-import { Component, computed, DestroyRef, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
+import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { environment } from '@environnements/environnement';
 import { Panel } from 'primeng/panel';
 
 @Component({
   selector: 'app-trip-day-map',
   standalone: true,
-  imports: [GoogleMap, MapAdvancedMarker, Panel],
+  imports: [GoogleMap, MapAdvancedMarker, Panel,],
   templateUrl: 'trip-day-map.component.html',
   styleUrl: 'trip-day-map.component.scss',
 })
 export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
+  readonly googleMapPanelService = inject(GoogleMapPanelService);
+  readonly collapsed = signal(false);
   zoom = input(13);
   readonly focusZoom = input(13);
   
@@ -54,6 +57,10 @@ export class TripDayMapComponent {
     const listener = (e: MediaQueryListEvent) => this.isDarkMode.set(e.matches);
     mediaQuery.addEventListener('change', listener);
     this.destroyRef.onDestroy(() => mediaQuery.removeEventListener('change', listener));
+
+    effect(() => {
+      this.googleMapPanelService.setCollapse(this.collapsed());
+    });
   }
 
   markerContent(point: DayMapPoint): HTMLElement {
