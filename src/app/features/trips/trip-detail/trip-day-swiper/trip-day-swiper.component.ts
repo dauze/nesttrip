@@ -9,6 +9,7 @@ import {
   viewChild,
   inject,
   AfterViewInit,
+  OnDestroy,
   Injector,
   afterNextRender,
 } from '@angular/core';
@@ -32,7 +33,7 @@ import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.serv
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
 })
-export class TripDaySwiperComponent implements AfterViewInit {
+export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
   private readonly heightSync = inject(SwiperHeightSyncService);
@@ -52,6 +53,18 @@ export class TripDaySwiperComponent implements AfterViewInit {
   private readonly viewReady = signal(false);
   private hasPositioned = false;
   private hasEmittedReady = false;
+
+  // --- Flou dynamique pendant le swipe (défilement de gauche à droite ou inverse) ---
+  // Un slide est net tant qu'il est visible à plus de 20% dans le viewport ;
+  // en dessous de 20% de visibilité (qu'il soit en train d'arriver ou de
+  // partir), le flou augmente de façon linéaire jusqu'au maximum quand il est
+  // totalement hors champ.
+  private static readonly BLUR_VISIBLE_THRESHOLD = 0.4;
+  private static readonly MAX_BLUR_PX = 5;
+  private blurLoopScheduled = false;
+  private isDragging = false;
+  private isTransitioning = false;
+  private slideEls: HTMLElement[] = [];
 
   constructor() {
     // L'instance unique de la carte est créée une seule fois avec ce
@@ -112,6 +125,11 @@ export class TripDaySwiperComponent implements AfterViewInit {
     if (swiperEl) this.setupSwiper(swiperEl);
   }
 
+  ngOnDestroy(): void {
+    this.isDragging = false;
+    this.isTransitioning = false;
+  }
+
   private waitForStableLayout(): void {
     // 1er afterNextRender : le DOM du slide vient d'être inséré par le @if,
     // mais autoHeight/observer peuvent avoir encore un recalcul en attente.
@@ -162,6 +180,27 @@ export class TripDaySwiperComponent implements AfterViewInit {
       this.activeIdChange.emit(tab.id);
     });
 
+    // Flou dynamique : on démarre le suivi dès que le doigt touche l'écran
+    // (le déplacement en direct pendant le drag n'a pas de transition CSS),
+    // et on le maintient pendant l'animation de fin de swipe (relâchement du
+    // doigt ou navigation programmatique via un clic sur un onglet).
+    swiperEl.addEventListener('swipertouchstart', () => {
+      this.isDragging = true;
+      this.captureSlideEls(swiperEl);
+      this.scheduleBlurLoop(swiperEl);
+    });
+    swiperEl.addEventListener('swipertouchend', () => {
+      this.isDragging = false;
+    });
+    swiperEl.addEventListener('swipertransitionstart', () => {
+      this.isTransitioning = true;
+      this.captureSlideEls(swiperEl);
+      this.scheduleBlurLoop(swiperEl);
+    });
+    swiperEl.addEventListener('swipertransitionend', () => {
+      this.isTransitioning = false;
+    });
+
     // Filet de sécurité : quelle que soit la raison pour laquelle le
     // ResizeObserver de SwiperAutoHeightWatchDirective n'a pas (ou pas encore)
     // corrigé la hauteur, on force un recalcul à la fin de chaque transition,
@@ -185,5 +224,57 @@ export class TripDaySwiperComponent implements AfterViewInit {
       for (const i of indices) next.add(tabs[i].id);
       return next;
     });
+  }
+
+  private captureSlideEls(swiperEl: SwiperContainer): void {
+    this.slideEls = Array.from(swiperEl.querySelectorAll('swiper-slide'));
+  }
+
+  private scheduleBlurLoop(swiperEl: SwiperContainer): void {
+    if (this.blurLoopScheduled) return;
+    this.blurLoopScheduled = true;
+
+    const step = () => {
+      this.updateSlidesBlur(swiperEl);
+      if (this.isDragging || this.isTransitioning) {
+        requestAnimationFrame(step);
+      } else {
+        this.blurLoopScheduled = false;
+        this.resetSlidesBlur();
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  private updateSlidesBlur(swiperEl: SwiperContainer): void {
+    if (this.slideEls.length === 0) return;
+    const containerRect = swiperEl.getBoundingClientRect();
+
+    for (const slideEl of this.slideEls) {
+      const rect = slideEl.getBoundingClientRect();
+      if (rect.width === 0) continue;
+
+      const visibleWidth = Math.max(
+        0,
+        Math.min(rect.right, containerRect.right) - Math.max(rect.left, containerRect.left),
+      );
+      const visibleFraction = visibleWidth / rect.width;
+
+      // Net (0) tant que visible à >= 20%. En dessous, le flou augmente
+      // linéairement jusqu'au maximum quand la visibilité tend vers 0%.
+      const blurFactor = Math.min(
+        1,
+        Math.max(0, TripDaySwiperComponent.BLUR_VISIBLE_THRESHOLD - visibleFraction) /
+          TripDaySwiperComponent.BLUR_VISIBLE_THRESHOLD,
+      );
+      const blurPx = TripDaySwiperComponent.MAX_BLUR_PX * blurFactor;
+      slideEl.style.setProperty('--slide-blur', `${blurPx.toFixed(2)}px`);
+    }
+  }
+
+  private resetSlidesBlur(): void {
+    for (const slideEl of this.slideEls) {
+      slideEl.style.setProperty('--slide-blur', '0px');
+    }
   }
 }

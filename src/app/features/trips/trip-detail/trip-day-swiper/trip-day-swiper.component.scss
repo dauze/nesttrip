@@ -8,6 +8,7 @@ swiper-slide {
   height: auto;
   transition: transform 150ms ease-out;
   min-height: calc(100dvh - 205px - 45px);
+  filter: blur(var(--slide-blur, 0px));
 }
 
 // Position par défaut avant le premier appendChild du TripDayMapHostService.
