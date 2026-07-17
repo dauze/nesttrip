@@ -2,7 +2,7 @@ import { Component, computed, DestroyRef, effect, ElementRef, inject, input, out
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
-import { environment } from '@environnements/environnement';
+import { environment } from '@environment/environment';
 import { Panel } from 'primeng/panel';
 
 @Component({

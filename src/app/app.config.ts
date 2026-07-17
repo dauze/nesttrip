@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { routes } from './app.routes';
-import { environment } from '../environnements/environnement';
+import { environment } from '@environment/environment';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';

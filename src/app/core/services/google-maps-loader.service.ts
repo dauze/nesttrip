@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { environment } from "@environnements/environnement";
+import { environment } from "@environment/environment";
 
 @Injectable({ providedIn: 'root' })
 export class GoogleMapsLoaderService {

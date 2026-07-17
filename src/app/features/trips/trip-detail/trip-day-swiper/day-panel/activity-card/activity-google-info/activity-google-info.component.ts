@@ -15,7 +15,7 @@ const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'
 @Component({
   selector: 'app-activity-google-info',
   standalone: true,
-  // Ajout de PrimeTemplate aux imports si ton environnement l'exige
+  // Ajout de PrimeTemplate aux imports si ton environment l'exige
   imports: [CommonModule, TagModule, PanelModule, DividerModule, PrimeTemplate, ActivityGalleryComponent],
   templateUrl: './activity-google-info.component.html',
 })

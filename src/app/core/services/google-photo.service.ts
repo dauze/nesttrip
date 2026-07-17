@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
-import { environment } from '../../../environnements/environnement';
+import { environment } from '@environment/environment';
 
 @Injectable({ providedIn: 'root' })
 export class GooglePhotoService {
