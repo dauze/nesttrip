@@ -16,6 +16,7 @@ import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
+import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
 
 @Component({
   selector: 'app-activity-form',
@@ -23,6 +24,7 @@ import { runOnceReady } from '@app/shared/utils/run-once-ready';
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
     SelectModule, InputNumberModule, DatePickerModule, DividerModule, TextareaModule,
+    OverlayAutoCloseDirective,
   ],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.scss',

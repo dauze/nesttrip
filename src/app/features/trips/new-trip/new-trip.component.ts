@@ -13,13 +13,14 @@ import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { TripFacade } from '../trip-facade.service';
+import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
 
 @Component({
   selector: 'app-new-trip',
   standalone: true,
   imports: [
     ReactiveFormsModule, InputTextModule, DatePickerModule, ButtonModule,
-    CardModule, FluidModule, AutoComplete
+    CardModule, FluidModule, AutoComplete, OverlayAutoCloseDirective
   ],
   templateUrl: 'new-trip.component.html',
 })

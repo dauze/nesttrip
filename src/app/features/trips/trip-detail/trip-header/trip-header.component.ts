@@ -4,11 +4,12 @@ import { CardModule } from 'primeng/card';
 import { Textarea } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Trip } from '../../trip.model';
+import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
 
 @Component({
   selector: 'app-trip-header',
   standalone: true,
-  imports: [ReactiveFormsModule, CardModule, Textarea, DatePickerModule],
+  imports: [ReactiveFormsModule, CardModule, Textarea, DatePickerModule, OverlayAutoCloseDirective],
   templateUrl: './trip-header.component.html',
   styleUrl: './trip-header.component.scss',
 })
