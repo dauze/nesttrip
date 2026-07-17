@@ -4,7 +4,7 @@ const targetPath = './src/environments/environment.prod.ts';
 
 const envConfigFile = `export const environment = {
   production: true,
-  apiKey: '${process.env.apiKey}',
+  apiUrl: '${process.env.apiUrl}',
   googleMapsApiKey: '${process.env.googleMapsApiKey}',
   googleMapsMapId: '${process.env.googleMapsMapId}',
   firebase: {
