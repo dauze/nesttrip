@@ -1,5 +1,5 @@
 import { ApplicationConfig, inject, LOCALE_ID, provideAppInitializer } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withViewTransitions } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { routes } from './app.routes';
@@ -13,6 +13,7 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
 import localeFr from '@angular/common/locales/fr';
 import { registerLocaleData } from '@angular/common';
 import { GoogleMapsLoaderService } from './core/services/google-maps-loader.service';
+import { onViewTransitionCreated } from './core/navigation/route-transition';
 
 registerLocaleData(localeFr);
 
@@ -41,7 +42,7 @@ export const firebaseAuth = getAuth(firebaseApp);
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes),
+    provideRouter(routes, withViewTransitions({ onViewTransitionCreated })),
     provideHttpClient(withInterceptors([authInterceptor])),
     providePrimeNG({
              theme: {

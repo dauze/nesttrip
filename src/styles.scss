@@ -195,3 +195,67 @@ swiper-slide,
 .p-panel-toggle-button {
     transition: none !important;
 }
+
+/* ---------------------------------------------------------------------
+ * Transitions de navigation "push" (accueil <-> écran enfant), pilotées
+ * par la View Transitions API du navigateur (voir app.config.ts /
+ * core/navigation/route-transition.ts). La classe nav-forward/nav-back
+ * est posée sur <html> juste avant la transition pour indiquer le sens :
+ * on utilise la même logique que le clic soit imperative (bouton) ou
+ * qu'il s'agisse du bouton précédent du navigateur (popstate), pour un
+ * comportement uniforme.
+ * ------------------------------------------------------------------- */
+::view-transition-group(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-image-pair(root) {
+  isolation: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  height: 100%;
+}
+
+/* Vers l'avant : accueil -> enfant. L'ancien écran part à gauche,
+   le nouveau arrive depuis la droite. */
+html.nav-forward::view-transition-old(root) {
+  z-index: 1;
+  animation: nesttrip-slide-out-left 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+html.nav-forward::view-transition-new(root) {
+  z-index: 2;
+  animation: nesttrip-slide-in-right 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Vers l'arrière : enfant -> accueil (bouton retour ou navigateur).
+   L'ancien écran part à droite, le nouveau (parent) arrive depuis la gauche. */
+html.nav-back::view-transition-old(root) {
+  z-index: 2;
+  animation: nesttrip-slide-out-right 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+html.nav-back::view-transition-new(root) {
+  z-index: 1;
+  animation: nesttrip-slide-in-left 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes nesttrip-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes nesttrip-slide-out-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+@keyframes nesttrip-slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes nesttrip-slide-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
