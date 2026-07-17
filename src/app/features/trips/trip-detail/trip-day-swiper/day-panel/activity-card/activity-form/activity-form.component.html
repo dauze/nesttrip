@@ -23,7 +23,7 @@
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar text-sm"></i>Début
           </label>
-          <p-datepicker  [hideOnDateTimeSelect]="true" formControlName="startTime" timeOnly appendTo="body" class="transparent-inputtext" />
+          <p-datepicker [readonlyInput]="true" [hideOnDateTimeSelect]="true" formControlName="startTime" timeOnly appendTo="body" class="transparent-inputtext" />
         </div>
       </div>
       <div class="col-6 p-0 min-w-0 overflow-hidden">
@@ -31,7 +31,7 @@
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
-          <p-datepicker  [hideOnDateTimeSelect]="true" formControlName="endTime" timeOnly appendTo="body" class="transparent-inputtext" />
+          <p-datepicker [readonlyInput]="true" [hideOnDateTimeSelect]="true" formControlName="endTime" timeOnly appendTo="body" class="transparent-inputtext" />
         </div>
       </div>
       <p-divider class="m-1"/>
@@ -41,7 +41,7 @@
             <i class="pi pi-clock text-sm"></i>Durée
           </label>
           <!-- Remplacement par p-datepicker en mode timeOnly -->
-          <p-datepicker  [hideOnDateTimeSelect]="true" [formControl]="durationTimeControl" timeOnly appendTo="body" class="transparent-inputtext" />
+          <p-datepicker [readonlyInput]="true" [hideOnDateTimeSelect]="true" [formControl]="durationTimeControl" timeOnly appendTo="body" class="transparent-inputtext" />
         </div>
       </div>
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
@@ -69,7 +69,7 @@
             <label class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
               <i class="pi pi-calendar text-xs"></i>Deadline
             </label>
-            <p-datepicker formControlName="deadline" dateFormat="dd/mm/yy" [showIcon]="false" appendTo="body" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
+            <p-datepicker [readonlyInput]="true" formControlName="deadline" dateFormat="dd/mm/yy" [showIcon]="false" appendTo="body" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
           </div>
         </div>
       }
