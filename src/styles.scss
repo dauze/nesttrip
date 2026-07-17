@@ -127,6 +127,7 @@ body {
 
 .p-tab {
 --p-tabs-tab-border-width: 2px 0 0 0;
+--p-tabs-tab-hover-color: var(--p-tabs-tab-color);
 }
 .p-tablist-tab-list {
   --p-tabs-tablist-border-width: 0;
