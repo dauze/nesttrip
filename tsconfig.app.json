@@ -9,7 +9,7 @@
       "@app/*": ["./src/app/*"],
       "@core/*": ["./src/app/core/*"],
       "@features/*": ["./src/app/features/*"],
-      "@environments/*": ["src/environments/*"],
+      "@environments/*": ["./src/environments/*"],
     }
   },
   "include": ["src/**/*.ts", "src/app/scripts/seed-firestore.ts", "functions/src/places/get-place.handler.ts", "functions/src/places/search-places.handler.ts"],
