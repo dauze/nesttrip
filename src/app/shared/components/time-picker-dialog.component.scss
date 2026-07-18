@@ -95,10 +95,6 @@
     border: 1px solid var(--p-dialog-border-color);
     border-radius: var(--p-dialog-border-radius);
     box-shadow: var(--p-dialog-shadow);
-    
-    /* L'effet de flou reste déterminé par les variables d'overlay globales de PrimeNG 21 */
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
   }
 
   .p-dialog-mask {
