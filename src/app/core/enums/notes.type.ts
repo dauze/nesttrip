@@ -1,4 +1,4 @@
-export enum InfoType {
+export enum NotesType {
   TODO    = "CHECKLIST", 
   INFO     = "INFO",
 }

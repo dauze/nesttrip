@@ -4,10 +4,10 @@ import { Trip, Day } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
-import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
-import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
+import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
+import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
@@ -17,7 +17,7 @@ type ActivityEntities = Record<string, Activity>;
 export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService);
   private readonly dayActivitiesPersistenceService = inject(DayActivitiesPersistenceService);
-  private readonly infoPersistenceService = inject(InfosPersistenceService);
+  private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
 
@@ -56,9 +56,9 @@ export class TripStore {
    */
   readonly _pendingActivityIds = signal<Set<string>>(new Set());
   /** @internal */
-  readonly _infoItems = signal<Record<string, Item>>({});
+  readonly _notesItems = signal<Record<string, Item>>({});
   /** @internal */
-  readonly _tripInfoItems = signal<Record<string, string[]>>({});
+  readonly _tripNotesItems = signal<Record<string, string[]>>({});
   /** @internal */
  readonly _tripsResult = signal<Pick<Trip, 'id' | 'title' | 'ownerId'>[] | undefined>(undefined);
   // ── UI state ──────────────────────────────────────────────────────────────
@@ -207,16 +207,16 @@ export class TripStore {
     this._tripDays.update((map) => ({ ...map, [trip.id]: dayKeys }));
     this._tripActivities.update((map) => ({ ...map, [trip.id]: [] }));
 
-    // _infoItems + _tripInfoItems : items de l'info (vides à la création)
-    const itemIds = trip.info.items.map((item) => item.id);
-    this._infoItems.update((items) => {
+    // _notesItems + _tripNotesItems : items des notes (vides à la création)
+    const itemIds = trip.notes.items.map((note) => note.id);
+    this._notesItems.update((items) => {
       const copy = { ...items };
-      for (const item of trip.info.items) {
+      for (const item of trip.notes.items) {
         copy[item.id] = item;
       }
       return copy;
     });
-    this._tripInfoItems.update((map) => ({ ...map, [trip.id]: itemIds }));
+    this._tripNotesItems.update((map) => ({ ...map, [trip.id]: itemIds }));
 
     // 2. Persistance Firestore (fire & forget — pas de debounce sur une création)
     this.tripPersistenceService.createTrip(trip).catch((err) => {
@@ -353,61 +353,61 @@ export class TripStore {
     this.dayActivitiesPersistenceService.queueUpdate(tripId, dayId, activityIds);
   }
 
-  // ── Commandes — Info items ────────────────────────────────────────────────
+  // ── Commandes — Notes items ────────────────────────────────────────────────
 
-  getInfoItems(tripId: string): Signal<Item[]> {
+  getNotesItems(tripId: string): Signal<Item[]> {
     return computed(() => {
-      const ids = this._tripInfoItems()[tripId] ?? [];
-      const map = this._infoItems();
+      const ids = this._tripNotesItems()[tripId] ?? [];
+      const map = this._notesItems();
       return ids.map((id) => map[id]);
     });
   }
 
   createItem(tripId: string, item: Item): void {
-    this._infoItems.update((items) => ({ ...items, [item.id]: item }));
-    this._tripInfoItems.update((map) => ({
+    this._notesItems.update((items) => ({ ...items, [item.id]: item }));
+    this._tripNotesItems.update((map) => ({
       ...map,
       [tripId]: [...(map[tripId] ?? []), item.id],
     }));
-    this.syncInfo(tripId);
+    this.syncNotes(tripId);
   }
 
   updateItem(tripId: string, itemId: string, patch: Partial<Item>): void {
-    const current = this._infoItems()[itemId];
+    const current = this._notesItems()[itemId];
     if (!current) return;
 
-    this._infoItems.update((items) => ({
+    this._notesItems.update((items) => ({
       ...items,
       [itemId]: { ...current, ...patch },
     }));
-    this.syncInfo(tripId);
+    this.syncNotes(tripId);
   }
 
   removeItem(tripId: string, itemId: string): void {
-    this._infoItems.update((items) => {
+    this._notesItems.update((items) => {
       const copy = { ...items };
       delete copy[itemId];
       return copy;
     });
 
-    this._tripInfoItems.update((map) => ({
+    this._tripNotesItems.update((map) => ({
       ...map,
       [tripId]: (map[tripId] ?? []).filter((id) => id !== itemId),
     }));
-    this.syncInfo(tripId);
+    this.syncNotes(tripId);
   }
 
   reorderItems(tripId: string, ids: string[]): void {
-    this._tripInfoItems.update((map) => ({ ...map, [tripId]: ids }));
-    this.syncInfo(tripId);
+    this._tripNotesItems.update((map) => ({ ...map, [tripId]: ids }));
+    this.syncNotes(tripId);
   }
 
-  private syncInfo(tripId: string): void {
-    const ids = this._tripInfoItems()[tripId] ?? [];
-    const items = this._infoItems();
+  private syncNotes(tripId: string): void {
+    const ids = this._tripNotesItems()[tripId] ?? [];
+    const items = this._notesItems();
 
     const list = ids.map((id) => items[id]);
-    this.infoPersistenceService.queueUpdate(tripId, list);
+    this.notesPersistenceService.queueUpdate(tripId, list);
   }
     // ── Commandes — Day ────────────────────────────────────────────────
 

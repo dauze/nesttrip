@@ -31,7 +31,7 @@
               (onClick)="confirmDelete(item)"
             />
             <p-button
-              [icon]="item.type === InfoType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
+              [icon]="item.type === NotesType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
               [rounded]="true"
               [text]="true"
               severity="secondary"
@@ -48,14 +48,14 @@
         class="flex flex-column"
       >
         @for (point of item.elements; track point.id) {
-          @if(item.type !== InfoType.TODO || !point.checked){
+          @if(item.type !== NotesType.TODO || !point.checked){
           <div class="flex align-items-center gap-2 w-full pl-3 pr-2"
           cdkDrag>
             <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem">
               <i class="pi pi-ellipsis-v"></i>
               <i class="pi pi-ellipsis-v"></i>
             </span>
-            @if (item.type === InfoType.TODO) {
+            @if (item.type === NotesType.TODO) {
               <p-checkbox
                 class="flex-shrink-0"
                 [binary]="true"
@@ -69,8 +69,8 @@
               [rows]="1"
               [value]="point.text"
               class="flex-1 overflow-hidden min-w-0 transparent-textarea"
-              [class.line-through]="item.type === InfoType.TODO && point.checked"
-              [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
+              [class.line-through]="item.type === NotesType.TODO && point.checked"
+              [class.text-color-secondary]="item.type === NotesType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
               (keydown.enter)="onEnterRow(item, $index, $any($event))"
               (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
@@ -103,7 +103,7 @@
               (onClick)="addPoint(item)"
             />
         </div>
-        @if (item.type === InfoType.TODO && item.elements.some(p => p.checked)) {
+        @if (item.type === NotesType.TODO && item.elements.some(p => p.checked)) {
           <p-fieldset [toggleable]="true" [collapsed]="true" styleClass="completed-fieldset border-none p-2">
             <ng-template #header>
               <span class="text-sm text-color-secondary">
@@ -131,8 +131,8 @@
                     [rows]="1"
                     [value]="point.text"
                     class="flex-1 overflow-hidden min-w-0  transparent-textarea"
-                    [class.line-through]="item.type === InfoType.TODO && point.checked"
-                    [class.text-color-secondary]="item.type === InfoType.TODO && point.checked"
+                    [class.line-through]="item.type === NotesType.TODO && point.checked"
+                    [class.text-color-secondary]="item.type === NotesType.TODO && point.checked"
                     (input)="onTextChange(item, $index, $any($event.target).value)"
                     (keydown.enter)="onEnterRow(item, $index, $any($event))"
                     (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"

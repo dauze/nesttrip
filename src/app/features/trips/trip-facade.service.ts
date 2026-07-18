@@ -4,7 +4,7 @@ import { Day, Trip } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
-import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
+import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 @Injectable()
 export class TripFacade {
@@ -123,7 +123,7 @@ export class TripFacade {
   getAllActivities = this.store.getAllActivities.bind(this.store);
   /** Map activityId -> dayId pour les activités actuellement rattachées à un jour. */
   getActivityDayIds = this.store.getActivityDayIds.bind(this.store);
-  getInfoItems = this.store.getInfoItems.bind(this.store);
+  getNotesItems = this.store.getNotesItems.bind(this.store);
 
   // ── Hydratation ───────────────────────────────────────────────────────────
 
@@ -134,8 +134,8 @@ export class TripFacade {
     const newTripDays = { ...this.store._tripDays() };
     const newDayActivities = { ...this.store._dayActivities() };
     const newTripActivities = { ...this.store._tripActivities() };
-    const infoItems = { ...this.store._infoItems() };
-    const tripInfoItems = { ...this.store._tripInfoItems() };
+    const notesItems = { ...this.store._notesItems() };
+    const tripNotesItems = { ...this.store._tripNotesItems() };
 
     const previousDayKeys = newTripDays[trip.id] ?? [];
     for (const dayKey of previousDayKeys) {
@@ -148,23 +148,23 @@ export class TripFacade {
       delete newActivities[activityId];
     }
 
-    const previousItemIds = tripInfoItems[trip.id] ?? [];
+    const previousItemIds = tripNotesItems[trip.id] ?? [];
     for (const itemId of previousItemIds) {
-      delete infoItems[itemId];
+      delete notesItems[itemId];
     }
 
-    delete tripInfoItems[trip.id];
+    delete tripNotesItems[trip.id];
     delete newTripDays[trip.id];
     delete newTripActivities[trip.id];
 
     newTrips[trip.id] = { ...trip, days: [], activities: [] };
     newTripDays[trip.id] = [];
     newTripActivities[trip.id] = [];
-    tripInfoItems[trip.id] = [];
+    tripNotesItems[trip.id] = [];
 
-    for (const item of trip.info.items) {
-      infoItems[item.id] = item;
-      tripInfoItems[trip.id].push(item.id);
+    for (const item of trip.notes.items) {
+      notesItems[item.id] = item;
+      tripNotesItems[trip.id].push(item.id);
     }
 
     // 1. Le pool d'activités du trip est la source de vérité.
@@ -187,8 +187,8 @@ export class TripFacade {
     this.store._tripDays.set(newTripDays);
     this.store._dayActivities.set(newDayActivities);
     this.store._tripActivities.set(newTripActivities);
-    this.store._infoItems.set(infoItems);
-    this.store._tripInfoItems.set(tripInfoItems);
+    this.store._notesItems.set(notesItems);
+    this.store._tripNotesItems.set(tripNotesItems);
   }
 
    private mergeFromRemote(trip: Trip): void {

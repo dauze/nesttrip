@@ -1,4 +1,5 @@
-import { Info } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/infos/info.models';
+
+import { Notes } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import {ActivityFirebase} from './activity.dto';
 
 export type TripRoleFireBase = 'owner' | 'editor';
@@ -17,6 +18,6 @@ export interface TripFirebase {
   days: Record<string, { activityIds: string[] }>;
   /** Pool unique de toutes les activités du trip, indexé par id (source de vérité). */
   activities: Record<string, ActivityFirebase>;
-  info: Info;
+  notes: Notes;
   placeId?: string;
 }

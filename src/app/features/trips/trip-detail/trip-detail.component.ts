@@ -38,7 +38,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
 
-  readonly activeDay = signal<string>('info');
+  readonly activeDay = signal<string>('notes');
   private initializedTripId: string | null = null;
   readonly currentDayIndex = signal(0);
 
@@ -58,7 +58,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   );
 
   readonly tabs = computed<TripTab[]>(() => [
-    { id: 'info', label: 'Général' },
+    { id: 'notes', label: 'Général' },
     ...this.sortedDays().map(d => ({
       id: d.id.toISOString(),
       label: this.formatDate(d.id),
@@ -154,7 +154,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const applyChanges = () => {
       for (const day of toDelete) this.facade.removeDay(trip.id, day.id);
       for (const day of toAdd) this.facade.addDay(trip.id, day);
-      this.activeDay.set('info');
+      this.activeDay.set('notes');
       setTimeout(() => this.tabsNavRef()?.scrollIntoView(0), 100);
     };
 
@@ -176,7 +176,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
     const day = trip.days.find(d => new Date(d.id).toDateString() === today);
-    return day ? day.id.toISOString() : 'info';
+    return day ? day.id.toISOString() : 'notes';
   }
 
   private buildDays(start: Date, end: Date, existingDays: Day[]): Day[] {

@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
-import { Info } from '../trip-detail/trip-day-swiper/general-panel/infos/info.models';
+import { Notes } from '../trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { AuthService } from '@app/core/services/auth.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
@@ -94,7 +94,7 @@ export class NewTripComponent {
       placeId: this.form.value.placeId ?? '',
       days: this.buildDays(dateDebut, dateFin),
       activities: [],
-      info: this.buildInfo(),
+      notes: this.buildNote(),
       ownerId: user.uid,
       members: {
         [user.uid]: { role: 'owner', email: user.email ?? '', displayName: user.displayName ?? undefined },
@@ -117,7 +117,7 @@ export class NewTripComponent {
     return days;
   }
 
-  private buildInfo(): Info {
+  private buildNote(): Notes {
     return { id: crypto.randomUUID(), items: [] };
   }
 

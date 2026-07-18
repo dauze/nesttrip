@@ -20,7 +20,7 @@ const MAPPERS = {
 type DetailKind = keyof typeof FIELD_MASKS;
 
 async function fetchPlaceDetail(placeId: string, kind: DetailKind, apiKey: string) {
-  const response = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+  const response = await fetch(`https://places.googleapis.com/v1/places/${placeId}?languageCode=fr`, {
     headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': FIELD_MASKS[kind] },
   });
   if (!response.ok) throw new Error(`Google Places ${kind} error: ${response.status}`);

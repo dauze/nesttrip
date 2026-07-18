@@ -16,8 +16,8 @@
     </p-selectbutton>
   </div>
   <div class="flex-auto overflow-y-auto">
-    @if (activeSubTab() === 'infos') {
-      <app-infos [info]="info()" [tripId]="tripId()" />
+    @if (activeSubTab() === 'notes') {
+      <app-notes [notes]="notes()" [tripId]="tripId()" />
     } @else {
       <app-trip-activities [tripId]="tripId()" />
     }

@@ -1,17 +1,17 @@
 import { inject, Injectable } from '@angular/core';
-import { Item } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/infos/info.models';
 import { updateDoc, doc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { DebounceWriter } from '../../shared/debounced-writer';
+import { Item } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
-interface InfoUpdate {
+interface NotesUpdate {
   key: string;
   tripId: string;
   items: Item[];
 }
 
 @Injectable({ providedIn: 'root' })
-export class InfosPersistenceService extends DebounceWriter<string, InfoUpdate> {
+export class NotesPersistenceService extends DebounceWriter<string, NotesUpdate> {
   private readonly db = inject(FirebaseService).db;
   constructor() {
     super();
@@ -21,10 +21,10 @@ export class InfosPersistenceService extends DebounceWriter<string, InfoUpdate> 
     this.queue(tripId, { key: tripId, tripId, items });
   }
 
-  protected override write(updates: InfoUpdate[]) {
+  protected override write(updates: NotesUpdate[]) {
     return Promise.all(
       updates.map((u) => updateDoc(doc(this.db, 'trips', u.tripId.toString()), {
-            'info.items': u.items,
+            'notes.items': u.items,
           })
     ));
   }
