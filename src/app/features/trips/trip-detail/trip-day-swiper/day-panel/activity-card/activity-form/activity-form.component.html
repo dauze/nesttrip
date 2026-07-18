@@ -1,6 +1,7 @@
 <form [formGroup]="form" class="min-w-0 compact-form">
   <div class="m-0 grid-label">
     <div class="grid m-0">
+      <!-- TYPE -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
@@ -9,6 +10,8 @@
           <p-select [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" appendTo="body" />
         </div>
       </div>
+      
+      <!-- RESA -->
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
@@ -17,51 +20,62 @@
           <p-select [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" optionLabel="label" optionValue="value" appendTo="body" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
+      
       <p-divider class="m-1"/>
+  
+      <!-- DEBUT -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar text-sm"></i>Début
           </label>
-          <p-datepicker [readonlyInput]="true" [hideOnDateTimeSelect]="true" formControlName="startTime" timeOnly appendTo="body" class="transparent-inputtext" />
+          <app-time-picker-dialog formControlName="startTime" />
         </div>
       </div>
+      
+      <!-- FIN -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
-          <p-datepicker [readonlyInput]="true" [hideOnDateTimeSelect]="true" formControlName="endTime" timeOnly appendTo="body" class="transparent-inputtext" />
+          <app-time-picker-dialog formControlName="endTime" />
         </div>
       </div>
+      
       <p-divider class="m-1"/>
+      
+      <!-- DUREE -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-clock text-sm"></i>Durée
           </label>
-          <!-- Remplacement par p-datepicker en mode timeOnly -->
-          <p-datepicker [readonlyInput]="true" [hideOnDateTimeSelect]="true" [formControl]="durationTimeControl" timeOnly appendTo="body" class="transparent-inputtext" />
+          <app-time-picker-dialog [formControl]="durationTimeControl" />
         </div>
       </div>
+      
+      <!-- PRIX -->
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-euro text-sm"></i>Prix
           </label>
           <div class="flex align-items-center gap-1 w-full min-w-0">
-                <p-inputNumber
-                formControlName="amount"
-                class="flex-1 min-w-0 transparent-inputtext"
-                inputStyleClass="w-full min-w-0 text-sm" />
-                <p-select
-                [options]="currencyOptions"
-                formControlName="currency"
-                appendTo="body"
-                class="flex-none transparent-select" />
-            </div>
+            <p-inputNumber
+              formControlName="amount"
+              class="flex-1 min-w-0 transparent-inputtext"
+              inputStyleClass="w-full min-w-0 text-sm" />
+            <p-select
+              [options]="currencyOptions"
+              formControlName="currency"
+              appendTo="body"
+              class="flex-none transparent-select" />
+          </div>
         </div>
       </div>
+      
+      <!-- DEADLINE (On ne touche pas, c'est une vraie date complète !) -->
       @if (showDeadline()) {
         <p-divider class="m-1" />
         <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
@@ -77,6 +91,8 @@
   </div>
 
   <p-divider class="m-1" />
+  
+  <!-- NOTES -->
   <div class="flex flex-column gap-2 mb-2">
     <label class="text-color-secondary text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes

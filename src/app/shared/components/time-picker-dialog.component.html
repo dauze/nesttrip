@@ -1,0 +1,47 @@
+<!-- Déclencheur : taille fixe ajustée à l'heure et texte aligné à gauche -->
+<div class="custom-time-input-trigger flex justify-content-start align-items-center" (click)="openDialog()">
+  <span class="time-display">{{ displayText }}</span>
+</div>
+
+<!-- Boîte de dialogue PrimeNG (inchangée) -->
+<p-dialog 
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="false"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="custom-time-dialog glass-modal speed-dialog"
+  [style]="{ width: '280px', height: '315px' }" 
+  appendTo="body">
+  
+  <div class="wheel-picker-container">
+    <div class="selection-overlay"></div>
+
+    <!-- Colonne des Heures -->
+    <div class="wheel-column" #hourCol>
+      <div class="wheel-spacer"></div>
+      <div *ngFor="let h of hours" class="wheel-item" [attr.data-val]="h" [class.selected]="h === tempHour" (click)="onItemClick('hour', h)">
+        {{ h }}
+      </div>
+      <div class="wheel-spacer"></div>
+    </div>
+
+    <div class="wheel-separator">:</div>
+
+    <!-- Colonne des Minutes -->
+    <div class="wheel-column" #minCol>
+      <div class="wheel-spacer"></div>
+      <div *ngFor="let m of minutes" class="wheel-item" [attr.data-val]="m" [class.selected]="m === tempMinute" (click)="onItemClick('minute', m)">
+        {{ m }}
+      </div>
+      <div class="wheel-spacer"></div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-content-end gap-2 p-2 w-full">
+      <p-button label="Annuler" [outlined]="true" severity="secondary" (click)="close()" size="small"/>
+      <p-button label="OK" (click)="validate()" size="small"/>
+    </div>
+  </ng-template>
+</p-dialog>

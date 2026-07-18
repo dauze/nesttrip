@@ -1,0 +1,110 @@
+:host {
+  display: block;
+}
+
+.custom-time-input-trigger {
+  height: 2.375rem;
+  width: 4.375rem;
+  padding: 0 0.4rem;
+  background: transparent;
+  border: 1px solid var(--p-form-element-border-color);
+  border-radius: var(--p-form-element-border-radius);
+  color: var(--p-form-element-color);
+  cursor: pointer;
+  transition: border-color var(--p-form-element-transition-duration, 0.15s) ease;
+
+  &:hover {
+    border-color: var(--p-form-element-hover-border-color);
+  }
+
+}
+
+/* --- Roue de sélection de l'heure --- */
+.wheel-picker-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12.5rem; /* 200px */
+  padding: 0.625rem 0;
+  background: var(--p-content-hover-background); /* S'adapte nativement au mode clair/sombre */
+  border-radius: var(--p-content-border-radius);
+  overflow: hidden;
+}
+
+.wheel-column {
+  flex: 1;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  text-align: center;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.wheel-item {
+  height: 2.5rem; /* 40px - Strictement requis pour les calculs de position */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--p-text-muted-color);
+  scroll-snap-align: center;
+  transition: color 0.1s, font-weight 0.1s, transform 0.1s;
+  
+  &.selected {
+    color: var(--p-primary-color);
+    font-weight: 700;
+    transform: scale(1.15);
+  }
+}
+
+.wheel-spacer {
+  height: 5rem;
+
+}
+
+/* La lunette centrale de sélection */
+.selection-overlay {
+  position: absolute;
+  left: 0.625rem;
+  right: 0.625rem;
+  top: 5rem;
+  height: 2.5rem; /* 40px pile (correspond à un item) */
+  border-top: 1px solid var(--p-content-border-color);
+  border-bottom: 1px solid var(--p-content-border-color);
+  background: var(--p-content-background);
+  opacity: 0.3;
+  pointer-events: none;
+  border-radius: calc(var(--p-content-border-radius) / 2);
+}
+
+/* --- Dialog & Animations --- */
+::ng-deep {
+  .speed-dialog.p-dialog,
+  .p-dialog-mask {
+    transition-duration: 150ms !important;
+    animation-duration: 150ms !important;
+  }
+
+  .glass-modal.p-dialog {
+    background: var(--p-dialog-background) !important; 
+    border: 1px solid var(--p-dialog-border-color);
+    border-radius: var(--p-dialog-border-radius);
+    box-shadow: var(--p-dialog-shadow);
+    
+    /* L'effet de flou reste déterminé par les variables d'overlay globales de PrimeNG 21 */
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+  }
+
+  .p-dialog-mask {
+    /* Utilise la couleur officielle de backdrop configurée dans ton thème (plus de rgba fixe) */
+    background: var(--p-mask-background) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
