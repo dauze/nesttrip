@@ -42,13 +42,15 @@ export class TripDayMapComponent {
     };
   });
 
-  center = computed(() => {
-    const pts = this.points();
-    if (!pts.length) return { lat: 48.8566, lng: 2.3522 };
-
-    const first = pts[0];
-    return { lat: first.latitude, lng: first.longitude };
-  });
+  // Le centre n'est plus un `computed` recalculé à chaque changement de
+  // `points` : sinon toute mise à jour de données (édition d'une activité,
+  // persistance Firestore...) recalcule `points` et force un recentrage
+  // intempestif sur le 1er point, écrasant le focus/scroll en cours.
+  // On ne recalcule le centre par défaut que lors d'un VRAI changement de
+  // jour (un nouveau set d'activityId), pas lors d'une simple mise à jour
+  // de champs sur les activités déjà affichées.
+  readonly center = signal<google.maps.LatLngLiteral>({ lat: 48.8566, lng: 2.3522 });
+  private lastPointsKey: string | null = null;
 
   constructor() {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -60,6 +62,24 @@ export class TripDayMapComponent {
 
     effect(() => {
       this.googleMapPanelService.setCollapse(this.collapsed());
+    });
+
+    effect(() => {
+      const pts = this.points();
+      if (!pts.length) return;
+
+      // Clé stable indépendante de l'ordre : identifie le JOUR affiché,
+      // pas le contenu de chaque activité.
+      const key = pts.map(p => p.activityId).sort().join('|');
+      if (key === this.lastPointsKey) {
+        // Même jour, juste une mise à jour de données : on ne touche pas
+        // au centre pour ne pas couper le focus/scroll de l'utilisateur.
+        return;
+      }
+
+      this.lastPointsKey = key;
+      const first = pts[0];
+      this.center.set({ lat: first.latitude, lng: first.longitude });
     });
   }
 
