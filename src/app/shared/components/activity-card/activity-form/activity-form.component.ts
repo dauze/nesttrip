@@ -17,7 +17,7 @@ import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
-import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog.component';
+import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 
 @Component({
   selector: 'app-activity-form',

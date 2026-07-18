@@ -2,7 +2,7 @@ import { computed, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { Trip, Day } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { Item } from './trip-detail/trip-day-swiper/infos/info.models';
+import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
 import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
@@ -66,7 +66,11 @@ export class TripStore {
       days: dayKeys
         .map(key => daysMap[key])
         .filter((day): day is Day => !!day),
-      activities: this.getAllActivities(id)(),
+      // Placeholder non-réactif : le pool d'activités n'est pas consommé via
+      // `trip.activities` mais via le sélecteur dédié `getAllActivities(tripId)`.
+      // Le lire ici rendrait `activeTrip` (et tout ce qui en dépend, dont le
+      // skeleton de chargement) réactif à CHAQUE édition d'activité.
+      activities: [],
     };
   });
 

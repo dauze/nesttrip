@@ -1,4 +1,11 @@
-<div class="flex flex-column gap-3">
+<p-panel [toggleable]="true" [collapsed]="false">
+  <ng-template pTemplate="header">
+    <div class="flex align-items-center gap-2">
+      <i class="pi pi-clipboard"></i>
+      <span>Activités</span>
+    </div>
+  </ng-template>
+<div class="flex flex-column gap-2">
   @for (group of cityGroups(); track group.city) {
     <p-panel [toggleable]="true" [collapsed]="false">
       <ng-template #header>
@@ -34,3 +41,4 @@
     <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addActivity()" />
   </div>
 </div>
+</p-panel>

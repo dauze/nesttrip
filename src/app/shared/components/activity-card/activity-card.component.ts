@@ -41,7 +41,7 @@ export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly confirmationService = inject(ConfirmationService);
-  private cdkDrag = inject(CdkDrag, { self: true });
+  private cdkDrag = inject(CdkDrag, { self: true, optional: true  });
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
   readonly tripId = input.required<string>();
@@ -192,7 +192,9 @@ export class ActivityCardComponent {
 
   private updateDragState = (event: MouseEvent | TouchEvent) => {
     const target = event.target as HTMLElement;
-    this.cdkDrag.disabled = !target.closest('.drag-handle');
+    if (this.cdkDrag) {
+      this.cdkDrag.disabled = !target.closest('.drag-handle');
+    }
   };
 
   get element(): HTMLElement {

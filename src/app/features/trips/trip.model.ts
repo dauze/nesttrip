@@ -1,5 +1,5 @@
 import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { Info } from './trip-detail/trip-day-swiper/infos/info.models';
+import { Info } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
 
 export type TripRole = 'owner' | 'editor';
 export interface Trip {
