@@ -3,8 +3,8 @@
 </div>
 <swiper-container #swiperRef init="false" class="tab-content-wrapper">
   <swiper-slide>
-    @if (visitedDays().has('info')) {
-      <app-infos appSwiperAutoHeightWatch  [info]="trip().info" [tripId]="trip().id" />
+    @if (visitedDays().has('notes')) {
+      <app-general-panel appSwiperAutoHeightWatch  [notes]="trip().notes" [tripId]="trip().id" />
     }
   </swiper-slide>
   @for (day of sortedDays(); track day.id) {

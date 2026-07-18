@@ -1,9 +1,13 @@
 <!-- Déclencheur : taille fixe ajustée à l'heure et texte aligné à gauche -->
-<div class="custom-time-input-trigger flex justify-content-start align-items-center" (click)="openDialog()">
+<div class="custom-time-input-trigger flex justify-content-start align-items-center" 
+     role="button" 
+     tabindex="0" 
+     (click)="openDialog()" 
+     (keydown.enter)="openDialog()">
   <span class="time-display">{{ displayText }}</span>
 </div>
 
-<!-- Boîte de dialogue PrimeNG (inchangée) -->
+<!-- Boîte de dialogue PrimeNG -->
 <p-dialog 
   [(visible)]="visible"
   [modal]="true"
@@ -21,9 +25,19 @@
     <!-- Colonne des Heures -->
     <div class="wheel-column" #hourCol>
       <div class="wheel-spacer"></div>
-      <div *ngFor="let h of hours" class="wheel-item" [attr.data-val]="h" [class.selected]="h === tempHour" (click)="onItemClick('hour', h)">
-        {{ h }}
-      </div>
+      
+      @for (h of hours; track h) {
+        <div class="wheel-item" 
+             role="button" 
+             tabindex="0"
+             [attr.data-val]="h" 
+             [class.selected]="h === tempHour" 
+             (click)="onItemClick('hour', h)"
+             (keydown.enter)="onItemClick('hour', h)">
+          {{ h }}
+        </div>
+      }
+      
       <div class="wheel-spacer"></div>
     </div>
 
@@ -32,9 +46,19 @@
     <!-- Colonne des Minutes -->
     <div class="wheel-column" #minCol>
       <div class="wheel-spacer"></div>
-      <div *ngFor="let m of minutes" class="wheel-item" [attr.data-val]="m" [class.selected]="m === tempMinute" (click)="onItemClick('minute', m)">
-        {{ m }}
-      </div>
+      
+      @for (m of minutes; track m) {
+        <div class="wheel-item" 
+             role="button" 
+             tabindex="0"
+             [attr.data-val]="m" 
+             [class.selected]="m === tempMinute" 
+             (click)="onItemClick('minute', m)"
+             (keydown.enter)="onItemClick('minute', m)">
+          {{ m }}
+        </div>
+      }
+      
       <div class="wheel-spacer"></div>
     </div>
   </div>

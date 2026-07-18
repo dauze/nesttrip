@@ -9,6 +9,9 @@ import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FormsModule } from '@angular/forms';
 import { TripFacade } from '../trip-facade.service';
+import { AuthService } from '@app/core/services/auth.service';
+import { NgClass } from '@angular/common';
+import { Tooltip } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -21,7 +24,9 @@ import { TripFacade } from '../trip-facade.service';
     RouterModule,
     CheckboxModule,
     ConfirmDialogModule,
-    FormsModule
+    FormsModule,
+    NgClass,
+    Tooltip
   ],
   providers: [ConfirmationService],
   templateUrl: 'accueil-trip.component.html',
@@ -30,9 +35,12 @@ export class AccueilTripComponent {
   protected readonly tripFacade = inject(TripFacade);
   private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
+   private readonly authService = inject(AuthService);
+  
 
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;
+  readonly user = this.authService.getCurrentUser();
 
   editMode = false;
 
@@ -61,7 +69,7 @@ export class AccueilTripComponent {
 
   getSelectedTripIds(): string[] {
     return Object.entries(this.selectedTripsMap)
-      .filter(([_, selected]) => selected)
+      .filter(([, selected]) => selected)
       .map(([id]) => id);
   }
 

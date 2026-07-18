@@ -1,5 +1,5 @@
 <p-confirmDialog />
-<div class="flex flex-column pt-2">
+<div class="flex flex-column pt-2 trip-detail-root">
   @if (facade.activeTrip(); as trip) {
     <div  class="flex flex-column gap-2" [class.invisible-content]="!contentReady()">
       <app-trip-header
@@ -29,6 +29,6 @@
   }
 
   @if (facade.activeTripLoading() || !contentReady()) {
-    <app-trip-detail-skeleton/>
+    <app-trip-detail-skeleton class="skeleton-overlay"/>
   }
 </div>

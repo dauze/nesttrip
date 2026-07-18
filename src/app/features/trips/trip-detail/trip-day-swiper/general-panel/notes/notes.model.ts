@@ -1,6 +1,6 @@
-import {InfoType} from "@core/enums/infos.type";
+import { NotesType } from "@app/core/enums/notes.type";
 
-export interface Info {
+export interface Notes {
   id: string;
   items: Item[];
 }
@@ -8,7 +8,7 @@ export interface Info {
 export interface Item {
   id: string;
   title: string;
-  type: InfoType;
+  type: NotesType;
   elements: Point[];
 }
 

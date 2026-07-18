@@ -1,0 +1,44 @@
+<p-panel [toggleable]="true" [collapsed]="false">
+  <ng-template pTemplate="header">
+    <div class="flex align-items-center gap-2">
+      <i class="pi pi-clipboard"></i>
+      <span>Activités</span>
+    </div>
+  </ng-template>
+<div class="flex flex-column gap-2">
+  @for (group of cityGroups(); track group.city) {
+    <p-panel [toggleable]="true" [collapsed]="false">
+      <ng-template #header>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-map-marker"></i>
+          <span>{{ group.city }}</span>
+          <span class="text-color-secondary text-sm">({{ group.activities.length }})</span>
+        </div>
+      </ng-template>
+
+      <div class="flex flex-column gap-2">
+        @for (activity of group.activities; track activity.id) {
+          <app-activity-card
+            [activityId]="activity.id"
+            [dayId]="dayIdFor(activity.id)"
+            [tripId]="tripId()"
+          />
+        }
+      </div>
+    </p-panel>
+  }
+
+  @if (cityGroups().length === 0) {
+    <p-message
+      severity="info"
+      icon="pi pi-info-circle"
+      text="Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +."
+      class="w-full flex justify-content-center"
+    />
+  }
+
+  <div class="flex justify-content-center w-full">
+    <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addActivity()" />
+  </div>
+</div>
+</p-panel>

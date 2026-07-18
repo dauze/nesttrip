@@ -9,7 +9,7 @@ import { inject } from '@angular/core';
 export class FirebaseTripRepository extends TripRepository {
   private readonly dataSource = inject(TripDataSource);
 
-  getTrips$(): Observable<Pick<Trip, 'id' | 'title'>[]> {
+  getTrips$(): Observable<Pick<Trip, 'id' | 'title'|'ownerId'>[]> {
     return this.dataSource.getTrips$();
   }
 

@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
-import { Info } from '../trip-detail/trip-day-swiper/infos/info.models';
+import { Notes } from '../trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { AuthService } from '@app/core/services/auth.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
@@ -93,7 +93,8 @@ export class NewTripComponent {
       ville: this.form.value.ville ?? '',
       placeId: this.form.value.placeId ?? '',
       days: this.buildDays(dateDebut, dateFin),
-      info: this.buildInfo(),
+      activities: [],
+      notes: this.buildNote(),
       ownerId: user.uid,
       members: {
         [user.uid]: { role: 'owner', email: user.email ?? '', displayName: user.displayName ?? undefined },
@@ -110,13 +111,13 @@ export class NewTripComponent {
     const endNorm = new Date(end);
     endNorm.setHours(0, 0, 0, 0);
     while (current <= endNorm) {
-      days.push({ id: new Date(current), activities: [] });
+      days.push({ id: new Date(current), activityIds: [] });
       current.setDate(current.getDate() + 1);
     }
     return days;
   }
 
-  private buildInfo(): Info {
+  private buildNote(): Notes {
     return { id: crypto.randomUUID(), items: [] };
   }
 

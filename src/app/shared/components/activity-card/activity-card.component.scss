@@ -1,0 +1,9 @@
+:host { display: block; }
+.booking    { 
+    border-left-width: 0.4rem;
+    border-left-color: var(--booking-status-color); 
+}
+.not-dispatched ::ng-deep > .p-panel {
+  border-style: dashed;
+  border-left-style: inset;
+}

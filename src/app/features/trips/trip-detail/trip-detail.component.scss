@@ -1,1 +1,12 @@
 .invisible-content { visibility: hidden; }
+
+// Le skeleton doit se superposer au contenu (invisible mais toujours dans
+// le flux, pour permettre au swiper de se monter/mesurer) plutôt que de
+// s'afficher après lui : sinon il est poussé tout en bas de la page.
+.trip-detail-root { position: relative; }
+.skeleton-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}

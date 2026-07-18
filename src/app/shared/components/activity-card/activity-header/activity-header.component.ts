@@ -1,7 +1,8 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de ReactiveForms
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
 import { Activity } from '../activity.model';
@@ -9,7 +10,7 @@ import { ACTIVITY_TYPE_META } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { PlaceSummary } from '@app/core/models/place.dto';
+import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 
 @Component({
   selector: 'app-activity-header',
@@ -26,8 +27,23 @@ export class ActivityHeaderComponent {
   readonly titleEdited = output<string>();
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
-  readonly places = this.googlePlaceService.places;
-  readonly searching = this.googlePlaceService.searching;
+
+  // Recherche scopée à CETTE instance : deux ActivityHeaderComponent
+  // simultanément affichés (ex. plusieurs cartes dans la vue "Activités")
+  // ne partagent plus le même état de recherche global, contrairement à
+  // l'ancien `googlePlaceService.places`/`searching` (signaux uniques
+  // partagés par toute l'app).
+  private readonly searchTerm = signal('');
+  private readonly searchState = toSignal(
+    this.googlePlaceService.search$(toObservable(this.searchTerm)),
+    { initialValue: { status: 'idle' } as LoadingState<PlaceSummary[]> },
+  );
+
+  readonly places = computed(() => {
+    const s = this.searchState();
+    return s.status === 'success' ? s.data : [];
+  });
+  readonly searching = computed(() => this.searchState().status === 'loading');
 
   readonly titleControl = new FormControl('', { nonNullable: true });
 
@@ -41,7 +57,7 @@ export class ActivityHeaderComponent {
   }
 
   onSearch(event: AutoCompleteCompleteEvent): void {
-    this.googlePlaceService.setSearchTerm(event.query ?? '');
+    this.searchTerm.set(event.query ?? '');
   }
 
   onSelect(event: AutoCompleteSelectEvent): void {

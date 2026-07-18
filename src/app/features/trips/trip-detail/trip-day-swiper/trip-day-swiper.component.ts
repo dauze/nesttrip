@@ -15,7 +15,7 @@ import {
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
-import { InfosComponent } from './infos/infos.component';
+import { GeneralPanelComponent } from './general-panel/general-panel.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
@@ -28,7 +28,7 @@ import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.serv
   selector: 'app-trip-day-swiper',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, InfosComponent, SwiperAutoHeightWatchDirective, TripDayMapComponent],
+  imports: [DayPanelComponent, GeneralPanelComponent, SwiperAutoHeightWatchDirective, TripDayMapComponent],
   providers: [SwiperLockService, SwiperHeightSyncService, TripDayMapHostService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',

@@ -32,6 +32,30 @@ export class GooglePlaceService {
     return cached;
   }
 
+  /**
+   * Flux de recherche scopé à l'appelant (pas d'état global partagé) :
+   * chaque instance de composant obtient son propre debounce/switchMap,
+   * sans interférence avec les autres autocomplete simultanément affichés.
+   * Le cache HTTP par requête (`searchPlaces$`) reste partagé, ce qui est
+   * souhaitable (évite les appels réseau redondants).
+   */
+  search$(term$: Observable<string>): Observable<LoadingState<PlaceSummary[]>> {
+    return term$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap((q) => {
+        const trimmed = q.trim();
+        if (trimmed.length < 2) return of({ status: 'idle' } as LoadingState<PlaceSummary[]>);
+        return this.searchPlaces$(trimmed).pipe(
+          map((data) => ({ status: 'success', data }) as LoadingState<PlaceSummary[]>),
+          startWith({ status: 'loading' } as LoadingState<PlaceSummary[]>),
+          catchError(() => of({ status: 'error' } as LoadingState<PlaceSummary[]>)),
+        );
+      }),
+      startWith({ status: 'idle' } as LoadingState<PlaceSummary[]>),
+    );
+  }
+
   private readonly placesState$ = toObservable(this.searchTerm).pipe(
     debounceTime(300),
     distinctUntilChanged(),

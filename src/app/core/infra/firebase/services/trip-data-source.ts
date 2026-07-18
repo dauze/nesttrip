@@ -13,7 +13,7 @@ export class TripDataSource {
   private readonly db = inject(FirebaseService).db;
   private readonly authService = inject(AuthService);
 
-  getTrips$(): Observable<Pick<Trip, 'id' | 'title'>[]> {
+  getTrips$(): Observable<Pick<Trip, 'id' | 'title'| 'ownerId'>[]> {
     return new Observable((observer) => {
       const user = this.authService.getCurrentUser(); // lecture directe, Firebase garantit qu'il est résolu après le guard
       if (!user) { observer.error('User not authenticated'); return; }
@@ -21,8 +21,8 @@ export class TripDataSource {
       const unsub = onSnapshot(
         query(collection(this.db, 'trips'), where(`members.${user.uid}`, '!=', null)),
         (snap) => observer.next(snap.docs.map((d) => {
-          const { id, title } = d.data() as TripFirebase;
-          return { id, title };
+          const { id, title, ownerId } = d.data() as TripFirebase;
+          return { id, title, ownerId };
         })),
         (err) => observer.error(err)
       );

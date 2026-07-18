@@ -23,7 +23,6 @@ import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { Button } from 'primeng/button';
 import { ConfirmationService } from 'primeng/api';
-import { ConfirmDialog } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-activity-card',
@@ -31,9 +30,8 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   imports: [
     CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, DragDropModule, Button,
     ActivityHeaderComponent, ActivityFormComponent,
-    ActivityFilesComponent, ActivityGoogleInfoComponent, ConfirmDialog,
+    ActivityFilesComponent, ActivityGoogleInfoComponent,
   ],
-  providers: [ConfirmationService],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
 })
@@ -41,11 +39,12 @@ export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly confirmationService = inject(ConfirmationService);
-  private cdkDrag = inject(CdkDrag, { self: true });
+  private cdkDrag = inject(CdkDrag, { self: true, optional: true  });
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
   readonly tripId = input.required<string>();
-  readonly dayId = input.required<Date>();
+  /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
+  readonly dayId = input<Date | undefined>(undefined);
   readonly activityId = input.required<string>();
 
   readonly activity = computed(() => this.tripFacade.getActivity(this.activityId())());
@@ -129,7 +128,7 @@ export class ActivityCardComponent {
         const activity = this.activity();
         if (!activity) return;
 
-        this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+        this.tripFacade.updateActivity(this.tripId(), {
           ...activity,
           title: place.name,
           placeId: place.placeId,
@@ -164,7 +163,7 @@ export class ActivityCardComponent {
     const activity = this.activity();
     if (!activity) return;
 
-    this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+    this.tripFacade.updateActivity(this.tripId(), {
       ...activity,
       title: newTitle,
       placeId: '',
@@ -185,13 +184,15 @@ export class ActivityCardComponent {
   confirmDelete(): void {
     this.confirmationService.confirm({
       message: 'Supprimer cette activité ?',
-      accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId()),
+      accept: () => this.tripFacade.removeActivity(this.tripId(), this.activityId(), this.dayId()),
     });
   }
 
   private updateDragState = (event: MouseEvent | TouchEvent) => {
     const target = event.target as HTMLElement;
-    this.cdkDrag.disabled = !target.closest('.drag-handle');
+    if (this.cdkDrag) {
+      this.cdkDrag.disabled = !target.closest('.drag-handle');
+    }
   };
 
   get element(): HTMLElement {

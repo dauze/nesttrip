@@ -1,11 +1,11 @@
-import { Activity } from '../activity-card/activity.model';
+import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { Component, EventEmitter, input, Output } from '@angular/core';
 
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
-import { ACTIVITY_TYPE_META } from '../activity-card/activity.constants';
+import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { DurationPipe } from '../../../../../../shared/pipes/duration.pipe';
 
 @Component({

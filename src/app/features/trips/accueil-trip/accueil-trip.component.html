@@ -26,7 +26,7 @@
           @for (i of [1, 2, 3]; track i) {
             <div class="col-12 md:col-6 lg:col-4">
               <p-card class="h-full">
-                <p-skeleton height="1.5rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton height="1.5rem" class="mb-2"></p-skeleton>
                 <p-skeleton height="1rem" width="60%"></p-skeleton>
               </p-card>
             </div>
@@ -38,44 +38,56 @@
         <div class="flex justify-content-center align-items-center">
           <p-message
             severity="info"
-            text="Aucun voyage pour l'instant."
+            text="Aucun voyage pour l'instant. Créer ton premier voyage !"
             styleClass="w-full md:w-6"
           />
         </div>
 
       <!-- List -->
-      } @else {
-        <div class="grid">
-          @for (trip of trips(); track trip.id) {
-            <div class="col-12 md:col-6 lg:col-4">
-              <p-card
-                styleClass="cursor-pointer w-full h-full hover:surface-100 transition-colors transition-duration-200"
-                (click)="editMode ? toggleTripSelection(trip.id) : selectTrip(trip.id)"
-              >
-                <div class="flex justify-content-between align-items-center">
+     <!-- List -->
+} @else {
+  <div class="grid">
+    @for (trip of trips(); track trip.id) {
+      <div class="col-12 md:col-6 lg:col-4">
+        <p-card
+          [ngClass]="{
+            'cursor-pointer hover:surface-100': !editMode || user?.uid === trip.ownerId,
+            'cursor-default opacity-80': editMode && user?.uid !== trip.ownerId
+          }"
+          class="w-full h-full transition-colors transition-duration-200"
+          (click)="editMode ? (user?.uid === trip.ownerId && toggleTripSelection(trip.id)) : selectTrip(trip.id)"
+          pTooltip="Seul le propriétaire de ce voyage peut le supprimer."
+          tooltipEvent="both"
+          [tooltipDisabled]="!editMode || user?.uid === trip.ownerId"
+        >
+          <div class="flex justify-content-between align-items-center">
 
-                  <!-- Checkbox (only in edit mode) -->
-                  @if (editMode) {
-                    <p-checkbox
-                      [binary]="true"
-                      [(ngModel)]="selectedTripsMap[trip.id]"
-                      (click)="$event.stopPropagation()"
-                    ></p-checkbox>
-                  }
+            <!-- Checkbox (only in edit mode) -->
+            @if (editMode && user?.uid === trip.ownerId) {
+              <p-checkbox
+                [binary]="true"
+                [(ngModel)]="selectedTripsMap[trip.id]"
+                (click)="$event.stopPropagation()"
+              ></p-checkbox>
+            }
 
-                  <span class="font-medium text-lg flex-grow-1 ml-2">
-                    {{ trip.title }}
-                  </span>
+            <!-- Title with conditional disabled color -->
+            <span 
+              class="font-medium text-lg flex-grow-1 ml-2"
+              [ngClass]="{ 'text-color-secondary opacity-60': editMode && user?.uid !== trip.ownerId }"
+            >
+              {{ trip.title }}
+            </span>
 
-                  @if (!editMode) {
-                    <i class="pi pi-arrow-right text-color-secondary"></i>
-                  }
-                </div>
-              </p-card>
-            </div>
-          }
-        </div>
-      }
+            @if (!editMode) {
+              <i class="pi pi-arrow-right text-color-secondary"></i>
+            }
+          </div>
+        </p-card>
+      </div>
+    }
+  </div>
+}
 
     </div>
 

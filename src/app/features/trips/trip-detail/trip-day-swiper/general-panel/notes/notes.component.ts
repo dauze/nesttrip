@@ -7,27 +7,27 @@ import { Fieldset } from 'primeng/fieldset';
 import { Checkbox } from 'primeng/checkbox';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import { ConfirmationService } from 'primeng/api';
-import {InfoType} from '@core/enums/infos.type';
-import {Info, Item, Point} from './info.models';
+import {Notes, Item, Point} from './notes.model';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { NotesType } from '@app/core/enums/notes.type';
 
 
 @Component({
-  selector: 'app-infos',
+  selector: 'app-notes',
   standalone: true,
   imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule],
-  templateUrl: './infos.component.html',
+  templateUrl: './notes.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InfosComponent {
+export class NotesComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly confirmationService = inject(ConfirmationService);
 
-  readonly info = input.required<Info>();
+  readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
-  readonly InfoType = InfoType;
-  readonly items = computed(() => this.tripFacade.getInfoItems(this.tripId())());
+  readonly NotesType = NotesType;
+  readonly items = computed(() => this.tripFacade.getNotesItems(this.tripId())());
   readonly activePointId = signal<string | null>(null);
 
   // ─── Events ─────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export class InfosComponent {
    const newItem: Item = {
       id: crypto.randomUUID(),
       title: '',
-      type: InfoType.TODO,
+      type: NotesType.TODO,
       elements: []
     };
     this.tripFacade.createItem(this.tripId(), newItem);
@@ -71,7 +71,7 @@ export class InfosComponent {
   }
 
   toggleType(item: Item): void {
-    const type = item.type === InfoType.TODO ? InfoType.INFO : InfoType.TODO;
+    const type = item.type === NotesType.TODO ? NotesType.INFO : NotesType.TODO;
     this.tripFacade.updateItem(this.tripId(), item.id, { type });
   }
 
@@ -171,7 +171,7 @@ export class InfosComponent {
   }
 
   onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
-    if (item.type !== InfoType.TODO) {
+    if (item.type !== NotesType.TODO) {
       const elements = [...item.elements];
       moveItemInArray(elements, event.previousIndex, event.currentIndex);
       this.updateElements(item, elements);

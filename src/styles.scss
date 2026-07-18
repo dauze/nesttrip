@@ -166,6 +166,10 @@ swiper-slide,
   --p-chip-padding-x: 0.6rem;
 }
 
+/* ---------------------------------------------------------------------
+ * Remplacement des icones du toggle
+ * ------------------------------------------------------------------- */
+
 /* Cache les SVG natifs PrimeNG */
 .p-panel-toggle-button .p-icon {
   display: none;
@@ -190,11 +194,6 @@ swiper-slide,
 /* Ouvert : v */
 .p-panel-header-actions > p-button[aria-expanded="true"] .p-panel-toggle-button::before {
   transform: rotate(45deg);
-}
-
-.p-button,
-.p-panel-toggle-button {
-    transition: none !important;
 }
 
 /* ---------------------------------------------------------------------

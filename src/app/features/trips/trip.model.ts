@@ -1,5 +1,5 @@
-import { Activity } from './trip-detail/trip-day-swiper/day-panel/activity-card/activity.model';
-import { Info } from './trip-detail/trip-day-swiper/infos/info.models';
+import { Activity } from '@app/shared/components/activity-card/activity.model';
+import { Notes } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 export type TripRole = 'owner' | 'editor';
 export interface Trip {
@@ -9,13 +9,14 @@ export interface Trip {
   ownerId: string;
   members: Record<string, TripMember>;
   days: Day[];
-  info: Info;
+  activities: Activity[];
+  notes: Notes;
   placeId?: string;
 }
 
 export interface Day {
   id: Date;
-  activities: Activity[];
+  activityIds: string[];
 }
 
 

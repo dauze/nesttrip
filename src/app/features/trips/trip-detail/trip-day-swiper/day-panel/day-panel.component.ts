@@ -15,13 +15,13 @@ import {
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Activity } from './activity-card/activity.model';
+import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
-import { ActivityCardComponent } from './activity-card/activity-card.component';
+import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';

@@ -1,3 +1,4 @@
+/* eslint-disable @angular-eslint/directive-selector */
 import { Directive, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { Select } from 'primeng/select';
 import { DatePicker } from 'primeng/datepicker';
@@ -14,7 +15,7 @@ import { AutoCloseOverlay, OverlayAutoCloseService } from '@core/services/overla
  * - explicitement via `closeAll()`, utilisé par le swiper au début d'un swipe.
  */
 @Directive({
-  selector: 'p-select, p-datePicker, p-datepicker, p-date-picker',
+  selector: 'p-select, p-datepicker',
   standalone: true,
 })
 export class OverlayAutoCloseDirective implements AutoCloseOverlay, OnInit, OnDestroy {
