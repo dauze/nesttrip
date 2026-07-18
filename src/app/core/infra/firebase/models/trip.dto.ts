@@ -14,7 +14,9 @@ export interface TripFirebase {
   ownerId: string;
   members: Record<string, TripMember>;
   title: string;
-  days: Record<string, { activities: ActivityFirebase[] }>;
+  days: Record<string, { activityIds: string[] }>;
+  /** Pool unique de toutes les activités du trip, indexé par id (source de vérité). */
+  activities: Record<string, ActivityFirebase>;
   info: Info;
   placeId?: string;
 }

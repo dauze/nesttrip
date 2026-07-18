@@ -1,0 +1,13 @@
+:host { display: block; }
+.booking    { 
+    border-left-width: 0.4rem;
+    border-left-color: var(--booking-status-color); 
+}
+// Activité présente dans le pool général mais pas encore dispatchée dans
+// un jour : on le signale visuellement avec des contours en tiret.
+.not-dispatched {
+  ::ng-deep .p-panel .p-panel-header,
+  ::ng-deep .p-panel .p-panel-content {
+    border-style: dashed !important;
+  }
+}

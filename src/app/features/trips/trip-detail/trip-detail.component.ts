@@ -190,7 +190,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
     while (current <= endNorm) {
       const key = current.getTime();
-      days.push(existingMap.get(key) ?? { id: new Date(current), activities: [] });
+      days.push(existingMap.get(key) ?? { id: new Date(current), activityIds: [] });
       current.setDate(current.getDate() + 1);
     }
     return days;

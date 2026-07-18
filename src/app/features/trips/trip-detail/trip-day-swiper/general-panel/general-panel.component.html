@@ -1,0 +1,24 @@
+<div class="flex justify-content-center gap-2 mb-3 sub-tab-switch">
+  <p-button
+    label="Infos"
+    icon="pi pi-clipboard"
+    [text]="activeSubTab() !== 'infos'"
+    [outlined]="activeSubTab() === 'infos'"
+    severity="secondary"
+    (onClick)="selectSubTab('infos')"
+  />
+  <p-button
+    label="Activités"
+    icon="pi pi-map-marker"
+    [text]="activeSubTab() !== 'activities'"
+    [outlined]="activeSubTab() === 'activities'"
+    severity="secondary"
+    (onClick)="selectSubTab('activities')"
+  />
+</div>
+
+@if (activeSubTab() === 'infos') {
+  <app-infos [info]="info()" [tripId]="tripId()" />
+} @else {
+  <app-trip-activities [tripId]="tripId()" />
+}

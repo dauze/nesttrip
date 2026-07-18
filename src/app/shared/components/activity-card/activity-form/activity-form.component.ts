@@ -35,7 +35,8 @@ export class ActivityFormComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly tripId = input.required<string>();
-  readonly dayId = input.required<Date>();
+  /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
+  readonly dayId = input<Date | undefined>(undefined);
   readonly activity = input.required<Activity>();
 
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
@@ -103,7 +104,7 @@ export class ActivityFormComponent {
       takeUntilDestroyed(),
     ).subscribe((value) => {
       const activity = this.activity();
-      this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+      this.tripFacade.updateActivity(this.tripId(), {
         ...activity,
         ...value,
         startTime: value.startTime ?? undefined,
@@ -234,7 +235,10 @@ export class ActivityFormComponent {
    */
   private applyDayIdDate(time: Date | null): Date | null {
     if (!time) return null;
-    const base = new Date(this.dayId());
+    // Sans dayId (activité pas encore rattachée à un jour, vue générale),
+    // on garde le jour déjà présent sur l'activité, sinon aujourd'hui.
+    const referenceDay = this.dayId() ?? this.activity()?.startTime ?? new Date();
+    const base = new Date(referenceDay);
     base.setHours(time.getHours(), time.getMinutes(), 0, 0);
     return base;
   }

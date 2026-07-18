@@ -21,7 +21,8 @@ const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'
 })
 export class ActivityGoogleInfoComponent {
   readonly activity = input.required<Activity>();
-  readonly dayId = input.required<Date>();
+  /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
+  readonly dayId = input<Date | undefined>(undefined);
 
   readonly detailsState = input<LoadingState<PlaceDetails>>({ status: 'idle' });
   readonly expandDetails = output<string>();
@@ -42,13 +43,13 @@ export class ActivityGoogleInfoComponent {
     return `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${this.activity().placeId}`;
   });
 
-  readonly todayDayName = computed(() => DAY_NAMES[this.dayId().getDay()]);
+  readonly todayDayName = computed(() => DAY_NAMES[(this.dayId() ?? new Date()).getDay()]);
 
   readonly isOpenNow = computed(() => {
     const hours = this.details()?.openingHours;
     if (!hours?.length) return null;
 
-    const day = this.dayId();
+    const day = this.dayId() ?? new Date();
     const now = new Date();
     const checkTime = new Date(day);
     checkTime.setHours(now.getHours(), now.getMinutes(), 0, 0);

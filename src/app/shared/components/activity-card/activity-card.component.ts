@@ -45,7 +45,8 @@ export class ActivityCardComponent {
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
   readonly tripId = input.required<string>();
-  readonly dayId = input.required<Date>();
+  /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
+  readonly dayId = input<Date | undefined>(undefined);
   readonly activityId = input.required<string>();
 
   readonly activity = computed(() => this.tripFacade.getActivity(this.activityId())());
@@ -129,7 +130,7 @@ export class ActivityCardComponent {
         const activity = this.activity();
         if (!activity) return;
 
-        this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+        this.tripFacade.updateActivity(this.tripId(), {
           ...activity,
           title: place.name,
           placeId: place.placeId,
@@ -164,7 +165,7 @@ export class ActivityCardComponent {
     const activity = this.activity();
     if (!activity) return;
 
-    this.tripFacade.updateActivity(this.tripId(), this.dayId(), {
+    this.tripFacade.updateActivity(this.tripId(), {
       ...activity,
       title: newTitle,
       placeId: '',
@@ -185,7 +186,7 @@ export class ActivityCardComponent {
   confirmDelete(): void {
     this.confirmationService.confirm({
       message: 'Supprimer cette activité ?',
-      accept: () => this.tripFacade.removeActivity(this.tripId(), this.dayId(), this.activityId()),
+      accept: () => this.tripFacade.removeActivity(this.tripId(), this.activityId(), this.dayId()),
     });
   }
 

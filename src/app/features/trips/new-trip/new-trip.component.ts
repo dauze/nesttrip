@@ -93,6 +93,7 @@ export class NewTripComponent {
       ville: this.form.value.ville ?? '',
       placeId: this.form.value.placeId ?? '',
       days: this.buildDays(dateDebut, dateFin),
+      activities: [],
       info: this.buildInfo(),
       ownerId: user.uid,
       members: {
@@ -110,7 +111,7 @@ export class NewTripComponent {
     const endNorm = new Date(end);
     endNorm.setHours(0, 0, 0, 0);
     while (current <= endNorm) {
-      days.push({ id: new Date(current), activities: [] });
+      days.push({ id: new Date(current), activityIds: [] });
       current.setDate(current.getDate() + 1);
     }
     return days;

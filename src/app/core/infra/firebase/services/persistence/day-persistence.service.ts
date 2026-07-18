@@ -21,7 +21,7 @@ export class DayPersistenceService {
     doc(this.db, 'trips', tripId),
     {
       [`days.${day.id.getTime()}`]: {
-        activities: []
+        activityIds: []
       }
     }
   );

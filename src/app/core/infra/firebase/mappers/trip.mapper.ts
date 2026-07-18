@@ -7,8 +7,9 @@ export function tripFromFb(data: TripFirebase): Trip {
     ...data,
     days: Object.entries(data.days).map(([key, value]) => ({
       id: new Date(Number(key)),
-      activities: (value.activities ?? []).map((a) => activityFromFb(a)),
+      activityIds: value.activityIds ?? [],
     })),
+    activities: Object.values(data.activities ?? {}).map((a) => activityFromFb(a)),
   };
 }
 
@@ -18,8 +19,11 @@ export function tripToFb(data: Trip): TripFirebase {
     days: Object.fromEntries(
       data.days.map((d) => [
         String(d.id.getTime()),
-        { activities: d.activities.map((a) => activityToFb(a)) },
+        { activityIds: d.activityIds },
       ]),
+    ),
+    activities: Object.fromEntries(
+      data.activities.map((a) => [a.id, activityToFb(a)]),
     ),
   };
 }
