@@ -2,9 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { Day, Trip } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
+import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
 
 @Injectable()
 export class TripFacade {
@@ -195,10 +195,18 @@ export class TripFacade {
     const currentActivities = this.store._activities();
     const newActivities = { ...currentActivities };
     const newDayActivities: Record<string, string[]> = {};
+    const pendingIds = this.store._pendingActivityIds();
 
     // 1. Pool d'activités : source de vérité unique, qu'elles soient
     // dispatchées ou non dans un jour.
     for (const activity of trip.activities) {
+      // Une édition locale de cette activité n'a pas encore été confirmée
+      // par Firestore (write debouncée en cours) : on ne laisse PAS ce
+      // snapshot (potentiellement encore ancien côté serveur) écraser
+      // l'état optimiste local, sinon l'UI "revient en arrière" pendant la
+      // fenêtre de debounce à chaque édition.
+      if (pendingIds.has(activity.id)) continue;
+
       const current = currentActivities[activity.id];
       newActivities[activity.id] =
         current && JSON.stringify(current) === JSON.stringify(activity)
@@ -209,7 +217,7 @@ export class TripFacade {
     // Nettoyage des activités supprimées côté distant
     const remoteIds = new Set(trip.activities.map((a) => a.id));
     for (const id of this.store._tripActivities()[trip.id] ?? []) {
-      if (!remoteIds.has(id)) delete newActivities[id];
+      if (!remoteIds.has(id) && !pendingIds.has(id)) delete newActivities[id];
     }
 
     // 2. Références jour -> activités

@@ -1,13 +1,13 @@
-import { computed, Injectable, Signal, signal } from '@angular/core';
+import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { Trip, Day } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
 import { InfosPersistenceService } from '@app/core/infra/firebase/services/persistence/infos-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
+import { Item } from './trip-detail/trip-day-swiper/general-panel/infos/info.models';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
@@ -20,6 +20,18 @@ export class TripStore {
   private readonly infoPersistenceService = inject(InfosPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
+
+  constructor() {
+    // Dès que le writer débouncé des activités n'a plus rien en cours (tout
+    // le lot en attente a été flush + confirmé par Firestore), on relâche le
+    // verrou anti-écrasement : un futur snapshot distant peut de nouveau
+    // mettre à jour ces activités (édition par un collaborateur, etc.).
+    effect(() => {
+      if (!this.activityPersistenceService.syncing()) {
+        this._pendingActivityIds.set(new Set());
+      }
+    });
+  }
 
   // ── État normalisé ────────────────────────────────────────────────────────
 
@@ -35,6 +47,14 @@ export class TripStore {
   readonly _dayActivities = signal<Record<string, string[]>>({});
   /** @internal — TOUTES les activités appartenant à un trip (dispatchées ou non) */
   readonly _tripActivities = signal<Record<string, string[]>>({});
+  /**
+   * @internal — ids d'activités dont l'édition locale n'a pas encore été
+   * confirmée par Firestore (write debouncée pas encore flush + confirmée).
+   * Tant qu'un id est dans ce set, un snapshot distant ne doit PAS écraser
+   * sa valeur locale (sinon l'UI optimiste "revient en arrière" pendant la
+   * fenêtre de debounce à chaque édition).
+   */
+  readonly _pendingActivityIds = signal<Set<string>>(new Set());
   /** @internal */
   readonly _infoItems = signal<Record<string, Item>>({});
   /** @internal */
@@ -251,6 +271,7 @@ export class TripStore {
         ? t[tripId]
         : [...(t[tripId] ?? []), activity.id],
     }));
+    this.markActivityPending(activity.id);
 
     this.activityPersistenceService.queueUpdate(tripId, activity);
     this.syncDayActivityIds(tripId, dayId);
@@ -265,6 +286,7 @@ export class TripStore {
         ? t[tripId]
         : [...(t[tripId] ?? []), activity.id],
     }));
+    this.markActivityPending(activity.id);
 
     this.activityPersistenceService.queueUpdate(tripId, activity);
   }
@@ -276,7 +298,16 @@ export class TripStore {
    */
   updateActivity(tripId: string, activity: Activity): void {
     this._activities.update((a) => ({ ...a, [activity.id]: activity }));
+    this.markActivityPending(activity.id);
     this.activityPersistenceService.queueUpdate(tripId, activity);
+  }
+
+  private markActivityPending(activityId: string): void {
+    this._pendingActivityIds.update((s) => {
+      const copy = new Set(s);
+      copy.add(activityId);
+      return copy;
+    });
   }
 
   /**

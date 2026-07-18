@@ -1,23 +1,26 @@
-<!-- Utilisation de PrimeFlex pour le centrage et la marge -->
-    <div class="flex justify-content-center mb-3 sub-tab-switch">
-      <p-selectbutton 
-        [options]="subTabOptions" 
-        [ngModel]="activeSubTab()" 
-        (ngModelChange)="selectSubTab($event)"
-        optionLabel="label" 
-        optionValue="value"
-        [allowEmpty]="false"
-      >
-        <ng-template #item let-item>
-          <!-- PrimeFlex 'mr-2' pour espacer l'icône du texte -->
-          <i [class]="item.icon + ' mr-2'"></i>
-          <span>{{ item.label }}</span>
-        </ng-template>
-      </p-selectbutton>
-    </div>
+<div class="flex flex-column h-full">
+  <div class="w-full sub-tab-switch mt-auto pb-2">
+    <p-selectbutton 
+      [options]="subTabOptions" 
+      [ngModel]="activeSubTab()" 
+      (ngModelChange)="selectSubTab($event)"
+      optionLabel="label" 
+      optionValue="value"
+      [allowEmpty]="false"
+      fluid
+    >
+      <ng-template #item let-item>
+        <i [class]="item.icon + ' mr-2'"></i>
+        <span>{{ item.label }}</span>
+      </ng-template>
+    </p-selectbutton>
+  </div>
+  <div class="flex-auto overflow-y-auto mb-2">
+    @if (activeSubTab() === 'infos') {
+      <app-infos [info]="info()" [tripId]="tripId()" />
+    } @else {
+      <app-trip-activities [tripId]="tripId()" />
+    }
+  </div>
 
-@if (activeSubTab() === 'infos') {
-  <app-infos [info]="info()" [tripId]="tripId()" />
-} @else {
-  <app-trip-activities [tripId]="tripId()" />
-}
+</div>
