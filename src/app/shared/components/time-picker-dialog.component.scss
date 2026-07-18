@@ -108,3 +108,11 @@
     -webkit-backdrop-filter: blur(4px);
   }
 }
+
+/* Cache la croix de fermeture spécifiquement pour votre dialog personnalisé */
+::ng-deep .p-dialog-header-actions {
+    display: none !important;
+}
+::ng-deep .p-dialog-header{
+  padding: 0.25rem
+}

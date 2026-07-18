@@ -7,7 +7,8 @@
 <p-dialog 
   [(visible)]="visible"
   [modal]="true"
-  [closable]="false"
+  [closable]="true"
+  [dismissableMask]="true"
   [draggable]="false"
   [resizable]="false"
   styleClass="custom-time-dialog glass-modal speed-dialog"
@@ -15,7 +16,7 @@
   appendTo="body">
   
   <div class="wheel-picker-container">
-    <div class="selection-overlay"></div>
+    <div class="selection-overlay" ></div>
 
     <!-- Colonne des Heures -->
     <div class="wheel-column" #hourCol>
