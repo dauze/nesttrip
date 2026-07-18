@@ -19,11 +19,11 @@ export class GeneralPanelComponent {
   readonly info = input.required<Info>();
   readonly tripId = input.required<string>();
 
-  readonly activeSubTab = signal<GeneralSubTab>('infos');
+  readonly activeSubTab = signal<GeneralSubTab>('activities');
 
   readonly subTabOptions = [
-    { label: 'Infos', value: 'infos', icon: 'pi pi-clipboard' },
-    { label: 'Activités', value: 'activities', icon: 'pi pi-map-marker' }
+    { label: 'Activités', value: 'activities', icon: 'pi pi-map-marker' },
+    { label: 'Infos', value: 'infos', icon: 'pi pi-clipboard' }
   ];
 
   selectSubTab(tab: GeneralSubTab): void {

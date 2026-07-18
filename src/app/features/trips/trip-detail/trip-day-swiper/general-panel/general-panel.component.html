@@ -15,7 +15,7 @@
       </ng-template>
     </p-selectbutton>
   </div>
-  <div class="flex-auto overflow-y-auto mb-2">
+  <div class="flex-auto overflow-y-auto">
     @if (activeSubTab() === 'infos') {
       <app-infos [info]="info()" [tripId]="tripId()" />
     } @else {
