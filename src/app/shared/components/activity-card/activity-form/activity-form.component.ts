@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, effect } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -59,6 +59,14 @@ export class ActivityFormComponent {
     }),
   });
 
+  private readonly formChanges = toSignal(this.form.valueChanges, { initialValue: null });
+
+  readonly formValue = computed(() => {
+    this.activity();    // Dépendance 1 : Se réévalue si l'input change
+    this.formChanges(); // Dépendance 2 : Se réévalue si l'utilisateur tape du texte
+    return this.form.getRawValue();
+  });
+
   readonly bookingMeta = computed(() => {
     const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
     return BOOKING_STATUS_META[status];
@@ -66,8 +74,6 @@ export class ActivityFormComponent {
   
   // Remplacement du contrôle texte par un contrôle Date pour le p-datepicker
   readonly durationTimeControl = this.fb.control<Date | null>(null);
-
-  private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
   readonly showDeadline = computed(() => {
     const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -87,34 +93,39 @@ export class ActivityFormComponent {
   private isProgrammaticUpdate = false;
 
   constructor() {
-    runOnceReady(this.activity, (a) => {
-      // On force la date de dayId sur le startTime et endTime reçus si présents
-      const patchedActivity = {
-        ...a,
-        startTime: this.applyDayIdDate(a.startTime ? new Date(a.startTime) : null),
-        endTime: this.applyDayIdDate(a.endTime ? new Date(a.endTime) : null),
-      };
+    effect(() => {
+    const a = this.activity();
+    if (!a) return;
 
-      this.form.patchValue(patchedActivity);
-      this.initDurationFromForm();
+    // On force la date de dayId sur le startTime et endTime reçus si présents
+    const patchedActivity = {
+      ...a,
+      startTime: this.applyDayIdDate(a.startTime ? new Date(a.startTime) : null),
+      endTime: this.applyDayIdDate(a.endTime ? new Date(a.endTime) : null),
+    };
+
+    // CRUCIAL : { emitEvent: false } évite la boucle infinie avec le debounceTime plus bas
+    this.form.patchValue(patchedActivity, { emitEvent: false });
+    this.initDurationFromForm();
+  });
+
+  // Le reste de votre constructeur (valueChanges.pipe et setupTimeDurationSync) reste inchangé
+  this.form.valueChanges.pipe(
+    debounceTime(300),
+    takeUntilDestroyed(),
+  ).subscribe((value) => {
+    const activity = this.activity();
+    this.tripFacade.updateActivity(this.tripId(), {
+      ...activity,
+      ...value,
+      startTime: value.startTime ?? undefined,
+      endTime: value.endTime ?? undefined,
+      booking: { ...activity.booking, ...value.booking, deadline: value.booking?.deadline ?? undefined },
+      price: { ...activity.price, ...value.price },
     });
+  });
 
-    this.form.valueChanges.pipe(
-      debounceTime(300),
-      takeUntilDestroyed(),
-    ).subscribe((value) => {
-      const activity = this.activity();
-      this.tripFacade.updateActivity(this.tripId(), {
-        ...activity,
-        ...value,
-        startTime: value.startTime ?? undefined,
-        endTime: value.endTime ?? undefined,
-        booking: { ...activity.booking, ...value.booking, deadline: value.booking?.deadline ?? undefined },
-        price: { ...activity.price, ...value.price },
-      });
-    });
-
-    this.setupTimeDurationSync();
+  this.setupTimeDurationSync();
   }
 
   private setupTimeDurationSync(): void {

@@ -23,7 +23,6 @@ import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { Button } from 'primeng/button';
 import { ConfirmationService } from 'primeng/api';
-import { ConfirmDialog } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-activity-card',
@@ -31,9 +30,8 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   imports: [
     CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, DragDropModule, Button,
     ActivityHeaderComponent, ActivityFormComponent,
-    ActivityFilesComponent, ActivityGoogleInfoComponent, ConfirmDialog,
+    ActivityFilesComponent, ActivityGoogleInfoComponent,
   ],
-  providers: [ConfirmationService],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
 })
