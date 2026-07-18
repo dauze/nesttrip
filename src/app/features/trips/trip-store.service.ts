@@ -60,7 +60,7 @@ export class TripStore {
   /** @internal */
   readonly _tripInfoItems = signal<Record<string, string[]>>({});
   /** @internal */
- readonly _tripsResult = signal<Pick<Trip, 'id' | 'title'>[] | undefined>(undefined);
+ readonly _tripsResult = signal<Pick<Trip, 'id' | 'title' | 'ownerId'>[] | undefined>(undefined);
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
@@ -187,7 +187,7 @@ export class TripStore {
     // _tripsResult : ajout dans la liste du dashboard
     this._tripsResult.update((list) => [
       ...(list ?? []),
-      { id: trip.id, title: trip.title },
+      { id: trip.id, title: trip.title, ownerId: trip.ownerId },
     ]);
 
     // _trips : entité complète
