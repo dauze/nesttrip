@@ -13,31 +13,23 @@
   -webkit-backdrop-filter: blur(0px);
   background: transparent;
   transition: background 300ms ease, backdrop-filter 300ms ease;
-  // Sans ça, un appui immobile prolongé (le temps de la formation de la
-  // bulle + une pause) peut déclencher le menu contextuel / la loupe de
-  // sélection natifs sous le doigt, ce qui annule le pointeur en cours.
   -webkit-touch-callout: none;
   user-select: none;
   -webkit-user-select: none;
 
   &--active {
-    background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.17);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   &--retracted.dispatch-overlay--active {
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    background: rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    background: transparent;
   }
 }
 
-// Clone EXACT de la barre d'onglets (même position fixe bas d'écran) :
-// display:none au repos pour ne jamais apparaître comme un second panneau
-// flottant. Au décrochage, il passe en display:flex à la hauteur mesurée de
-// la vraie barre (--dispatch-collapsed-h) — rien ne se voit puisqu'il lui est
-// identique — puis grandit en place (transition CSS pure, ancré en bas).
 .dispatch-overlay__sheet {
   position: fixed;
   left: 0;
@@ -45,11 +37,15 @@
   bottom: 0;
   display: none;
   flex-direction: column;
-  height: var(--dispatch-collapsed-h, 56px);
+  
+  min-height: var(--dispatch-collapsed-h, 56px);
+  max-height: var(--dispatch-collapsed-h, 56px);
+  
   border-radius: 0;
   overflow: hidden;
   pointer-events: none;
-  transition: height 700ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 500ms ease;
+  
+  transition: max-height 700ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 500ms ease;
 
   .dispatch-overlay--active & {
     display: flex;
@@ -57,46 +53,34 @@
   }
 
   .dispatch-overlay--expanded & {
-    height: 68vh;
+    max-height: 50vh; 
     border-radius: 28px 28px 0 0;
   }
 
-  // Rétractation : redevient exactement la barre repliée, prête à réouvrir.
   .dispatch-overlay--retracted & {
-    height: var(--dispatch-collapsed-h, 56px);
+    max-height: var(--dispatch-collapsed-h, 56px);
     border-radius: 0;
   }
 }
 
-// Positionné en absolu (ancré au bas du sheet, qui est lui-même `position:
-// fixed`) plutôt qu'en tant qu'item flex normal : ainsi il reste rivé à sa
-// position de départ (celle de la vraie barre) pendant toute la croissance
-// du sheet au lieu de "monter" avec lui — seule son opacité varie.
 .dispatch-overlay__replica {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  top: 0; /* CORRECTION : top: 0 au lieu de bottom: 0 pour qu'il suive le haut du panneau */
+  height: var(--dispatch-collapsed-h, 56px); /* Maintient sa taille initiale */
   overflow: hidden;
   opacity: 1;
   pointer-events: none;
-  // Volontairement plus courte que la transition de hauteur du sheet (700ms) :
-  // la barre doit avoir complètement disparu bien avant la fin de l'ouverture,
-  // jamais rester visible ni partiellement visible pendant que le calendrier grandit.
-  transition: opacity 220ms ease;
+  /* Ajout d'une transition sur le transform pour adoucir la disparition */
+  transition: opacity 220ms ease, transform 300ms ease;
 
-  // `sheetExpanded()` reste vrai pendant la rétractation (seule la classe
-  // `--retracted` s'ajoute par-dessus) : sans le `:not()`, la barre resterait
-  // invisible une fois le calendrier replié, alors qu'elle doit réapparaître
-  // puisqu'elle correspond de nouveau exactement à la barre repliée.
   .dispatch-overlay--expanded:not(.dispatch-overlay--retracted) & {
     opacity: 0;
+    transform: translateY(-10px); /* S'efface en montant légèrement */
   }
 }
 
-// Le premier onglet ("Général") s'échappe vers la gauche jusqu'à sortir de
-// l'écran, ET son emplacement se referme (flex-basis à 0) pour que les
-// onglets suivants (les jours) se décalent bien dans l'espace libéré.
 .dispatch-overlay__replica-tab--out {
   flex: 0 0 0 !important;
   max-width: 0 !important;
@@ -115,9 +99,6 @@
     margin 650ms ease;
 }
 
-// L'onglet d'un jour dont le bouton de grille correspondant est en train de
-// "prendre sa place" (FLIP piloté en TS) s'efface : on ne veut jamais voir
-// les deux superposés en même temps.
 .dispatch-overlay__replica-tab--flipped {
   opacity: 0;
   transition: opacity 200ms ease;
@@ -127,6 +108,20 @@
   flex: 1 1 auto;
   overflow-y: auto;
   padding: 1rem;
+  
+  opacity: 0; 
+  /* CORRECTION : On démarre de plus bas (ex: 3rem) */
+  transform: translateY(3rem); 
+  /* CORRECTION : On ajoute le transform à la transition pour un effet d'ascension fluide */
+  transition: opacity 300ms ease, transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+  
+  min-height: 0; 
+
+  .dispatch-overlay--expanded:not(.dispatch-overlay--retracted) & {
+    opacity: 1;
+    /* CORRECTION : On le remonte à sa position finale */
+    transform: translateY(0); 
+  }
 }
 
 .dispatch-overlay__month-label {
@@ -137,13 +132,11 @@
   padding: 0.5rem 0;
 }
 
-// Effet "les jours arrivent du bas au fur et à mesure que ça se développe" :
-// chaque case démarre translatée + invisible, et remonte à sa place avec un
-// léger décalage (transition-delay défini en TS, proportionnel à son index).
 .dispatch-overlay__day {
   position: relative;
   opacity: 0;
-  transform: translateY(1rem);
+  /* Optionnel : tu peux accentuer un peu plus la distance de démarrage des jours */
+  transform: translateY(1.5rem); 
   transition: opacity 350ms ease, transform 350ms ease;
 
   &--in {
@@ -151,8 +144,6 @@
     transform: translateY(0);
   }
 
-  // Piloté entièrement en WAAPI (FLIP depuis l'onglet d'origine) : la
-  // transition CSS d'entrée ne doit pas lui disputer opacity/transform.
   &--flip {
     transition: none;
   }
@@ -195,7 +186,6 @@
   gap: 0.5rem;
   transition: padding 300ms ease, gap 300ms ease;
 
-  // Phase 2 : il ne reste que la miniature, plus aucune marge autour d'elle.
   &--collapsed {
     padding: 0;
     gap: 0;
@@ -222,15 +212,12 @@
     -webkit-user-drag: none;
   }
 
-  // Phase 2 : la miniature quitte le flux et remplit exactement la bulle
-  // (quelle que soit sa taille animée à l'instant t), sans plus dépendre
-  // d'une taille fixe de 3rem.
   &--fill {
     position: absolute;
     inset: 0;
     width: auto;
     height: auto;
-    border-radius: 0; // le conteneur .dispatch-ball gère déjà le border-radius + overflow:hidden
+    border-radius: 0;
   }
 }
 
@@ -239,8 +226,6 @@
   transition: opacity 300ms ease, width 300ms ease;
 }
 
-// Pendant le tassement (phase 1) puis pendant tout le voyage en bulle
-// (phase 2), le texte et la poignée sont effacés.
 .dispatch-ball--collapsing .dispatch-ball__handle,
 .dispatch-ball--collapsing .dispatch-ball__text {
   opacity: 0;

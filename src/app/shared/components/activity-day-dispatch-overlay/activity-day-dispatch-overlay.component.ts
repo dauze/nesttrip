@@ -121,7 +121,7 @@ export class ActivityDayDispatchOverlayComponent {
     // route trips), qu'on l'exécute réellement contre le store.
     effect(() => {
       const req = this.dispatchService.dropRequested();
-      if (!req) return;
+      if (!req || this.retracted()) return;
       this.tripFacade.dispatchActivity(req.tripId, req.activityId, new Date(req.dayKey));
     });
 
