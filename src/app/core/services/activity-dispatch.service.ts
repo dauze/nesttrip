@@ -83,6 +83,15 @@ export class ActivityDispatchService {
    * la détection de survol qui déclenche l'escalade.
    */
   readonly activeDayDrag = signal<DraggedActivityInfo | null>(null);
+  /**
+   * Élément DOM réel de la carte en cours de cdkDrag dans un jour. Sert à
+   * mesurer sa taille ACTUELLE (déjà collapsée, voir DayPanelComponent) au
+   * moment de l'escalade — le clone `.cdk-drag-preview` généré par CDK, lui,
+   * est figé au moment de son apparition, souvent avant la fin de
+   * l'animation de collapse (400ms côté PrimeNG Panel) : le récupérer trop
+   * tôt donnait un rect encore "déplié", d'où le saut visuel de la bulle.
+   */
+  readonly activeDayDragElement = signal<HTMLElement | null>(null);
 
   /** true une fois la bulle formée pour un geste jour (après escalade, pas pendant le simple reorder). */
   readonly dayEscalated = computed(() => this.phase() !== 'idle' && this.dragged()?.origin === 'day');
@@ -94,12 +103,14 @@ export class ActivityDispatchService {
     return this.phase() !== 'idle' && this.dragged()?.activityId === activityId;
   }
 
-  registerActiveDayDrag(info: DraggedActivityInfo): void {
+  registerActiveDayDrag(info: DraggedActivityInfo, el: HTMLElement): void {
     this.activeDayDrag.set(info);
+    this.activeDayDragElement.set(el);
   }
 
   clearActiveDayDrag(): void {
     this.activeDayDrag.set(null);
+    this.activeDayDragElement.set(null);
   }
 
   private dayCells = new Map<string, DOMRect>();

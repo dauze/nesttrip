@@ -30,7 +30,7 @@ const RETURN_EXPAND_DURATION = 250;
 /** Délai doigt-hors-calendrier avant désescalade d'un geste jour (voir `checkLeaveSheet`). */
 const LEAVE_SHEET_DELAY_MS = 250;
 /** Durée de survol continu de la barre repliée avant d'escalader un cdkDrag en cours vers le calendrier de dispatch. */
-const DAY_DRAG_ESCALATE_HOVER_MS = 150;
+const DAY_DRAG_ESCALATE_HOVER_MS = 450;
 /** Désescalade (jour) : la bulle se redéploie en forme de carte sur place puis s'efface, sans translation vers une origine devenue obsolète. */
 const DAY_DRAG_COLLAPSE_DURATION_MS = 350;
 const EDGE_SCROLL_ZONE = 56;
@@ -292,8 +292,18 @@ export class ActivityDayDispatchOverlayComponent {
 
   private triggerEscalation(info: DraggedActivityInfo): void {
     const pointer = this.dispatchService.pointer();
+    // `.cdk-drag-preview` suit le doigt en direct (transform recalculé à
+    // chaque pointermove par CDK) : c'est la SEULE source qui donne la
+    // position actuelle du geste — `sourceEl` (la carte dans la liste,
+    // masquée mais toujours à sa position d'origine) donnerait un point de
+    // départ figé loin du doigt. Sa taille est désormais fiable elle aussi,
+    // puisque la carte est repliée SANS transition avant même le seuil de
+    // déclenchement de cdkDrag (voir `collapseInstantly`) : le clone que
+    // CDK prend à ce moment-là est donc déjà à la bonne taille.
     const previewEl = document.querySelector<HTMLElement>('.cdk-drag-preview');
+    const sourceEl = this.dispatchService.activeDayDragElement();
     const rect = previewEl?.getBoundingClientRect()
+      ?? sourceEl?.getBoundingClientRect()
       ?? new DOMRect(pointer.x - BALL_SIZE / 2, pointer.y - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE);
     this.dispatchService.beginLift(info, rect, pointer.x, pointer.y);
   }
@@ -531,7 +541,14 @@ export class ActivityDayDispatchOverlayComponent {
     this.playCollapseFollow(ball, origin, collapsedWidth, thumbSize);
   }
 
-  /** Phase 1 : le texte se tasse tandis que la bulle chasse déjà le doigt. */
+  /**
+   * Phase 1 : le texte se tasse vers la gauche — le bord gauche reste
+   * IMMOBILE en abscisse pendant tout le tassement (seul le bord droit
+   * recule), pour un effet "le texte disparaît sur place" plutôt qu'une
+   * carte qui glisserait déjà vers le doigt. Le voyage horizontal vers le
+   * doigt est le rôle de la phase 2 (`playTravelFollow`), une fois la bulle
+   * formée.
+   */
   private playCollapseFollow(
     ball: HTMLElement,
     origin: DOMRect,
@@ -552,7 +569,7 @@ export class ActivityDayDispatchOverlayComponent {
 
       const width = lerp(origin.width, collapsedWidth, eased);
       const height = lerp(origin.height, thumbSize, eased);
-      const left = lerp(origin.left, target.x - width / 2, eased);
+      const left = origin.left;
       const top = lerp(origin.top, target.y - height / 2, eased);
 
       ball.style.width = `${width}px`;

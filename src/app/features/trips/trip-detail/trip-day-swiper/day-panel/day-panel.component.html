@@ -26,7 +26,7 @@
     <div class="flex flex-column gap-2">
       <div cdkDropList [cdkDropListDisabled]="dispatchService.dayEscalated()" class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
         @for (activity of activities(); track activity.id) {
-            <app-activity-card cdkDrag (cdkDragStarted)="onDragStarted()" [scrollOffset]="stickyOffset()" [initCollapsed]="false"
+            <app-activity-card cdkDrag (cdkDragStarted)="onDragStarted()" (dragAboutToStart)="onDragStarted()" [scrollOffset]="stickyOffset()" [initCollapsed]="false"
       (cdkDragEnded)="onDragEnded()" [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
       </div>

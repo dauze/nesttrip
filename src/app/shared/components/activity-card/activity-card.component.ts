@@ -1,6 +1,6 @@
 import {
   Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
-  input, linkedSignal, signal, viewChild
+  input, linkedSignal, output, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelModule } from 'primeng/panel';
@@ -35,6 +35,8 @@ import { ConfirmationService } from 'primeng/api';
 const HOLD_DELAY_MS = 20;
 /** Laisse le temps à l'animation de repli du panneau de se terminer avant de décrocher la carte. */
 const PANEL_COLLAPSE_DELAY_MS = 300;
+/** Valeur par défaut de PrimeNG Panel (voir `transitionOptions` dans primeng-panel.mjs). */
+const DEFAULT_PANEL_TRANSITION = '400ms cubic-bezier(0.86, 0, 0.07, 1)';
 
 @Component({
   selector: 'app-activity-card',
@@ -71,6 +73,16 @@ export class ActivityCardComponent {
   readonly collapsed = linkedSignal(() => this.initCollapsed());;
   protected dragDisabled = signal(true);
   readonly scrollOffset = input(0);
+  /** Piloté par `collapseInstantly()` : passe à '0ms' le temps d'un repli forcé avant cdkDrag, pour ne jamais laisser CDK cloner un état mi-animé. */
+  protected readonly panelTransitionOptions = signal(DEFAULT_PANEL_TRANSITION);
+
+  /**
+   * Émis dès le pointerdown sur la poignée, avant que cdkDrag n'ait la
+   * moindre chance de cloner le DOM pour construire son aperçu de drag :
+   * c'est le seul moment où collapser cette carte a un effet visible sur
+   * l'aperçu (cdkDragStarted, lui, fuse trop tard — le clone est déjà pris).
+   */
+  readonly dragAboutToStart = output<void>();
 
   /** true pendant que cette carte est décrochée pour être déposée sur un autre jour. */
   readonly isBeingDragged = computed(() => this.dispatchService.isDraggedActivity(this.activityId()));
@@ -200,6 +212,21 @@ export class ActivityCardComponent {
     this.dragDisabled.set(!target.closest('.drag-handle'));
   }
 
+  /**
+   * Replie la carte sans transition CSS, pour que la géométrie finale soit
+   * peinte dès la frame suivante. Utilisé avant un cdkDrag : le clone
+   * `.cdk-drag-preview` que CDK prend au premier mouvement franchissant son
+   * seuil doit refléter la taille déjà repliée, pas un état intermédiaire
+   * de l'animation normale (400ms chez PrimeNG Panel) — sinon, sur un drag
+   * rapide, le seuil peut être franchi avant la fin de l'animation et le
+   * preview capture une carte encore (partiellement) dépliée.
+   */
+  collapseInstantly(): void {
+    this.panelTransitionOptions.set('0ms');
+    this.collapsed.set(true);
+    requestAnimationFrame(() => this.panelTransitionOptions.set(DEFAULT_PANEL_TRANSITION));
+  }
+
   openAndScroll(): void {
     if (this.collapsed()) {
       this.collapsed.set(false);
@@ -286,6 +313,7 @@ export class ActivityCardComponent {
 
     if (this.cdkDrag) {
       this.cdkDrag.disabled = false;
+      this.dragAboutToStart.emit();
       return;
     }
 
@@ -313,7 +341,7 @@ export class ActivityCardComponent {
     const el = this.cardContainer()?.nativeElement;
     if (!el) return;
     const info = this.buildDraggedInfo(el);
-    if (info) this.dispatchService.registerActiveDayDrag(info);
+    if (info) this.dispatchService.registerActiveDayDrag(info, el);
   }
 
   private buildDraggedInfo(el: HTMLElement): DraggedActivityInfo | null {

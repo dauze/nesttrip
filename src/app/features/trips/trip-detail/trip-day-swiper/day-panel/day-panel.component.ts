@@ -293,6 +293,12 @@ export class DayPanelComponent {
   }
 
   onDragStarted() {
+    // Idempotent : déjà déclenché au pointerdown sur la poignée (voir
+    // dragAboutToStart) — cdkDragStarted peut refuser un peu plus tard sur
+    // le même geste, on ignore ce second appel pour ne pas écraser le
+    // snapshot avec un état déjà collapsé.
+    if (this.collapseSnapshot) return;
+
     this.lockService.lock();
 
     const cards = new Map<string, boolean>();
@@ -302,8 +308,14 @@ export class DayPanelComponent {
     }
     this.collapseSnapshot = { cards, map: this.googleMapPanelService.isCollapsed() };
 
-    for (const card of this.activityCards()) card.collapsed.set(true);
+    // collapseInstantly (pas juste collapsed.set(true)) : sur un drag
+    // rapide, cdkDrag peut franchir son seuil de déclenchement avant la fin
+    // de l'animation normale du panneau (400ms) et cloner une carte encore
+    // (partiellement) dépliée pour son `.cdk-drag-preview`.
+    for (const card of this.activityCards()) card.collapseInstantly();
     this.googleMapPanelService.setCollapse(true);
+
+    this.armReleaseFallback();
   }
 
   onDragEnded() {
@@ -319,6 +331,22 @@ export class DayPanelComponent {
       this.googleMapPanelService.setCollapse(map);
       this.collapseSnapshot = undefined;
     }
+  }
+
+  /**
+   * Filet de sécurité : si le pointer est relâché avant que cdkDrag n'ait
+   * franchi son seuil de déclenchement (simple clic sur la poignée, sans
+   * déplacement), ni cdkDragStarted ni cdkDragEnded ne fusent jamais — sans
+   * ça, les cartes resteraient collapsées indéfiniment.
+   */
+  private armReleaseFallback(): void {
+    const onRelease = () => {
+      document.removeEventListener('mouseup', onRelease, true);
+      document.removeEventListener('touchend', onRelease, true);
+      this.onDragEnded();
+    };
+    document.addEventListener('mouseup', onRelease, true);
+    document.addEventListener('touchend', onRelease, true);
   }
 
   onMapPointClick(point: DayMapPoint) {
