@@ -108,8 +108,13 @@ export class NotesComponent {
     this.focusRow(item.id, index + 1, 0);
   }
 
-  onBlurPoint() {
-    setTimeout(() => this.activePointId.set(null));
+  onBlurPoint(pointId: string) {
+    setTimeout(() => {
+      // On ne remet à null QUE si le point actif est toujours celui qui a déclenché le blur
+      if (this.activePointId() === pointId) {
+        this.activePointId.set(null);
+      }
+    });
   }
 
   onBackspaceRow(item: Item, index: number, event: KeyboardEvent): void {
