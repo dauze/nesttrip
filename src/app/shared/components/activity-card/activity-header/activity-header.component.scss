@@ -1,1 +1,17 @@
-:host { display: block; } 
+:host { display: block; }
+
+// Sans ça, un appui-maintien sur la poignée sélectionne le texte alentour
+// et/ou déclenche le drag natif du navigateur (surtout sur l'image), ce qui
+// entre en conflit avec notre propre mécanisme de drag & drop et laisse
+// l'interface comme "coincée" en drag après le relâchement.
+.drag-handle {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}

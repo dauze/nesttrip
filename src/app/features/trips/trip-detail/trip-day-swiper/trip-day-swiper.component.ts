@@ -23,6 +23,7 @@ import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.compo
 import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
 import { SwiperAutoHeightWatchDirective } from '@app/shared/directives/swiper-auto-height-watch.directive';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
+import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 
 @Component({
   selector: 'app-trip-day-swiper',
@@ -38,6 +39,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly injector = inject(Injector);
   private readonly heightSync = inject(SwiperHeightSyncService);
   private readonly mapHost = inject(TripDayMapHostService);
+  private readonly dispatchService = inject(ActivityDispatchService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
 
   readonly trip = input.required<Trip>();
@@ -67,6 +69,13 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private slideEls: HTMLElement[] = [];
 
   constructor() {
+    // Zone de dépose de secours quand le calendrier de dispatch se rétracte :
+    // le jour actuellement visible dans le swiper redevient la cible du drop.
+    effect(() => {
+      const el = this.swiperRef()?.nativeElement;
+      if (el) this.dispatchService.registerDayViewElement(el);
+    });
+
     // L'instance unique de la carte est créée une seule fois avec ce
     // composant. On l'enregistre dans le service dès qu'elle est disponible :
     // elle ne sera plus jamais recréée pour toute la durée de vie du trip.

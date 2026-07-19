@@ -12,6 +12,7 @@ import { TripTabsNavComponent } from './trip-tabs-nav/trip-tabs-nav.component';
 import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.component';
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
+import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
 
 @Component({
   selector: 'app-trip-detail',
@@ -24,6 +25,7 @@ import { Location } from '@angular/common';
     TripCollaboratorsComponent,
     TripTabsNavComponent,
     TripDaySwiperComponent,
+    ActivityDayDispatchOverlayComponent,
   ],
   providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',

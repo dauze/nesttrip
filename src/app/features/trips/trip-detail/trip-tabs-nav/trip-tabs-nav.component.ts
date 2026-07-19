@@ -1,6 +1,7 @@
-import { Component, ElementRef, input, output, viewChild } from '@angular/core';
+import { Component, ElementRef, afterNextRender, inject, input, output, viewChild } from '@angular/core';
 import { TabsModule } from 'primeng/tabs';
 import { TripTab } from '../trip-tab.model';
+import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 
 @Component({
   selector: 'app-trip-tabs-nav',
@@ -10,12 +11,21 @@ import { TripTab } from '../trip-tab.model';
   styleUrl: './trip-tabs-nav.component.scss',
 })
 export class TripTabsNavComponent {
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
+  private readonly dispatchService = inject(ActivityDispatchService);
+
   readonly tabs = input<TripTab[]>([]);
   readonly activeId = input<string>('');
   readonly tabSelected = output<{ id: string; index: number }>();
 
  private readonly tabsListRef = viewChild('tabsListRef', { read: ElementRef });
- 
+
+  constructor() {
+    // Sert de point de départ géométrique à l'animation d'ouverture du
+    // calendrier de dépose (voir ActivityDayDispatchOverlayComponent).
+    afterNextRender(() => this.dispatchService.registerNavBarElement(this.hostRef.nativeElement));
+  }
+
   protected onTabClick(id: string, index: number): void {
     this.tabSelected.emit({ id, index });
   }

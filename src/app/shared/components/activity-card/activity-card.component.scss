@@ -7,3 +7,21 @@
   border-style: dashed;
   border-left-style: inset;
 }
+
+// Léger feedback pendant le "hold" (avant de savoir si on décroche la carte).
+.card-pending {
+  transform: scale(0.97);
+  transition: transform 150ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+// La carte est décrochée : elle s'efface en place, la boule prend le relais
+// dans l'overlay. On ne retire pas la place occupée dans la liste pour
+// garder un repère visuel pendant le drag et éviter un saut au retour.
+.card-lifted {
+  opacity: 0.15;
+  transform: scale(0.92);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+}

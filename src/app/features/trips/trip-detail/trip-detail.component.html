@@ -30,4 +30,6 @@
   @if (facade.activeTripLoading() || !contentReady()) {
     <app-trip-detail-skeleton class="skeleton-overlay"/>
   }
+
+  <app-activity-day-dispatch-overlay [days]="sortedDays()" [tabs]="tabs()" [activeDayId]="activeDay()" />
 </div>

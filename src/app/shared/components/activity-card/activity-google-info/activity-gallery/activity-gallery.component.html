@@ -8,7 +8,7 @@
     } @else if (photoRefs().length) {
       <div class="photo-carousel">
         @if (getPhotoUrl$(photoRefs()[currentIndex()].name, 800) | async; as url) {
-          <img [src]="url" [alt]="altText()" class="photo-carousel__img" />
+          <img [src]="url" [alt]="altText()" draggable="false" class="photo-carousel__img" />
         }
 
         @if (currentIndex() > 0) {

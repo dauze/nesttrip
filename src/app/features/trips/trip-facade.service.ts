@@ -105,6 +105,11 @@ export class TripFacade {
     this.store.reorderActivities(tripId, dayId, ids);
   }
 
+  /** Rattache une activité (déjà existante, dispatchée ou non) à un jour donné. */
+  dispatchActivity(tripId: string, activityId: string, targetDayId: Date): void {
+    this.store.dispatchActivity(tripId, activityId, targetDayId);
+  }
+
   createItem(tripId: string, item: Item): void {
     this.store.createItem(tripId, item);
   }

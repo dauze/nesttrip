@@ -385,6 +385,41 @@ export class TripStore {
     this.syncDayActivityIds(tripId, dayId);
   }
 
+  /**
+   * Rattache une activité existante (dispatchée ou non) à un jour donné.
+   * Si elle appartenait déjà à un autre jour, elle en est retirée. Ajout en
+   * fin de liste du jour cible. No-op si elle y est déjà.
+   */
+  dispatchActivity(tripId: string, activityId: string, targetDayId: Date): void {
+    const targetKey = targetDayId.toISOString();
+    const dayKeys = this._tripDays()[tripId] ?? [];
+    const dayActivities = this._dayActivities();
+
+    let previousDayKey: string | null = null;
+    for (const key of dayKeys) {
+      if ((dayActivities[key] ?? []).includes(activityId)) {
+        previousDayKey = key;
+        break;
+      }
+    }
+
+    if (previousDayKey === targetKey) return;
+
+    this._dayActivities.update((d) => {
+      const copy = { ...d };
+      if (previousDayKey) {
+        copy[previousDayKey] = (copy[previousDayKey] ?? []).filter((id) => id !== activityId);
+      }
+      copy[targetKey] = [...(copy[targetKey] ?? []), activityId];
+      return copy;
+    });
+
+    if (previousDayKey) {
+      this.syncDayActivityIds(tripId, new Date(previousDayKey));
+    }
+    this.syncDayActivityIds(tripId, targetDayId);
+  }
+
   private syncDayActivityIds(tripId: string, dayId: Date): void {
     const dayKey = dayId.toISOString();
     const activityIds = this._dayActivities()[dayKey] ?? [];
