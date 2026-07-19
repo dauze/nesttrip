@@ -20,23 +20,37 @@ interface MonthGroup {
 // à accélérer une fois le mécanisme approuvé.
 const BALL_SIZE = 56;
 /** Phase 1 de la formation de la bulle : le texte se tasse depuis la droite. */
-const TEXT_COLLAPSE_DURATION = 550;
+const TEXT_COLLAPSE_DURATION = 250;
 /** Phase 2 : la bulle voyage vers le doigt en s'arrondissant, le contour l'enveloppe. */
-const BALL_TRAVEL_DURATION = 700;
-const DROP_DURATION = 550;
+const BALL_TRAVEL_DURATION = 300;
+const DROP_DURATION = 250;
 /** Retour "aimant" : trajet inverse puis redéploiement du texte. */
-const RETURN_TRAVEL_DURATION = 700;
-const RETURN_EXPAND_DURATION = 550;
+const RETURN_TRAVEL_DURATION = 300;
+const RETURN_EXPAND_DURATION = 250;
 /** Délai doigt-hors-zone avant rétractation du calendrier. */
-const OUTSIDE_HIDE_DELAY = 550;
+const OUTSIDE_HIDE_DELAY = 250;
 /** Zone basse de l'écran qui redéploie le calendrier rétracté. */
-const NEAR_BOTTOM_REOPEN_PX = 110;
+const NEAR_BOTTOM_REOPEN_PX = 210;
 const EDGE_SCROLL_ZONE = 56;
 const EDGE_SCROLL_SPEED = 8;
 /** FLIP des onglets de jours visibles vers leur bouton de grille correspondant. */
-const TAB_FLIP_DURATION = 700;
+const TAB_FLIP_DURATION = 300;
 /** Distance (px) sous laquelle le doigt est considéré comme immobile. */
 const STATIONARY_TOLERANCE_PX = 4;
+/**
+ * Durée de la "montée" du calendrier (croissance du sheet, effacement de la
+ * réplique, apparition de la grille) : les trois animations partagent cette
+ * même durée, calculée à chaque décrochage à partir de la distance réelle
+ * (px) parcourue par le sheet, pour rester à vitesse constante quelle que
+ * soit la hauteur d'écran — sans quoi un grand écran (plus de px à parcourir
+ * en 50vh) ferait paraître le morph plus rapide qu'un petit.
+ */
+const EXPAND_DURATION_BASE_MS = 200;
+const EXPAND_DURATION_PX_FACTOR_MS = 1.1;
+const EXPAND_DURATION_MIN_MS = 500;
+const EXPAND_DURATION_MAX_MS = 1100;
+/** Doit rester synchronisé avec `max-height: 50vh` sur `.dispatch-overlay--expanded .dispatch-overlay__sheet` (scss). */
+const EXPANDED_HEIGHT_VH_RATIO = 0.5;
 /** Rayon/épaisseurs de bordure de la miniature (phase 2, point de départ) et de la bulle (point d'arrivée), en px. */
 const THUMB_BORDER_RADIUS_PX = 12;
 const THUMB_BORDER_LEFT_PX = 6.4; // 0.4rem
@@ -44,6 +58,10 @@ const BALL_BORDER_WIDTH_PX = 3;
 
 function lerp(from: number, to: number, t: number): number {
   return from + (to - from) * t;
+}
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 @Component({
@@ -90,6 +108,8 @@ export class ActivityDayDispatchOverlayComponent {
   protected readonly retracted = signal(false);
   /** Hauteur exacte (px) de la vraie barre d'onglets, mesurée à chaque décrochage : permet au clone de la superposer au pixel près avant de grandir. */
   protected readonly collapsedHeight = signal(56);
+  /** Durée (ms) partagée par la croissance du sheet, l'effacement de la réplique et la montée de la grille — voir `EXPAND_DURATION_BASE_MS`. */
+  protected readonly expandDurationMs = signal(700);
   /** Clés des jours dont l'onglet de la barre repliée est en train de "devenir" le bouton de la grille (FLIP) : l'onglet d'origine s'efface pendant que le bouton anime depuis sa position. */
   protected readonly flippedDayIds = signal<ReadonlySet<string>>(new Set());
 
@@ -322,6 +342,13 @@ export class ActivityDayDispatchOverlayComponent {
     const navRect = this.dispatchService.getNavBarRect();
     if (navRect) this.collapsedHeight.set(navRect.height);
 
+    const expandedHeightPx = window.innerHeight * EXPANDED_HEIGHT_VH_RATIO;
+    const travelPx = Math.max(0, expandedHeightPx - this.collapsedHeight());
+    const duration = EXPAND_DURATION_BASE_MS + travelPx * EXPAND_DURATION_PX_FACTOR_MS;
+    this.expandDurationMs.set(Math.round(
+      Math.min(EXPAND_DURATION_MAX_MS, Math.max(EXPAND_DURATION_MIN_MS, duration)),
+    ));
+
     // Les onglets de jours actuellement visibles dans la barre repliée
     // doivent être mesurés MAINTENANT, avant que quoi que ce soit ne bouge :
     // c'est leur position/taille de départ pour le FLIP qui les transforme
@@ -444,6 +471,12 @@ export class ActivityDayDispatchOverlayComponent {
    *     texte et la poignée s'effacent, ne reste que la miniature.
    *  2. Cette miniature voyage vers le doigt en s'arrondissant en bulle, le
    *     bord gauche coloré s'étirant pour en faire le tour.
+   *
+   * Les deux phases tournent en rAF (comme `playTravelFollow`) et relisent
+   * `pointer()` à chaque frame plutôt que de figer un trajet WAAPI vers un
+   * point de départ : sinon la bulle ignore le doigt tant que le tassement
+   * du texte n'est pas terminé, et un drag entamé pendant cette phase 1 ne
+   * la fait pas suivre le geste.
    */
   private playFormAnimation(): void {
     const ball = this.ballRef()?.nativeElement;
@@ -453,6 +486,7 @@ export class ActivityDayDispatchOverlayComponent {
     this.formed.set(false);
     this.thumbFilled.set(false);
     this.currentBallAnimation?.cancel();
+    this.currentBallAnimation = undefined;
     this.stopTravelFollow();
 
     const thumbSize = Math.min(origin.height, 48);
@@ -460,50 +494,53 @@ export class ActivityDayDispatchOverlayComponent {
     // `--collapsed`) : le conteneur se réduit exactement à la taille de la
     // miniature, qui passera ensuite en mode "remplissage total".
     const collapsedWidth = thumbSize;
-    const collapsedLeft = origin.left;
-    const collapsedTop = origin.top + (origin.height - thumbSize) / 2;
 
     ball.classList.add('dispatch-ball--collapsing');
 
-    const collapseAnim = ball.animate(
-      [
-        {
-          transform: `translate3d(${origin.left}px, ${origin.top}px, 0)`,
-          width: `${origin.width}px`,
-          height: `${origin.height}px`,
-        },
-        {
-          transform: `translate3d(${collapsedLeft}px, ${collapsedTop}px, 0)`,
-          width: `${collapsedWidth}px`,
-          height: `${thumbSize}px`,
-        },
-      ],
-      { duration: TEXT_COLLAPSE_DURATION, easing: 'ease-in-out', fill: 'forwards' },
-    );
-    this.currentBallAnimation = collapseAnim;
+    this.playCollapseFollow(ball, origin, collapsedWidth, thumbSize);
+  }
 
-    collapseAnim.finished
-      .then(() => {
-        if (this.phase() !== 'lifted') return;
+  /** Phase 1 : le texte se tasse tandis que la bulle chasse déjà le doigt. */
+  private playCollapseFollow(
+    ball: HTMLElement,
+    origin: DOMRect,
+    collapsedWidth: number,
+    thumbSize: number,
+  ): void {
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      if (this.phase() !== 'lifted') {
+        this.travelFollowLoop = undefined;
+        return;
+      }
+
+      const t = Math.min(1, (now - startTime) / TEXT_COLLAPSE_DURATION);
+      const eased = easeInOutCubic(t);
+      const target = this.dispatchService.pointer();
+
+      const width = lerp(origin.width, collapsedWidth, eased);
+      const height = lerp(origin.height, thumbSize, eased);
+      const left = lerp(origin.left, target.x - width / 2, eased);
+      const top = lerp(origin.top, target.y - height / 2, eased);
+
+      ball.style.width = `${width}px`;
+      ball.style.height = `${height}px`;
+      ball.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+
+      if (t >= 1) {
+        this.travelFollowLoop = undefined;
         // La miniature quitte le flux et remplit désormais exactement le
         // conteneur, quelle que soit sa taille à chaque instant de la phase 2
         // (transition CSS, pas de calcul JS supplémentaire nécessaire).
         this.thumbFilled.set(true);
-        // `fill: 'forwards'` maintient l'effet de `collapseAnim` "en vigueur"
-        // même une fois `.finished` résolu : tant qu'elle n'est pas annulée,
-        // son dernier keyframe (position/tailles au moment du tassement)
-        // continue de primer sur toute manipulation directe de `ball.style`
-        // faite ensuite — symptôme observé : la bulle reste figée à l'endroit
-        // du tassement, `playTravelFollow` (ci-dessous) et le binding
-        // `[style.transform]` une fois `formed()` n'ayant alors plus aucun
-        // effet visible.
-        collapseAnim.cancel();
-        this.currentBallAnimation = undefined;
-        this.playTravelFollow(ball, collapsedLeft, collapsedTop, collapsedWidth, thumbSize);
-      })
-      .catch(() => {
-        /* animation annulée : une transition drop/return a déjà pris le relais */
-      });
+        this.playTravelFollow(ball, left, top, width, height);
+        return;
+      }
+      this.travelFollowLoop = requestAnimationFrame(step);
+    };
+
+    this.travelFollowLoop = requestAnimationFrame(step);
   }
 
   /**
@@ -588,11 +625,18 @@ export class ActivityDayDispatchOverlayComponent {
     );
     this.currentBallAnimation.finished
       .then(() => {
-        this.sheetExpanded.set(false); 
+        this.sheetExpanded.set(false);
         ball.classList.remove('dispatch-ball--collapsing');
+        // Attend la fermeture CSS du calendrier (même durée dynamique que
+        // l'ouverture, cf. `expandDurationMs`) avant de tout masquer :
+        // sinon `finish()` bascule `isVisible` à `false` — donc le sheet en
+        // `display: none` — pendant que la réplique/la grille sont encore en
+        // train de s'animer, ce qui les coupe net au lieu de les laisser finir.
+       this.dispatchService.finish();
+       this.expandDurationMs()
         setTimeout(() => {
-          this.dispatchService.finish();
-        }, 300); // même durée que la transition CSS
+          
+        }, );
       })
       .catch(() => {
         /* animation annulée (ex. drag suivant démarré avant la fin) : rien à faire */
@@ -678,7 +722,24 @@ export class ActivityDayDispatchOverlayComponent {
         this.currentBallAnimation = expandAnim;
 
         expandAnim.finished
-          .then(() => this.dispatchService.finish())
+          .then(() => {
+            // Même raison que dans `playDropAnimation` : `sheetExpanded` est
+            // passé à `false` dès le début de la phase 'returning' (voir le
+            // constructeur), donc la fermeture CSS du calendrier tourne déjà
+            // en parallèle du retour de la bulle — mais sa durée dynamique
+            // (`expandDurationMs`) dépasse maintenant celle, fixe, de la
+            // bulle. On complète l'attente avant `finish()` pour ne pas
+            // couper la réplique/la grille en plein milieu de leur retour.
+            const cssCloseRemaining = Math.max(
+              0,
+              this.expandDurationMs() - (RETURN_TRAVEL_DURATION + RETURN_EXPAND_DURATION),
+            );
+            if (cssCloseRemaining > 0) {
+              setTimeout(() => this.dispatchService.finish(), cssCloseRemaining);
+            } else {
+              this.dispatchService.finish();
+            }
+          })
           .catch(() => {
             /* animation annulée : rien à faire */
           });

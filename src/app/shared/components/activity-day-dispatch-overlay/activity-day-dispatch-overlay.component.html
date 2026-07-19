@@ -4,7 +4,9 @@
   [class.dispatch-overlay--expanded]="sheetExpanded()"
   [class.dispatch-overlay--retracted]="retracted()">
 
-  <div #sheet class="dispatch-overlay__sheet surface-0" [style.--dispatch-collapsed-h.px]="collapsedHeight()">
+  <div #sheet class="dispatch-overlay__sheet surface-0"
+    [style.--dispatch-collapsed-h.px]="collapsedHeight()"
+    [style.--dispatch-expand-duration.ms]="expandDurationMs()">
 
     <!-- Réplique EXACTE de app-trip-tabs-nav -->
     <div #replicaNav class="dispatch-overlay__replica"> 

@@ -29,10 +29,10 @@ import { ConfirmationService } from 'primeng/api';
  * Délai de "hold" à respecter, poignée enfoncée sans bouger, avant de
  * considérer le geste comme un décrochage vers un autre jour plutôt qu'un
  * réordonnancement classique (voir `startDispatchGesture`). Volontairement
- * généreux : sous ce délai, il doit être impossible de déclencher tout le
- * mécanisme de décrochage par un simple clic/tap.
+ * court : juste assez pour filtrer un simple clic/tap, sans faire attendre
+ * l'utilisateur avant que le décrochage ne démarre.
  */
-const HOLD_DELAY_MS = 450;
+const HOLD_DELAY_MS = 20;
 /** Laisse le temps à l'animation de repli du panneau de se terminer avant de décrocher la carte. */
 const PANEL_COLLAPSE_DELAY_MS = 300;
 
