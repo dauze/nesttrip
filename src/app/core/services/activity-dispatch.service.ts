@@ -5,7 +5,7 @@ import { Injectable, computed, signal } from '@angular/core';
  * déposer sur un autre jour (indépendant du réordonnancement CDK classique
  * à l'intérieur d'un jour, qui reste géré par ailleurs).
  */
-export type DispatchVisualPhase = 'idle' | 'lifted' | 'dropping' | 'returning';
+export type DispatchVisualPhase = 'idle' | 'lifted' | 'dropping' | 'returning' | 'deescalating';
 
 export interface DraggedActivityInfo {
   tripId: string;
@@ -16,6 +16,13 @@ export interface DraggedActivityInfo {
   icon: string;
   color: string;
   photoRef?: string;
+  /**
+   * 'pool' : décrochage classique (hold) depuis TripActivitiesComponent.
+   * 'day' : escalade depuis un cdkDrag de réordonnancement dans un jour
+   * (DayPanelComponent) — gouverne le routage retour/désescalade et le
+   * masquage du preview CDK natif (voir `dayEscalated`).
+   */
+  origin: 'pool' | 'day';
 }
 
 interface PendingDrop {
@@ -43,8 +50,6 @@ export interface ReturnPulse {
 export class ActivityDispatchService {
   // ── Micro-feedback avant même le décrochage (le temps du "hold") ─────────
   readonly pendingActivityId = signal<string | null>(null);
-  private fallbackDayKey: string | null = null;
-  private fallbackDayRect: DOMRect | null = null;
 
   setPending(activityId: string): void {
     this.pendingActivityId.set(activityId);
@@ -70,8 +75,31 @@ export class ActivityDispatchService {
 
   readonly isVisible = computed(() => this.phase() !== 'idle');
 
+  /**
+   * Drag de réordonnancement (cdkDrag) en cours dans un jour, avant même
+   * toute escalade — enregistré par ActivityCardComponent dès le départ du
+   * cdkDrag. Sert uniquement à garder la barre repliée du calendrier
+   * visible en permanence pendant ce drag (voir `sheetVisible`) et à armer
+   * la détection de survol qui déclenche l'escalade.
+   */
+  readonly activeDayDrag = signal<DraggedActivityInfo | null>(null);
+
+  /** true une fois la bulle formée pour un geste jour (après escalade, pas pendant le simple reorder). */
+  readonly dayEscalated = computed(() => this.phase() !== 'idle' && this.dragged()?.origin === 'day');
+
+  /** Pilote l'affichage de la barre repliée du calendrier (visible dès le début d'un drag dans un jour, pas seulement une fois la bulle formée). */
+  readonly sheetVisible = computed(() => this.phase() !== 'idle' || this.activeDayDrag() !== null);
+
   isDraggedActivity(activityId: string): boolean {
     return this.phase() !== 'idle' && this.dragged()?.activityId === activityId;
+  }
+
+  registerActiveDayDrag(info: DraggedActivityInfo): void {
+    this.activeDayDrag.set(info);
+  }
+
+  clearActiveDayDrag(): void {
+    this.activeDayDrag.set(null);
   }
 
   private dayCells = new Map<string, DOMRect>();
@@ -92,27 +120,17 @@ export class ActivityDispatchService {
   private readonly onContextMenuBound = (e: Event) => e.preventDefault();
 
   // ── Ancrages géométriques ────────────────────────────────────────────────
-  // Enregistrés une fois par TripTabsNavComponent / TripDaySwiperComponent :
-  // permettent à l'overlay de connaître, à la demande, le rectangle de départ
-  // de son animation d'ouverture (la barre d'onglets) et la zone de dépose de
-  // secours quand il se rétracte (la vue du jour actif).
+  // Enregistré une fois par TripTabsNavComponent : permet à l'overlay de
+  // connaître, à la demande, le rectangle de départ de son animation
+  // d'ouverture (la barre d'onglets).
   private navBarEl?: HTMLElement;
-  private dayViewEl?: HTMLElement;
 
   registerNavBarElement(el: HTMLElement): void {
     this.navBarEl = el;
   }
 
-  registerDayViewElement(el: HTMLElement): void {
-    this.dayViewEl = el;
-  }
-
   getNavBarRect(): DOMRect | null {
     return this.navBarEl?.getBoundingClientRect() ?? null;
-  }
-
-  getDayViewRect(): DOMRect | null {
-    return this.dayViewEl?.getBoundingClientRect() ?? null;
   }
 
   /** Appelé par l'overlay après chaque rendu/scroll de la grille de jours. */
@@ -127,7 +145,6 @@ export class ActivityDispatchService {
     this.hoveredDayKey.set(null);
     this.hoveredDayRect.set(null);
     this.phase.set('lifted');
-    this.clearFallbackDropZone();
 
     document.addEventListener('pointermove', this.onPointerMoveBound, { passive: true });
     document.addEventListener('pointerup', this.onPointerUpBound, { passive: true });
@@ -147,21 +164,22 @@ export class ActivityDispatchService {
     this.hoveredDayKey.set(null);
     this.hoveredDayRect.set(null);
     this.dropRequested.set(null);
-    this.clearFallbackDropZone();
 
     if (wasReturning && info) {
       this.justReturned.set({ activityId: info.activityId, token: ++this.returnTokenSeq });
     }
   }
 
-  registerFallbackDropZone(dayKey: string, rect: DOMRect): void {
-    this.fallbackDayKey = dayKey;
-    this.fallbackDayRect = rect;
-  }
-
-  clearFallbackDropZone(): void {
-    this.fallbackDayKey = null;
-    this.fallbackDayRect = null;
+  /**
+   * Désescalade un geste jour toujours en cours (le doigt n'a pas été
+   * relâché, c'est un simple éloignement du calendrier) : contrairement à
+   * `handlePointerUp`, aucun `pointerup` réel ne va détacher nos listeners,
+   * il faut le faire explicitement pour rendre la main à cdkDrag.
+   */
+  deescalate(): void {
+    if (this.phase() !== 'lifted') return;
+    this.detachDocumentListeners();
+    this.phase.set('deescalating');
   }
 
   private handlePointerMove(event: PointerEvent): void {
@@ -208,8 +226,12 @@ export class ActivityDispatchService {
       return;
     }
 
-    // Sinon retour (même si une zone de secours existe)
-    this.phase.set('returning');
+    // Sinon retour vers l'origine (pool) ou désescalade sur place (jour) :
+    // pour un geste jour, `originRect` est la position du preview cdkDrag au
+    // moment de l'escalade, devenue obsolète depuis (le drag a continué en
+    // arrière-plan) — y retourner ferait voler la bulle vers un point qui
+    // n'a plus de sens.
+    this.phase.set(info?.origin === 'day' ? 'deescalating' : 'returning');
   }
 
   private detachDocumentListeners(): void {

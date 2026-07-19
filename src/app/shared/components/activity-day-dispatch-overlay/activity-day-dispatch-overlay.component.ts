@@ -7,7 +7,7 @@ import { TabsModule } from 'primeng/tabs';
 import { Day } from '@app/features/trips/trip.model';
 import { TripTab } from '@app/features/trips/trip-detail/trip-tab.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 
 interface MonthGroup {
@@ -24,19 +24,19 @@ const TEXT_COLLAPSE_DURATION = 250;
 /** Phase 2 : la bulle voyage vers le doigt en s'arrondissant, le contour l'enveloppe. */
 const BALL_TRAVEL_DURATION = 300;
 const DROP_DURATION = 250;
-/** Retour "aimant" : trajet inverse puis redéploiement du texte. */
+/** Retour "aimant" (pool uniquement) : trajet inverse vers la carte d'origine puis redéploiement du texte. */
 const RETURN_TRAVEL_DURATION = 300;
 const RETURN_EXPAND_DURATION = 250;
-/** Délai doigt-hors-zone avant rétractation du calendrier. */
-const OUTSIDE_HIDE_DELAY = 250;
-/** Zone basse de l'écran qui redéploie le calendrier rétracté. */
-const NEAR_BOTTOM_REOPEN_PX = 210;
+/** Délai doigt-hors-calendrier avant désescalade d'un geste jour (voir `checkLeaveSheet`). */
+const LEAVE_SHEET_DELAY_MS = 250;
+/** Durée de survol continu de la barre repliée avant d'escalader un cdkDrag en cours vers le calendrier de dispatch. */
+const DAY_DRAG_ESCALATE_HOVER_MS = 150;
+/** Désescalade (jour) : la bulle se redéploie en forme de carte sur place puis s'efface, sans translation vers une origine devenue obsolète. */
+const DAY_DRAG_COLLAPSE_DURATION_MS = 350;
 const EDGE_SCROLL_ZONE = 56;
 const EDGE_SCROLL_SPEED = 8;
 /** FLIP des onglets de jours visibles vers leur bouton de grille correspondant. */
 const TAB_FLIP_DURATION = 300;
-/** Distance (px) sous laquelle le doigt est considéré comme immobile. */
-const STATIONARY_TOLERANCE_PX = 4;
 /**
  * Durée de la "montée" du calendrier (croissance du sheet, effacement de la
  * réplique, apparition de la grille) : les trois animations partagent cette
@@ -104,8 +104,6 @@ export class ActivityDayDispatchOverlayComponent {
   protected readonly thumbFilled = signal(false);
   /** true une fois le calendrier pleinement déployé (morph terminé) : gouverne désormais son affichage par CSS simple. */
   protected readonly sheetExpanded = signal(false);
-  /** true quand le doigt est sorti de la zone du calendrier depuis assez longtemps : le calendrier se rétracte pour laisser déposer directement sur le jour visible. */
-  protected readonly retracted = signal(false);
   /** Hauteur exacte (px) de la vraie barre d'onglets, mesurée à chaque décrochage : permet au clone de la superposer au pixel près avant de grandir. */
   protected readonly collapsedHeight = signal(56);
   /** Durée (ms) partagée par la croissance du sheet, l'effacement de la réplique et la montée de la grille — voir `EXPAND_DURATION_BASE_MS`. */
@@ -132,7 +130,10 @@ export class ActivityDayDispatchOverlayComponent {
   private travelFollowLoop?: number;
   private currentTabFlipAnimations: Animation[] = [];
   private edgeScrollLoop?: number;
-  private outsideTimer?: ReturnType<typeof setTimeout>;
+  /** Délai avant désescalade quand le doigt quitte le calendrier pendant un geste jour déjà escaladé (voir `checkLeaveSheet`). */
+  private leaveTimer?: ReturnType<typeof setTimeout>;
+  /** Survol continu de la barre repliée avant escalade d'un cdkDrag en cours (voir `checkEscalate`). */
+  private escalateTimer?: ReturnType<typeof setTimeout>;
   private sheetTransitionListenerBound = false;
 
   constructor() {
@@ -141,7 +142,7 @@ export class ActivityDayDispatchOverlayComponent {
     // route trips), qu'on l'exécute réellement contre le store.
     effect(() => {
       const req = this.dispatchService.dropRequested();
-      if (!req || this.retracted()) return;
+      if (!req) return;
       this.tripFacade.dispatchActivity(req.tripId, req.activityId, new Date(req.dayKey));
     });
 
@@ -157,32 +158,57 @@ export class ActivityDayDispatchOverlayComponent {
       untracked(() => {
         if (phase === 'lifted') {
           this.sheetExpanded.set(false);
-          this.retracted.set(false);
           this.playFormAnimation();
           this.openSheet();
           this.startEdgeAutoScroll();
         } else if (phase === 'dropping') {
           this.stopEdgeAutoScroll();
-          this.clearOutsideTimer();
+          this.clearLeaveTimer();
           this.cancelTabFlip();
           this.playDropAnimation();
         } else if (phase === 'returning') {
           this.stopEdgeAutoScroll();
-          this.clearOutsideTimer();
+          this.clearLeaveTimer();
           this.sheetExpanded.set(false);
           this.cancelTabFlip();
           this.playReturnAnimation();
+        } else if (phase === 'deescalating') {
+          this.stopEdgeAutoScroll();
+          this.clearLeaveTimer();
+          this.sheetExpanded.set(false);
+          this.cancelTabFlip();
+          this.playDeescalateAnimation();
         }
       });
     });
 
-    // Surveille en direct la position du doigt pour la rétractation du
-    // calendrier — celui-ci DOIT réagir en continu, donc pas d'`untracked` ici.
+    // Surveille en direct la position du doigt pendant un geste jour déjà
+    // escaladé, pour désescalader si le doigt s'éloigne trop longtemps du
+    // calendrier — le pool, lui, ne se replie jamais une fois affiché.
     effect(() => {
       const pointer = this.dispatchService.pointer();
-      if (this.phase() === 'lifted' && this.sheetExpanded()) {
-        this.checkOutsideSheet(pointer);
+      if (this.phase() === 'lifted' && this.sheetExpanded() && this.dragged()?.origin === 'day') {
+        this.checkLeaveSheet(pointer);
       }
+    });
+
+    // Survol pré-escalade : pendant un cdkDrag dans un jour pas encore
+    // escaladé, surveille si le doigt survole la barre repliée assez
+    // longtemps pour déclencher l'escalade vers le calendrier.
+    effect(() => {
+      const pointer = this.dispatchService.pointer();
+      const dragInfo = this.dispatchService.activeDayDrag();
+      if (this.phase() === 'idle' && dragInfo) {
+        this.checkEscalate(pointer, dragInfo);
+      } else {
+        this.clearEscalateTimer();
+      }
+    });
+
+    // Masque le preview cdkDrag natif (règle globale, voir styles.scss) tant
+    // que la bulle a la main sur un geste jour escaladé.
+    effect(() => {
+      document.body.classList.toggle('dispatch-day-escalated', this.dispatchService.dayEscalated());
     });
   }
 
@@ -231,68 +257,73 @@ export class ActivityDayDispatchOverlayComponent {
     }
   }
 
-  // ── Rétractation quand le doigt s'éloigne du calendrier ───────────────────
+  // ── Escalade / désescalade d'un geste jour (cdkDrag → dispatch inter-jours) ──
+  //
+  // Avant escalade, la barre repliée du calendrier est déjà visible (voir
+  // `dispatchService.sheetVisible`) pendant tout cdkDrag dans un jour : elle
+  // sert de cible de survol. Un survol continu de `DAY_DRAG_ESCALATE_HOVER_MS`
+  // déclenche l'escalade (bulle + déploiement du calendrier) depuis la
+  // position courante du preview cdkDrag, qui reste actif en arrière-plan
+  // (juste masqué, voir styles.scss) pour une reprise fluide en cas de
+  // désescalade (`checkLeaveSheet`).
 
-  private checkOutsideSheet(pointer: { x: number; y: number }): void {
-    if (this.retracted()) {
-      if (pointer.y > window.innerHeight - NEAR_BOTTOM_REOPEN_PX) {
-        this.clearOutsideTimer();
-        this.expandSheet();
-      }
+  private checkEscalate(pointer: { x: number; y: number }, info: DraggedActivityInfo): void {
+    const inside = this.isInsideSheet(pointer);
+
+    if (!inside) {
+      this.clearEscalateTimer();
       return;
     }
 
+    if (!this.escalateTimer) {
+      this.escalateTimer = setTimeout(() => {
+        this.escalateTimer = undefined;
+        this.triggerEscalation(info);
+      }, DAY_DRAG_ESCALATE_HOVER_MS);
+    }
+  }
+
+  private clearEscalateTimer(): void {
+    if (this.escalateTimer) {
+      clearTimeout(this.escalateTimer);
+      this.escalateTimer = undefined;
+    }
+  }
+
+  private triggerEscalation(info: DraggedActivityInfo): void {
+    const pointer = this.dispatchService.pointer();
+    const previewEl = document.querySelector<HTMLElement>('.cdk-drag-preview');
+    const rect = previewEl?.getBoundingClientRect()
+      ?? new DOMRect(pointer.x - BALL_SIZE / 2, pointer.y - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE);
+    this.dispatchService.beginLift(info, rect, pointer.x, pointer.y);
+  }
+
+  private checkLeaveSheet(pointer: { x: number; y: number }): void {
+    if (this.isInsideSheet(pointer)) {
+      this.clearLeaveTimer();
+      return;
+    }
+
+    if (!this.leaveTimer) {
+      this.leaveTimer = setTimeout(() => {
+        this.leaveTimer = undefined;
+        this.dispatchService.deescalate();
+      }, LEAVE_SHEET_DELAY_MS);
+    }
+  }
+
+  private clearLeaveTimer(): void {
+    if (this.leaveTimer) {
+      clearTimeout(this.leaveTimer);
+      this.leaveTimer = undefined;
+    }
+  }
+
+  private isInsideSheet(pointer: { x: number; y: number }): boolean {
     const sheetRect = this.sheetRef()?.nativeElement.getBoundingClientRect();
-    const inside = !!sheetRect &&
+    return !!sheetRect &&
       pointer.x >= sheetRect.left && pointer.x <= sheetRect.right &&
       pointer.y >= sheetRect.top - 32 && pointer.y <= sheetRect.bottom;
-
-    if (inside) {
-      this.clearOutsideTimer();
-      return;
-    }
-
-    if (!this.outsideTimer) {
-      const pointerAtStart = pointer;
-      this.outsideTimer = setTimeout(() => {
-        this.outsideTimer = undefined;
-
-        // Sur le pool général (aucun jour "source" d'où l'activité viendrait),
-        // si le doigt est resté immobile hors du calendrier, on ne le replie
-        // pas sous les yeux de l'utilisateur — il hésite probablement plutôt
-        // que d'avoir renoncé au geste.
-        const current = this.dispatchService.pointer();
-        const stayedStill = Math.hypot(current.x - pointerAtStart.x, current.y - pointerAtStart.y) <= STATIONARY_TOLERANCE_PX;
-        if (stayedStill && this.activeDayId() === 'notes') return;
-
-        this.retractSheet();
-      }, OUTSIDE_HIDE_DELAY);
-    }
-  }
-
-  private clearOutsideTimer(): void {
-    if (this.outsideTimer) {
-      clearTimeout(this.outsideTimer);
-      this.outsideTimer = undefined;
-    }
-  }
-
-  private retractSheet(): void {
-    this.retracted.set(true);
-    // Le jour actuellement visible dans le swiper devient l'unique cible de dépose.
-    const rect = this.dispatchService.getDayViewRect();
-    const activeId = this.activeDayId();
-    if (rect && activeId) {
-      this.dispatchService.registerFallbackDropZone(activeId, rect);
-    } else {
-      this.dispatchService.registerDayCells(new Map());
-    }
-  }
-
-  private expandSheet(): void {
-    this.retracted.set(false);
-    this.dispatchService.clearFallbackDropZone();
-    requestAnimationFrame(() => this.captureCellRects());
   }
 
   // ── Auto-scroll en bord de grille pendant le drag ──────────────────────────
@@ -305,7 +336,7 @@ export class ActivityDayDispatchOverlayComponent {
         return;
       }
       const grid = this.gridRef()?.nativeElement;
-      if (grid && this.sheetExpanded() && !this.retracted()) {
+      if (grid && this.sheetExpanded()) {
         const rect = grid.getBoundingClientRect();
         const { y } = this.dispatchService.pointer();
         if (y - rect.top < EDGE_SCROLL_ZONE) {
@@ -743,6 +774,70 @@ export class ActivityDayDispatchOverlayComponent {
           .catch(() => {
             /* animation annulée : rien à faire */
           });
+      })
+      .catch(() => {
+        /* animation annulée : rien à faire */
+      });
+  }
+
+  /**
+   * Désescalade (jour) : contrairement à `playReturnAnimation`, aucune
+   * position d'origine fixe n'a de sens ici (le cdkDrag sous-jacent a
+   * continué de bouger pendant l'escalade) — la bulle se redéploie donc en
+   * forme de carte SUR PLACE (aucune translation) puis s'efface en fondu,
+   * pendant que le preview cdkDrag natif redevient visible au même endroit
+   * (voir l'effet qui retire `dispatch-day-escalated` sur `phase() === 'idle'`).
+   */
+  private playDeescalateAnimation(): void {
+    const ball = this.ballRef()?.nativeElement;
+    const origin = this.dispatchService.originRect();
+    if (!ball || !origin) {
+      this.dispatchService.finish();
+      return;
+    }
+
+    this.formed.set(false);
+    this.thumbFilled.set(false);
+    this.stopTravelFollow();
+    const current = ball.getBoundingClientRect();
+    const thumbSize = Math.min(origin.height, 48);
+    const collapsedWidth = thumbSize;
+    const pos = `translate3d(${current.left}px, ${current.top}px, 0)`;
+
+    this.currentBallAnimation?.cancel();
+    const anim = ball.animate(
+      [
+        {
+          transform: pos,
+          width: `${BALL_SIZE}px`,
+          height: `${BALL_SIZE}px`,
+          borderRadius: '50%',
+          borderTopWidth: '3px',
+          borderRightWidth: '3px',
+          borderBottomWidth: '3px',
+          borderLeftWidth: '3px',
+          opacity: 1,
+        },
+        {
+          transform: pos,
+          width: `${collapsedWidth}px`,
+          height: `${thumbSize}px`,
+          borderRadius: '12px',
+          borderTopWidth: '0px',
+          borderRightWidth: '0px',
+          borderBottomWidth: '0px',
+          borderLeftWidth: '0.4rem',
+          opacity: 0,
+        },
+      ],
+      { duration: DAY_DRAG_COLLAPSE_DURATION_MS, easing: 'ease-in-out', fill: 'forwards' },
+    );
+    this.currentBallAnimation = anim;
+
+    anim.finished
+      .then(() => {
+        ball.classList.remove('dispatch-ball--collapsing');
+        this.dispatchService.finish();
       })
       .catch(() => {
         /* animation annulée : rien à faire */

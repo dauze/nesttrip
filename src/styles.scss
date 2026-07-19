@@ -259,3 +259,15 @@ html.nav-back::view-transition-new(root) {
   from { transform: translateX(0); }
   to { transform: translateX(100%); }
 }
+
+/* ---------------------------------------------------------------------
+ * Dispatch inter-jours depuis un jour (voir ActivityDayDispatchOverlayComponent
+ * / ActivityCardComponent) : pendant l'escalade d'un cdkDrag en cours vers
+ * le calendrier de dispatch, la bulle prend le relais visuel — le preview
+ * cdkDrag natif (rendu hors du template Angular, donc inatteignable par du
+ * SCSS scoped) est masqué le temps que la bulle a la main.
+ * ------------------------------------------------------------------- */
+body.dispatch-day-escalated .cdk-drag-preview {
+  opacity: 0 !important;
+  pointer-events: none;
+}

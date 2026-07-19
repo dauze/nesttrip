@@ -30,6 +30,7 @@ import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
 import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -46,6 +47,7 @@ export class DayPanelComponent {
   private readonly heightSync = inject(SwiperHeightSyncService);
   private readonly mapHost = inject(TripDayMapHostService);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
+  protected readonly dispatchService = inject(ActivityDispatchService);
   
   readonly collapsed = this.googleMapPanelService.isCollapsed;
 
@@ -78,6 +80,8 @@ export class DayPanelComponent {
 
   activitiesCollapsed = false;
   private pendingActivityId?: string;
+  /** Instantané de l'état ouvert/fermé des cartes + de la carte Google, pris au début d'un drag dans ce jour pour tout restaurer à la fin. */
+  private collapseSnapshot?: { cards: Map<string, boolean>; map: boolean };
 
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getActivities(this.dayId())());
 
@@ -213,6 +217,12 @@ export class DayPanelComponent {
   }
 
   onDrop(event: CdkDragDrop<Activity[]>): void {
+    // Garde-fou : pendant une escalade vers le calendrier, le calendrier
+    // déployé peut géométriquement recouvrir cette liste (z-index
+    // supérieur) — cdkDropListDisabled protège déjà contre ça côté
+    // template, ceci n'est qu'une double sécurité bon marché.
+    if (this.dispatchService.dayEscalated()) return;
+
     moveItemInArray(this.activities(), event.previousIndex, event.currentIndex);
     this.tripFacade.reorderActivities(
       this.tripId(),
@@ -284,10 +294,31 @@ export class DayPanelComponent {
 
   onDragStarted() {
     this.lockService.lock();
+
+    const cards = new Map<string, boolean>();
+    for (const card of this.activityCards()) {
+      const id = card.activity()?.id;
+      if (id) cards.set(id, card.collapsed());
+    }
+    this.collapseSnapshot = { cards, map: this.googleMapPanelService.isCollapsed() };
+
+    for (const card of this.activityCards()) card.collapsed.set(true);
+    this.googleMapPanelService.setCollapse(true);
   }
 
   onDragEnded() {
     this.lockService.unlock();
+
+    if (this.collapseSnapshot) {
+      const { cards, map } = this.collapseSnapshot;
+      for (const card of this.activityCards()) {
+        const id = card.activity()?.id;
+        const prev = id ? cards.get(id) : undefined;
+        if (prev !== undefined) card.collapsed.set(prev);
+      }
+      this.googleMapPanelService.setCollapse(map);
+      this.collapseSnapshot = undefined;
+    }
   }
 
   onMapPointClick(point: DayMapPoint) {

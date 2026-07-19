@@ -2,7 +2,7 @@
   class="dispatch-overlay fixed left-0 right-0 top-0 bottom-0"
   [class.dispatch-overlay--active]="dispatchService.isVisible()"
   [class.dispatch-overlay--expanded]="sheetExpanded()"
-  [class.dispatch-overlay--retracted]="retracted()">
+  [class.dispatch-overlay--bar-visible]="dispatchService.activeDayDrag() !== null">
 
   <div #sheet class="dispatch-overlay__sheet surface-0"
     [style.--dispatch-collapsed-h.px]="collapsedHeight()"
@@ -16,7 +16,7 @@
             <p-tab
               #replicaTab
               [value]="tab.id"
-              [class.dispatch-overlay__replica-tab--out]="ti === 0 && sheetExpanded() && !retracted()"
+              [class.dispatch-overlay__replica-tab--out]="ti === 0 && sheetExpanded()"
               [class.dispatch-overlay__replica-tab--flipped]="flippedDayIds().has(tab.id)">
               {{ tab.label }}
             </p-tab>
@@ -37,9 +37,9 @@
                 [text]="hoveredDayKey() !== dayKeyFor(day)" 
                 [severity]="hoveredDayKey() === dayKeyFor(day) ? undefined : 'secondary'"
                 [attr.data-day-key]="dayKeyFor(day)"
-                [style.transitionDelay.ms]="(sheetExpanded() && !retracted()) ? di * 25 : 0"
+                [style.transitionDelay.ms]="sheetExpanded() ? di * 25 : 0"
                 class="dispatch-overlay__day"
-                [class.dispatch-overlay__day--in]="sheetExpanded() && !retracted()"
+                [class.dispatch-overlay__day--in]="sheetExpanded()"
                 [class.dispatch-overlay__day--flip]="flippedDayIds().has(dayKeyFor(day))">
                 <span class="flex flex-column align-items-center gap-0">
                   <span class="text-lg font-bold line-height-1">{{ day.id | date: 'd' }}</span>

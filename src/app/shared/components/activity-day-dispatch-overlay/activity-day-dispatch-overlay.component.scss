@@ -21,12 +21,6 @@
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
-
-  &--retracted.dispatch-overlay--active {
-    backdrop-filter: blur(0px);
-    -webkit-backdrop-filter: blur(0px);
-    background: transparent;
-  }
 }
 
 .dispatch-overlay__sheet {
@@ -50,19 +44,22 @@
 
   transition: max-height var(--dispatch-expand-duration, 700ms) cubic-bezier(0.16, 1, 0.3, 1), border-radius 500ms ease;
 
-  .dispatch-overlay--active & {
+  // `--bar-visible` (drag en cours dans un jour, avant escalade) n'affiche
+  // que la barre repliée, identique visuellement à la vraie barre nav
+  // qu'elle masque au repos — sans voile ni interception de pointeur, qui
+  // restent réservés à `--active` (une fois la bulle formée).
+  .dispatch-overlay--active &,
+  .dispatch-overlay--bar-visible & {
     display: flex;
+  }
+
+  .dispatch-overlay--active & {
     pointer-events: auto;
   }
 
   .dispatch-overlay--expanded & {
     max-height: 50vh;
     border-radius: 28px 28px 0 0;
-  }
-
-  .dispatch-overlay--retracted & {
-    max-height: var(--dispatch-collapsed-h, 56px);
-    border-radius: 0;
   }
 }
 
@@ -83,7 +80,7 @@
   // tout en étant un cran plus rapide qu'elle, aller comme retour.
   transition: opacity calc(var(--dispatch-expand-duration, 700ms) * 0.85) ease, transform calc(var(--dispatch-expand-duration, 700ms) * 0.85) ease;
 
-  .dispatch-overlay--expanded:not(.dispatch-overlay--retracted) & {
+  .dispatch-overlay--expanded & {
     opacity: 0;
     /* Part vers la gauche de l'écran à l'ouverture ; revient symétriquement
        de la gauche à la fermeture (même transition, sens inverse). */
@@ -129,7 +126,7 @@
 
   min-height: 0;
 
-  .dispatch-overlay--expanded:not(.dispatch-overlay--retracted) & {
+  .dispatch-overlay--expanded & {
     opacity: 1;
     /* CORRECTION : On le remonte à sa position finale */
     transform: translateY(0);

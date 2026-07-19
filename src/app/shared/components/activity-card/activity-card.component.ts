@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { CdkDrag, DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragMove, DragDropModule } from '@angular/cdk/drag-drop';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, distinctUntilChanged, filter, map, of, switchMap, take } from 'rxjs';
 
@@ -16,7 +16,7 @@ import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary, PlaceDetails, PlacePhotoRef } from '@app/core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
-import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
 import { ActivityFilesComponent } from './activity-files/activity-files.component';
@@ -134,10 +134,18 @@ export class ActivityCardComponent {
       });
     });
 
-    // Si le CDK Drag (réordonnancement dans un jour) démarre réellement, on
-    // abandonne notre propre "hold" : c'est lui qui possède le geste.
+    // Dans un jour, cdkDrag est toujours seul maître du geste (voir
+    // `startDispatchGesture`) : on se contente d'enregistrer ses infos
+    // auprès du service de dispatch pour permettre une escalade ultérieure
+    // vers le calendrier (survol prolongé de la barre repliée, voir
+    // ActivityDayDispatchOverlayComponent), sans jamais démarrer notre
+    // propre "hold".
     if (this.cdkDrag) {
-      this.cdkDrag.started.pipe(takeUntilDestroyed()).subscribe(() => this.clearHoldTimer());
+      this.cdkDrag.started.pipe(takeUntilDestroyed()).subscribe(() => this.registerDayDragStart());
+      this.cdkDrag.moved.pipe(takeUntilDestroyed()).subscribe((event: CdkDragMove) => {
+        this.dispatchService.pointer.set(event.pointerPosition);
+      });
+      this.cdkDrag.ended.pipe(takeUntilDestroyed()).subscribe(() => this.dispatchService.clearActiveDayDrag());
     }
 
     // Une fois le "retour aimant" terminé pour cette activité, on rouvre le
@@ -264,19 +272,23 @@ export class ActivityCardComponent {
 
   /**
    * Désambiguïsation reorder / décrochage inter-jours :
-   * - Dans un jour (cdkDrag présent) : on laisse CDK Drag démarrer
-   *   normalement si l'utilisateur bouge vite (comportement inchangé). S'il
-   *   maintient la poignée sans bouger le temps du "hold", on lui retire la
-   *   main et on décroche la carte pour la déposer ailleurs.
-   * - Dans le pool général (pas de cdkDrag) : même exigence de "hold", pour
-   *   qu'un simple tap/clic sur la poignée ne déclenche jamais le décrochage.
+   * - Dans un jour (cdkDrag présent) : cdkDrag est TOUJOURS seul maître du
+   *   geste, dès le pointerdown — plus aucune compétition avec un "hold".
+   *   C'est l'overlay qui décide, en survolant sa barre repliée assez
+   *   longtemps, d'escalader ce cdkDrag en cours vers le calendrier (voir
+   *   ActivityDayDispatchOverlayComponent).
+   * - Dans le pool général (pas de cdkDrag) : exigence de "hold" inchangée,
+   *   pour qu'un simple tap/clic sur la poignée ne déclenche jamais le
+   *   décrochage.
    */
   private startDispatchGesture(x: number, y: number): void {
     this.clearHoldTimer();
 
     if (this.cdkDrag) {
       this.cdkDrag.disabled = false;
+      return;
     }
+
     this.dispatchService.setPending(this.activityId());
 
     const cancelHold = () => {
@@ -291,10 +303,32 @@ export class ActivityCardComponent {
       document.removeEventListener('mouseup', cancelHold, true);
       document.removeEventListener('touchend', cancelHold, true);
       this.holdTimer = undefined;
-      if (this.cdkDrag) this.cdkDrag.disabled = true;
       this.dispatchService.clearPending();
       this.beginLift(x, y);
     }, HOLD_DELAY_MS);
+  }
+
+  /** Enregistre les infos de l'activité auprès du service dès qu'un cdkDrag démarre dans un jour, pour permettre l'escalade vers le calendrier. */
+  private registerDayDragStart(): void {
+    const el = this.cardContainer()?.nativeElement;
+    if (!el) return;
+    const info = this.buildDraggedInfo(el);
+    if (info) this.dispatchService.registerActiveDayDrag(info);
+  }
+
+  private buildDraggedInfo(el: HTMLElement): DraggedActivityInfo | null {
+    const activity = this.activity();
+    if (!activity) return null;
+    return {
+      tripId: this.tripId(),
+      activityId: this.activityId(),
+      sourceDayId: this.dayId(),
+      title: activity.title || 'Sans titre',
+      icon: ACTIVITY_TYPE_META[activity.type]?.icon ?? 'pi pi-bolt',
+      color: this.resolveRingColor(el),
+      photoRef: activity.photoRefs?.[0],
+      origin: this.cdkDrag ? 'day' : 'pool',
+    };
   }
 
   private clearHoldTimer(): void {
@@ -321,15 +355,8 @@ export class ActivityCardComponent {
 
     this.wasExpandedBeforeLift = !this.collapsed();
 
-    const info = {
-      tripId: this.tripId(),
-      activityId: this.activityId(),
-      sourceDayId: this.dayId(),
-      title: activity.title || 'Sans titre',
-      icon: ACTIVITY_TYPE_META[activity.type]?.icon ?? 'pi pi-bolt',
-      color: this.resolveRingColor(el),
-      photoRef: activity.photoRefs?.[0],
-    };
+    const info = this.buildDraggedInfo(el);
+    if (!info) return;
 
     if (!this.wasExpandedBeforeLift) {
       this.dispatchService.beginLift(info, el.getBoundingClientRect(), x, y);
