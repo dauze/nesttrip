@@ -10,3 +10,14 @@
   left: 0;
   right: 0;
 }
+
+// Voir ActivityDispatchService.registerDragPortal : conteneur vide, hors du
+// swiper de jours, où DayPanelComponent déplace réellement la carte en cours
+// de réordonnancement intra-jour le temps du geste (un ancêtre swiper-slide
+// applique transform/filter, ce qui casserait un position:fixed posé dessus).
+.drag-portal-anchor {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  pointer-events: none;
+}

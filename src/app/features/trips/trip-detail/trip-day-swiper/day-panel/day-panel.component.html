@@ -24,10 +24,10 @@
       </div>
     </ng-template>
     <div class="flex flex-column gap-2">
-      <div cdkDropList [cdkDropListDisabled]="dispatchService.dayEscalated()" class="flex flex-column gap-2" (cdkDropListDropped)="onDrop($event)">
+      <div class="flex flex-column gap-2">
         @for (activity of activities(); track activity.id) {
-            <app-activity-card cdkDrag (cdkDragStarted)="onDragStarted()" (dragAboutToStart)="onDragStarted()" [scrollOffset]="stickyOffset()" [initCollapsed]="false"
-      (cdkDragEnded)="onDragEnded()" [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
+            <app-activity-card [inDayList]="true" (dragHandleDown)="onDragHandleDown($event)" [scrollOffset]="stickyOffset()" [initCollapsed]="false"
+      [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
       </div>
       @if (activities().length === 0) {

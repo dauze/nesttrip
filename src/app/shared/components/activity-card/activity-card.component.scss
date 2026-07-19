@@ -8,6 +8,13 @@
   border-left-style: inset;
 }
 
+// Empêche le scroll tactile natif de concurrencer le drag manuel (pool ou
+// jour) démarré sur la poignée, en complément du preventDefault() posé sur
+// le pointerdown (voir ActivityCardComponent.updateDragState).
+.drag-handle {
+  touch-action: none;
+}
+
 // Léger feedback pendant le "hold" (avant de savoir si on décroche la carte).
 .card-pending {
   transform: scale(0.97);

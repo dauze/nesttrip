@@ -1,12 +1,11 @@
 import {
-  Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
+  ChangeDetectorRef, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
   input, linkedSignal, output, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { CdkDrag, CdkDragMove, DragDropModule } from '@angular/cdk/drag-drop';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, distinctUntilChanged, filter, map, of, switchMap, take } from 'rxjs';
 
@@ -42,7 +41,7 @@ const DEFAULT_PANEL_TRANSITION = '400ms cubic-bezier(0.86, 0, 0.07, 1)';
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, DragDropModule, Button,
+    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, Button,
     ActivityHeaderComponent, ActivityFormComponent,
     ActivityFilesComponent, ActivityGoogleInfoComponent,
   ],
@@ -55,13 +54,16 @@ export class ActivityCardComponent {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly dispatchService = inject(ActivityDispatchService);
   private readonly destroyRef = inject(DestroyRef);
-  private cdkDrag = inject(CdkDrag, { self: true, optional: true  });
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
   readonly initCollapsed = input.required<boolean>();
   readonly tripId = input.required<string>();
   /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
   readonly dayId = input<Date | undefined>(undefined);
   readonly activityId = input.required<string>();
+  /** true uniquement pour les cartes rendues dans la liste réordonnable d'un jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans `startDispatchGesture`. */
+  readonly inDayList = input(false);
 
   readonly activity = computed(() => this.tripFacade.getActivity(this.activityId())());
 
@@ -71,18 +73,16 @@ export class ActivityCardComponent {
   });
 
   readonly collapsed = linkedSignal(() => this.initCollapsed());;
-  protected dragDisabled = signal(true);
   readonly scrollOffset = input(0);
-  /** Piloté par `collapseInstantly()` : passe à '0ms' le temps d'un repli forcé avant cdkDrag, pour ne jamais laisser CDK cloner un état mi-animé. */
+  /** Piloté par `collapseInstantly()` : passe à '0ms' le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. */
   protected readonly panelTransitionOptions = signal(DEFAULT_PANEL_TRANSITION);
 
   /**
-   * Émis dès le pointerdown sur la poignée, avant que cdkDrag n'ait la
-   * moindre chance de cloner le DOM pour construire son aperçu de drag :
-   * c'est le seul moment où collapser cette carte a un effet visible sur
-   * l'aperçu (cdkDragStarted, lui, fuse trop tard — le clone est déjà pris).
+   * Émis dès le pointerdown sur la poignée quand `inDayList()` est vrai —
+   * DayPanelComponent prend alors intégralement la main sur le geste
+   * (collapse, suivi du pointeur, réordonnancement). Voir `startDispatchGesture`.
    */
-  readonly dragAboutToStart = output<void>();
+  readonly dragHandleDown = output<{ x: number; y: number; pointerId: number; activityId: string }>();
 
   /** true pendant que cette carte est décrochée pour être déposée sur un autre jour. */
   readonly isBeingDragged = computed(() => this.dispatchService.isDraggedActivity(this.activityId()));
@@ -134,31 +134,15 @@ export class ActivityCardComponent {
     afterNextRender(() => {
       const el = this.cardContainer()?.nativeElement;
       if (!el) return;
-      el.addEventListener('mousedown', this.updateDragState, { capture: true });
       // passive:false est nécessaire ici pour pouvoir appeler preventDefault()
       // sur la poignée (sinon le navigateur sélectionne le texte alentour /
-      // démarre son propre drag natif, voir updateDragState ci-dessous).
-      el.addEventListener('touchstart', this.updateDragState, { capture: true, passive: false });
+      // démarre son propre scroll tactile, voir updateDragState ci-dessous).
+      el.addEventListener('pointerdown', this.updateDragState, { capture: true, passive: false });
       this.destroyRef.onDestroy(() => {
-        el.removeEventListener('mousedown', this.updateDragState, true);
-        el.removeEventListener('touchstart', this.updateDragState, true);
+        el.removeEventListener('pointerdown', this.updateDragState, true);
         clearTimeout(this.holdTimer);
       });
     });
-
-    // Dans un jour, cdkDrag est toujours seul maître du geste (voir
-    // `startDispatchGesture`) : on se contente d'enregistrer ses infos
-    // auprès du service de dispatch pour permettre une escalade ultérieure
-    // vers le calendrier (survol prolongé de la barre repliée, voir
-    // ActivityDayDispatchOverlayComponent), sans jamais démarrer notre
-    // propre "hold".
-    if (this.cdkDrag) {
-      this.cdkDrag.started.pipe(takeUntilDestroyed()).subscribe(() => this.registerDayDragStart());
-      this.cdkDrag.moved.pipe(takeUntilDestroyed()).subscribe((event: CdkDragMove) => {
-        this.dispatchService.pointer.set(event.pointerPosition);
-      });
-      this.cdkDrag.ended.pipe(takeUntilDestroyed()).subscribe(() => this.dispatchService.clearActiveDayDrag());
-    }
 
     // Une fois le "retour aimant" terminé pour cette activité, on rouvre le
     // panneau s'il était ouvert avant le décrochage.
@@ -207,23 +191,21 @@ export class ActivityCardComponent {
       });
   }
 
-  onCardPointerDown(event: MouseEvent | TouchEvent): void {
-    const target = event.target as HTMLElement;
-    this.dragDisabled.set(!target.closest('.drag-handle'));
-  }
-
   /**
    * Replie la carte sans transition CSS, pour que la géométrie finale soit
-   * peinte dès la frame suivante. Utilisé avant un cdkDrag : le clone
-   * `.cdk-drag-preview` que CDK prend au premier mouvement franchissant son
-   * seuil doit refléter la taille déjà repliée, pas un état intermédiaire
-   * de l'animation normale (400ms chez PrimeNG Panel) — sinon, sur un drag
-   * rapide, le seuil peut être franchi avant la fin de l'animation et le
-   * preview capture une carte encore (partiellement) dépliée.
+   * peinte dès la frame suivante — utilisé avant tout drag (pool ou jour) pour
+   * qu'un déplacement immédiat, sans délai après le pointerdown, ne capture
+   * jamais une carte encore (partiellement) dépliée.
+   *
+   * `detectChanges()` force ce rendu de façon synchrone plutôt que d'attendre
+   * la détection de changements normale (asynchrone, après le déroulement
+   * complet de l'événement) : DayPanelComponent lit la géométrie de la carte
+   * juste après cet appel, dans le même geste.
    */
   collapseInstantly(): void {
     this.panelTransitionOptions.set('0ms');
     this.collapsed.set(true);
+    this.cdr.detectChanges();
     requestAnimationFrame(() => this.panelTransitionOptions.set(DEFAULT_PANEL_TRANSITION));
   }
 
@@ -271,49 +253,40 @@ export class ActivityCardComponent {
   }
 
   /**
-   * Point d'entrée du geste, déclenché en phase de capture sur pointerdown
-   * (avant que CDK Drag n'ait la moindre chance d'agir), pour garder le
-   * contrôle total sur qui possède le drag : notre mécanisme de décrochage
-   * inter-jours, ou le réordonnancement CDK classique à l'intérieur d'un jour.
+   * Point d'entrée du geste, déclenché en phase de capture sur pointerdown,
+   * pour garder le contrôle total sur qui possède le drag : notre mécanisme
+   * de décrochage inter-jours (pool), ou le réordonnancement intra-jour piloté
+   * par DayPanelComponent.
    */
-  private updateDragState = (event: MouseEvent | TouchEvent) => {
+  private updateDragState = (event: PointerEvent) => {
     const target = event.target as HTMLElement;
     const onHandle = !!target.closest('.drag-handle');
+    if (!onHandle) return;
 
-    if (!onHandle) {
-      if (this.cdkDrag) this.cdkDrag.disabled = true;
-      return;
-    }
-
-    // Empêche la sélection de texte et le drag natif du navigateur que le
+    // Empêche la sélection de texte et le scroll tactile natif que le
     // pointerdown sur la poignée déclencherait sinon (symptômes observés :
     // texte sélectionné sous le doigt, interface qui reste "en drag" après
     // le relâchement).
     event.preventDefault();
 
-    const point = 'touches' in event ? event.touches[0] : event;
-    if (!point) return;
-
-    this.startDispatchGesture(point.clientX, point.clientY);
+    this.startDispatchGesture(event.clientX, event.clientY, event.pointerId);
   };
 
   /**
    * Désambiguïsation reorder / décrochage inter-jours :
-   * - Dans un jour (cdkDrag présent) : cdkDrag est TOUJOURS seul maître du
-   *   geste, dès le pointerdown — plus aucune compétition avec un "hold".
-   *   C'est l'overlay qui décide, en survolant sa barre repliée assez
-   *   longtemps, d'escalader ce cdkDrag en cours vers le calendrier (voir
+   * - Dans un jour (`inDayList()`) : DayPanelComponent est TOUJOURS seul
+   *   maître du geste dès le pointerdown — plus aucune compétition avec un
+   *   "hold". C'est l'overlay qui décide, en survolant sa barre repliée assez
+   *   longtemps, d'escalader ce drag en cours vers le calendrier (voir
    *   ActivityDayDispatchOverlayComponent).
-   * - Dans le pool général (pas de cdkDrag) : exigence de "hold" inchangée,
-   *   pour qu'un simple tap/clic sur la poignée ne déclenche jamais le
-   *   décrochage.
+   * - Dans le pool général : exigence de "hold" inchangée, pour qu'un simple
+   *   tap/clic sur la poignée ne déclenche jamais le décrochage.
    */
-  private startDispatchGesture(x: number, y: number): void {
+  private startDispatchGesture(x: number, y: number, pointerId: number): void {
     this.clearHoldTimer();
 
-    if (this.cdkDrag) {
-      this.cdkDrag.disabled = false;
-      this.dragAboutToStart.emit();
+    if (this.inDayList()) {
+      this.dragHandleDown.emit({ x, y, pointerId, activityId: this.activityId() });
       return;
     }
 
@@ -336,12 +309,9 @@ export class ActivityCardComponent {
     }, HOLD_DELAY_MS);
   }
 
-  /** Enregistre les infos de l'activité auprès du service dès qu'un cdkDrag démarre dans un jour, pour permettre l'escalade vers le calendrier. */
-  private registerDayDragStart(): void {
-    const el = this.cardContainer()?.nativeElement;
-    if (!el) return;
-    const info = this.buildDraggedInfo(el);
-    if (info) this.dispatchService.registerActiveDayDrag(info, el);
+  /** Construit l'info de drag pour cette carte, à l'usage de DayPanelComponent au démarrage d'un réordonnancement intra-jour (voir `registerActiveDayDrag`). */
+  buildDayDragInfo(): DraggedActivityInfo | null {
+    return this.buildDraggedInfo(this.element);
   }
 
   private buildDraggedInfo(el: HTMLElement): DraggedActivityInfo | null {
@@ -355,7 +325,7 @@ export class ActivityCardComponent {
       icon: ACTIVITY_TYPE_META[activity.type]?.icon ?? 'pi pi-bolt',
       color: this.resolveRingColor(el),
       photoRef: activity.photoRefs?.[0],
-      origin: this.cdkDrag ? 'day' : 'pool',
+      origin: this.inDayList() ? 'day' : 'pool',
     };
   }
 
@@ -426,5 +396,81 @@ export class ActivityCardComponent {
 
   get element(): HTMLElement {
     return this.cardContainer().nativeElement;
+  }
+
+  /** Le vrai élément hôte `<app-activity-card>` — le flex-item que DayPanelComponent doit repositionner/déplacer, pas `cardContainer` (voir `setDragTransform`). */
+  get hostElement(): HTMLElement {
+    return this.hostRef.nativeElement;
+  }
+
+  /**
+   * Sort la carte du flux (position:fixed) à sa position ÉCRAN actuelle
+   * (aucun saut visuel) : posé sur le HOST, pas `cardContainer`, pour qu'un
+   * item `position:fixed` soit intégralement retiré de la composition flex
+   * (y compris le `gap`) et que la liste referme proprement l'espace laissé.
+   * DayPanelComponent est responsable de déplacer `hostElement` vers un point
+   * d'ancrage hors du swiper de jours avant d'appeler cette méthode (un
+   * `swiper-slide` ancêtre applique transform/filter, ce qui casserait ce
+   * `position:fixed` s'il restait dans l'arborescence du swiper).
+   */
+  setDragTransform(rect: DOMRect): void {
+    const style = this.hostRef.nativeElement.style;
+    style.position = 'fixed';
+    style.left = `${rect.left}px`;
+    style.top = `${rect.top}px`;
+    style.width = `${rect.width}px`;
+    style.margin = '0';
+    style.zIndex = '1150';
+    style.transform = 'translate3d(0px, 0px, 0)';
+    style.pointerEvents = 'none';
+  }
+
+  /** Décale la carte depuis sa position figée par `setDragTransform`, en suivant le pointeur. */
+  updateDragTransform(dx: number, dy: number): void {
+    this.hostRef.nativeElement.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+  }
+
+  /**
+   * Masque la carte pendant qu'elle est `position:fixed` : utilisé le temps
+   * d'une escalade vers le calendrier de dispatch (la bulle de
+   * ActivityDayDispatchOverlayComponent prend alors le relais visuel), pour
+   * ne pas avoir la carte figée ET la bulle visibles en même temps.
+   */
+  setDragHidden(hidden: boolean): void {
+    this.hostRef.nativeElement.style.visibility = hidden ? 'hidden' : '';
+  }
+
+  /** Annule `setDragTransform` (et un éventuel `setDragHidden`) : la carte reprend sa place normale dans le flux. */
+  clearDragTransform(): void {
+    const style = this.hostRef.nativeElement.style;
+    style.position = '';
+    style.left = '';
+    style.top = '';
+    style.width = '';
+    style.margin = '';
+    style.zIndex = '';
+    style.transform = '';
+    style.pointerEvents = '';
+    style.visibility = '';
+  }
+
+  /**
+   * Décale visuellement cette carte (voisine de la carte draguée, jamais
+   * elle-même) pour ouvrir/refermer la place laissée par le réordonnancement
+   * en cours — voir DayPanelComponent.applySiblingOffsets. Une simple
+   * transition CSS déclarative suffit ici (contrairement à `settleCard`) :
+   * un décalage uniforme d'une carte encore collapsée n'a pas besoin de FLIP.
+   */
+  setShiftOffset(px: number): void {
+    const style = this.hostRef.nativeElement.style;
+    style.transition = 'transform 200ms ease';
+    style.transform = px ? `translateY(${px}px)` : '';
+  }
+
+  /** Annule `setShiftOffset`. */
+  clearShiftOffset(): void {
+    const style = this.hostRef.nativeElement.style;
+    style.transition = '';
+    style.transform = '';
   }
 }

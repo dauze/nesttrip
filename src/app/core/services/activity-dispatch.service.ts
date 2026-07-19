@@ -144,6 +144,24 @@ export class ActivityDispatchService {
     return this.navBarEl?.getBoundingClientRect() ?? null;
   }
 
+  /**
+   * Point d'ancrage `position:fixed` hors du swiper de jours (enregistré une
+   * fois par TripDetailComponent, en frère de app-activity-day-dispatch-overlay)
+   * — voir DayPanelComponent : la carte réellement draguée pendant un
+   * réordonnancement intra-jour y est déplacée le temps du geste, car un
+   * `swiper-slide` ancêtre applique `transform`/`filter`, ce qui créerait un
+   * containing block local et casserait tout `position:fixed` posé dessus.
+   */
+  private dragPortalEl?: HTMLElement;
+
+  registerDragPortal(el: HTMLElement): void {
+    this.dragPortalEl = el;
+  }
+
+  getDragPortalElement(): HTMLElement | null {
+    return this.dragPortalEl ?? null;
+  }
+
   /** Appelé par l'overlay après chaque rendu/scroll de la grille de jours. */
   registerDayCells(cells: Map<string, DOMRect>): void {
     this.dayCells = cells;

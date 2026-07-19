@@ -1,20 +1,20 @@
-import { 
-  afterNextRender, 
-  Component, 
-  computed, 
-  DestroyRef, 
-  effect, 
-  ElementRef, 
-  inject, 
-  input, 
-  NgZone, 
-  Signal, 
-  signal, 
-  viewChild, 
-  viewChildren 
+import {
+  afterNextRender,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  NgZone,
+  Signal,
+  signal,
+  viewChild,
+  viewChildren
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
-import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
@@ -32,10 +32,33 @@ import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.serv
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 
+/** État d'un réordonnancement manuel en cours dans un jour — voir DayPanelComponent.onDragHandleDown. */
+interface DayDragState {
+  readonly pointerId: number;
+  readonly card: ActivityCardComponent;
+  readonly activityId: string;
+  readonly fromIndex: number;
+  targetIndex: number;
+  thresholdCrossed: boolean;
+  /** Dernier état d'escalade observé — détecte la transition pour masquer/réafficher la carte une seule fois (voir `handleDragPointerMove`). */
+  wasEscalated: boolean;
+  readonly startClientX: number;
+  readonly startClientY: number;
+  /** Position du pointeur à l'instant où le seuil a été franchi — sert de référence pour le `translate3d` appliqué à chaque frame. */
+  baseClientX: number;
+  baseClientY: number;
+  /** Offsets (id, top document-relatif) de toutes les cartes, figés une seule fois au franchissement du seuil — les voisines ne bougent pas dans le DOM pendant le drag, seul leur décalage visuel change. */
+  offsets: { id: string; top: number }[];
+  /** Distance top-à-top entre deux cartes consécutives (déjà collapsées) — sert de grille uniforme pour le hit-test. */
+  slotHeight: number;
+  originParent: Node | null;
+  originNextSibling: ChildNode | null;
+}
+
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, DragDropModule, PanelModule, Button, MessageModule, Skeleton],
+  imports: [TimelineComponent, ActivityCardComponent, PanelModule, Button, MessageModule, Skeleton],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })
@@ -44,6 +67,7 @@ export class DayPanelComponent {
   private readonly lockService = inject(SwiperLockService);
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly heightSync = inject(SwiperHeightSyncService);
   private readonly mapHost = inject(TripDayMapHostService);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
@@ -77,6 +101,23 @@ export class DayPanelComponent {
   private readonly ACTIVITY_SCROLL_GAP = 8;
   private readonly SNAP_DELAY = 500;
   private readonly SNAP_DISTANCE = 60;
+  /**
+   * Zone d'auto-scroll (px depuis le haut/bas de l'ÉCRAN, pas du conteneur)
+   * pendant un réordonnancement manuel dans le jour. Volontairement large :
+   * la barre de navigation en bas d'écran arme, elle, sa propre escalade vers
+   * le changement de jour après 450ms de survol (voir
+   * ActivityDayDispatchOverlayComponent.checkEscalate) — une zone de scroll
+   * trop étroite forcerait à s'en approcher au point de déclencher les deux
+   * cinématiques en même temps.
+   */
+  private readonly DAY_DRAG_SCROLL_ZONE = 140;
+  private readonly DAY_DRAG_SCROLL_MAX_SPEED = 18;
+  private readonly DAY_DRAG_MOVE_THRESHOLD = 5;
+  private dayDragScrollLoop?: number;
+  /** Position Y courante du pointeur pendant un drag, alimentée par `handleDragPointerMove` — utilisée par la boucle d'auto-scroll. */
+  private pointerY = 0;
+  /** État du réordonnancement manuel en cours dans ce jour (voir `onDragHandleDown`), `undefined` en dehors d'un drag. */
+  private drag?: DayDragState;
 
   activitiesCollapsed = false;
   private pendingActivityId?: string;
@@ -180,6 +221,8 @@ export class DayPanelComponent {
         window.removeEventListener('touchmove', this.wakeLoop);
         window.removeEventListener('wheel', this.wakeLoop);
         if (this.rafLoop) cancelAnimationFrame(this.rafLoop);
+        this.stopDayDragAutoScroll();
+        if (this.drag) this.abortDrag(this.drag);
       });
     });
   }
@@ -214,22 +257,6 @@ export class DayPanelComponent {
         }
       }
     }, 50);
-  }
-
-  onDrop(event: CdkDragDrop<Activity[]>): void {
-    // Garde-fou : pendant une escalade vers le calendrier, le calendrier
-    // déployé peut géométriquement recouvrir cette liste (z-index
-    // supérieur) — cdkDropListDisabled protège déjà contre ça côté
-    // template, ceci n'est qu'une double sécurité bon marché.
-    if (this.dispatchService.dayEscalated()) return;
-
-    moveItemInArray(this.activities(), event.previousIndex, event.currentIndex);
-    this.tripFacade.reorderActivities(
-      this.tripId(),
-      this.dayId(),
-      this.activities().map((a) => a.id),
-    );
-    queueMicrotask(() => this.wakeLoop());
   }
 
   addActivity() {
@@ -292,65 +319,312 @@ export class DayPanelComponent {
     }
   }
 
-  onDragStarted() {
-    // Idempotent : déjà déclenché au pointerdown sur la poignée (voir
-    // dragAboutToStart) — cdkDragStarted peut refuser un peu plus tard sur
-    // le même geste, on ignore ce second appel pour ne pas écraser le
-    // snapshot avec un état déjà collapsé.
-    if (this.collapseSnapshot) return;
+  /**
+   * Point d'entrée du réordonnancement manuel intra-jour, déclenché par le
+   * pointerdown sur la poignée d'une carte (voir `ActivityCardComponent.dragHandleDown`).
+   * Collapse toutes les cartes immédiatement (comme avant), puis attend un
+   * léger seuil de mouvement avant de sortir réellement la carte du flux —
+   * voir `handleDragPointerMove`/`beginCardFollow`.
+   */
+  onDragHandleDown(ev: { x: number; y: number; pointerId: number; activityId: string }): void {
+    if (this.drag) return; // un seul geste de reorder actif à la fois
+
+    const card = this.activityCards().find(c => c.activityId() === ev.activityId);
+    const fromIndex = this.activities().findIndex(a => a.id === ev.activityId);
+    if (!card || fromIndex === -1) return;
 
     this.lockService.lock();
 
     const cards = new Map<string, boolean>();
-    for (const card of this.activityCards()) {
-      const id = card.activity()?.id;
-      if (id) cards.set(id, card.collapsed());
+    for (const c of this.activityCards()) {
+      const id = c.activity()?.id;
+      if (id) cards.set(id, c.collapsed());
     }
     this.collapseSnapshot = { cards, map: this.googleMapPanelService.isCollapsed() };
 
-    // collapseInstantly (pas juste collapsed.set(true)) : sur un drag
-    // rapide, cdkDrag peut franchir son seuil de déclenchement avant la fin
-    // de l'animation normale du panneau (400ms) et cloner une carte encore
-    // (partiellement) dépliée pour son `.cdk-drag-preview`.
-    for (const card of this.activityCards()) card.collapseInstantly();
+    // collapseInstantly (pas juste collapsed.set(true)) : sur un drag rapide,
+    // la géométrie doit déjà refléter l'état replié dès la frame suivante,
+    // avant que le moindre mouvement ne soit interprété (voir sa doc).
+    for (const c of this.activityCards()) c.collapseInstantly();
     this.googleMapPanelService.setCollapse(true);
 
-    this.armReleaseFallback();
+    this.drag = {
+      pointerId: ev.pointerId,
+      card,
+      activityId: ev.activityId,
+      fromIndex,
+      targetIndex: fromIndex,
+      thresholdCrossed: false,
+      startClientX: ev.x,
+      startClientY: ev.y,
+      baseClientX: ev.x,
+      baseClientY: ev.y,
+      offsets: [],
+      slotHeight: 0,
+      originParent: null,
+      originNextSibling: null,
+      wasEscalated: false,
+    };
+    this.pointerY = ev.y;
+
+    document.addEventListener('pointermove', this.handleDragPointerMove, { passive: false });
+    document.addEventListener('pointerup', this.handleDragPointerUp, { passive: true });
+    document.addEventListener('pointercancel', this.handleDragPointerUp, { passive: true });
+
+    this.startDayDragAutoScroll();
   }
 
-  onDragEnded() {
-    this.lockService.unlock();
+  private readonly handleDragPointerMove = (event: PointerEvent): void => {
+    const drag = this.drag;
+    if (!drag || event.pointerId !== drag.pointerId) return;
 
-    if (this.collapseSnapshot) {
-      const { cards, map } = this.collapseSnapshot;
-      for (const card of this.activityCards()) {
-        const id = card.activity()?.id;
-        const prev = id ? cards.get(id) : undefined;
-        if (prev !== undefined) card.collapsed.set(prev);
-      }
-      this.googleMapPanelService.setCollapse(map);
-      this.collapseSnapshot = undefined;
+    this.pointerY = event.clientY;
+
+    // Garde-fou : la liste a changé de façon inattendue en plein geste (ex.
+    // suppression/dispatch concurrent) — on annule proprement plutôt que de
+    // raisonner sur un fromIndex/offsets devenus obsolètes.
+    if (this.activities().findIndex(a => a.id === drag.activityId) === -1) {
+      this.abortDrag(drag);
+      return;
+    }
+
+    if (!drag.thresholdCrossed) {
+      const dx = event.clientX - drag.startClientX;
+      const dy = event.clientY - drag.startClientY;
+      if (Math.hypot(dx, dy) < this.DAY_DRAG_MOVE_THRESHOLD) return;
+      this.beginCardFollow(drag, event);
+    }
+
+    if (event.cancelable) event.preventDefault();
+
+    this.dispatchService.pointer.set({ x: event.clientX, y: event.clientY });
+
+    // Pendant l'escalade (survol prolongé de la barre de jours), la bulle a
+    // la main : on met le suivi local en pause sans le tuer (voir aussi
+    // `startDayDragAutoScroll`), la reprise est automatique à la désescalade.
+    // La carte, elle, est masquée le temps de l'escalade pour ne jamais
+    // l'avoir visible en même temps que la bulle (voir `setDragHidden`).
+    const escalated = this.dispatchService.dayEscalated();
+    if (escalated !== drag.wasEscalated) {
+      drag.wasEscalated = escalated;
+      drag.card.setDragHidden(escalated);
+    }
+    if (escalated) return;
+
+    drag.card.updateDragTransform(event.clientX - drag.baseClientX, event.clientY - drag.baseClientY);
+    this.updateTargetIndex(drag, event);
+  };
+
+  private readonly handleDragPointerUp = (event: PointerEvent): void => {
+    const drag = this.drag;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+
+    this.detachDragListeners();
+    this.stopDayDragAutoScroll();
+    this.lockService.unlock();
+    this.dispatchService.clearActiveDayDrag();
+    this.drag = undefined;
+
+    if (!drag.thresholdCrossed) {
+      // Simple tap sur la poignée : rien à committer, juste rouvrir/refermer
+      // les cartes comme avant le geste.
+      this.restoreCollapseSnapshot();
+      return;
+    }
+
+    for (const c of this.activityCards()) {
+      if (c.activity()?.id !== drag.activityId) c.clearShiftOffset();
+    }
+
+    if (drag.targetIndex !== drag.fromIndex) {
+      const ids = this.activities().map(a => a.id);
+      const [movedId] = ids.splice(drag.fromIndex, 1);
+      ids.splice(drag.targetIndex, 0, movedId);
+      this.tripFacade.reorderActivities(this.tripId(), this.dayId(), ids);
+      // Flush synchrone : @for doit avoir replacé le vrai nœud de la carte
+      // dans son nouveau slot AVANT la mesure "after" de `settleCard`.
+      this.cdr.detectChanges();
+    } else if (drag.originParent) {
+      drag.originParent.insertBefore(drag.card.hostElement, drag.originNextSibling);
+    }
+
+    this.settleCard(drag.card);
+    this.restoreCollapseSnapshot();
+    queueMicrotask(() => this.wakeLoop());
+  };
+
+  /** Sort réellement la carte du flux : mesure sa position écran actuelle, la déplace hors du swiper (voir ActivityDispatchService.registerDragPortal) et fige les offsets des voisines pour le hit-test. */
+  private beginCardFollow(drag: DayDragState, event: PointerEvent): void {
+    drag.thresholdCrossed = true;
+    drag.baseClientX = event.clientX;
+    drag.baseClientY = event.clientY;
+
+    const el = drag.card.hostElement;
+    const rect = el.getBoundingClientRect();
+    drag.originParent = el.parentNode;
+    drag.originNextSibling = el.nextSibling;
+
+    const freshOffsets = this.getFreshCardOffsets();
+    drag.offsets = freshOffsets.map(o => ({ id: o.card.activity()?.id ?? '', top: o.top }));
+    drag.slotHeight = freshOffsets.length > 1
+      ? freshOffsets[1].top - freshOffsets[0].top
+      : (freshOffsets[0]?.height ?? rect.height);
+
+    const portal = this.dispatchService.getDragPortalElement();
+    if (portal) portal.appendChild(el);
+
+    drag.card.setDragTransform(rect);
+
+    const info = drag.card.buildDayDragInfo();
+    if (info) this.dispatchService.registerActiveDayDrag(info, drag.card.element);
+  }
+
+  /** Recalcule l'index de dépose par hit-test contre les offsets figés au franchissement du seuil, et ne réapplique le décalage visuel des voisines que si l'index a changé. */
+  private updateTargetIndex(drag: DayDragState, event: PointerEvent): void {
+    if (!drag.offsets.length || drag.slotHeight <= 0) return;
+
+    const docY = event.clientY + window.scrollY;
+    const relative = docY - drag.offsets[0].top;
+    let targetIndex = Math.round(relative / drag.slotHeight);
+    targetIndex = Math.max(0, Math.min(drag.offsets.length - 1, targetIndex));
+
+    if (targetIndex === drag.targetIndex) return;
+    drag.targetIndex = targetIndex;
+    this.applySiblingOffsets(drag);
+  }
+
+  /** Décale visuellement (translateY CSS, transition déclarative) les cartes voisines pour ouvrir/refermer la place de la carte draguée — jamais la carte elle-même (voir `updateDragTransform`). */
+  private applySiblingOffsets(drag: DayDragState): void {
+    const { fromIndex, targetIndex, slotHeight, activityId } = drag;
+    const order = this.activities();
+
+    for (const c of this.activityCards()) {
+      const id = c.activity()?.id;
+      if (!id || id === activityId) continue;
+
+      const index = order.findIndex(a => a.id === id);
+      let offset = 0;
+      if (targetIndex > fromIndex && index > fromIndex && index <= targetIndex) offset = -slotHeight;
+      else if (targetIndex < fromIndex && index >= targetIndex && index < fromIndex) offset = slotHeight;
+
+      c.setShiftOffset(offset);
     }
   }
 
   /**
-   * Filet de sécurité : si le pointer est relâché avant que cdkDrag n'ait
-   * franchi son seuil de déclenchement (simple clic sur la poignée, sans
-   * déplacement), ni cdkDragStarted ni cdkDragEnded ne fusent jamais — sans
-   * ça, les cartes resteraient collapsées indéfiniment.
+   * Animation de "pose" jouée une seule fois au relâchement (pas à chaque
+   * swap) : mesure la position écran de la carte encore figée (`position:fixed`,
+   * suit le doigt), retire ce figeage, puis anime le delta vers 0 — même
+   * technique FLIP que `runTabFlip` dans ActivityDayDispatchOverlayComponent.
    */
-  private armReleaseFallback(): void {
-    const onRelease = () => {
-      document.removeEventListener('mouseup', onRelease, true);
-      document.removeEventListener('touchend', onRelease, true);
-      this.onDragEnded();
-    };
-    document.addEventListener('mouseup', onRelease, true);
-    document.addEventListener('touchend', onRelease, true);
+  private settleCard(card: ActivityCardComponent): void {
+    const before = card.hostElement.getBoundingClientRect();
+    card.clearDragTransform();
+    const after = card.hostElement.getBoundingClientRect();
+
+    const dx = before.left - after.left;
+    const dy = before.top - after.top;
+    if (dx === 0 && dy === 0) return;
+
+    card.hostElement.animate(
+      [
+        { transform: `translate3d(${dx}px, ${dy}px, 0)` },
+        { transform: 'translate3d(0, 0, 0)' },
+      ],
+      { duration: 200, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+    );
+  }
+
+  private restoreCollapseSnapshot(): void {
+    if (!this.collapseSnapshot) return;
+    const { cards, map } = this.collapseSnapshot;
+    for (const card of this.activityCards()) {
+      const id = card.activity()?.id;
+      const prev = id ? cards.get(id) : undefined;
+      if (prev !== undefined) card.collapsed.set(prev);
+    }
+    this.googleMapPanelService.setCollapse(map);
+    this.collapseSnapshot = undefined;
+  }
+
+  /** Annule proprement un geste en cours (mutation externe de la liste, ou destruction du composant) : remet la carte à sa place, sans rien committer au store. */
+  private abortDrag(drag: DayDragState): void {
+    this.detachDragListeners();
+    this.stopDayDragAutoScroll();
+    this.lockService.unlock();
+    this.dispatchService.clearActiveDayDrag();
+    if (this.drag === drag) this.drag = undefined;
+
+    for (const c of this.activityCards()) {
+      if (c.activity()?.id !== drag.activityId) c.clearShiftOffset();
+    }
+
+    if (drag.thresholdCrossed) {
+      if (drag.originParent) drag.originParent.insertBefore(drag.card.hostElement, drag.originNextSibling);
+      drag.card.clearDragTransform();
+    }
+
+    this.restoreCollapseSnapshot();
+  }
+
+  private detachDragListeners(): void {
+    document.removeEventListener('pointermove', this.handleDragPointerMove);
+    document.removeEventListener('pointerup', this.handleDragPointerUp);
+    document.removeEventListener('pointercancel', this.handleDragPointerUp);
   }
 
   onMapPointClick(point: DayMapPoint) {
     this.focusActivity(point.activityId);
+  }
+
+  /**
+   * Auto-scroll de la fenêtre pendant un réordonnancement manuel dans ce
+   * jour, sur une zone bien plus large que celle (5%) de l'ancien cdkDropList
+   * — voir `DAY_DRAG_SCROLL_ZONE`. Vitesse proportionnelle à la profondeur du
+   * pointeur dans la zone, pour rester doux près du seuil et rapide tout
+   * contre le bord. S'arrête dès l'escalade vers le changement de jour (le
+   * drag local est alors en pause, seule la bulle de
+   * ActivityDayDispatchOverlayComponent est pilotée par l'utilisateur) pour
+   * ne pas faire défiler la liste en arrière-plan pendant cette cinématique.
+   */
+  private startDayDragAutoScroll(): void {
+    this.stopDayDragAutoScroll();
+
+    const step = () => {
+      // Pendant l'escalade (survol prolongé de la barre de jours), le scroll
+      // de CE jour n'a plus de sens (c'est la grille du calendrier qui
+      // défile, voir ActivityDayDispatchOverlayComponent) — on met juste la
+      // boucle en pause SANS la tuer : le geste sous-jacent reste actif en
+      // arrière-plan, et une désescalade (le doigt s'éloigne de la barre sans
+      // être relâché) doit pouvoir la faire reprendre.
+      if (!this.dispatchService.dayEscalated()) {
+        const y = this.pointerY;
+        const zone = this.DAY_DRAG_SCROLL_ZONE;
+        let delta = 0;
+
+        if (y < zone) {
+          delta = -this.DAY_DRAG_SCROLL_MAX_SPEED * (1 - y / zone);
+        } else if (y > window.innerHeight - zone) {
+          delta = this.DAY_DRAG_SCROLL_MAX_SPEED * (1 - (window.innerHeight - y) / zone);
+        }
+
+        if (delta !== 0) {
+          window.scrollBy(0, delta);
+          this.wakeLoop();
+        }
+      }
+
+      this.dayDragScrollLoop = requestAnimationFrame(step);
+    };
+
+    this.dayDragScrollLoop = requestAnimationFrame(step);
+  }
+
+  private stopDayDragAutoScroll(): void {
+    if (this.dayDragScrollLoop) {
+      cancelAnimationFrame(this.dayDragScrollLoop);
+      this.dayDragScrollLoop = undefined;
+    }
   }
 
   private wakeLoop = (): void => {

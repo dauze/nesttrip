@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialog } from 'primeng/confirmdialog';
@@ -13,6 +13,7 @@ import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.compon
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
+import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 
 @Component({
   selector: 'app-trip-detail',
@@ -36,9 +37,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly location = inject(Location);
+  private readonly dispatchService = inject(ActivityDispatchService);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
+  private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
 
   readonly activeDay = signal<string>('notes');
   private initializedTripId: string | null = null;
@@ -68,6 +71,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   ]);
 
   constructor() {
+    afterNextRender(() => {
+      const el = this.dragPortalRef()?.nativeElement;
+      if (el) this.dispatchService.registerDragPortal(el);
+    });
+
     effect(() => {
       const trip = this.facade.activeTrip();
       const loading = this.facade.activeTripLoading();

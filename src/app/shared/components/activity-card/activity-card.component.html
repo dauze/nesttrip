@@ -1,7 +1,5 @@
 @if (activity(); as activity) {
   <div #cardContainer
-       (mousedown)="onCardPointerDown($event)"
-       (touchstart)="onCardPointerDown($event)"
        [class.not-dispatched]="!dayId()"
        [class.card-lifted]="isBeingDragged()"
        [class.card-pending]="isPendingLift()">

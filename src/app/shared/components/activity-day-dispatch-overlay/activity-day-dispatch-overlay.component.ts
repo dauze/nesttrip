@@ -208,12 +208,6 @@ export class ActivityDayDispatchOverlayComponent {
         this.clearEscalateTimer();
       }
     });
-
-    // Masque le preview cdkDrag natif (règle globale, voir styles.scss) tant
-    // que la bulle a la main sur un geste jour escaladé.
-    effect(() => {
-      document.body.classList.toggle('dispatch-day-escalated', this.dispatchService.dayEscalated());
-    });
   }
 
   protected dayKeyFor(day: Day): string {
@@ -296,18 +290,14 @@ export class ActivityDayDispatchOverlayComponent {
 
   private triggerEscalation(info: DraggedActivityInfo): void {
     const pointer = this.dispatchService.pointer();
-    // `.cdk-drag-preview` suit le doigt en direct (transform recalculé à
-    // chaque pointermove par CDK) : c'est la SEULE source qui donne la
-    // position actuelle du geste — `sourceEl` (la carte dans la liste,
-    // masquée mais toujours à sa position d'origine) donnerait un point de
-    // départ figé loin du doigt. Sa taille est désormais fiable elle aussi,
-    // puisque la carte est repliée SANS transition avant même le seuil de
-    // déclenchement de cdkDrag (voir `collapseInstantly`) : le clone que
-    // CDK prend à ce moment-là est donc déjà à la bonne taille.
-    const previewEl = document.querySelector<HTMLElement>('.cdk-drag-preview');
+    // `activeDayDragElement()` est le vrai nœud de la carte, en train de
+    // suivre le doigt en direct (`position:fixed`, voir
+    // ActivityCardComponent.setDragTransform/DayPanelComponent) — plus de
+    // clone de preview séparé à récupérer, sa géométrie est donc toujours à
+    // jour et déjà à la bonne taille (carte repliée avant même le seuil de
+    // déclenchement du drag, voir `collapseInstantly`).
     const sourceEl = this.dispatchService.activeDayDragElement();
-    const rect = previewEl?.getBoundingClientRect()
-      ?? sourceEl?.getBoundingClientRect()
+    const rect = sourceEl?.getBoundingClientRect()
       ?? new DOMRect(pointer.x - BALL_SIZE / 2, pointer.y - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE);
     this.dispatchService.beginLift(info, rect, pointer.x, pointer.y);
   }
@@ -867,8 +857,9 @@ export class ActivityDayDispatchOverlayComponent {
    * position d'origine fixe n'a de sens ici (le cdkDrag sous-jacent a
    * continué de bouger pendant l'escalade) — la bulle se redéploie donc en
    * forme de carte SUR PLACE (aucune translation) puis s'efface en fondu,
-   * pendant que le preview cdkDrag natif redevient visible au même endroit
-   * (voir l'effet qui retire `dispatch-day-escalated` sur `phase() === 'idle'`).
+   * pendant que la vraie carte redevient visible au même endroit dès que
+   * `dayEscalated()` repasse à `false` (voir `setDragHidden` côté
+   * DayPanelComponent.handleDragPointerMove).
    */
   private playDeescalateAnimation(): void {
     const ball = this.ballRef()?.nativeElement;
