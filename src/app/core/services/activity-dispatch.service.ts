@@ -43,6 +43,8 @@ export interface ReturnPulse {
 export class ActivityDispatchService {
   // ── Micro-feedback avant même le décrochage (le temps du "hold") ─────────
   readonly pendingActivityId = signal<string | null>(null);
+  private fallbackDayKey: string | null = null;
+  private fallbackDayRect: DOMRect | null = null;
 
   setPending(activityId: string): void {
     this.pendingActivityId.set(activityId);
@@ -125,6 +127,7 @@ export class ActivityDispatchService {
     this.hoveredDayKey.set(null);
     this.hoveredDayRect.set(null);
     this.phase.set('lifted');
+    this.clearFallbackDropZone();
 
     document.addEventListener('pointermove', this.onPointerMoveBound, { passive: true });
     document.addEventListener('pointerup', this.onPointerUpBound, { passive: true });
@@ -144,10 +147,21 @@ export class ActivityDispatchService {
     this.hoveredDayKey.set(null);
     this.hoveredDayRect.set(null);
     this.dropRequested.set(null);
+    this.clearFallbackDropZone();
 
     if (wasReturning && info) {
       this.justReturned.set({ activityId: info.activityId, token: ++this.returnTokenSeq });
     }
+  }
+
+  registerFallbackDropZone(dayKey: string, rect: DOMRect): void {
+    this.fallbackDayKey = dayKey;
+    this.fallbackDayRect = rect;
+  }
+
+  clearFallbackDropZone(): void {
+    this.fallbackDayKey = null;
+    this.fallbackDayRect = null;
   }
 
   private handlePointerMove(event: PointerEvent): void {
@@ -175,18 +189,27 @@ export class ActivityDispatchService {
 
   private handlePointerUp(): void {
     if (this.phase() !== 'lifted') return;
+
     this.detachDocumentListeners();
 
     const info = this.dragged();
     const targetKey = this.hoveredDayKey();
     const targetRect = this.hoveredDayRect();
 
+    // Drop valide uniquement sur un vrai bouton du calendrier
     if (info && targetKey && targetRect) {
-      this.dropRequested.set({ tripId: info.tripId, activityId: info.activityId, dayKey: targetKey });
+      this.dropRequested.set({
+        tripId: info.tripId,
+        activityId: info.activityId,
+        dayKey: targetKey,
+      });
+
       this.phase.set('dropping');
-    } else {
-      this.phase.set('returning');
+      return;
     }
+
+    // Sinon retour (même si une zone de secours existe)
+    this.phase.set('returning');
   }
 
   private detachDocumentListeners(): void {

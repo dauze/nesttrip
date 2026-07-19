@@ -144,7 +144,6 @@ export class ActivityDayDispatchOverlayComponent {
         } else if (phase === 'dropping') {
           this.stopEdgeAutoScroll();
           this.clearOutsideTimer();
-          this.sheetExpanded.set(false);
           this.cancelTabFlip();
           this.playDropAnimation();
         } else if (phase === 'returning') {
@@ -264,7 +263,7 @@ export class ActivityDayDispatchOverlayComponent {
     const rect = this.dispatchService.getDayViewRect();
     const activeId = this.activeDayId();
     if (rect && activeId) {
-      this.dispatchService.registerDayCells(new Map([[activeId, rect]]));
+      this.dispatchService.registerFallbackDropZone(activeId, rect);
     } else {
       this.dispatchService.registerDayCells(new Map());
     }
@@ -272,6 +271,7 @@ export class ActivityDayDispatchOverlayComponent {
 
   private expandSheet(): void {
     this.retracted.set(false);
+    this.dispatchService.clearFallbackDropZone();
     requestAnimationFrame(() => this.captureCellRects());
   }
 
@@ -588,8 +588,11 @@ export class ActivityDayDispatchOverlayComponent {
     );
     this.currentBallAnimation.finished
       .then(() => {
+        this.sheetExpanded.set(false); 
         ball.classList.remove('dispatch-ball--collapsing');
-        this.dispatchService.finish();
+        setTimeout(() => {
+          this.dispatchService.finish();
+        }, 300); // même durée que la transition CSS
       })
       .catch(() => {
         /* animation annulée (ex. drag suivant démarré avant la fin) : rien à faire */
