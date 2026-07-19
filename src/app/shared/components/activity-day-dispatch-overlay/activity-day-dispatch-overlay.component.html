@@ -38,7 +38,7 @@
                 type="button"
                 [rounded]="true"
                 [outlined]="hoveredDayKey() !== dayKeyFor(day)"
-                [severity]="hoveredDayKey() === dayKeyFor(day) ? 'success' : 'secondary'"
+                [severity]="hoveredDayKey() === dayKeyFor(day) ? undefined : 'secondary'"
                 [attr.data-day-key]="dayKeyFor(day)"
                 [style.transitionDelay.ms]="sheetExpanded() ? di * 25 : 0"
                 class="dispatch-overlay__day"
