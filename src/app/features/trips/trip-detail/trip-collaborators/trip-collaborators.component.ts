@@ -9,8 +9,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { finalize } from 'rxjs';
-import { CollaborationService } from '@app/core/services/collaboration.service';
 import { TripMember } from '../../trip.model';
+import { TripFacade } from '../../trip-facade.service';
 
 @Component({
   selector: 'app-trip-collaborators',
@@ -30,11 +30,11 @@ import { TripMember } from '../../trip.model';
   styleUrl: './trip-collaborators.component.scss',
 })
 export class TripCollaboratorsComponent {
-  private readonly collaborationService = inject(CollaborationService);
+  private readonly tripFacade = inject(TripFacade);
   private readonly MAX_VISIBLE = 5;
 
   readonly tripId = input.required<string>();
-  readonly members = input<Record<string, TripMember>>({});
+  readonly members = computed(() => this.tripFacade.getTripMembers(this.tripId())());
 
   protected showInviteDialog = false;
   protected inviteeEmail = '';
@@ -79,7 +79,7 @@ export class TripCollaboratorsComponent {
     this.inviteLoading.set(true);
     this.inviteError.set(null);
 
-    this.collaborationService
+    this.tripFacade
       .addCollaborator(this.tripId(), this.inviteeEmail)
       .pipe(finalize(() => this.inviteLoading.set(false)))
       .subscribe({
