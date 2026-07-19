@@ -11,12 +11,13 @@ import {Notes, Item, Point} from './notes.model';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { NotesType } from '@app/core/enums/notes.type';
+import { Card } from 'primeng/card';
 
 
 @Component({
   selector: 'app-notes',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule],
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule, Card],
   templateUrl: './notes.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

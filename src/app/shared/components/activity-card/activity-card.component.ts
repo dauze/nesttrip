@@ -1,6 +1,6 @@
 import {
   Component, ElementRef, afterNextRender, computed, inject,
-  input, signal, viewChild
+  input, linkedSignal, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelModule } from 'primeng/panel';
@@ -41,7 +41,7 @@ export class ActivityCardComponent {
   private readonly confirmationService = inject(ConfirmationService);
   private cdkDrag = inject(CdkDrag, { self: true, optional: true  });
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
-
+  readonly initCollapsed = input.required<boolean>();
   readonly tripId = input.required<string>();
   /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
   readonly dayId = input<Date | undefined>(undefined);
@@ -54,7 +54,7 @@ export class ActivityCardComponent {
     return BOOKING_STATUS_META[status];
   });
 
-  readonly collapsed = signal(false);
+  readonly collapsed = linkedSignal(() => this.initCollapsed());;
   protected dragDisabled = signal(true);
   readonly scrollOffset = input(0);
 

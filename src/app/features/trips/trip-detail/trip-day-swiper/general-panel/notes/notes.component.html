@@ -1,10 +1,4 @@
-<p-panel [toggleable]="true" [collapsed]="false">
-  <ng-template pTemplate="header">
-    <div class="flex align-items-center gap-2">
-      <i class="pi pi-clipboard"></i>
-      <span>Notes</span>
-    </div>
-  </ng-template>
+<p-card>
 <div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
   @for (item of items(); track item.id) {
     <p-panel [toggleable]="true" cdkDrag>
@@ -175,4 +169,4 @@
     <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
   </div>
 </div>
-</p-panel>
+</p-card>

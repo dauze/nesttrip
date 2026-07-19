@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { PanelModule } from 'primeng/panel';
+import { Panel } from 'primeng/panel';
 import { Button } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -8,7 +8,7 @@ import { ActivityCardComponent } from '@app/shared/components/activity-card/acti
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { extractCityFromAddress } from '@app/shared/utils/extract-city';
-
+import { Card } from 'primeng/card';
 const UNCATEGORIZED_LABEL = 'À catégoriser';
 
 interface CityGroup {
@@ -19,7 +19,7 @@ interface CityGroup {
 @Component({
   selector: 'app-trip-activities',
   standalone: true,
-  imports: [PanelModule, Button, MessageModule, ActivityCardComponent],
+  imports: [Panel, Button, MessageModule, ActivityCardComponent, Card],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
