@@ -54,6 +54,10 @@ const EXPANDED_HEIGHT_VH_RATIO = 0.5;
 /** Rayon/épaisseurs de bordure de la miniature (phase 2, point de départ) et de la bulle (point d'arrivée), en px. */
 const THUMB_BORDER_RADIUS_PX = 12;
 const THUMB_BORDER_LEFT_PX = 6.4; // 0.4rem
+/** Épaisseur du fin liseré gris (haut/droite/bas) au repos, identique à celle de l'activity-header (bordure p-panel par défaut). */
+const THUMB_BORDER_THIN_PX = 1;
+/** Variable CSS du liseré gris de l'activity-header (voir `.booking` dans activity-card.component.scss). */
+const THUMB_BORDER_GRAY = 'var(--p-content-border-color)';
 const BALL_BORDER_WIDTH_PX = 3;
 
 function lerp(from: number, to: number, t: number): number {
@@ -538,6 +542,25 @@ export class ActivityDayDispatchOverlayComponent {
 
     ball.classList.add('dispatch-ball--collapsing');
 
+    // Position de départ : mêmes bords que l'activity-header qu'on masque à
+    // cet instant (fin liseré gris sur 3 côtés, bord gauche épais coloré) —
+    // posés SANS transition, pour un état identique au pixel près dès la
+    // première frame. `transition: none` + lecture de layout forcée avant de
+    // la retirer, sinon cette remise à zéro (utile lors d'un 2e drag, le
+    // même élément DOM étant réutilisé) se mettrait elle-même à fondre au
+    // lieu d'apparaître instantanément.
+    ball.style.transition = 'none';
+    ball.style.borderTopWidth = `${THUMB_BORDER_THIN_PX}px`;
+    ball.style.borderRightWidth = `${THUMB_BORDER_THIN_PX}px`;
+    ball.style.borderBottomWidth = `${THUMB_BORDER_THIN_PX}px`;
+    ball.style.borderLeftWidth = `${THUMB_BORDER_LEFT_PX}px`;
+    ball.style.borderTopColor = THUMB_BORDER_GRAY;
+    ball.style.borderRightColor = THUMB_BORDER_GRAY;
+    ball.style.borderBottomColor = THUMB_BORDER_GRAY;
+    ball.style.borderRadius = `${THUMB_BORDER_RADIUS_PX}px`;
+    void ball.offsetHeight; // flush layout/style avant de réactiver les transitions
+    ball.style.transition = '';
+
     this.playCollapseFollow(ball, origin, collapsedWidth, thumbSize);
   }
 
@@ -582,6 +605,7 @@ export class ActivityDayDispatchOverlayComponent {
         // conteneur, quelle que soit sa taille à chaque instant de la phase 2
         // (transition CSS, pas de calcul JS supplémentaire nécessaire).
         this.thumbFilled.set(true);
+        this.startBorderColorTransition(ball);
         this.playTravelFollow(ball, left, top, width, height);
         return;
       }
@@ -589,6 +613,23 @@ export class ActivityDayDispatchOverlayComponent {
     };
 
     this.travelFollowLoop = requestAnimationFrame(step);
+  }
+
+  /**
+   * Déclenche, une seule fois à l'entrée de la phase 2, le passage du fin
+   * liseré gris (haut/droite/bas) vers la couleur de l'activité — via une
+   * transition CSS plutôt qu'un lerp RGB manuel : `color` est une valeur déjà
+   * résolue (voir `resolveRingColor`), donc le navigateur sait l'interpoler
+   * seul. L'épaisseur, elle, continue d'être pilotée image par image dans
+   * `playTravelFollow` (cohérent avec le reste de la bulle), la transition
+   * CSS posée ici ne portant donc que sur `border-color`.
+   */
+  private startBorderColorTransition(ball: HTMLElement): void {
+    const color = this.dragged()?.color ?? 'var(--p-primary-color)';
+    ball.style.transition = `border-color ${BALL_TRAVEL_DURATION}ms ease`;
+    ball.style.borderTopColor = color;
+    ball.style.borderRightColor = color;
+    ball.style.borderBottomColor = color;
   }
 
   /**
@@ -626,9 +667,9 @@ export class ActivityDayDispatchOverlayComponent {
       ball.style.height = `${height}px`;
       ball.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       ball.style.borderRadius = `${lerp(THUMB_BORDER_RADIUS_PX, BALL_SIZE / 2, eased)}px`;
-      ball.style.borderTopWidth = `${lerp(0, BALL_BORDER_WIDTH_PX, eased)}px`;
-      ball.style.borderRightWidth = `${lerp(0, BALL_BORDER_WIDTH_PX, eased)}px`;
-      ball.style.borderBottomWidth = `${lerp(0, BALL_BORDER_WIDTH_PX, eased)}px`;
+      ball.style.borderTopWidth = `${lerp(THUMB_BORDER_THIN_PX, BALL_BORDER_WIDTH_PX, eased)}px`;
+      ball.style.borderRightWidth = `${lerp(THUMB_BORDER_THIN_PX, BALL_BORDER_WIDTH_PX, eased)}px`;
+      ball.style.borderBottomWidth = `${lerp(THUMB_BORDER_THIN_PX, BALL_BORDER_WIDTH_PX, eased)}px`;
       ball.style.borderLeftWidth = `${lerp(THUMB_BORDER_LEFT_PX, BALL_BORDER_WIDTH_PX, eased)}px`;
 
       if (t >= 1) {
@@ -707,7 +748,16 @@ export class ActivityDayDispatchOverlayComponent {
     const collapsedWidth = thumbSize;
     const collapsedLeft = origin.left;
     const collapsedTop = origin.top + (origin.height - thumbSize) / 2;
+    const color = this.dragged()?.color ?? 'var(--p-primary-color)';
 
+    // `transform` DOIT rester piloté par WAAPI ici, pas par une simple
+    // affectation de style : dès `this.formed.set(false)` ci-dessus, le
+    // binding du template `[style.transform]="formed() ? ballTransform() :
+    // null"` remet cette propriété à `null` au prochain cycle de détection de
+    // changements. Un effet WAAPI actif prévaut sur cette remise à zéro (il
+    // se compose par-dessus la valeur spécifiée) ; un style inline brut, lui,
+    // se ferait immédiatement écraser par le `null` d'Angular — c'est ce qui
+    // faisait sauter la bulle en haut à gauche de l'écran (transform perdu).
     this.currentBallAnimation?.cancel();
     const travelBackAnim = ball.animate(
       [
@@ -716,25 +766,40 @@ export class ActivityDayDispatchOverlayComponent {
           width: `${BALL_SIZE}px`,
           height: `${BALL_SIZE}px`,
           borderRadius: '50%',
-          borderTopWidth: '3px',
-          borderRightWidth: '3px',
-          borderBottomWidth: '3px',
-          borderLeftWidth: '3px',
+          borderTopWidth: `${BALL_BORDER_WIDTH_PX}px`,
+          borderRightWidth: `${BALL_BORDER_WIDTH_PX}px`,
+          borderBottomWidth: `${BALL_BORDER_WIDTH_PX}px`,
+          borderLeftWidth: `${BALL_BORDER_WIDTH_PX}px`,
         },
         {
           transform: `translate3d(${collapsedLeft}px, ${collapsedTop}px, 0)`,
           width: `${collapsedWidth}px`,
           height: `${thumbSize}px`,
-          borderRadius: '12px',
-          borderTopWidth: '0px',
-          borderRightWidth: '0px',
-          borderBottomWidth: '0px',
-          borderLeftWidth: '0.4rem',
+          borderRadius: `${THUMB_BORDER_RADIUS_PX}px`,
+          borderTopWidth: `${THUMB_BORDER_THIN_PX}px`,
+          borderRightWidth: `${THUMB_BORDER_THIN_PX}px`,
+          borderBottomWidth: `${THUMB_BORDER_THIN_PX}px`,
+          borderLeftWidth: `${THUMB_BORDER_LEFT_PX}px`,
         },
       ],
       { duration: RETURN_TRAVEL_DURATION, easing: 'cubic-bezier(0.34, 1.2, 0.64, 1)', fill: 'forwards' },
     );
     this.currentBallAnimation = travelBackAnim;
+
+    // `border-color`, lui, n'a pas besoin de cette protection (Angular n'y
+    // touche jamais) — mais s'anime mal en keyframes WAAPI, d'où une
+    // transition CSS dédiée, en parallèle, ciblant uniquement cette
+    // propriété : gris <- coloré sur les 3 côtés, gauche reste coloré.
+    ball.style.borderLeftColor = color;
+    ball.style.transition = 'none';
+    ball.style.borderTopColor = color;
+    ball.style.borderRightColor = color;
+    ball.style.borderBottomColor = color;
+    void ball.offsetHeight; // flush layout/style avant de réactiver la transition
+    ball.style.transition = `border-color ${RETURN_TRAVEL_DURATION}ms ease`;
+    ball.style.borderTopColor = THUMB_BORDER_GRAY;
+    ball.style.borderRightColor = THUMB_BORDER_GRAY;
+    ball.style.borderBottomColor = THUMB_BORDER_GRAY;
 
     travelBackAnim.finished
       .then(() => {
@@ -743,13 +808,13 @@ export class ActivityDayDispatchOverlayComponent {
         // celle-ci ne se redéploie, sinon elle resterait "en remplissage"
         // pendant que le conteneur reprend sa largeur d'origine.
         this.thumbFilled.set(false);
-        // Même piège que pour `collapseAnim` (voir plus haut) : sans ce
-        // `.cancel()`, `travelBackAnim` (fill: 'forwards') reste active en
-        // arrière-plan une fois `expandAnim` démarrée. Elle est bien
-        // supplantée tant qu'`expandAnim` existe (composite order WAAPI),
-        // mais dès que `currentBallAnimation` (= expandAnim) est annulée au
-        // drag suivant, `travelBackAnim` — jamais annulée — reprend la main
-        // et fige la bulle sur la position du doigt au relâchement précédent.
+        // Même piège que documenté historiquement ici : sans `.commitStyles()`
+        // avant ce `.cancel()`, `travelBackAnim` (fill: 'forwards') perdrait
+        // instantanément taille/rayon/épaisseur de bord en repassant au style
+        // spécifié sous-jacent dès son annulation — `commitStyles()` fige
+        // d'abord son dernier état dans le style inline pour que rien ne se
+        // perde visuellement.
+        travelBackAnim.commitStyles();
         travelBackAnim.cancel();
         const expandAnim = ball.animate(
           [
@@ -820,7 +885,18 @@ export class ActivityDayDispatchOverlayComponent {
     const thumbSize = Math.min(origin.height, 48);
     const collapsedWidth = thumbSize;
     const pos = `translate3d(${current.left}px, ${current.top}px, 0)`;
+    // Inverse exact de `startBorderColorTransition`/`playTravelFollow` : la
+    // bulle (bords colorés uniformes) redevient la carte au repos (fin
+    // liseré gris 3 côtés, bord gauche épais qui reste coloré).
+    const color = this.dragged()?.color ?? 'var(--p-primary-color)';
 
+    // `transform` DOIT rester piloté par WAAPI (même s'il ne change pas de
+    // valeur ici, "SUR PLACE") : dès `this.formed.set(false)` ci-dessus, le
+    // binding du template `[style.transform]="formed() ? ballTransform() :
+    // null"` le remet à `null` au prochain cycle de détection de
+    // changements. Un effet WAAPI actif prévaut sur cette remise à zéro ; une
+    // simple affectation de style se ferait écraser par ce `null`, ce qui
+    // faisait sauter la bulle en haut à gauche de l'écran (transform perdu).
     this.currentBallAnimation?.cancel();
     const anim = ball.animate(
       [
@@ -829,27 +905,42 @@ export class ActivityDayDispatchOverlayComponent {
           width: `${BALL_SIZE}px`,
           height: `${BALL_SIZE}px`,
           borderRadius: '50%',
-          borderTopWidth: '3px',
-          borderRightWidth: '3px',
-          borderBottomWidth: '3px',
-          borderLeftWidth: '3px',
+          borderTopWidth: `${BALL_BORDER_WIDTH_PX}px`,
+          borderRightWidth: `${BALL_BORDER_WIDTH_PX}px`,
+          borderBottomWidth: `${BALL_BORDER_WIDTH_PX}px`,
+          borderLeftWidth: `${BALL_BORDER_WIDTH_PX}px`,
           opacity: 1,
         },
         {
           transform: pos,
           width: `${collapsedWidth}px`,
           height: `${thumbSize}px`,
-          borderRadius: '12px',
-          borderTopWidth: '0px',
-          borderRightWidth: '0px',
-          borderBottomWidth: '0px',
-          borderLeftWidth: '0.4rem',
+          borderRadius: `${THUMB_BORDER_RADIUS_PX}px`,
+          borderTopWidth: `${THUMB_BORDER_THIN_PX}px`,
+          borderRightWidth: `${THUMB_BORDER_THIN_PX}px`,
+          borderBottomWidth: `${THUMB_BORDER_THIN_PX}px`,
+          borderLeftWidth: `${THUMB_BORDER_LEFT_PX}px`,
           opacity: 0,
         },
       ],
       { duration: DAY_DRAG_COLLAPSE_DURATION_MS, easing: 'ease-in-out', fill: 'forwards' },
     );
     this.currentBallAnimation = anim;
+
+    // `border-color`, lui, n'a pas besoin de cette protection (Angular n'y
+    // touche jamais) — mais s'anime mal en keyframes WAAPI, d'où une
+    // transition CSS dédiée, en parallèle, ciblant uniquement cette
+    // propriété : gris <- coloré sur les 3 côtés, gauche reste coloré.
+    ball.style.borderLeftColor = color;
+    ball.style.transition = 'none';
+    ball.style.borderTopColor = color;
+    ball.style.borderRightColor = color;
+    ball.style.borderBottomColor = color;
+    void ball.offsetHeight; // flush layout/style avant de réactiver la transition
+    ball.style.transition = `border-color ${DAY_DRAG_COLLAPSE_DURATION_MS}ms ease-in-out`;
+    ball.style.borderTopColor = THUMB_BORDER_GRAY;
+    ball.style.borderRightColor = THUMB_BORDER_GRAY;
+    ball.style.borderBottomColor = THUMB_BORDER_GRAY;
 
     anim.finished
       .then(() => {

@@ -63,7 +63,7 @@
   [class.dispatch-ball--active]="dispatchService.isVisible()"
   [class.dispatch-ball--formed]="formed()"
   [style.transform]="formed() ? ballTransform() : null"
-  [style.borderColor]="dragged()?.color ?? null">
+  [style.borderLeftColor]="dragged()?.color ?? null">
   <div class="dispatch-ball__row flex align-items-center h-full" [class.dispatch-ball__row--collapsed]="thumbFilled()">
     <span class="dispatch-ball__handle text-color-secondary flex-shrink-0">
       <i class="pi pi-bars"></i>

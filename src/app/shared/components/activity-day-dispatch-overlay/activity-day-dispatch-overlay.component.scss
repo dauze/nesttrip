@@ -177,7 +177,10 @@
   opacity: 0;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   border-style: solid;
-  border-color: transparent;
+  // Couleurs/épaisseurs de départ posées en JS (voir `playFormAnimation`),
+  // identiques au repos à celles de l'activity-header (fin liseré gris 3
+  // côtés, bord gauche épais coloré) : rien à fixer ici, `border-width: 0`
+  // ne sert qu'à rester invisible tant qu'aucun drag n'est en cours.
   border-width: 0;
   border-radius: 12px;
   will-change: transform, width, height, border-radius, border-width;
