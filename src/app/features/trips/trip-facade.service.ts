@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { Day, Trip } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { TripStore } from './trip-store.service';
@@ -56,6 +56,10 @@ export class TripFacade {
     this.store._activeTripId.set(null);
   }
 
+  addCollaborator(tripId: string, email: string): Observable<{success: boolean;}> {
+    return this.store.addCollaborator(tripId, email);
+  }
+
   // ── Commandes ─────────────────────────────────────────────────────────────
 
   saveTrip(trip: Trip): void {
@@ -86,6 +90,7 @@ export class TripFacade {
   createGeneralActivity(tripId: string, activity: Activity): void {
     this.store.createGeneralActivity(tripId, activity);
   }
+
 
   /** Met à jour une activité (pointeur unique) : se répercute partout où elle est affichée. */
   updateActivity(tripId: string, activity: Activity): void {
@@ -124,7 +129,8 @@ export class TripFacade {
   /** Map activityId -> dayId pour les activités actuellement rattachées à un jour. */
   getActivityDayIds = this.store.getActivityDayIds.bind(this.store);
   getNotesItems = this.store.getNotesItems.bind(this.store);
-
+  // 1. Exposer le sélecteur et la commande
+  getTripMembers = this.store.getTripMembers.bind(this.store);
   // ── Hydratation ───────────────────────────────────────────────────────────
 
   private hydrate(trip: Trip): void {
@@ -136,6 +142,7 @@ export class TripFacade {
     const newTripActivities = { ...this.store._tripActivities() };
     const notesItems = { ...this.store._notesItems() };
     const tripNotesItems = { ...this.store._tripNotesItems() };
+    const tripMembers = { ...this.store._tripMembers() };
 
     const previousDayKeys = newTripDays[trip.id] ?? [];
     for (const dayKey of previousDayKeys) {
@@ -151,11 +158,15 @@ export class TripFacade {
     const previousItemIds = tripNotesItems[trip.id] ?? [];
     for (const itemId of previousItemIds) {
       delete notesItems[itemId];
+      delete notesItems[itemId];
     }
 
     delete tripNotesItems[trip.id];
+    delete tripNotesItems[trip.id];
     delete newTripDays[trip.id];
     delete newTripActivities[trip.id];
+    delete newTripActivities[trip.id];
+    delete tripMembers[trip.id];
 
     newTrips[trip.id] = { ...trip, days: [], activities: [] };
     newTripDays[trip.id] = [];
@@ -174,12 +185,20 @@ export class TripFacade {
     }
 
     // 2. Les jours ne stockent que des références vers ce pool.
+    // 1. Le pool d'activités du trip est la source de vérité.
+    for (const activity of trip.activities) {
+      newActivities[activity.id] = activity;
+      newTripActivities[trip.id].push(activity.id);
+    }
+
+    // 2. Les jours ne stockent que des références vers ce pool.
     for (const day of trip.days) {
       const dayKey = day.id.toISOString();
       newDays[dayKey] = { ...day, activityIds: [] };
       newTripDays[trip.id].push(dayKey);
       newDayActivities[dayKey] = [...day.activityIds];
     }
+    tripMembers[trip.id] = trip.members;
 
     this.store._trips.set(newTrips);
     this.store._days.set(newDays);
@@ -189,11 +208,13 @@ export class TripFacade {
     this.store._tripActivities.set(newTripActivities);
     this.store._notesItems.set(notesItems);
     this.store._tripNotesItems.set(tripNotesItems);
+    this.store._tripMembers.set(tripMembers);
   }
 
    private mergeFromRemote(trip: Trip): void {
     const currentActivities = this.store._activities();
     const newActivities = { ...currentActivities };
+
     const newDayActivities: Record<string, string[]> = {};
     const pendingIds = this.store._pendingActivityIds();
 
@@ -232,5 +253,11 @@ export class TripFacade {
       ...map,
       [trip.id]: trip.activities.map((a) => a.id),
     }));
+
+    this.store._tripMembers.update((map) => {
+      const current = map[trip.id] ?? {};
+      if (JSON.stringify(current) === JSON.stringify(trip.members)) return map;
+      return { ...map, [trip.id]: trip.members };
+    });
   }
 }

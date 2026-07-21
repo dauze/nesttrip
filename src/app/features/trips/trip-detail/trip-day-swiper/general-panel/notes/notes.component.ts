@@ -11,12 +11,12 @@ import {Notes, Item, Point} from './notes.model';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { NotesType } from '@app/core/enums/notes.type';
-
+import { Card } from 'primeng/card';
 
 @Component({
   selector: 'app-notes',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule],
+  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule, Card],
   templateUrl: './notes.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -108,8 +108,13 @@ export class NotesComponent {
     this.focusRow(item.id, index + 1, 0);
   }
 
-  onBlurPoint() {
-    setTimeout(() => this.activePointId.set(null));
+  onBlurPoint(pointId: string) {
+    setTimeout(() => {
+      // On ne remet à null QUE si le point actif est toujours celui qui a déclenché le blur
+      if (this.activePointId() === pointId) {
+        this.activePointId.set(null);
+      }
+    });
   }
 
   onBackspaceRow(item: Item, index: number, event: KeyboardEvent): void {

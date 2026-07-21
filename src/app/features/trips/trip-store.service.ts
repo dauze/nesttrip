@@ -1,6 +1,6 @@
 import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
-import { Trip, Day } from './trip.model';
+import { Trip, Day, TripMember } from './trip.model';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
@@ -8,10 +8,13 @@ import { TripPersistenceService } from '@app/core/infra/firebase/services/persis
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
+import { CollaborationService } from '@app/core/services/collaboration.service';
+import { Observable, tap } from 'rxjs';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
 type ActivityEntities = Record<string, Activity>;
+type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<email, Member>
 
 @Injectable({ providedIn: 'root' })
 export class TripStore {
@@ -20,6 +23,7 @@ export class TripStore {
   private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
+  private readonly collaborationService = inject(CollaborationService);
 
   constructor() {
     // Dès que le writer débouncé des activités n'a plus rien en cours (tout
@@ -47,6 +51,8 @@ export class TripStore {
   readonly _dayActivities = signal<Record<string, string[]>>({});
   /** @internal — TOUTES les activités appartenant à un trip (dispatchées ou non) */
   readonly _tripActivities = signal<Record<string, string[]>>({});
+  /** @internal */
+  readonly _tripMembers = signal<MemberEntities>({});
   /**
    * @internal — ids d'activités dont l'édition locale n'a pas encore été
    * confirmée par Firestore (write debouncée pas encore flush + confirmée).
@@ -64,7 +70,7 @@ export class TripStore {
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
-
+  private readonly membersByTrip = new Map<string, Signal<Record<string, TripMember>>>();
   // ── Liste des trips (dashboard) ───────────────────────────────────────────
  
   readonly trips = computed(() => this._tripsResult() ?? []);
@@ -193,6 +199,8 @@ export class TripStore {
     // _trips : entité complète
     this._trips.update((trips) => ({ ...trips, [trip.id]: trip }));
 
+     this._tripMembers.update((map) => ({ ...map, [trip.id]: trip.members }));
+
     // _days + _tripDays : un entry par jour
     const dayKeys: string[] = [];
     this._days.update((days) => {
@@ -252,6 +260,36 @@ export class TripStore {
       delete copy[tripId];
       return copy;
     });
+  }
+
+  // ── Commandes — Activities ────────────────────────────────────────────────
+
+  getTripMembers(tripId: string): Signal<Record<string, TripMember>> {
+    if (!this.membersByTrip.has(tripId)) {
+      this.membersByTrip.set(
+        tripId,
+        computed(() => this._tripMembers()[tripId] ?? {})
+      );
+    }
+    return this.membersByTrip.get(tripId)!;
+  }
+
+  // 5. Ajouter la commande addCollaborator (Mise à jour optimiste isolée)
+  addCollaborator(tripId: string, email: string) : Observable<{success: boolean;}>{
+    return this.collaborationService.addCollaborator(tripId, email).pipe(
+      tap(() => {
+        this._tripMembers.update((map) => {
+          const currentMembers = map[tripId] ?? {};
+          return {
+            ...map,
+            [tripId]: {
+              ...currentMembers,
+              [email]: { email, displayName: email.split('@')[0] } as TripMember
+            }
+          };
+        });
+      })
+    );
   }
 
   // ── Commandes — Activities ────────────────────────────────────────────────

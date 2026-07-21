@@ -8,6 +8,7 @@ import { ActivityCardComponent } from '@app/shared/components/activity-card/acti
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { extractCityFromAddress } from '@app/shared/utils/extract-city';
+import { Card } from 'primeng/card';
 
 const UNCATEGORIZED_LABEL = 'À catégoriser';
 
@@ -19,7 +20,7 @@ interface CityGroup {
 @Component({
   selector: 'app-trip-activities',
   standalone: true,
-  imports: [PanelModule, Button, MessageModule, ActivityCardComponent],
+  imports: [PanelModule, Button, MessageModule, ActivityCardComponent, Card],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

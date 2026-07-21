@@ -1,16 +1,10 @@
-<p-panel [toggleable]="true" [collapsed]="false">
-  <ng-template pTemplate="header">
-    <div class="flex align-items-center gap-2">
-      <i class="pi pi-clipboard"></i>
-      <span>Notes</span>
-    </div>
-  </ng-template>
+<p-card>
 <div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
   @for (item of items(); track item.id) {
     <p-panel [toggleable]="true" cdkDrag>
       <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
-          <span cdkDragHandle class="flex-shrink-0 cursor-move"><i class="pi pi-bars"></i></span>
+          <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping"><i class="pi pi-bars"></i></span>
           <textarea
             pTextarea
             class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
@@ -51,7 +45,7 @@
           @if(item.type !== NotesType.TODO || !point.checked){
           <div class="flex align-items-center gap-2 w-full pl-3 pr-2"
           cdkDrag>
-            <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem">
+            <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem swiper-no-swiping">
               <i class="pi pi-ellipsis-v"></i>
               <i class="pi pi-ellipsis-v"></i>
             </span>
@@ -78,7 +72,7 @@
               (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
               (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
               (focus)="activePointId.set(point.id)"
-              (blur)="onBlurPoint()"
+              (blur)="onBlurPoint(point.id)"
               [attr.data-item-id]="item.id"
               [attr.data-index]="$index"
             ></textarea>
@@ -88,8 +82,9 @@
               [text]="true"
               severity="secondary"
               size="small"
+              class="swiper-no-swiping"
               [style.display]="activePointId() === point.id ? 'flex' : 'none'"
-              (onClick)="removePoint(item, $index)"
+              (mousedown)="$event.preventDefault();removePoint(item, $index); "
             />
           </div>
           }
@@ -140,7 +135,7 @@
                     (keydown.arrowup)="onArrowUp(item, $index, $any($event))"
                     (keydown.arrowdown)="onArrowDown(item, $index, $any($event))"
                     (focus)="activePointId.set(point.id)"
-                    (blur)="onBlurPoint()"
+                    (blur)="onBlurPoint(point.id)"
                     [attr.data-item-id]="item.id"
                     [attr.data-index]="$index"
                   ></textarea>
@@ -150,9 +145,9 @@
                     [text]="true"
                     severity="secondary"
                     size="small"
-    
+                    class="swiper-no-swiping"
                     [style.display]="activePointId() === point.id ? 'flex' : 'none'"
-                    (onClick)="removePoint(item, $index)"
+                    (mousedown)="$event.preventDefault();removePoint(item, $index);"
                   />
                 </div>
               }
@@ -174,4 +169,4 @@
     <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
   </div>
 </div>
-</p-panel>
+</p-card>

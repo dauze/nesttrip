@@ -1,72 +1,112 @@
-<!-- Déclencheur : taille fixe ajustée à l'heure et texte aligné à gauche -->
-<div class="custom-time-input-trigger flex justify-content-start align-items-center" 
-     role="button" 
-     tabindex="0" 
-     (click)="openDialog()" 
-     (keydown.enter)="openDialog()">
-  <span class="time-display">{{ displayText }}</span>
+<div
+    class="custom-time-input-trigger flex justify-content-start align-items-center"
+    role="button"
+    tabindex="0"
+    (click)="openDialog()"
+>
+    {{ displayText }}
 </div>
 
-<!-- Boîte de dialogue PrimeNG -->
-<p-dialog 
-  [(visible)]="visible"
-  [modal]="true"
-  [closable]="true"
-  [dismissableMask]="true"
-  [draggable]="false"
-  [resizable]="false"
-  styleClass="custom-time-dialog glass-modal speed-dialog"
-  [style]="{ width: '280px', height: '255px' }" 
-  appendTo="body">
-  
-  <div class="wheel-picker-container">
-    <div class="selection-overlay" ></div>
+<p-dialog
+    [(visible)]="visible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    appendTo="body"
+    header="Sélectionner une heure"
+    styleClass="clock-dialog glass-modal speed-dialog"
+    [style]="{ width: '21rem' }"
+>
+    <div class="flex flex-column gap-2">
 
-    <!-- Colonne des Heures -->
-    <div class="wheel-column" #hourCol>
-      <div class="wheel-spacer"></div>
-      
-      @for (h of hours; track h) {
-        <div class="wheel-item" 
-             role="button" 
-             tabindex="0"
-             [attr.data-val]="h" 
-             [class.selected]="h === tempHour" 
-             (click)="onItemClick('hour', h)"
-             (keydown.enter)="onItemClick('hour', h)">
-          {{ h }}
+        <div
+            class="flex justify-content-center align-items-center gap-2"
+        >
+            <button
+                type="button"
+                class="time-box"
+                [class.active]="selectionMode === 'hour'"
+                (click)="selectionMode = 'hour'"
+            >
+                {{ tempHour }}
+            </button>
+
+            <span class="time-separator">
+                :
+            </span>
+
+            <button
+                type="button"
+                class="time-box"
+                [class.active]="selectionMode === 'minute'"
+                (click)="selectionMode = 'minute'"
+            >
+                {{ tempMinute }}
+            </button>
         </div>
-      }
-      
-      <div class="wheel-spacer"></div>
-    </div>
 
-    <div class="wheel-separator">:</div>
+        <div
+            #clockFace
+            class="clock-face"
+            (pointerdown)="startDrag($event)"
+            (pointermove)="onDrag($event)"
+            (pointerup)="stopDrag()"
+            (pointercancel)="stopDrag()"
+            (pointerleave)="stopDrag()"
+        >
 
-    <!-- Colonne des Minutes -->
-    <div class="wheel-column" #minCol>
-      <div class="wheel-spacer"></div>
-      
-      @for (m of minutes; track m) {
-        <div class="wheel-item" 
-             role="button" 
-             tabindex="0"
-             [attr.data-val]="m" 
-             [class.selected]="m === tempMinute" 
-             (click)="onItemClick('minute', m)"
-             (keydown.enter)="onItemClick('minute', m)">
-          {{ m }}
+            @for (
+                item of currentValues;
+                track item.value
+            ) {
+
+                <button
+                    type="button"
+                    class="clock-number"
+                    [class.selected]="selectedValue === item.label"
+                    [class.inner]="item.inner"
+                    [style.left]="item.x"
+                    [style.top]="item.y"
+                    (click)="selectValue(item.label)"
+                >
+                    {{ item.label }}
+                </button>
+
+            }
+
+            <div
+                class="clock-hand"
+                [ngStyle]="handStyle"
+            ></div>
+
+            <div
+                class="clock-selector"
+                [style.left]="selectorPosition.left"
+                [style.top]="selectorPosition.top"
+            ></div>
+
+            <div class="clock-center"></div>
+
         </div>
-      }
-      
-      <div class="wheel-spacer"></div>
-    </div>
-  </div>
 
-  <ng-template pTemplate="footer">
-    <div class="flex justify-content-end gap-2 p-2 pt-0 w-full">
-      <p-button label="Annuler" [outlined]="true" severity="secondary" (click)="close()" size="small"/>
-      <p-button label="OK" (click)="validate()" size="small"/>
     </div>
-  </ng-template>
+
+    <ng-template pTemplate="footer">
+        <div
+            class="flex justify-content-end gap-2"
+        >
+            <p-button
+                label="Cancel"
+                [text]="true"
+                (click)="close()"
+            />
+
+            <p-button
+                label="OK"
+                [text]="true"
+                (click)="validate()"
+            />
+        </div>
+    </ng-template>
 </p-dialog>
