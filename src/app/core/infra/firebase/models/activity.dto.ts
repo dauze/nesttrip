@@ -1,17 +1,10 @@
-import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 
+/** Activité "légère" de pool : identité Google + fichiers uniquement, jamais le form. */
 export interface ActivityFirebase {
   id: string;
   title: string;
-  type: ActivityType;
-  duration: number;
-  price: PriceFirebase;
-  booking?: BookingFirebase;
-  notes?: string;
   files?: FileFirebase[];
-  startTime?:string;
-  endTime?:string;
 
   //Google
   placeId?: string;

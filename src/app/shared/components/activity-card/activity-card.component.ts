@@ -74,7 +74,18 @@ export class ActivityCardComponent {
   /** true uniquement pour les cartes rendues dans la liste réordonnable d'un jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans `startDispatchGesture`. */
   readonly inDayList = input(false);
 
-  readonly activity = computed(() => this.tripFacade.getActivity(this.activityId())());
+  /** En contexte jour, `activityId` est un instanceId ; en contexte pool (vue générale), un poolId. */
+  readonly activity = computed(() =>
+    this.dayId()
+      ? this.tripFacade.getDayActivity(this.activityId())()
+      : this.tripFacade.getPoolActivityView(this.activityId())()
+  );
+
+  private readonly tripActivityDayIds = computed(() => this.tripFacade.getActivityDayIds(this.tripId())());
+  /** true uniquement en contexte pool, quand cette activité n'est placée sur AUCUN jour. */
+  readonly isPlacedNowhere = computed(() =>
+    !this.dayId() && (this.tripActivityDayIds().get(this.activityId())?.length ?? 0) === 0
+  );
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -188,8 +199,9 @@ export class ActivityCardComponent {
         const activity = this.activity();
         if (!activity) return;
 
-        this.tripFacade.updateActivity(this.tripId(), {
-          ...activity,
+        this.tripFacade.updatePoolActivity(this.tripId(), {
+          id: activity.activityId,
+          files: activity.files,
           title: place.name,
           placeId: place.placeId,
           address: place.address,
@@ -238,8 +250,9 @@ export class ActivityCardComponent {
     const activity = this.activity();
     if (!activity) return;
 
-    this.tripFacade.updateActivity(this.tripId(), {
-      ...activity,
+    this.tripFacade.updatePoolActivity(this.tripId(), {
+      id: activity.activityId,
+      files: activity.files,
       title: newTitle,
       placeId: '',
       address: '',
@@ -257,9 +270,14 @@ export class ActivityCardComponent {
   }
 
   confirmDelete(): void {
+    const dayId = this.dayId();
     this.confirmationService.confirm({
-      message: 'Supprimer cette activité ?',
-      accept: () => this.tripFacade.removeActivity(this.tripId(), this.activityId(), this.dayId()),
+      message: dayId
+        ? 'Supprimer cette activité de ce jour ?'
+        : 'Supprimer cette activité et tous ses placements sur les jours ?',
+      accept: () => dayId
+        ? this.tripFacade.removeDayActivityInstance(this.tripId(), this.activityId(), dayId)
+        : this.tripFacade.removePoolActivity(this.tripId(), this.activityId()),
     });
   }
 

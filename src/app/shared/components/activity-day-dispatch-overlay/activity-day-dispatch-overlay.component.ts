@@ -120,7 +120,7 @@ export class ActivityDayDispatchOverlayComponent {
   protected readonly countsByDay = computed(() => {
     const map = new Map<string, number>();
     for (const day of this.days()) {
-      map.set(this.dayKeyFor(day), this.tripFacade.getActivities(day.id)().length);
+      map.set(this.dayKeyFor(day), this.tripFacade.getDayActivities(day.id)().length);
     }
     return map;
   });
@@ -147,7 +147,7 @@ export class ActivityDayDispatchOverlayComponent {
     effect(() => {
       const req = this.dispatchService.dropRequested();
       if (!req) return;
-      this.tripFacade.dispatchActivity(req.tripId, req.activityId, new Date(req.dayKey));
+      this.tripFacade.dispatchActivity(req.tripId, req.activityId, req.origin, new Date(req.dayKey));
     });
 
     // Attention : seul `phase()` doit être une dépendance réactive de cet

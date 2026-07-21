@@ -14,7 +14,6 @@
         @for (activity of group.activities; track activity.id) {
           <app-activity-card
             [activityId]="activity.id"
-            [dayId]="dayIdFor(activity.id)"
             [tripId]="tripId()"
             [initCollapsed]="true"
           />

@@ -1,6 +1,6 @@
 @if (activity(); as activity) {
   <div #cardContainer
-       [class.not-dispatched]="!dayId()"
+       [class.not-dispatched]="isPlacedNowhere()"
        [class.card-lifted]="isBeingDragged()"
        [class.card-pending]="isPendingLift()">
     <p-panel
@@ -29,10 +29,12 @@
       </ng-template>
 
 
-      <app-activity-form [tripId]="tripId()" [dayId]="dayId()" [activity]="activity" />
+      @if (dayId(); as day) {
+        <app-activity-form [tripId]="tripId()" [dayId]="day" [activity]="activity" />
+        <p-divider class="m-1"/>
+      }
 
-      <p-divider class="m-1"/>
-      <app-activity-files [tripId]="tripId()" [dayId]="dayId()" [activity]="activity" />
+      <app-activity-files [tripId]="tripId()" [activity]="activity" />
 
       <!-- L'appel a été simplifié ici -->
       <app-activity-google-info

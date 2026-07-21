@@ -12,9 +12,10 @@ interface DayActivitiesUpdate {
 
 /**
  * Persiste la liste ordonnée des `activityIds` référencés par un jour
- * (`trips/{tripId}.days.{dayTime}.activityIds`). Les données complètes de
- * chaque activité vivent dans le pool `activities` (voir
- * `ActivityPersistenceService`) : ce service ne gère que les *références*.
+ * (`trips/{tripId}.days.{dayTime}.activityIds`). Ce sont des instance ids
+ * (voir `DayActivityInstancePersistenceService` pour le form de chaque
+ * instance, et `ActivityPersistenceService` pour l'activité de pool
+ * référencée) : ce service ne gère que les *références*, dans l'ordre.
  */
 @Injectable({ providedIn: 'root' })
 export class DayActivitiesPersistenceService

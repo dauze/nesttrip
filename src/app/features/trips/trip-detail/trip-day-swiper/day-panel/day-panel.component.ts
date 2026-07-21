@@ -143,7 +143,7 @@ export class DayPanelComponent {
   /** Instantané de l'état ouvert/fermé des cartes + de la carte Google, pris au début d'un drag dans ce jour pour tout restaurer à la fin. */
   private collapseSnapshot?: { cards: Map<string, boolean>; map: boolean };
 
-  readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getActivities(this.dayId())());
+  readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getDayActivities(this.dayId())());
 
   readonly dayMapPoints = computed<DayMapPoint[]>(() => {
     return this.activities()
@@ -279,18 +279,27 @@ export class DayPanelComponent {
   }
 
   addActivity() {
-    this.tripFacade.createActivity(this.tripId(), this.dayId(), {
-      id: crypto.randomUUID(),
-      title: '',
-      type: ActivityType.ACTIVITE,
-      duration: 0,
-      price: { amount: 0, currency: 'EUR' },
-      placeId: '',
-      booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
-      notes: '',
-      files: [],
-      photoRefs: []
-    });
+    const poolId = crypto.randomUUID();
+    this.tripFacade.createActivity(
+      this.tripId(),
+      this.dayId(),
+      {
+        id: poolId,
+        title: '',
+        placeId: '',
+        files: [],
+        photoRefs: [],
+      },
+      {
+        id: crypto.randomUUID(),
+        activityId: poolId,
+        type: ActivityType.ACTIVITE,
+        duration: 0,
+        price: { amount: 0, currency: 'EUR' },
+        booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
+        notes: '',
+      },
+    );
     queueMicrotask(() => this.wakeLoop());
   }
 

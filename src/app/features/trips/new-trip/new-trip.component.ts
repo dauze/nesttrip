@@ -94,6 +94,7 @@ export class NewTripComponent {
       placeId: this.form.value.placeId ?? '',
       days: this.buildDays(dateDebut, dateFin),
       activities: [],
+      dayActivityInstances: [],
       notes: this.buildNote(),
       ownerId: user.uid,
       members: {

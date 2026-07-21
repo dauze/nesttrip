@@ -29,6 +29,8 @@ interface PendingDrop {
   tripId: string;
   activityId: string;
   dayKey: string;
+  /** Repris de `DraggedActivityInfo.origin` : gouverne côté store si le drop crée une nouvelle instance (pool) ou déplace l'instance existante (jour). */
+  origin: 'pool' | 'day';
 }
 
 /** Pulse de fin de "retour aimant" : un token distinct à chaque fois garantit que
@@ -251,6 +253,7 @@ export class ActivityDispatchService {
         tripId: info.tripId,
         activityId: info.activityId,
         dayKey: targetKey,
+        origin: info.origin,
       });
 
       this.phase.set('dropping');

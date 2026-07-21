@@ -1,8 +1,11 @@
 import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { Trip, Day, TripMember } from './trip.model';
-import { Activity } from '@app/shared/components/activity-card/activity.model';
+import { Activity, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { ActivityType } from '@core/enums/activites-type.enum';
+import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
+import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
@@ -13,12 +16,25 @@ import { Observable, tap } from 'rxjs';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
-type ActivityEntities = Record<string, Activity>;
+type PoolActivityEntities = Record<string, PoolActivity>;
+type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<email, Member>
+
+/** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché). */
+function defaultInstanceForm(): Omit<DayActivityInstance, 'id' | 'activityId'> {
+  return {
+    type: ActivityType.ACTIVITE,
+    duration: 0,
+    price: { amount: 0, currency: 'EUR' },
+    booking: { status: BookingStatus.NOT_NEEDED },
+    notes: '',
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService);
+  private readonly dayActivityInstancePersistenceService = inject(DayActivityInstancePersistenceService);
   private readonly dayActivitiesPersistenceService = inject(DayActivitiesPersistenceService);
   private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
@@ -26,12 +42,16 @@ export class TripStore {
   private readonly collaborationService = inject(CollaborationService);
 
   constructor() {
-    // Dès que le writer débouncé des activités n'a plus rien en cours (tout
-    // le lot en attente a été flush + confirmé par Firestore), on relâche le
-    // verrou anti-écrasement : un futur snapshot distant peut de nouveau
-    // mettre à jour ces activités (édition par un collaborateur, etc.).
+    // Dès que les DEUX writers débouncés (pool + instances) n'ont plus rien
+    // en cours (tout le lot en attente a été flush + confirmé par Firestore),
+    // on relâche le verrou anti-écrasement : un futur snapshot distant peut
+    // de nouveau mettre à jour ces activités/instances (édition par un
+    // collaborateur, etc.). Les deux writers partagent le même
+    // `_pendingActivityIds` (poolId ET instanceId) : attendre que les DEUX
+    // soient idle évite de relâcher trop tôt la protection d'une instance
+    // encore en cours d'écriture pendant que le pool, lui, est déjà à jour.
     effect(() => {
-      if (!this.activityPersistenceService.syncing()) {
+      if (!this.activityPersistenceService.syncing() && !this.dayActivityInstancePersistenceService.syncing()) {
         this._pendingActivityIds.set(new Set());
       }
     });
@@ -43,13 +63,15 @@ export class TripStore {
   readonly _trips = signal<TripEntities>({});
   /** @internal */
   readonly _days = signal<DayEntities>({});
-  /** @internal — pool plat de TOUTES les activités connues, quel que soit le trip */
-  readonly _activities = signal<ActivityEntities>({});
+  /** @internal — pool plat de TOUTES les activités (légères : identité + fichiers) connues, quel que soit le trip */
+  readonly _poolActivities = signal<PoolActivityEntities>({});
+  /** @internal — TOUTES les instances (form) connues, quel que soit le trip — une même activité de pool peut avoir plusieurs instances (une par jour où elle est placée) */
+  readonly _dayActivityInstances = signal<DayActivityInstanceEntities>({});
   /** @internal */
   readonly _tripDays = signal<Record<string, string[]>>({});
-  /** @internal — activités référencées par un jour donné (sous-ensemble du pool) */
-  readonly _dayActivities = signal<Record<string, string[]>>({});
-  /** @internal — TOUTES les activités appartenant à un trip (dispatchées ou non) */
+  /** @internal — instance ids référencés par un jour donné, dans l'ordre */
+  readonly _dayActivityIds = signal<Record<string, string[]>>({});
+  /** @internal — TOUTES les activités de pool appartenant à un trip (placées sur un/plusieurs jours, ou aucun) */
   readonly _tripActivities = signal<Record<string, string[]>>({});
   /** @internal */
   readonly _tripMembers = signal<MemberEntities>({});
@@ -93,10 +115,11 @@ export class TripStore {
         .map(key => daysMap[key])
         .filter((day): day is Day => !!day),
       // Placeholder non-réactif : le pool d'activités n'est pas consommé via
-      // `trip.activities` mais via le sélecteur dédié `getAllActivities(tripId)`.
+      // `trip.activities` mais via le sélecteur dédié `getAllPoolActivities(tripId)`.
       // Le lire ici rendrait `activeTrip` (et tout ce qui en dépend, dont le
       // skeleton de chargement) réactif à CHAQUE édition d'activité.
       activities: [],
+      dayActivityInstances: [],
     };
   });
 
@@ -114,69 +137,146 @@ export class TripStore {
 
   // ── Sélecteurs memorisés par entité ───────────────────────────────────────
 
-  private readonly activitiesByDay = new Map<string, Signal<Activity[]>>();
-  private readonly activitiesById = new Map<string, Signal<Activity>>();
-  private readonly allActivitiesByTrip = new Map<string, Signal<Activity[]>>();
+  /** Compose la vue `Activity` consommée par l'UI à partir d'une instance jour et de l'activité de pool qu'elle référence. */
+  private composeInstanceView(instance: DayActivityInstance, pool: PoolActivity | undefined): Activity {
+    return {
+      id: instance.id,
+      activityId: instance.activityId,
+      title: pool?.title ?? '',
+      files: pool?.files ?? [],
+      placeId: pool?.placeId,
+      address: pool?.address,
+      latitude: pool?.latitude,
+      longitude: pool?.longitude,
+      photoRefs: pool?.photoRefs ?? [],
+      type: instance.type,
+      duration: instance.duration,
+      startTime: instance.startTime,
+      endTime: instance.endTime,
+      price: instance.price,
+      booking: instance.booking,
+      notes: instance.notes,
+    };
+  }
 
-  getActivities(dayId: Date): Signal<Activity[]> {
+  /** Compose la vue `Activity` "légère" d'une activité de pool (contexte général, sans instance/form). */
+  private composePoolView(pool: PoolActivity): Activity {
+    return {
+      id: pool.id,
+      activityId: pool.id,
+      title: pool.title,
+      files: pool.files,
+      placeId: pool.placeId,
+      address: pool.address,
+      latitude: pool.latitude,
+      longitude: pool.longitude,
+      photoRefs: pool.photoRefs,
+      ...defaultInstanceForm(),
+    };
+  }
+
+  private readonly dayActivitiesByDay = new Map<string, Signal<Activity[]>>();
+  private readonly dayActivityViewById = new Map<string, Signal<Activity>>();
+  private readonly poolActivityById = new Map<string, Signal<PoolActivity>>();
+  private readonly poolActivityViewById = new Map<string, Signal<Activity>>();
+  private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
+
+  /** Les instances (form) rattachées à un jour, composées avec l'identité de leur activité de pool. */
+  getDayActivities(dayId: Date): Signal<Activity[]> {
     const key = dayId.toISOString();
-    if (!this.activitiesByDay.has(key)) {
-      this.activitiesByDay.set(
+    if (!this.dayActivitiesByDay.has(key)) {
+      this.dayActivitiesByDay.set(
         key,
         computed(() => {
-          const ids = this._dayActivities()[key] ?? [];
-          const map = this._activities();
-          return ids.map((id) => map[id]);
+          const ids = this._dayActivityIds()[key] ?? [];
+          const instances = this._dayActivityInstances();
+          const pools = this._poolActivities();
+          return ids
+            .map((id) => instances[id])
+            .filter((i): i is DayActivityInstance => !!i)
+            .map((i) => this.composeInstanceView(i, pools[i.activityId]));
         }),
       );
     }
-    return this.activitiesByDay.get(key)!;
+    return this.dayActivitiesByDay.get(key)!;
   }
 
-  getActivity(activityId: string): Signal<Activity> {
-    if (!this.activitiesById.has(activityId)) {
-      this.activitiesById.set(
-        activityId,
-        computed(() => this._activities()[activityId]),
+  /** Vue composée d'une instance jour donnée, par son instance id. */
+  getDayActivity(instanceId: string): Signal<Activity> {
+    if (!this.dayActivityViewById.has(instanceId)) {
+      this.dayActivityViewById.set(
+        instanceId,
+        computed(() => {
+          const instance = this._dayActivityInstances()[instanceId];
+          return this.composeInstanceView(instance, this._poolActivities()[instance?.activityId]);
+        }),
       );
     }
-    return this.activitiesById.get(activityId)!;
+    return this.dayActivityViewById.get(instanceId)!;
   }
 
-  /** Le pool complet des activités d'un trip : dispatchées dans un jour ou non. */
-  getAllActivities(tripId: string): Signal<Activity[]> {
-    if (!this.allActivitiesByTrip.has(tripId)) {
-      this.allActivitiesByTrip.set(
+  getPoolActivity(poolId: string): Signal<PoolActivity> {
+    if (!this.poolActivityById.has(poolId)) {
+      this.poolActivityById.set(
+        poolId,
+        computed(() => this._poolActivities()[poolId]),
+      );
+    }
+    return this.poolActivityById.get(poolId)!;
+  }
+
+  /** Vue composée "légère" d'une activité de pool, pour la carte en contexte général (pas de form). */
+  getPoolActivityView(poolId: string): Signal<Activity> {
+    if (!this.poolActivityViewById.has(poolId)) {
+      this.poolActivityViewById.set(
+        poolId,
+        computed(() => {
+          const pool = this._poolActivities()[poolId];
+          return pool ? this.composePoolView(pool) : undefined as unknown as Activity;
+        }),
+      );
+    }
+    return this.poolActivityViewById.get(poolId)!;
+  }
+
+  /** Le pool complet des activités d'un trip : placées sur un/plusieurs jours, ou aucun. */
+  getAllPoolActivities(tripId: string): Signal<PoolActivity[]> {
+    if (!this.allPoolActivitiesByTrip.has(tripId)) {
+      this.allPoolActivitiesByTrip.set(
         tripId,
         computed(() => {
           const ids = this._tripActivities()[tripId] ?? [];
-          const map = this._activities();
-          return ids.map((id) => map[id]).filter((a): a is Activity => !!a);
+          const map = this._poolActivities();
+          return ids.map((id) => map[id]).filter((a): a is PoolActivity => !!a);
         }),
       );
     }
-    return this.allActivitiesByTrip.get(tripId)!;
+    return this.allPoolActivitiesByTrip.get(tripId)!;
   }
 
-  private readonly activityDayIdsByTrip = new Map<string, Signal<Map<string, Date>>>();
+  private readonly activityDayIdsByTrip = new Map<string, Signal<Map<string, Date[]>>>();
 
   /**
-   * Pour un trip donné : map activityId -> dayId, uniquement pour les
-   * activités actuellement rattachées à un jour. Sert à la fois à savoir
-   * si une activité est "dispatchée" (présence dans la map) et, si oui,
-   * dans quel jour.
+   * Pour un trip donné : map poolActivityId -> liste des jours où elle est
+   * placée (une activité de pool peut être placée sur plusieurs jours en
+   * même temps, chacun via sa propre instance). Sert à savoir si une
+   * activité de pool est "placée quelque part" (présence + longueur > 0) et,
+   * si oui, sur quels jours.
    */
-  getActivityDayIds(tripId: string): Signal<Map<string, Date>> {
+  getActivityDayIds(tripId: string): Signal<Map<string, Date[]>> {
     if (!this.activityDayIdsByTrip.has(tripId)) {
       this.activityDayIdsByTrip.set(
         tripId,
         computed(() => {
           const dayKeys = this._tripDays()[tripId] ?? [];
-          const dayActivities = this._dayActivities();
-          const map = new Map<string, Date>();
+          const dayActivityIds = this._dayActivityIds();
+          const instances = this._dayActivityInstances();
+          const map = new Map<string, Date[]>();
           for (const dayKey of dayKeys) {
-            for (const activityId of dayActivities[dayKey] ?? []) {
-              map.set(activityId, new Date(dayKey));
+            for (const instanceId of dayActivityIds[dayKey] ?? []) {
+              const poolId = instances[instanceId]?.activityId;
+              if (!poolId) continue;
+              map.set(poolId, [...(map.get(poolId) ?? []), new Date(dayKey)]);
             }
           }
           return map;
@@ -294,110 +394,66 @@ export class TripStore {
 
   // ── Commandes — Activities ────────────────────────────────────────────────
 
-  /** Crée une activité rattachée à un jour ; elle rejoint aussi automatiquement le pool général du trip. */
-  createActivity(tripId: string, dayId: Date, activity: Activity): void {
+  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour). */
+  createActivity(tripId: string, dayId: Date, poolActivity: PoolActivity, instance: DayActivityInstance): void {
+    this.addPoolActivity(tripId, poolActivity);
+    this.addDayActivityInstance(tripId, dayId, instance);
+  }
+
+  /** Crée une activité dans le pool général du trip uniquement (aucun jour) : elle sera affichée avec des contours en tiret tant qu'elle n'est placée sur aucun jour. */
+  createGeneralActivity(tripId: string, poolActivity: PoolActivity): void {
+    this.addPoolActivity(tripId, poolActivity);
+  }
+
+  private addPoolActivity(tripId: string, poolActivity: PoolActivity): void {
+    this._poolActivities.update((a) => ({ ...a, [poolActivity.id]: poolActivity }));
+    this._tripActivities.update((t) => ({
+      ...t,
+      [tripId]: (t[tripId] ?? []).includes(poolActivity.id)
+        ? t[tripId]
+        : [...(t[tripId] ?? []), poolActivity.id],
+    }));
+    this.markActivityPending(poolActivity.id);
+    this.activityPersistenceService.queueUpdate(tripId, poolActivity);
+  }
+
+  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance): void {
     const dayKey = dayId.toISOString();
 
-    this._activities.update((a) => ({ ...a, [activity.id]: activity }));
-    this._dayActivities.update((d) => ({
+    this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
+    this._dayActivityIds.update((d) => ({
       ...d,
-      [dayKey]: [...(d[dayKey] ?? []), activity.id],
+      [dayKey]: [...(d[dayKey] ?? []), instance.id],
     }));
-    this._tripActivities.update((t) => ({
-      ...t,
-      [tripId]: (t[tripId] ?? []).includes(activity.id)
-        ? t[tripId]
-        : [...(t[tripId] ?? []), activity.id],
-    }));
-    this.markActivityPending(activity.id);
+    this.markActivityPending(instance.id);
 
-    this.activityPersistenceService.queueUpdate(tripId, activity);
+    this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
     this.syncDayActivityIds(tripId, dayId);
   }
 
-  /** Crée une activité dans le pool général du trip uniquement (aucun jour) : elle sera affichée avec des contours en tiret jusqu'à être dispatchée. */
-  createGeneralActivity(tripId: string, activity: Activity): void {
-    this._activities.update((a) => ({ ...a, [activity.id]: activity }));
-    this._tripActivities.update((t) => ({
-      ...t,
-      [tripId]: (t[tripId] ?? []).includes(activity.id)
-        ? t[tripId]
-        : [...(t[tripId] ?? []), activity.id],
-    }));
-    this.markActivityPending(activity.id);
-
-    this.activityPersistenceService.queueUpdate(tripId, activity);
+  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité de pool elle-même. */
+  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): void {
+    const instance: DayActivityInstance = {
+      id: crypto.randomUUID(),
+      activityId: poolId,
+      ...defaultInstanceForm(),
+    };
+    this.addDayActivityInstance(tripId, targetDayId, instance);
   }
 
   /**
-   * Met à jour une activité, où qu'elle soit affichée (jour ou vue générale) :
-   * comme il s'agit d'un pointeur unique vers le pool, la modification se
-   * répercute automatiquement partout où elle est référencée.
+   * Déplace une instance existante d'un jour à l'autre (garde son form) — ne
+   * crée jamais de nouvelle instance, ne touche jamais au pool. No-op si
+   * elle est déjà sur le jour cible.
    */
-  updateActivity(tripId: string, activity: Activity): void {
-    this._activities.update((a) => ({ ...a, [activity.id]: activity }));
-    this.markActivityPending(activity.id);
-    this.activityPersistenceService.queueUpdate(tripId, activity);
-  }
-
-  private markActivityPending(activityId: string): void {
-    this._pendingActivityIds.update((s) => {
-      const copy = new Set(s);
-      copy.add(activityId);
-      return copy;
-    });
-  }
-
-  /**
-   * Supprime définitivement une activité du trip (pool + jour éventuel).
-   * `dayId` est optionnel : absent lorsque l'activité était uniquement
-   * affichée dans la vue générale (jamais dispatchée dans un jour).
-   */
-  removeActivity(tripId: string, activityId: string, dayId?: Date): void {
-    this._activities.update((a) => {
-      const copy = { ...a };
-      delete copy[activityId];
-      return copy;
-    });
-
-    this._tripActivities.update((t) => ({
-      ...t,
-      [tripId]: (t[tripId] ?? []).filter((id) => id !== activityId),
-    }));
-
-    if (dayId) {
-      const dayKey = dayId.toISOString();
-      this._dayActivities.update((d) => ({
-        ...d,
-        [dayKey]: (d[dayKey] ?? []).filter((id) => id !== activityId),
-      }));
-      this.syncDayActivityIds(tripId, dayId);
-    }
-
-    this.activityPersistenceService.removeActivity(tripId, activityId).catch((err) => {
-      console.error('[TripStore] Erreur suppression activité Firestore :', err);
-    });
-  }
-
-  reorderActivities(tripId: string, dayId: Date, ids: string[]): void {
-    const dayKey = dayId.toISOString();
-    this._dayActivities.update((d) => ({ ...d, [dayKey]: ids }));
-    this.syncDayActivityIds(tripId, dayId);
-  }
-
-  /**
-   * Rattache une activité existante (dispatchée ou non) à un jour donné.
-   * Si elle appartenait déjà à un autre jour, elle en est retirée. Ajout en
-   * fin de liste du jour cible. No-op si elle y est déjà.
-   */
-  dispatchActivity(tripId: string, activityId: string, targetDayId: Date): void {
+  moveDayActivityInstance(tripId: string, instanceId: string, targetDayId: Date): void {
     const targetKey = targetDayId.toISOString();
     const dayKeys = this._tripDays()[tripId] ?? [];
-    const dayActivities = this._dayActivities();
+    const dayActivityIds = this._dayActivityIds();
 
     let previousDayKey: string | null = null;
     for (const key of dayKeys) {
-      if ((dayActivities[key] ?? []).includes(activityId)) {
+      if ((dayActivityIds[key] ?? []).includes(instanceId)) {
         previousDayKey = key;
         break;
       }
@@ -405,12 +461,12 @@ export class TripStore {
 
     if (previousDayKey === targetKey) return;
 
-    this._dayActivities.update((d) => {
+    this._dayActivityIds.update((d) => {
       const copy = { ...d };
       if (previousDayKey) {
-        copy[previousDayKey] = (copy[previousDayKey] ?? []).filter((id) => id !== activityId);
+        copy[previousDayKey] = (copy[previousDayKey] ?? []).filter((id) => id !== instanceId);
       }
-      copy[targetKey] = [...(copy[targetKey] ?? []), activityId];
+      copy[targetKey] = [...(copy[targetKey] ?? []), instanceId];
       return copy;
     });
 
@@ -420,9 +476,130 @@ export class TripStore {
     this.syncDayActivityIds(tripId, targetDayId);
   }
 
+  /**
+   * Point d'entrée unique du drag-and-drop (voir ActivityDayDispatchOverlayComponent) :
+   * `origin === 'pool'` crée un nouveau placement (attach), `origin === 'day'`
+   * déplace le placement existant — `activityId` vaut respectivement le poolId
+   * ou l'instanceId selon l'origine (voir `ActivityCardComponent.buildDraggedInfo`).
+   */
+  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): void {
+    if (origin === 'pool') {
+      this.attachPoolActivityToDay(tripId, activityId, targetDayId);
+    } else {
+      this.moveDayActivityInstance(tripId, activityId, targetDayId);
+    }
+  }
+
+  /** Met à jour l'identité/les fichiers d'une activité de pool : se répercute sur toutes ses instances (elles ne stockent que le form). */
+  updatePoolActivity(tripId: string, poolActivity: PoolActivity): void {
+    this._poolActivities.update((a) => ({ ...a, [poolActivity.id]: poolActivity }));
+    this.markActivityPending(poolActivity.id);
+    this.activityPersistenceService.queueUpdate(tripId, poolActivity);
+  }
+
+  /** Met à jour le form d'une instance jour donnée : n'affecte ni le pool, ni les autres instances de la même activité. */
+  updateDayActivityInstance(tripId: string, instance: DayActivityInstance): void {
+    this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
+    this.markActivityPending(instance.id);
+    this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
+  }
+
+  private markActivityPending(id: string): void {
+    this._pendingActivityIds.update((s) => {
+      const copy = new Set(s);
+      copy.add(id);
+      return copy;
+    });
+  }
+
+  /**
+   * Supprime définitivement une activité de pool ET, en cascade, toutes ses
+   * instances (sur tous les jours où elle est placée). À utiliser depuis la
+   * carte en contexte pool.
+   */
+  removePoolActivity(tripId: string, poolId: string): void {
+    const dayKeys = this._tripDays()[tripId] ?? [];
+    const dayActivityIds = this._dayActivityIds();
+    const instances = this._dayActivityInstances();
+
+    const affectedDayKeys: string[] = [];
+    const instanceIdsToRemove: string[] = [];
+    for (const dayKey of dayKeys) {
+      const ids = (dayActivityIds[dayKey] ?? []).filter((id) => instances[id]?.activityId === poolId);
+      if (ids.length) {
+        affectedDayKeys.push(dayKey);
+        instanceIdsToRemove.push(...ids);
+      }
+    }
+
+    this._poolActivities.update((a) => {
+      const copy = { ...a };
+      delete copy[poolId];
+      return copy;
+    });
+    this._tripActivities.update((t) => ({
+      ...t,
+      [tripId]: (t[tripId] ?? []).filter((id) => id !== poolId),
+    }));
+
+    if (instanceIdsToRemove.length) {
+      const toRemove = new Set(instanceIdsToRemove);
+      this._dayActivityInstances.update((i) => {
+        const copy = { ...i };
+        for (const id of toRemove) delete copy[id];
+        return copy;
+      });
+      this._dayActivityIds.update((d) => {
+        const copy = { ...d };
+        for (const dayKey of affectedDayKeys) {
+          copy[dayKey] = (copy[dayKey] ?? []).filter((id) => !toRemove.has(id));
+        }
+        return copy;
+      });
+      for (const dayKey of affectedDayKeys) {
+        this.syncDayActivityIds(tripId, new Date(dayKey));
+      }
+      for (const instanceId of instanceIdsToRemove) {
+        this.dayActivityInstancePersistenceService.removeInstance(tripId, instanceId).catch((err) => {
+          console.error('[TripStore] Erreur suppression instance Firestore :', err);
+        });
+      }
+    }
+
+    this.activityPersistenceService.removeActivity(tripId, poolId).catch((err) => {
+      console.error('[TripStore] Erreur suppression activité Firestore :', err);
+    });
+  }
+
+  /** Supprime uniquement ce placement (cette instance) : le pool et ses autres instances restent intacts. À utiliser depuis la carte en contexte jour. */
+  removeDayActivityInstance(tripId: string, instanceId: string, dayId: Date): void {
+    const dayKey = dayId.toISOString();
+
+    this._dayActivityInstances.update((i) => {
+      const copy = { ...i };
+      delete copy[instanceId];
+      return copy;
+    });
+    this._dayActivityIds.update((d) => ({
+      ...d,
+      [dayKey]: (d[dayKey] ?? []).filter((id) => id !== instanceId),
+    }));
+    this.syncDayActivityIds(tripId, dayId);
+
+    this.dayActivityInstancePersistenceService.removeInstance(tripId, instanceId).catch((err) => {
+      console.error('[TripStore] Erreur suppression instance Firestore :', err);
+    });
+  }
+
+  reorderActivities(tripId: string, dayId: Date, ids: string[]): void {
+    const dayKey = dayId.toISOString();
+    this._dayActivityIds.update((d) => ({ ...d, [dayKey]: ids }));
+    this.syncDayActivityIds(tripId, dayId);
+  }
+
   private syncDayActivityIds(tripId: string, dayId: Date): void {
     const dayKey = dayId.toISOString();
-    const activityIds = this._dayActivities()[dayKey] ?? [];
+    const activityIds = this._dayActivityIds()[dayKey] ?? [];
     this.dayActivitiesPersistenceService.queueUpdate(tripId, dayId, activityIds);
   }
 
@@ -487,11 +664,27 @@ export class TripStore {
   removeDay(tripId: string, dayId: Date): void {
     const dayKey = dayId.toISOString();
 
-    // Les activités du jour supprimé restent dans le pool général du trip
-    // (elles apparaîtront simplement comme non-dispatchées) : seule la
-    // référence du jour vers elles disparaît.
-    this._dayActivities.update(dayActivities => {
-      const copy = { ...dayActivities };
+    // Les activités de POOL du jour supprimé restent dans le pool général du
+    // trip (identité + fichiers, potentiellement encore placées sur d'autres
+    // jours) : seules les INSTANCES de ce jour, elles, n'ont plus de sens
+    // sans leur jour et sont supprimées en cascade.
+    const instanceIds = this._dayActivityIds()[dayKey] ?? [];
+    if (instanceIds.length) {
+      const toRemove = new Set(instanceIds);
+      this._dayActivityInstances.update(instances => {
+        const copy = { ...instances };
+        for (const id of toRemove) delete copy[id];
+        return copy;
+      });
+      for (const instanceId of instanceIds) {
+        this.dayActivityInstancePersistenceService.removeInstance(tripId, instanceId).catch(err => {
+          console.error('[TripStore] Erreur suppression instance Firestore :', err);
+        });
+      }
+    }
+
+    this._dayActivityIds.update(dayActivityIds => {
+      const copy = { ...dayActivityIds };
       delete copy[dayKey];
       return copy;
     });
@@ -530,8 +723,8 @@ export class TripStore {
         ],
       }));
 
-      this._dayActivities.update(dayActivities => ({
-        ...dayActivities,
+      this._dayActivityIds.update(dayActivityIds => ({
+        ...dayActivityIds,
         [dayKey]: [],
       }));
 

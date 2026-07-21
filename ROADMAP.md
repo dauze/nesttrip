@@ -94,10 +94,11 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Complétion automatique de l'heure à la sélection
 - Fix décalage "NestTrip" à cause de la flèche
 - Fix rechargement de page lors de la modif d'une activity card
+- Activités réelles au niveau des days (form indépendant par jour) + version "light" dans le pool, fichiers centralisés sur l'activité de pool : une même activité peut être placée sur plusieurs jours
 
 ## 🔧 À faire
 
-### Offline & données
+### Offline & données (non prioritaire)
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible
 
@@ -107,10 +108,10 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Ouvrir le calendrier en dialog si écran taille smartphone
 
 ### Carte
-- Gérer le cas Asie : alternative à Google Maps
+- Gérer le cas Asie : alternative à Google Maps (non prioritaire)
 - Afficher la carte seulement si pas d'activité ou activités incomplètes
 - Carte pliée par défaut dans "Général" (aperçu + "voir plus" → bon jour)
-- Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser
+- Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 - Rajouter la Position actuelle de l'utilisateur sur la carte
 - Vue d'ensemble avec zoom adapté pour voirs tous les point d'un jour quand on arrive sur un jour. Ensuite, lorsqeu l'on scroll juqu'à l'activité 1, il fautr que le zoom se positionne sur le jour 1, exactement comme la carte est aujourduit. Une fois arrivé à la, le zoom déjà en place par rapport au scrolling sera en place et tout fonctionnera.
 - Je veux améliorer le zoom au scroll : il faudrait accélerer entre 2 point ert ralentir quand on est proche d'un point, là la trajectoir est linéaire
@@ -119,17 +120,16 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Hauteur de la carte Google en % d'écran plutôt qu'en pixels
 
 ### Activités
-- Vue vidéo avec animation qui parcourt le voyage
-- Bouton "œil" pour visu avec animation vue macro
-- Suggestions d'activités via la ville dans le pool
+- Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
+- Bouton "œil" pour visu avec animation vue macro (non prioritaire)
+- Suggestions d'activités via la ville dans le pool (non prioritaire)
 - Tri par ville et par jour dans l'onglet activités, non assignées en bas
-- Liste générale : rajouter l'info de la date si elle est assignée, mettre la menstion "À assigner" sinon avec un  truc visuelle, une couleur. 
+- Liste générale : rajouter l'info du/des jour(s) si l'activité est assignée (elle peut maintenant l'être sur plusieurs jours à la fois), mettre la mention "À assigner" sinon avec un truc visuel, une couleur.
 - Calcul auto des trajets entre activités (à pied / voiture / vélo)
-- Widget simplifié : saisie d'un horaire plutôt que des objet dates siumplifiérait l'objet et le stockage
-- Durée : autre méthode de saisie, gestion des durées > 24h si on a plusierus jour plusieurs jours ! et il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
-- Limite actuelle : une activité ne peut être positionnée que sur un seul jour → remettre les vraies activités au niveau des days, mettre une version "light" dans le pool (sans le activity form). Comme ça, on peut mettre plkusieurs fois la même activité dans plusierus jour et chaque activité à ses propres valeurs du form. Seule exception, tout les fichiers doivent se retrouver sur l'activité du pool (pas de sync à faire, activités dupliquables avec données différentes)
+- Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
+- Durée : autre méthode de saisie, gestion des durées > 24h si on a plusieurs jour plusieurs jours ! et il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
 
-### Nouveau voyage / IA
+### Nouveau voyage / IA (non prioritaire)
 - Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA)
 
@@ -150,20 +150,24 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ### UX / Interactions
 - Suppression : passer en "rester appuyé" plutôt qu'icône corbeille toujours visible
 - Couleur différente sur texte modifiable
-- Crayon pour modifier le titre
+- Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
 - Taille minimum dynamique sur les fenêtres swipe
-- Image : suppression du bloc image, clic → embla-carousel en p-dialog flouté (photos)
+- Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
 - Slide : l'élément suivant doit démarrer en scroll top (ignorer le scroll de l'élément précédent)
-- Si un seul trip, y aller directement
-- Navbar : chiffre du jour en gros, mois complet en plus petit en dessous
+- Si un seul trip, y aller directement et pas afficher la page de liste des trips 
+- Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi,; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée
-- Tooltip propriétaire à repositionner
-- Bar "Activités - Notes" en sticky en bas au slide (comme la carte)
+- Tooltip propriétaire à repositionner sur la suppression des activité
+- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. 
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
 - Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
 - p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
 - Login en `dvh` (prend en compte la barre Google)
+- Si on ajoute des activités sur le pool, l'ordre ne doit pas changer.
+- Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
+- Lorsque je drag and drop les activités, certaine se mettent avec des heure de début et de fin non renseigné (le bon cas ), d'autre s'alimente avec l'heure actuelle, ce n'est pas bien !
+- Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
 
 ### Bugs / fixes
 - Barre du bas incohérente ("Général") lors du drag and drop d'activités
