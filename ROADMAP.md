@@ -95,6 +95,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Fix décalage "NestTrip" à cause de la flèche
 - Fix rechargement de page lors de la modif d'une activity card
 - Activités réelles au niveau des days (form indépendant par jour) + version "light" dans le pool, fichiers centralisés sur l'activité de pool : une même activité peut être placée sur plusieurs jours
+- Login en `dvh` (prend en compte la barre Google)
 
 ## 🔧 À faire
 
@@ -153,7 +154,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
 - Taille minimum dynamique sur les fenêtres swipe
 - Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
-- Slide : l'élément suivant doit démarrer en scroll top (ignorer le scroll de l'élément précédent)
+- Slide : repenser le slide: metttre le slide directement dans chaque slider, comme ça, en allant au jour suivant le slide d'un élément n'est pas pollué par le slide précédant. Par contre, il faut une facon élégante de masquer le header fixe + le header de voyage en scollant vers le bas. On pourrait faire du ménage sur le calcul du window.scrollY sur le body, et il faut faire très attention au slide qui est calculé sur chaque slider pour caler les activités à la carte. Attention aussi à ne pas afficher le slider dans le slide je ne veux pas plusieurs assenseurs. Cela simplifiera peut etre aussi le sticky sur la carte qui était compliqué à réaliser.
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips 
 - Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi,; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée
@@ -163,7 +164,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
 - p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
-- Login en `dvh` (prend en compte la barre Google)
 - Si on ajoute des activités sur le pool, l'ordre ne doit pas changer.
 - Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
 - Lorsque je drag and drop les activités, certaine se mettent avec des heure de début et de fin non renseigné (le bon cas ), d'autre s'alimente avec l'heure actuelle, ce n'est pas bien !
@@ -172,9 +172,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ### Bugs / fixes
 - Barre du bas incohérente ("Général") lors du drag and drop d'activités : la bar est recréé dasn el composant de drag and drop mais elle est uniquement bien simulé dasn l'onglet Général, on ne pourrait pas faire un clone du visuelle comme pour le drag and drop que tu as mis ? Comme ça si il y a des changements futur, pas besoin de faire de correctif
 - Depuis le pool, sélection d'une activité sous le calendrier : position mal reconnue à l'affichage
-- Avis Google en anglais → traduire en français + "voir plus"
 - Si j'ai qu'un seul trip, je ne peux plus faire retour sur la première page, donc je ne peux pas créer de trip. C'est à la connexion qu'il faut aller sur le trip, pas tout le temps 
-
+- mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle 
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)

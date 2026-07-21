@@ -259,3 +259,12 @@ html.nav-back::view-transition-new(root) {
   from { transform: translateX(0); }
   to { transform: translateX(100%); }
 }
+
+/* La carte déplacée glisse jusqu'à sa position finale */
+.cdk-drag-animating {
+  transition: transform 150ms cubic-bezier(.2, 0, .2, 1);
+}
+
+.cdk-drag-placeholder {
+  visibility: hidden;
+}
