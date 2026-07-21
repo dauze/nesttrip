@@ -13,7 +13,6 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { NotesType } from '@app/core/enums/notes.type';
 import { Card } from 'primeng/card';
 
-
 @Component({
   selector: 'app-notes',
   standalone: true,

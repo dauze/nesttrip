@@ -91,6 +91,7 @@ export class TripFacade {
     this.store.createGeneralActivity(tripId, activity);
   }
 
+
   /** Met à jour une activité (pointeur unique) : se répercute partout où elle est affichée. */
   updateActivity(tripId: string, activity: Activity): void {
     this.store.updateActivity(tripId, activity);
@@ -162,10 +163,13 @@ export class TripFacade {
     const previousItemIds = tripNotesItems[trip.id] ?? [];
     for (const itemId of previousItemIds) {
       delete notesItems[itemId];
+      delete notesItems[itemId];
     }
 
     delete tripNotesItems[trip.id];
+    delete tripNotesItems[trip.id];
     delete newTripDays[trip.id];
+    delete newTripActivities[trip.id];
     delete newTripActivities[trip.id];
     delete tripMembers[trip.id];
 
@@ -173,11 +177,19 @@ export class TripFacade {
     newTripDays[trip.id] = [];
     newTripActivities[trip.id] = [];
     tripNotesItems[trip.id] = [];
+
     for (const item of trip.notes.items) {
       notesItems[item.id] = item;
       tripNotesItems[trip.id].push(item.id);
     }
 
+    // 1. Le pool d'activités du trip est la source de vérité.
+    for (const activity of trip.activities) {
+      newActivities[activity.id] = activity;
+      newTripActivities[trip.id].push(activity.id);
+    }
+
+    // 2. Les jours ne stockent que des références vers ce pool.
     // 1. Le pool d'activités du trip est la source de vérité.
     for (const activity of trip.activities) {
       newActivities[activity.id] = activity;
@@ -207,6 +219,7 @@ export class TripFacade {
    private mergeFromRemote(trip: Trip): void {
     const currentActivities = this.store._activities();
     const newActivities = { ...currentActivities };
+
     const newDayActivities: Record<string, string[]> = {};
     const pendingIds = this.store._pendingActivityIds();
 
