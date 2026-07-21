@@ -1,0 +1,245 @@
+// Ce fichier ne fait QUE de la géométrie (position fixe, tailles, décalages
+// d'animation). Les couleurs/fonds viennent de classes PrimeFlex posées dans
+// le template (surface-0, text-color-secondary...), PAS de var(--p-surface-*)
+// écrites ici : ces variables brutes ne s'adaptent PAS au mode sombre — seules
+// les classes utilitaires PrimeFlex les enveloppent dans light-dark().
+// var(--p-primary-color) reste utilisée telle quelle : les couleurs de marque
+// ne changent pas selon le mode.
+
+.dispatch-overlay {
+  z-index: 1200;
+  pointer-events: none;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transition: background 300ms ease, backdrop-filter 300ms ease;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+
+  &--active {
+    background: rgba(0, 0, 0, 0.17);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+.dispatch-overlay__sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  flex-direction: column;
+  
+  min-height: var(--dispatch-collapsed-h, 56px);
+  max-height: var(--dispatch-collapsed-h, 56px);
+  
+  // Toujours opaque (fond posé par `surface-0` dans le template) : on ne
+  // doit jamais voir la vraie barre de navigation en dessous au travers.
+  // La réplique et la grille se chevauchent et se croisent en fondu
+  // *au-dessus* de ce fond opaque, entre elles, pas au travers de lui.
+  border-radius: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  transition: max-height var(--dispatch-expand-duration, 700ms) cubic-bezier(0.16, 1, 0.3, 1), border-radius 500ms ease;
+
+  // `--bar-visible` (drag en cours dans un jour, avant escalade) n'affiche
+  // que la barre repliée, identique visuellement à la vraie barre nav
+  // qu'elle masque au repos — sans voile ni interception de pointeur, qui
+  // restent réservés à `--active` (une fois la bulle formée).
+  .dispatch-overlay--active &,
+  .dispatch-overlay--bar-visible & {
+    display: flex;
+  }
+
+  .dispatch-overlay--active & {
+    pointer-events: auto;
+  }
+
+  .dispatch-overlay--expanded & {
+    max-height: 50vh;
+    border-radius: 28px 28px 0 0;
+  }
+}
+
+.dispatch-overlay__replica {
+  position: absolute;
+  left: 0;
+  right: 0;
+  // `top: 0` : reste calée sur le bord haut du sheet (`#sheet`, son
+  // conteneur positionné), qui monte/descend avec la hauteur du sheet —
+  // sans jamais déformer sa propre hauteur, fixée ci-dessous.
+  top: 0;
+  height: var(--dispatch-collapsed-h, 56px); /* Maintient sa taille initiale */
+  overflow: hidden;
+  opacity: 1;
+  pointer-events: none;
+  // Liée à --dispatch-expand-duration (calculée en TS), avec un léger
+  // coefficient (×0.85) : reste proportionnelle à la croissance du sheet
+  // tout en étant un cran plus rapide qu'elle, aller comme retour.
+  transition: opacity calc(var(--dispatch-expand-duration, 700ms) * 0.85) ease, transform calc(var(--dispatch-expand-duration, 700ms) * 0.85) ease;
+
+  .dispatch-overlay--expanded & {
+    opacity: 0;
+    /* Part vers la gauche de l'écran à l'ouverture ; revient symétriquement
+       de la gauche à la fermeture (même transition, sens inverse). */
+    transform: translateX(-100%);
+  }
+}
+
+.dispatch-overlay__replica-tab--out {
+  flex: 0 0 0 !important;
+  max-width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+  transform: translateX(-120vw);
+  opacity: 0;
+  transition:
+    transform 650ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 400ms ease,
+    flex-basis 650ms cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 650ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 650ms ease,
+    margin 650ms ease;
+}
+
+.dispatch-overlay__replica-tab--flipped {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.dispatch-overlay__scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1rem;
+
+  opacity: 0;
+  /* CORRECTION : On démarre de plus bas (ex: 3rem) */
+  transform: translateY(3rem);
+  // Liée à --dispatch-expand-duration (calculée en TS), comme .dispatch-overlay__replica
+  // ci-dessus : les trois animations du calendrier restent ainsi synchronisées
+  // quelle que soit la distance (px) réellement parcourue par le sheet.
+  transition: opacity var(--dispatch-expand-duration, 700ms) ease, transform var(--dispatch-expand-duration, 700ms) cubic-bezier(0.16, 1, 0.3, 1);
+
+  min-height: 0;
+
+  .dispatch-overlay--expanded & {
+    opacity: 1;
+    /* CORRECTION : On le remonte à sa position finale */
+    transform: translateY(0);
+  }
+}
+
+.dispatch-overlay__month-label {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
+  text-transform: capitalize;
+  padding: 0.5rem 0;
+}
+
+.dispatch-overlay__day {
+  position: relative;
+  opacity: 0;
+  /* Optionnel : tu peux accentuer un peu plus la distance de démarrage des jours */
+  transform: translateY(1.5rem); 
+  transition: opacity 350ms ease, transform 350ms ease;
+
+  &--in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &--flip {
+    transition: none;
+  }
+}
+
+.dispatch-overlay__day-count {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  color: var(--p-primary-color);
+}
+
+// ── Bulle flottante (clone du header de la carte) ──────────────────────────
+
+.dispatch-ball {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1300;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  border-style: solid;
+  // Couleurs/épaisseurs de départ posées en JS (voir `playFormAnimation`),
+  // identiques au repos à celles de l'activity-header (fin liseré gris 3
+  // côtés, bord gauche épais coloré) : rien à fixer ici, `border-width: 0`
+  // ne sert qu'à rester invisible tant qu'aucun drag n'est en cours.
+  border-width: 0;
+  border-radius: 12px;
+  will-change: transform, width, height, border-radius, border-width;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+
+  &--active {
+    opacity: 1;
+  }
+}
+
+.dispatch-ball__row {
+  padding: 0 0.65rem;
+  gap: 0.5rem;
+  transition: padding 300ms ease, gap 300ms ease;
+
+  &--collapsed {
+    padding: 0;
+    gap: 0;
+  }
+}
+
+.dispatch-ball__handle {
+  overflow: hidden;
+  transition: opacity 300ms ease, width 300ms ease, margin 300ms ease;
+}
+
+.dispatch-ball__thumb {
+  position: relative;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  transition: border-radius 300ms ease;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    -webkit-user-drag: none;
+  }
+
+  &--fill {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+  }
+}
+
+.dispatch-ball__text {
+  overflow: hidden;
+  transition: opacity 300ms ease, width 300ms ease;
+}
+
+.dispatch-ball--collapsing .dispatch-ball__handle,
+.dispatch-ball--collapsing .dispatch-ball__text {
+  opacity: 0;
+  width: 0;
+}

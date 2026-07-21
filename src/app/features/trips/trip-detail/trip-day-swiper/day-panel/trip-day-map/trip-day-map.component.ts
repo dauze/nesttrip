@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
@@ -16,7 +16,10 @@ export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
-  readonly collapsed = signal(false);
+  // Suit l'état partagé du service (permet à DayPanelComponent de forcer le
+  // collapse pendant un drag), tout en restant localement modifiable via le
+  // toggle du panneau (voir l'effet ci-dessous qui repropage vers le service).
+  readonly collapsed = linkedSignal(() => this.googleMapPanelService.isCollapsed());
   zoom = input(13);
   readonly focusZoom = input(13);
   

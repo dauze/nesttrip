@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -46,6 +46,16 @@ export class AccueilTripComponent {
 
   // id -> boolean
   selectedTripsMap: Record<string, boolean> = {};
+
+  constructor() {
+    //TODO un fix à prévoir, si on a qu'un seul trip, on ne peut plus retourner à la page, il faut mettre un verrou ou le faire sur l'accueil
+    // effect(() => {
+    //   const trips = this.trips();
+    //   if (!this.tripsLoading() && trips.length === 1) {
+    //     this.router.navigate(['/trips', trips[0].id], { replaceUrl: true });
+    //   }
+    // });
+  }
 
   toggleEditMode(): void {
     this.editMode = !this.editMode;

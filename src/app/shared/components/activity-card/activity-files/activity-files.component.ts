@@ -21,24 +21,33 @@ export class ActivityFilesComponent {
   private readonly tripFacade = inject(TripFacade);
 
   readonly tripId = input.required<string>();
-  /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
-  readonly dayId = input<Date | undefined>(undefined);
   readonly activity = input.required<Activity>();
 
   readonly uploadingFiles = signal<Set<string>>(new Set());
 
+  /**
+   * Les fichiers vivent uniquement sur l'activité de pool (jamais dupliqués
+   * par instance/jour) : le chemin de stockage et les écritures ciblent
+   * toujours `activity().activityId`, jamais `activity().id` (qui est un
+   * instanceId en contexte jour).
+   */
   onFileSelect(event: { files: File[] }): void {
     const activity = this.activity();
 
     for (const file of event.files) {
-      const dayFolder = this.dayId()?.getTime() ?? 'general';
-      const path = `trips/${this.tripId()}/${dayFolder}/${activity.id}/${file.name}`;
+      const path = `trips/${this.tripId()}/${activity.activityId}/${file.name}`;
       this.uploadingFiles.update((s) => new Set(s).add(file.name));
 
       this.fileService.uploadFile(file, path).pipe(
         tap(({ url, name }) => {
-          this.tripFacade.updateActivity(this.tripId(), {
-            ...activity,
+          this.tripFacade.updatePoolActivity(this.tripId(), {
+            id: activity.activityId,
+            title: activity.title,
+            placeId: activity.placeId,
+            address: activity.address,
+            latitude: activity.latitude,
+            longitude: activity.longitude,
+            photoRefs: activity.photoRefs,
             files: [...(activity.files ?? []), { name, url, path }],
           });
         }),
@@ -54,8 +63,14 @@ export class ActivityFilesComponent {
     const file = activity.files![index];
     this.fileService.deleteFile(file.path).pipe(
       tap(() => {
-        this.tripFacade.updateActivity(this.tripId(), {
-          ...activity,
+        this.tripFacade.updatePoolActivity(this.tripId(), {
+          id: activity.activityId,
+          title: activity.title,
+          placeId: activity.placeId,
+          address: activity.address,
+          latitude: activity.latitude,
+          longitude: activity.longitude,
+          photoRefs: activity.photoRefs,
           files: (activity.files ?? []).filter((_, i) => i !== index),
         });
       }),

@@ -4,7 +4,7 @@
     <p-panel [toggleable]="true" cdkDrag>
       <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
-          <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping"><i class="pi pi-bars"></i></span>
+          <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
           <textarea
             pTextarea
             class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
@@ -45,7 +45,7 @@
           @if(item.type !== NotesType.TODO || !point.checked){
           <div class="flex align-items-center gap-2 w-full pl-3 pr-2"
           cdkDrag>
-            <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem swiper-no-swiping">
+            <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem swiper-no-swiping drag-handle-hitbox">
               <i class="pi pi-ellipsis-v"></i>
               <i class="pi pi-ellipsis-v"></i>
             </span>

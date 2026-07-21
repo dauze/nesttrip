@@ -1,0 +1,90 @@
+<div
+  class="dispatch-overlay fixed left-0 right-0 top-0 bottom-0"
+  [class.dispatch-overlay--active]="dispatchService.isVisible()"
+  [class.dispatch-overlay--expanded]="sheetExpanded()"
+  [class.dispatch-overlay--bar-visible]="dispatchService.activeDayDrag() !== null">
+
+  <div #sheet class="dispatch-overlay__sheet surface-0"
+    [style.--dispatch-collapsed-h.px]="collapsedHeight()"
+    [style.--dispatch-expand-duration.ms]="expandDurationMs()">
+
+    <!-- Réplique EXACTE de app-trip-tabs-nav -->
+    <div #replicaNav class="dispatch-overlay__replica"> 
+      <p-tabs [value]="activeDayId()" class="tabs-pop">
+        <p-tablist>
+          @for (tab of tabs(); track tab.id; let ti = $index) {
+            <p-tab
+              #replicaTab
+              [value]="tab.id"
+              [class.dispatch-overlay__replica-tab--out]="ti === 0 && sheetExpanded()"
+              [class.dispatch-overlay__replica-tab--flipped]="flippedDayIds().has(tab.id)">
+              {{ tab.label }}
+            </p-tab>
+          }
+        </p-tablist>
+      </p-tabs>
+    </div>
+
+    <div #grid class="dispatch-overlay__scroll" (scroll)="onGridScroll()">
+      @for (group of monthGroups(); track group.label) {
+        <div class="dispatch-overlay__month">
+          <div class="dispatch-overlay__month-label surface-0 font-semibold text-sm">{{ group.label }}</div>
+          <div class="flex flex-wrap gap-2 mb-2">
+            @for (day of group.days; track day.id.getTime(); let di = $index) {
+             <p-button
+                #dayCell
+                [rounded]="true"
+                [text]="hoveredDayKey() !== dayKeyFor(day)" 
+                [severity]="hoveredDayKey() === dayKeyFor(day) ? undefined : 'secondary'"
+                [attr.data-day-key]="dayKeyFor(day)"
+                [style.transitionDelay.ms]="sheetExpanded() ? di * 25 : 0"
+                class="dispatch-overlay__day"
+                [class.dispatch-overlay__day--in]="sheetExpanded()"
+                [class.dispatch-overlay__day--flip]="flippedDayIds().has(dayKeyFor(day))">
+                <span class="flex flex-column align-items-center gap-0">
+                  <span class="text-lg font-bold line-height-1">{{ day.id | date: 'd' }}</span>
+                  <span class="text-xs uppercase line-height-1">{{ day.id | date: 'EEE' }}</span>
+                </span>
+                @if ((countsByDay().get(dayKeyFor(day)) ?? 0) > 0) {
+                  <span class="dispatch-overlay__day-count">{{ countsByDay().get(dayKeyFor(day)) }}</span>
+                }
+              </p-button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<div
+  #ball
+  class="dispatch-ball surface-0"
+  [class.dispatch-ball--active]="dispatchService.isVisible()"
+  [class.dispatch-ball--formed]="formed()"
+  [style.transform]="formed() ? ballTransform() : null"
+  [style.borderLeftColor]="dragged()?.color ?? null">
+  <div class="dispatch-ball__row flex align-items-center h-full" [class.dispatch-ball__row--collapsed]="thumbFilled()">
+    <span class="dispatch-ball__handle text-color-secondary flex-shrink-0">
+      <i class="pi pi-bars"></i>
+    </span>
+    <div class="dispatch-ball__thumb flex-shrink-0 overflow-hidden surface-100" [class.dispatch-ball__thumb--fill]="thumbFilled()">
+      @if (dragged(); as info) {
+        @if (info.photoRef) {
+          @if (photoUrl$(info.photoRef) | async; as url) {
+            <img [src]="url" alt="" draggable="false" />
+          }
+        } @else {
+          <span class="flex align-items-center justify-content-center w-full h-full">
+            <i [class]="'pi text-color-secondary ' + info.icon"></i>
+          </span>
+        }
+      }
+    </div>
+    <div class="dispatch-ball__text flex flex-column flex-1 min-w-0">
+      @if (dragged(); as info) {
+        <span class="font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ info.title }}</span>
+      }
+    </div>
+  </div>
+</div>

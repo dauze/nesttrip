@@ -3,10 +3,8 @@ import { PanelModule } from 'primeng/panel';
 import { Button } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { Activity } from '@app/shared/components/activity-card/activity.model';
+import { PoolActivity } from '@app/shared/components/activity-card/activity.model';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
-import { ActivityType } from '@core/enums/activites-type.enum';
-import { BookingStatus } from '@core/enums/booking.status';
 import { extractCityFromAddress } from '@app/shared/utils/extract-city';
 import { Card } from 'primeng/card';
 
@@ -14,7 +12,7 @@ const UNCATEGORIZED_LABEL = 'À catégoriser';
 
 interface CityGroup {
   city: string;
-  activities: Activity[];
+  activities: PoolActivity[];
 }
 
 @Component({
@@ -30,14 +28,10 @@ export class TripActivitiesComponent {
 
   readonly tripId = input.required<string>();
 
-  private readonly allActivities = computed(() => this.tripFacade.getAllActivities(this.tripId())());
-  private readonly activityDayIds = computed(() => this.tripFacade.getActivityDayIds(this.tripId())());
-
-  /** L'activité est "dispatchée" si elle est référencée par au moins un jour ; sinon contours en tiret (géré par ActivityCardComponent selon la présence de dayId). */
-  readonly dayIdFor = (activityId: string) => this.activityDayIds().get(activityId);
+  private readonly allActivities = computed(() => this.tripFacade.getAllPoolActivities(this.tripId())());
 
   readonly cityGroups = computed<CityGroup[]>(() => {
-    const groups = new Map<string, Activity[]>();
+    const groups = new Map<string, PoolActivity[]>();
 
     for (const activity of this.allActivities()) {
       const city = activity.placeId ? extractCityFromAddress(activity.address) : null;
@@ -60,12 +54,7 @@ export class TripActivitiesComponent {
     this.tripFacade.createGeneralActivity(this.tripId(), {
       id: crypto.randomUUID(),
       title: '',
-      type: ActivityType.ACTIVITE,
-      duration: 0,
-      price: { amount: 0, currency: 'EUR' },
       placeId: '',
-      booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
-      notes: '',
       files: [],
       photoRefs: [],
     });
