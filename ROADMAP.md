@@ -158,7 +158,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi,; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée
 - Tooltip propriétaire à repositionner sur la suppression des activité
-- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. 
+- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
 - Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
@@ -170,12 +170,14 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
 
 ### Bugs / fixes
-- Barre du bas incohérente ("Général") lors du drag and drop d'activités
+- Barre du bas incohérente ("Général") lors du drag and drop d'activités : la bar est recréé dasn el composant de drag and drop mais elle est uniquement bien simulé dasn l'onglet Général, on ne pourrait pas faire un clone du visuelle comme pour le drag and drop que tu as mis ? Comme ça si il y a des changements futur, pas besoin de faire de correctif
 - Depuis le pool, sélection d'une activité sous le calendrier : position mal reconnue à l'affichage
 - Avis Google en anglais → traduire en français + "voir plus"
+- Si j'ai qu'un seul trip, je ne peux plus faire retour sur la première page, donc je ne peux pas créer de trip. C'est à la connexion qu'il faut aller sur le trip, pas tout le temps 
 
 ### Qualité / process
-- Améliorer le .ico (manifest + png)
+- Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)
 - Secret de déploiement pour la release
 - Menu : mode sombre / clair / système
+- Faire un gros travail de code review pour uniformiser les pratiques (exemple les oninit alors qu'on est en angular 21), supprimer le code mort, déplacer dans des services des comportement isolé sur certain fichiers trop gros, séparer les trop gros fichier intelligement, 

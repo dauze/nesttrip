@@ -298,10 +298,18 @@ export class TripFacade {
     this.store._poolActivities.set(newPoolActivities);
     this.store._dayActivityInstances.set(newInstances);
     this.store._dayActivityIds.set(newDayActivityIds);
-    this.store._tripActivities.update((map) => ({
-      ...map,
-      [trip.id]: trip.activities.map((a) => a.id),
-    }));
+    // Firestore ne garantit pas l'ordre des clés d'un champ map (`activities`) :
+    // reconstruire l'ordre du pool à partir de `trip.activities` à chaque
+    // snapshot ferait "sauter" les activités existantes dès qu'on en ajoute
+    // une. On garde l'ordre local déjà connu et on se contente d'ajouter les
+    // nouveaux ids à la fin / retirer ceux disparus côté distant.
+    this.store._tripActivities.update((map) => {
+      const previousOrder = map[trip.id] ?? [];
+      const remoteIds = new Set(trip.activities.map((a) => a.id));
+      const preserved = previousOrder.filter((id) => remoteIds.has(id) || pendingIds.has(id));
+      const newIds = trip.activities.map((a) => a.id).filter((id) => !previousOrder.includes(id));
+      return { ...map, [trip.id]: [...preserved, ...newIds] };
+    });
 
     this.store._tripMembers.update((map) => {
       const current = map[trip.id] ?? {};

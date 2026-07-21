@@ -9,8 +9,8 @@ export function dayActivityInstanceFromFb(a: DayActivityInstanceFirebase): DayAc
     price: a.price ?? { amount: 0, currency: 'EUR' },
     booking: a.booking ? bookingFromFb(a.booking) : { status: BookingStatus.NOT_NEEDED },
     notes: a.notes ?? '',
-    startTime: a.startTime ? new Date(Number(a.startTime)) : new Date(),
-    endTime: a.endTime ? new Date(Number(a.endTime)) : new Date(),
+    startTime: a.startTime ? new Date(Number(a.startTime)) : undefined,
+    endTime: a.endTime ? new Date(Number(a.endTime)) : undefined,
   };
 }
 

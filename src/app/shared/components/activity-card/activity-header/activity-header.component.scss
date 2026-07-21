@@ -4,11 +4,15 @@
 // et/ou déclenche le drag natif du navigateur (surtout sur l'image), ce qui
 // entre en conflit avec notre propre mécanisme de drag & drop et laisse
 // l'interface comme "coincée" en drag après le relâchement.
+// Padding + marge négative : agrandit la zone tactile réelle sans
+// déplacer visuellement l'icône ni pousser les éléments voisins.
 .drag-handle {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   touch-action: none;
+  padding: 0.5rem;
+  margin: -0.5rem 0;
 }
 
 img {

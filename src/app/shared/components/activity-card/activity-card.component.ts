@@ -22,7 +22,9 @@ import { ActivityFilesComponent } from './activity-files/activity-files.componen
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { Button } from 'primeng/button';
+import { Tag } from 'primeng/tag';
 import { ConfirmationService } from 'primeng/api';
+import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
 
 /**
  * Délai de "hold" à respecter, poignée enfoncée sans bouger, avant de
@@ -50,7 +52,7 @@ const INSTANT_PANEL_MOTION: { duration: number } = { duration: 0 };
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, Button,
+    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, Button, Tag, DayLabelsListPipe,
     ActivityHeaderComponent, ActivityFormComponent,
     ActivityFilesComponent, ActivityGoogleInfoComponent,
   ],
@@ -85,6 +87,10 @@ export class ActivityCardComponent {
   /** true uniquement en contexte pool, quand cette activité n'est placée sur AUCUN jour. */
   readonly isPlacedNowhere = computed(() =>
     !this.dayId() && (this.tripActivityDayIds().get(this.activityId())?.length ?? 0) === 0
+  );
+  /** Jours où cette activité est placée, triés — uniquement pertinent en contexte pool (vue générale). */
+  readonly assignedDays = computed(() =>
+    [...(this.tripActivityDayIds().get(this.activityId()) ?? [])].sort((a, b) => a.getTime() - b.getTime())
   );
 
   readonly bookingMeta = computed(() => {
