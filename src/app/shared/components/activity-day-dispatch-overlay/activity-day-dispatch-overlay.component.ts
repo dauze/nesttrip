@@ -290,12 +290,10 @@ export class ActivityDayDispatchOverlayComponent {
 
   private triggerEscalation(info: DraggedActivityInfo): void {
     const pointer = this.dispatchService.pointer();
-    // `activeDayDragElement()` est le vrai nœud de la carte, en train de
-    // suivre le doigt en direct (`position:fixed`, voir
-    // ActivityCardComponent.setDragTransform/DayPanelComponent) — plus de
-    // clone de preview séparé à récupérer, sa géométrie est donc toujours à
-    // jour et déjà à la bonne taille (carte repliée avant même le seuil de
-    // déclenchement du drag, voir `collapseInstantly`).
+    // `activeDayDragElement()` est le clone qui suit le doigt en direct
+    // (`position:fixed`, voir DayPanelComponent.beginCardFollow) — sa
+    // géométrie est toujours à jour et déjà à la bonne taille (carte repliée
+    // avant même le seuil de déclenchement du drag, voir `collapseInstantly`).
     const sourceEl = this.dispatchService.activeDayDragElement();
     const rect = sourceEl?.getBoundingClientRect()
       ?? new DOMRect(pointer.x - BALL_SIZE / 2, pointer.y - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE);
@@ -854,12 +852,11 @@ export class ActivityDayDispatchOverlayComponent {
 
   /**
    * Désescalade (jour) : contrairement à `playReturnAnimation`, aucune
-   * position d'origine fixe n'a de sens ici (le cdkDrag sous-jacent a
-   * continué de bouger pendant l'escalade) — la bulle se redéploie donc en
-   * forme de carte SUR PLACE (aucune translation) puis s'efface en fondu,
-   * pendant que la vraie carte redevient visible au même endroit dès que
-   * `dayEscalated()` repasse à `false` (voir `setDragHidden` côté
-   * DayPanelComponent.handleDragPointerMove).
+   * position d'origine fixe n'a de sens ici (le drag sous-jacent a continué
+   * de bouger pendant l'escalade) — la bulle se redéploie donc en forme de
+   * carte SUR PLACE (aucune translation) puis s'efface en fondu, pendant que
+   * le clone qui suit le doigt redevient visible au même endroit dès que
+   * `dayEscalated()` repasse à `false` (voir DayPanelComponent.handleDragPointerMove).
    */
   private playDeescalateAnimation(): void {
     const ball = this.ballRef()?.nativeElement;

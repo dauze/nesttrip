@@ -35,7 +35,7 @@
 
   <!-- Voir ActivityDispatchService.registerDragPortal : point d'ancrage hors du
        swiper de jours (dont un ancêtre `swiper-slide` applique transform/filter,
-       ce qui casserait le position:fixed) pour la carte réellement draguée
-       pendant un réordonnancement intra-jour (DayPanelComponent). -->
+       ce qui casserait le position:fixed) pour le CLONE qui suit le doigt
+       pendant un réordonnancement intra-jour (DayPanelComponent.beginCardFollow). -->
   <div #dragPortal class="drag-portal-anchor"></div>
 </div>

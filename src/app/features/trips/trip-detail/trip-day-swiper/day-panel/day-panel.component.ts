@@ -44,15 +44,32 @@ interface DayDragState {
   wasEscalated: boolean;
   readonly startClientX: number;
   readonly startClientY: number;
-  /** Position du pointeur à l'instant où le seuil a été franchi — sert de référence pour le `translate3d` appliqué à chaque frame. */
-  baseClientX: number;
-  baseClientY: number;
+  /**
+   * Distance (px) entre le point de pointerdown et le coin haut-gauche de la
+   * carte, mesurée AVANT tout collapse (voir `onDragHandleDown`) — le collapse
+   * simultané de TOUTES les cartes (dont d'éventuelles cartes au-dessus,
+   * elles aussi dépliées) peut faire remonter la carte draguée sans que le
+   * doigt n'ait bougé. En repositionnant toujours la carte à
+   * `pointeur courant - grabOffset` plutôt qu'à sa position mesurée après
+   * collapse, elle reste exactement sous le doigt, à l'endroit où elle a été
+   * saisie, quel que soit le réagencement de la liste.
+   */
+  readonly grabOffsetX: number;
+  readonly grabOffsetY: number;
   /** Offsets (id, top document-relatif) de toutes les cartes, figés une seule fois au franchissement du seuil — les voisines ne bougent pas dans le DOM pendant le drag, seul leur décalage visuel change. */
   offsets: { id: string; top: number }[];
   /** Distance top-à-top entre deux cartes consécutives (déjà collapsées) — sert de grille uniforme pour le hit-test. */
   slotHeight: number;
-  originParent: Node | null;
-  originNextSibling: ChildNode | null;
+  /**
+   * Clone visuel qui suit le doigt, ajouté au portail hors-swiper — voir
+   * `beginCardFollow`. Le VRAI nœud de la carte, lui, ne quitte JAMAIS sa
+   * place dans le DOM (juste masqué via `leaveFlowHidden`) : le reparenter
+   * (comme une version précédente le faisait) annule le geste au premier
+   * mouvement sur beaucoup de navigateurs/plateformes, le nœud déplacé étant
+   * la cible du pointeur actif — la même logique que `.cdk-drag-preview`
+   * dans Angular CDK, qui clone pour la même raison.
+   */
+  cloneEl: HTMLElement | null;
 }
 
 @Component({
@@ -80,6 +97,8 @@ export class DayPanelComponent {
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
+  /** Conteneur flex de la liste — voir `lockActivityListHeight` : sa hauteur est figée pendant un drag pour ne pas "sauter" quand la carte draguée quitte le flux. */
+  private readonly activityList = viewChild<ElementRef<HTMLElement>>('activityList');
 
   private scrollTimeout?: number;
   private isTouching = false;
@@ -333,6 +352,11 @@ export class DayPanelComponent {
     const fromIndex = this.activities().findIndex(a => a.id === ev.activityId);
     if (!card || fromIndex === -1) return;
 
+    // Mesuré AVANT le collapse : voir la doc de `grabOffsetX/Y` sur DayDragState.
+    const preCollapseRect = card.hostElement.getBoundingClientRect();
+    const grabOffsetX = ev.x - preCollapseRect.left;
+    const grabOffsetY = ev.y - preCollapseRect.top;
+
     this.lockService.lock();
 
     const cards = new Map<string, boolean>();
@@ -357,12 +381,11 @@ export class DayPanelComponent {
       thresholdCrossed: false,
       startClientX: ev.x,
       startClientY: ev.y,
-      baseClientX: ev.x,
-      baseClientY: ev.y,
+      grabOffsetX,
+      grabOffsetY,
       offsets: [],
       slotHeight: 0,
-      originParent: null,
-      originNextSibling: null,
+      cloneEl: null,
       wasEscalated: false,
     };
     this.pointerY = ev.y;
@@ -402,16 +425,18 @@ export class DayPanelComponent {
     // Pendant l'escalade (survol prolongé de la barre de jours), la bulle a
     // la main : on met le suivi local en pause sans le tuer (voir aussi
     // `startDayDragAutoScroll`), la reprise est automatique à la désescalade.
-    // La carte, elle, est masquée le temps de l'escalade pour ne jamais
-    // l'avoir visible en même temps que la bulle (voir `setDragHidden`).
+    // Le clone, lui, est masqué le temps de l'escalade pour ne jamais
+    // l'avoir visible en même temps que la bulle.
     const escalated = this.dispatchService.dayEscalated();
     if (escalated !== drag.wasEscalated) {
       drag.wasEscalated = escalated;
-      drag.card.setDragHidden(escalated);
+      if (drag.cloneEl) drag.cloneEl.style.visibility = escalated ? 'hidden' : '';
     }
     if (escalated) return;
 
-    drag.card.updateDragTransform(event.clientX - drag.baseClientX, event.clientY - drag.baseClientY);
+    if (drag.cloneEl) {
+      drag.cloneEl.style.transform = `translate3d(${event.clientX - drag.startClientX}px, ${event.clientY - drag.startClientY}px, 0)`;
+    }
     this.updateTargetIndex(drag, event);
   };
 
@@ -423,6 +448,7 @@ export class DayPanelComponent {
     this.stopDayDragAutoScroll();
     this.lockService.unlock();
     this.dispatchService.clearActiveDayDrag();
+    this.unlockActivityListHeight();
     this.drag = undefined;
 
     if (!drag.thresholdCrossed) {
@@ -441,28 +467,23 @@ export class DayPanelComponent {
       const [movedId] = ids.splice(drag.fromIndex, 1);
       ids.splice(drag.targetIndex, 0, movedId);
       this.tripFacade.reorderActivities(this.tripId(), this.dayId(), ids);
-      // Flush synchrone : @for doit avoir replacé le vrai nœud de la carte
-      // dans son nouveau slot AVANT la mesure "after" de `settleCard`.
+      // Flush synchrone : @for a le vrai nœud de la carte (jamais déplacé
+      // hors de sa place, voir `beginCardFollow`) dans son nouveau slot AVANT
+      // la mesure "after" de `settleCard`.
       this.cdr.detectChanges();
-    } else if (drag.originParent) {
-      drag.originParent.insertBefore(drag.card.hostElement, drag.originNextSibling);
     }
 
-    this.settleCard(drag.card);
+    this.settleCard(drag);
     this.restoreCollapseSnapshot();
     queueMicrotask(() => this.wakeLoop());
   };
 
-  /** Sort réellement la carte du flux : mesure sa position écran actuelle, la déplace hors du swiper (voir ActivityDispatchService.registerDragPortal) et fige les offsets des voisines pour le hit-test. */
+  /** Sort réellement la carte du flux (sur place, voir `leaveFlowHidden`) et fait apparaître un clone SOUS LE DOIGT (voir `grabOffsetX/Y`, pas sa position mesurée après collapse) hors du swiper (voir ActivityDispatchService.registerDragPortal), puis fige les offsets des voisines pour le hit-test. */
   private beginCardFollow(drag: DayDragState, event: PointerEvent): void {
     drag.thresholdCrossed = true;
-    drag.baseClientX = event.clientX;
-    drag.baseClientY = event.clientY;
 
     const el = drag.card.hostElement;
     const rect = el.getBoundingClientRect();
-    drag.originParent = el.parentNode;
-    drag.originNextSibling = el.nextSibling;
 
     const freshOffsets = this.getFreshCardOffsets();
     drag.offsets = freshOffsets.map(o => ({ id: o.card.activity()?.id ?? '', top: o.top }));
@@ -470,13 +491,45 @@ export class DayPanelComponent {
       ? freshOffsets[1].top - freshOffsets[0].top
       : (freshOffsets[0]?.height ?? rect.height);
 
-    const portal = this.dispatchService.getDragPortalElement();
-    if (portal) portal.appendChild(el);
+    // Fige la hauteur de la liste À CET INSTANT PRÉCIS (juste avant que la
+    // carte ne quitte le flux) : mesurée trop tôt (ex. dès le pointerdown),
+    // PrimeNG n'a pas encore appliqué le collapse (son moteur d'animation
+    // défère la mise à jour via un rAF interne même à durée nulle), et on
+    // fige alors la hauteur "toutes cartes dépliées" pour tout le reste du
+    // drag. Ici, `rect`/`freshOffsets` ci-dessus prouvent déjà que le collapse
+    // est visuellement appliqué (même mesure, même instant).
+    this.lockActivityListHeight();
 
-    drag.card.setDragTransform(rect);
+    // Clone visuel qui suivra le doigt hors du swiper — voir la doc de
+    // `cloneEl` sur DayDragState pour pourquoi ce n'est PAS le vrai nœud
+    // qu'on déplace. `removeAttribute('id')` évite les doublons d'id (des
+    // champs de formulaire notamment) entre l'original et le clone.
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+    clone.style.position = 'fixed';
+    // Position de base = point de pointerdown moins le grabOffset : c'est la
+    // position qu'aurait la carte si le doigt n'avait pas bougé depuis le
+    // pointerdown, indépendamment d'où le collapse simultané des autres
+    // cartes l'a fait atterrir (voir la doc de `grabOffsetX/Y`).
+    clone.style.left = `${drag.startClientX - drag.grabOffsetX}px`;
+    clone.style.top = `${drag.startClientY - drag.grabOffsetY}px`;
+    clone.style.width = `${rect.width}px`;
+    clone.style.margin = '0';
+    clone.style.zIndex = '1150';
+    clone.style.transform = 'translate3d(0px, 0px, 0)';
+    clone.style.pointerEvents = 'none';
+    drag.cloneEl = clone;
+
+    const portal = this.dispatchService.getDragPortalElement();
+    (portal ?? document.body).appendChild(clone);
+
+    // Le vrai nœud ne bouge jamais dans le DOM : juste masqué + sorti du flux
+    // sur place (voir `leaveFlowHidden`).
+    drag.card.leaveFlowHidden();
 
     const info = drag.card.buildDayDragInfo();
-    if (info) this.dispatchService.registerActiveDayDrag(info, drag.card.element);
+    if (info) this.dispatchService.registerActiveDayDrag(info, clone);
   }
 
   /** Recalcule l'index de dépose par hit-test contre les offsets figés au franchissement du seuil, et ne réapplique le décalage visuel des voisines que si l'index a changé. */
@@ -493,7 +546,24 @@ export class DayPanelComponent {
     this.applySiblingOffsets(drag);
   }
 
-  /** Décale visuellement (translateY CSS, transition déclarative) les cartes voisines pour ouvrir/refermer la place de la carte draguée — jamais la carte elle-même (voir `updateDragTransform`). */
+  /**
+   * Décale visuellement (translateY CSS, transition déclarative) les cartes
+   * voisines pour ouvrir/refermer la place de la carte draguée — jamais la
+   * carte elle-même (elle suit le doigt via le clone, voir `beginCardFollow`).
+   *
+   * Piège : la carte draguée est en `position:fixed` (voir `beginCardFollow`),
+   * donc entièrement retirée de la composition flex — TOUT ce qui suit son
+   * index d'origine remonte donc déjà, tout seul, d'un `slotHeight` en layout
+   * pur (aucun transform requis pour ça). Ce calcul doit composer avec ce
+   * remous automatique plutôt que l'ignorer :
+   * - pour une carte après `fromIndex` ET dans la zone active du drag (jusqu'à
+   *   `targetIndex` en descendant), ce remous automatique EST exactement le
+   *   décalage recherché → décalage manuel nul.
+   * - pour une carte après `fromIndex` mais HORS de cette zone, il faut au
+   *   contraire ANNULER ce remous (+slotHeight) pour qu'elle reste à sa place.
+   * - pour une carte avant `fromIndex`, aucun remous automatique n'existe :
+   *   le décalage (si besoin, en remontant la carte) est entièrement manuel.
+   */
   private applySiblingOffsets(drag: DayDragState): void {
     const { fromIndex, targetIndex, slotHeight, activityId } = drag;
     const order = this.activities();
@@ -504,8 +574,11 @@ export class DayPanelComponent {
 
       const index = order.findIndex(a => a.id === id);
       let offset = 0;
-      if (targetIndex > fromIndex && index > fromIndex && index <= targetIndex) offset = -slotHeight;
-      else if (targetIndex < fromIndex && index >= targetIndex && index < fromIndex) offset = slotHeight;
+      if (index > fromIndex) {
+        offset = (targetIndex > fromIndex && index <= targetIndex) ? 0 : slotHeight;
+      } else {
+        offset = (targetIndex < fromIndex && index >= targetIndex) ? slotHeight : 0;
+      }
 
       c.setShiftOffset(offset);
     }
@@ -513,20 +586,25 @@ export class DayPanelComponent {
 
   /**
    * Animation de "pose" jouée une seule fois au relâchement (pas à chaque
-   * swap) : mesure la position écran de la carte encore figée (`position:fixed`,
-   * suit le doigt), retire ce figeage, puis anime le delta vers 0 — même
-   * technique FLIP que `runTabFlip` dans ActivityDayDispatchOverlayComponent.
+   * swap) : mesure la position écran du CLONE (encore `position:fixed`, suit
+   * le doigt), le retire, fait réapparaître le vrai nœud dans le flux (voir
+   * `rejoinFlow`), puis anime son delta vers 0 — même technique FLIP que
+   * `runTabFlip` dans ActivityDayDispatchOverlayComponent.
    */
-  private settleCard(card: ActivityCardComponent): void {
-    const before = card.hostElement.getBoundingClientRect();
-    card.clearDragTransform();
-    const after = card.hostElement.getBoundingClientRect();
+  private settleCard(drag: DayDragState): void {
+    const before = drag.cloneEl?.getBoundingClientRect();
+    drag.cloneEl?.remove();
+    drag.cloneEl = null;
+    drag.card.rejoinFlow();
+
+    if (!before) return;
+    const after = drag.card.hostElement.getBoundingClientRect();
 
     const dx = before.left - after.left;
     const dy = before.top - after.top;
     if (dx === 0 && dy === 0) return;
 
-    card.hostElement.animate(
+    drag.card.hostElement.animate(
       [
         { transform: `translate3d(${dx}px, ${dy}px, 0)` },
         { transform: 'translate3d(0, 0, 0)' },
@@ -553,6 +631,7 @@ export class DayPanelComponent {
     this.stopDayDragAutoScroll();
     this.lockService.unlock();
     this.dispatchService.clearActiveDayDrag();
+    this.unlockActivityListHeight();
     if (this.drag === drag) this.drag = undefined;
 
     for (const c of this.activityCards()) {
@@ -560,8 +639,8 @@ export class DayPanelComponent {
     }
 
     if (drag.thresholdCrossed) {
-      if (drag.originParent) drag.originParent.insertBefore(drag.card.hostElement, drag.originNextSibling);
-      drag.card.clearDragTransform();
+      drag.cloneEl?.remove();
+      drag.card.rejoinFlow();
     }
 
     this.restoreCollapseSnapshot();
@@ -571,6 +650,24 @@ export class DayPanelComponent {
     document.removeEventListener('pointermove', this.handleDragPointerMove);
     document.removeEventListener('pointerup', this.handleDragPointerUp);
     document.removeEventListener('pointercancel', this.handleDragPointerUp);
+  }
+
+  /**
+   * Fige la hauteur du conteneur de la liste à sa valeur actuelle (toutes les
+   * cartes déjà collapsées, mais aucune n'a encore quitté le flux) : sans ça,
+   * dès que la carte draguée passe en `position:fixed` (voir `beginCardFollow`),
+   * le conteneur perd la hauteur d'un slot entier et tout ce qui dépend de sa
+   * taille (auto-height du swiper notamment) recalcule/saute d'un coup.
+   */
+  private lockActivityListHeight(): void {
+    const el = this.activityList()?.nativeElement;
+    if (!el) return;
+    el.style.minHeight = `${el.getBoundingClientRect().height}px`;
+  }
+
+  private unlockActivityListHeight(): void {
+    const el = this.activityList()?.nativeElement;
+    if (el) el.style.minHeight = '';
   }
 
   onMapPointClick(point: DayMapPoint) {

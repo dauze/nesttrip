@@ -34,8 +34,17 @@ import { ConfirmationService } from 'primeng/api';
 const HOLD_DELAY_MS = 20;
 /** Laisse le temps à l'animation de repli du panneau de se terminer avant de décrocher la carte. */
 const PANEL_COLLAPSE_DELAY_MS = 300;
-/** Valeur par défaut de PrimeNG Panel (voir `transitionOptions` dans primeng-panel.mjs). */
-const DEFAULT_PANEL_TRANSITION = '400ms cubic-bezier(0.86, 0, 0.07, 1)';
+/**
+ * `[transitionOptions]` est dépréciée depuis PrimeNG 21 et n'est plus lue par
+ * le composant (voir `computedMotionOptions` dans primeng-panel.mjs, qui ne
+ * dépend plus que de `motionOptions`/`ptm('motion')`) — la fixer à '0ms'
+ * n'avait donc plus AUCUN effet : le panneau continuait de replier avec
+ * l'animation normale, d'où la carte encore dépliée capturée par le drag.
+ * `[motionOptions]="{ duration: 0 }"` est le remplaçant qui fonctionne
+ * réellement (voir `resolveDuration`/`el.style.transitionDuration` dans
+ * primeng-motion.mjs).
+ */
+const INSTANT_PANEL_MOTION: { duration: number } = { duration: 0 };
 
 @Component({
   selector: 'app-activity-card',
@@ -74,8 +83,8 @@ export class ActivityCardComponent {
 
   readonly collapsed = linkedSignal(() => this.initCollapsed());;
   readonly scrollOffset = input(0);
-  /** Piloté par `collapseInstantly()` : passe à '0ms' le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. */
-  protected readonly panelTransitionOptions = signal(DEFAULT_PANEL_TRANSITION);
+  /** Piloté par `collapseInstantly()` : passe à une durée nulle le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. `undefined` = comportement/durée par défaut de PrimeNG. */
+  protected readonly panelMotionOptions = signal<{ duration: number } | undefined>(undefined);
 
   /**
    * Émis dès le pointerdown sur la poignée quand `inDayList()` est vrai —
@@ -192,21 +201,23 @@ export class ActivityCardComponent {
   }
 
   /**
-   * Replie la carte sans transition CSS, pour que la géométrie finale soit
-   * peinte dès la frame suivante — utilisé avant tout drag (pool ou jour) pour
-   * qu'un déplacement immédiat, sans délai après le pointerdown, ne capture
-   * jamais une carte encore (partiellement) dépliée.
+   * Replie la carte sans animation, pour que la géométrie finale soit peinte
+   * dès la frame suivante — utilisé avant tout drag (pool ou jour) pour qu'un
+   * déplacement immédiat, sans délai après le pointerdown, ne capture jamais
+   * une carte encore (partiellement) dépliée.
    *
    * `detectChanges()` force ce rendu de façon synchrone plutôt que d'attendre
    * la détection de changements normale (asynchrone, après le déroulement
    * complet de l'événement) : DayPanelComponent lit la géométrie de la carte
-   * juste après cet appel, dans le même geste.
+   * juste après cet appel, dans le même geste. Voir `INSTANT_PANEL_MOTION`
+   * pour pourquoi `motionOptions` (et pas l'ancienne `transitionOptions`) est
+   * ce qui doit réellement être mis à zéro.
    */
   collapseInstantly(): void {
-    this.panelTransitionOptions.set('0ms');
+    this.panelMotionOptions.set(INSTANT_PANEL_MOTION);
     this.collapsed.set(true);
     this.cdr.detectChanges();
-    requestAnimationFrame(() => this.panelTransitionOptions.set(DEFAULT_PANEL_TRANSITION));
+    requestAnimationFrame(() => this.panelMotionOptions.set(undefined));
   }
 
   openAndScroll(): void {
@@ -398,60 +409,34 @@ export class ActivityCardComponent {
     return this.cardContainer().nativeElement;
   }
 
-  /** Le vrai élément hôte `<app-activity-card>` — le flex-item que DayPanelComponent doit repositionner/déplacer, pas `cardContainer` (voir `setDragTransform`). */
+  /** Le vrai élément hôte `<app-activity-card>` — le flex-item dont DayPanelComponent lit la géométrie et qu'il retire du flux pendant un drag (voir `leaveFlowHidden`). */
   get hostElement(): HTMLElement {
     return this.hostRef.nativeElement;
   }
 
   /**
-   * Sort la carte du flux (position:fixed) à sa position ÉCRAN actuelle
-   * (aucun saut visuel) : posé sur le HOST, pas `cardContainer`, pour qu'un
-   * item `position:fixed` soit intégralement retiré de la composition flex
-   * (y compris le `gap`) et que la liste referme proprement l'espace laissé.
-   * DayPanelComponent est responsable de déplacer `hostElement` vers un point
-   * d'ancrage hors du swiper de jours avant d'appeler cette méthode (un
-   * `swiper-slide` ancêtre applique transform/filter, ce qui casserait ce
-   * `position:fixed` s'il restait dans l'arborescence du swiper).
+   * Retire la carte du flux (position:absolute) et la masque, SANS jamais la
+   * déplacer dans le DOM (ni reparenting, ni `display:none`) — DayPanelComponent
+   * fait suivre le doigt à un CLONE séparé pendant ce temps (voir
+   * `beginCardFollow`/`cloneEl`). Reparenter le VRAI nœud (une version
+   * précédente le faisait, pour échapper au `transform`/`filter` du swiper qui
+   * casse `position:fixed`) fait annuler le geste par le navigateur
+   * (`pointercancel`) au moindre mouvement sur beaucoup de
+   * navigateurs/plateformes, puisque ce nœud est la cible du pointeur actif.
    */
-  setDragTransform(rect: DOMRect): void {
+  leaveFlowHidden(): void {
     const style = this.hostRef.nativeElement.style;
-    style.position = 'fixed';
-    style.left = `${rect.left}px`;
-    style.top = `${rect.top}px`;
-    style.width = `${rect.width}px`;
-    style.margin = '0';
-    style.zIndex = '1150';
-    style.transform = 'translate3d(0px, 0px, 0)';
+    style.position = 'absolute';
+    style.visibility = 'hidden';
     style.pointerEvents = 'none';
   }
 
-  /** Décale la carte depuis sa position figée par `setDragTransform`, en suivant le pointeur. */
-  updateDragTransform(dx: number, dy: number): void {
-    this.hostRef.nativeElement.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-  }
-
-  /**
-   * Masque la carte pendant qu'elle est `position:fixed` : utilisé le temps
-   * d'une escalade vers le calendrier de dispatch (la bulle de
-   * ActivityDayDispatchOverlayComponent prend alors le relais visuel), pour
-   * ne pas avoir la carte figée ET la bulle visibles en même temps.
-   */
-  setDragHidden(hidden: boolean): void {
-    this.hostRef.nativeElement.style.visibility = hidden ? 'hidden' : '';
-  }
-
-  /** Annule `setDragTransform` (et un éventuel `setDragHidden`) : la carte reprend sa place normale dans le flux. */
-  clearDragTransform(): void {
+  /** Annule `leaveFlowHidden()` : la carte reprend sa place normale dans le flux. */
+  rejoinFlow(): void {
     const style = this.hostRef.nativeElement.style;
     style.position = '';
-    style.left = '';
-    style.top = '';
-    style.width = '';
-    style.margin = '';
-    style.zIndex = '';
-    style.transform = '';
-    style.pointerEvents = '';
     style.visibility = '';
+    style.pointerEvents = '';
   }
 
   /**

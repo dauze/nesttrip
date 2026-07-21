@@ -147,10 +147,12 @@ export class ActivityDispatchService {
   /**
    * Point d'ancrage `position:fixed` hors du swiper de jours (enregistré une
    * fois par TripDetailComponent, en frère de app-activity-day-dispatch-overlay)
-   * — voir DayPanelComponent : la carte réellement draguée pendant un
-   * réordonnancement intra-jour y est déplacée le temps du geste, car un
-   * `swiper-slide` ancêtre applique `transform`/`filter`, ce qui créerait un
-   * containing block local et casserait tout `position:fixed` posé dessus.
+   * — voir DayPanelComponent.beginCardFollow : le CLONE qui suit le doigt
+   * pendant un réordonnancement intra-jour y est inséré le temps du geste
+   * (jamais le vrai nœud de la carte, voir `ActivityCardComponent.leaveFlowHidden`),
+   * car un `swiper-slide` ancêtre applique `transform`/`filter`, ce qui
+   * créerait un containing block local et casserait tout `position:fixed`
+   * posé dessus.
    */
   private dragPortalEl?: HTMLElement;
 

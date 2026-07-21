@@ -12,12 +12,18 @@
 }
 
 // Voir ActivityDispatchService.registerDragPortal : conteneur vide, hors du
-// swiper de jours, où DayPanelComponent déplace réellement la carte en cours
-// de réordonnancement intra-jour le temps du geste (un ancêtre swiper-slide
-// applique transform/filter, ce qui casserait un position:fixed posé dessus).
+// swiper de jours, où DayPanelComponent insère le CLONE qui suit le doigt
+// pendant un réordonnancement intra-jour (jamais le vrai nœud de la carte,
+// voir ActivityCardComponent.leaveFlowHidden) — un ancêtre swiper-slide
+// applique transform/filter, ce qui casserait un position:fixed posé dessus.
+// z-index volontairement très haut : les cartes de la liste (dans le swiper)
+// n'ont normalement aucun z-index explicite, mais celles qui se décalent
+// pendant le drag (voir ActivityCardComponent.setShiftOffset) reçoivent un
+// `transform`, qui crée SA PROPRE stacking context locale — largement
+// suffisant pour repasser au-dessus d'un portail trop proche en valeur.
 .drag-portal-anchor {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: 9000;
   pointer-events: none;
 }

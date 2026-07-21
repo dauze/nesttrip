@@ -24,7 +24,7 @@
       </div>
     </ng-template>
     <div class="flex flex-column gap-2">
-      <div class="flex flex-column gap-2">
+      <div #activityList class="flex flex-column gap-2">
         @for (activity of activities(); track activity.id) {
             <app-activity-card [inDayList]="true" (dragHandleDown)="onDragHandleDown($event)" [scrollOffset]="stickyOffset()" [initCollapsed]="false"
       [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />

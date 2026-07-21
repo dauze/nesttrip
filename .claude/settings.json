@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx ng *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(ng test:*)",
+      "Bash(ng lint:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(chromium-cli --help)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"TSC:$?\")",
+      "Bash(echo \"BUILD:$?\")"
+    ]
+  }
+}
