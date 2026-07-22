@@ -14,6 +14,7 @@ import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { TripFacade } from '../trip-facade.service';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
+import { ViewportService } from '@core/services/viewport.service';
 
 @Component({
   selector: 'app-new-trip',
@@ -30,6 +31,7 @@ export class NewTripComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly authService = inject(AuthService);
   private readonly googlePlaceService = inject(GooglePlaceService);
+  protected readonly viewport = inject(ViewportService);
 
   private readonly rawPlaces = this.googlePlaceService.places;
 

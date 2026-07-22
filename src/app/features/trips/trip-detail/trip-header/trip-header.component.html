@@ -23,6 +23,8 @@
         [readonlyInput]="true"
         [showIcon]="false"
         placeholder="Sélectionner une période"
+        [touchUI]="viewport.isMobile()"
+        [appendTo]="viewport.isMobile() ? 'body' : undefined"
         (onSelect)="onDatesSelected()"
       />
     </div>

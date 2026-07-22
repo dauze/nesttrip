@@ -5,11 +5,148 @@
   --p-font-family: 'Plus Jakarta Sans', sans-serif;
   font-family: var(--p-font-family), serif;
   font-size: 16px;
+
+  // ---------------------------------------------------------------------
+  // Échelle de z-index de l'appli, du plus bas au plus haut. Tout ce qui
+  // doit flotter au dessus du contenu normal (non scopé à un stacking
+  // context local, ex: .sticky-map dans day-panel) référence UNE de ces
+  // variables plutôt qu'un nombre en dur — objectif : garder la relation
+  // d'ordre lisible d'un coup d'œil, sans les valeurs à 4 chiffres qui
+  // trainaient avant (1090, 1100, 1200, 1300, 9000...), qui ne voulaient
+  // rien dire de plus que "un peu plus que l'autre".
+  // - header/toolbar : chrome fixe de l'appli (voir .app-trip-header-fixed
+  //   / .app-toolbar) — le toolbar doit rester au dessus du header.
+  // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay,
+  //   masque de p-datepicker en touchUI, backdrop mobile de p-select).
+  // - overlay-content : le contenu flottant lui-même, au dessus de son
+  //   propre backdrop (p-menu-overlay, p-datepicker-panel, p-select-overlay,
+  //   dispatch-ball).
+  // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
+  //   volontairement tout en haut — voir sa justification dans
+  //   trip-detail.component.scss.
+  --z-app-header: 10;
+  --z-app-toolbar: 20;
+  --z-overlay-backdrop: 30;
+  --z-overlay-content: 40;
+  --z-drag-portal: 100;
 }
 
 @media screen and (max-width: 768px) {
   :root {
     font-size: 15px;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Overlays PrimeNG (p-datepicker / p-select) en petit écran : le
+ * positionnement "ancré" à côté du champ (bien sur desktop) devient illisible
+ * sur mobile. On bascule vers deux présentations plus adaptées au tactile :
+ * - p-datepicker : centré à l'écran, avec masque flouté. `[touchUI]`/`[appendTo]`
+ *   (liés en template à ViewportService.isMobile()) font déjà faire à PrimeNG
+ *   l'essentiel (masque `.p-datepicker-mask`, reparenting sur <body>) ; on ne
+ *   fait ici que recentrer le panneau et flouter son masque, `!important`
+ *   nécessaire pour l'emporter sur le `position/top` posés en style inline
+ *   par PrimeNG. Le zIndex, lui, est forcé plus haut avec `.p-menu-overlay`
+ *   (voir plus haut) car le problème n'est pas spécifique au mobile.
+ * - p-select : transformé en drawer qui remonte du bas, avec sa propre liste
+ *   scrollable. Aucun masque natif ici (contrairement au datepicker), donc le
+ *   fond flouté est un pseudo-élément sur <body> piloté par :has() — actif
+ *   uniquement tant qu'un `.p-select-overlay` existe dans le DOM, sans JS.
+ *   Le clic sur ce fond n'est ni le host ni le panneau du p-select : il est
+ *   donc déjà traité comme un clic extérieur par OverlayAutoCloseService, qui
+ *   ferme le select (annulation), sans logique supplémentaire à écrire ici.
+ * ------------------------------------------------------------------- */
+@media screen and (max-width: 768px) {
+  // Le masque touchUI de PrimeNG attache SON PROPRE listener `click` qui
+  // ferme le calendrier (voir enableModality dans primeng/datepicker) — posé
+  // sur un <div> tout juste créé, en plein sous le doigt qui vient d'ouvrir
+  // le calendrier. Sur tactile, le tap qui ouvre peut générer un `click`
+  // synthétique différé (juste après le pointerdown/pointerup d'origine) ;
+  // si le masque existe déjà à ce moment-là, CE click atterrit dessus et
+  // referme aussitôt ce qu'on vient d'ouvrir ("ghost click" classique des
+  // modales sur mobile). `pointer-events` ignoré pendant les ~350ms qui
+  // suivent la création du masque, le temps que ce click fantôme passe.
+  .p-datepicker-mask {
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    transition: pointer-events 0s 350ms;
+
+    @starting-style {
+      pointer-events: none;
+    }
+  }
+
+  // Le panneau (comme .p-select-overlay plus bas) est d'abord monté par
+  // PrimeNG dans le DOM à sa position d'origine — encore enfant du champ,
+  // PAS encore reparenté sur <body> — une fraction de frame avant que leur
+  // propre JS ne fasse le reparenting/positionnement (voir appendOverlay/
+  // alignOverlay dans primeng/datepicker : le montage est lazy, piloté par
+  // un afterRenderEffect qui attend une frame avant d'agir). Pour
+  // TripHeaderComponent, ce parent d'origine (.app-trip-header-fixed) a un
+  // transform actif (scroll), ce qui en fait un containing block pour notre
+  // position:fixed : tant qu'on n'est pas reparenté, le panneau se centre
+  // dans SA boîte (petite, en haut de l'écran), pas dans le viewport — d'où
+  // le flash "petit popup en haut" avant le vrai centrage. `visibility`
+  // (pas `opacity`/`animation`) exprès : ne rentre pas en collision avec
+  // `.p-anchored-overlay-enter-active` posée par PrimeNG (même élément,
+  // même propriété shorthand `animation` si on l'utilisait) — `transition`
+  // est une propriété CSS totalement différente, aucun conflit de cascade.
+  .p-datepicker-panel:not(.p-datepicker-panel-inline) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(92vw, 360px) !important;
+    min-width: 0 !important;
+    max-width: 92vw !important;
+    max-height: 85vh;
+    overflow-y: auto;
+    visibility: visible;
+    transition: visibility 0s 50ms;
+
+    @starting-style {
+      visibility: hidden;
+    }
+  }
+
+  .p-select-overlay {
+    position: fixed !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    max-height: 70vh;
+    margin: 0 !important;
+    border-radius: 1rem 1rem 0 0 !important;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    visibility: visible;
+    transition: visibility 0s 50ms;
+
+    @starting-style {
+      visibility: hidden;
+    }
+  }
+
+  .p-select-list-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto !important;
+  }
+
+  body:has(> .p-select-overlay)::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    z-index: var(--z-overlay-backdrop);
   }
 }
 
@@ -219,6 +356,29 @@ html.trip-detail-active body {
   --p-toolbar-padding: 0.2rem;
 }
 
+// Le popup du menu roue crantée (appendTo="body") doit rester au-dessus de
+// .app-toolbar et .app-trip-header-fixed : leur z-index dépasse celui posé
+// dynamiquement par PrimeNG (voir baseZIndex sur le p-menu dans
+// trips.component.html), donc on le force ici en dernier recours. Même
+// problème pour tout p-datepicker/p-select en appendTo="body"
+// (TripHeaderComponent en particulier, dont le champ dates flotte au dessus
+// de .app-trip-header-fixed une fois reparenté sur <body>) : leur zIndex
+// PrimeNG ('overlay'/'modal') peut tomber sous ce chrome fixe.
+.p-menu-overlay,
+.p-datepicker-panel:not(.p-datepicker-panel-inline),
+.p-select-overlay {
+  z-index: var(--z-overlay-content) !important;
+}
+
+// Masque du p-datepicker en touchUI (voir plus bas) : DOIT rester sous le
+// panneau ci-dessus (sinon le flou du masque s'applique aussi au calendrier,
+// posé derrière lui dans l'ordre de peinture) mais au dessus du chrome fixe
+// de l'appli, donc une valeur explicite plutôt que de laisser le zIndex
+// 'modal' calculé par PrimeNG (qui ignore totalement --z-overlay-content).
+.p-datepicker-mask {
+  z-index: var(--z-overlay-backdrop) !important;
+}
+
 swiper-container,
 swiper-slide,
 .swiper-wrapper {
@@ -350,4 +510,21 @@ html.nav-back::view-transition-new(root) {
 
 .cdk-drag-placeholder {
   visibility: hidden;
+}
+
+@media (max-width:768px) {
+
+  p-motion[name="p-anchored-overlay"] {
+      position: fixed !important;
+      inset: 0 !important;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+  }
+
+  p-motion[name="p-anchored-overlay"] > .p-datepicker-panel {
+      position: static !important;
+      transform: none !important;
+  }
 }

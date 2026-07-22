@@ -13,7 +13,7 @@
   position: fixed;
   left: 0.5rem;
   right: 0.5rem;
-  z-index: 1090;
+  z-index: var(--z-app-header);
   padding: 0 0rem  0.5rem 0rem;
   background: Canvas;
 }
@@ -34,14 +34,15 @@
 // pendant un réordonnancement intra-jour (jamais le vrai nœud de la carte,
 // voir ActivityCardComponent.leaveFlowHidden) — un ancêtre swiper-slide
 // applique transform/filter, ce qui casserait un position:fixed posé dessus.
-// z-index volontairement très haut : les cartes de la liste (dans le swiper)
-// n'ont normalement aucun z-index explicite, mais celles qui se décalent
-// pendant le drag (voir ActivityCardComponent.setShiftOffset) reçoivent un
-// `transform`, qui crée SA PROPRE stacking context locale — largement
-// suffisant pour repasser au-dessus d'un portail trop proche en valeur.
+// z-index volontairement le plus haut de l'appli (--z-drag-portal) : les
+// cartes de la liste (dans le swiper) n'ont normalement aucun z-index
+// explicite, mais celles qui se décalent pendant le drag (voir
+// ActivityCardComponent.setShiftOffset) reçoivent un `transform`, qui crée
+// SA PROPRE stacking context locale — largement suffisant pour repasser
+// au-dessus d'un portail trop proche en valeur.
 .drag-portal-anchor {
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: var(--z-drag-portal);
   pointer-events: none;
 }

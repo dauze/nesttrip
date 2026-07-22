@@ -17,6 +17,7 @@ import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
+import { ViewportService } from '@core/services/viewport.service';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 
 @Component({
@@ -33,6 +34,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
 export class ActivityFormComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly fb = inject(FormBuilder);
+  protected readonly viewport = inject(ViewportService);
 
   readonly tripId = input.required<string>();
   /** Toujours renseigné : ce composant n'est monté qu'en contexte jour (jamais dans le pool général). */

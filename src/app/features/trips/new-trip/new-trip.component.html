@@ -1,4 +1,4 @@
-<div class="flex flex-column gap-3 pt-2">
+<div class="flex flex-column gap-2">
   <p-card>
     <ng-template pTemplate="title">
       <div class="flex justify-content-between align-items-center w-full">
@@ -61,11 +61,13 @@
             inputId="dates"
             formControlName="dates"
             selectionMode="range"
-            dateFormat="dd/mm/yy"
+            dateFormat="dd/mm/y"
             [showIcon]="true"
             [readonlyInput]="true"
             placeholder="Sélectionner une période"
-            class="w-full"
+            [touchUI]="viewport.isMobile()"
+            [appendTo]="viewport.isMobile() ? 'body' : undefined"
+            class="w-max"
           />
 
           @if (form.controls.dates.touched && form.controls.dates.hasError('required')) {

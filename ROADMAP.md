@@ -104,7 +104,12 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Taille minimum dynamique sur les fenêtres swipe
 - Slide : repenser le slide: metttre le slide directement dans chaque slider, comme ça, en allant au jour suivant le slide d'un élément n'est pas pollué par le slide précédant. Par contre, il faut une facon élégante de masquer le header fixe + le header de voyage en scollant vers le bas. On pourrait faire du ménage sur le calcul du window.scrollY sur le body, et il faut faire très attention au slide qui est calculé sur chaque slider pour caler les activités à la carte. Attention aussi à ne pas afficher le slider dans le slide je ne veux pas plusieurs assenseurs. Cela simplifiera peut etre aussi le sticky sur la carte qui était compliqué à réaliser.
 - Le changement de type sur une activité ne fonctionne plus ! 
-
+- Barre du bas incohérente ("Général") lors du drag and drop d'activités : la bar est recréé dasn el composant de drag and drop mais elle est uniquement bien simulé dasn l'onglet Général, on ne pourrait pas faire un clone du visuelle comme pour le drag and drop que tu as mis ? Comme ça si il y a des changements futur, pas besoin de faire de correctif
+- Le drag and drop fonctionne pas sur mobile, il s'annule dès que je drag :le redémarrage de serveur avait pourtant corrigé ce beug en serveur local
+- Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
+- Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
+- Si on ajoute des activités sur le pool, l'ordre ne doit pas changer.
+- au niveau du slide de la carte, il faudrait calculer la hauteur à prendre en fonction de la distance à parcourir : plus il y a de distance, plus il faut reculer. Moins il y en a, moins il faut reculer
 
 ## 🔧 À faire
 
@@ -125,13 +130,14 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Rajouter la Position actuelle de l'utilisateur sur la carte
 - Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin.
 - Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange
+- Mettre la carte sur le côté lorsque le téléphone est en mode allongé 
 
 ### Activités
 - Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
 - Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
 - Tri par ville et par jour dans l'onglet activités, non assignées en bas
-- Calcul auto des trajets entre activités (à pied / voiture / vélo)
+- Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - Durée : autre méthode de saisie, gestion des durées > 24h si on a plusieurs jour plusieurs jours ! et il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
 - Inciter l'utilisateur à compléter les données d'une carte/activité transport/hébergement en ouvrant l'élément à modifier suivant à la création d'une activité ? Ca ferai comme un pipe ou il chaine sur les 2-3 infos, pas trop relou en terme d'ux ? 
@@ -143,6 +149,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ### Collaborateurs
 - Email quand ajouté à un trip  (non prioritaire)
 - Pouvoir supprimer des collaborateurs (via un clique sur les pastilles affiché:  ouvre la popup d'ajout des collob modifié qui permet la gestion des collab associés à ce trip, l'ajout d'un nouveau collab, la selection d'un companion de route à ajouter en clique rapide depuis une liste, la suppression d'un collab de route via une croix. Il faut donc stocker la liste des companions de route sur l'utilisateur, ou ? nouvelle bdd user ? => dans firestore ? Ca pourra servire pour le stockage des reglages du user.  faut faire attention à la gestion des user, seul l'owner peut supprimer des membres, et  il ne peut pas se supprimer lui même et doit supprimer le voyage, information à donner si son nom est grisé. Parti du dialog existant au clique sur "add collaborator". On pourrait supprimer le bouton "add colaborator" car le cluque sur la pastille remplacerai ça ? 
+- Et sortir le p-dialog pour le mettre dasn un composant à part, transverse comme ça sa taille n'est pas limité au composant
 
 ### Administratif
 - Onglet dédié : vols, hébergements, trains, location de voiture : composant à définir 
@@ -159,35 +166,34 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
 - Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
-- Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée et le curseur positionné sur le choix de l'activité
 - Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
-- Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
 - p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
-- Si on ajoute des activités sur le pool, l'ordre ne doit pas changer.
 - Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
-
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
-- au niveau du slide de la carte, il faudrait calculer la hauteur à prendre en fonction de la distance à parcourir : plus il y a de distance, plus il faut reculer. Moins il y en a, moins il faut reculer
-- Mettre la carte sur le côté lorsque le téléphone est en mode allongé 
 - Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal
+- rajouter un indicateur quand s'est sauvegardé et quand la sauvegarde s'est mal passé, très discret, une petite bar verte au dessus de la bar d'état par exemple. et si ça marche pas, faire un truc rouge avec de vrai consigne mais je sais pas encore quoi 
 
 
 ### Bugs / fixes
-- Barre du bas incohérente ("Général") lors du drag and drop d'activités : la bar est recréé dasn el composant de drag and drop mais elle est uniquement bien simulé dasn l'onglet Général, on ne pourrait pas faire un clone du visuelle comme pour le drag and drop que tu as mis ? Comme ça si il y a des changements futur, pas besoin de faire de correctif
+
 - Depuis le pool, sélection d'une activité sous le calendrier : position mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
 - Si j'ai qu'un seul trip, je ne peux plus faire retour sur la première page, donc je ne peux pas créer de trip. C'est à la connexion qu'il faut aller sur le trip, pas tout le temps 
 - mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle
-- Le drag and drop fonctionne pas sur mobile, il s'annule dès que je drag :le redémarrage de serveur avait pourtant corrigé ce beug en serveur local
 - Si j'ajoute un titre à une activité dans le p-autocomplete, la valeur du titre est bien mit à jour mais les données de google ne sont pas ramené, alors que la deuxième fois si
 - Dans la modification de l'heure, si l'utilisateur positionne une heure puis une minute, alors il faut faire ok
+- le minim width n'est plus appliqué et on peut de nouveau tasser jusqu'à avoir des chevauchement, il faut remettre un min width sur le plus haut niveau : le min-width: 24rem fonctionne toujours sur l'écran d'accueil, de login, mais plus sur "app-content" depuis les modifications du swiper
+- Dans les données de google pour afficher si fermé ou non, il en faut pas prendre l'heure actuelle mais plutôt l'heure annoncé par l'heure de début. Si l'heure n'est pas renseignée, l'afficher uniquement si il est fermé le jour entier sélectionné, sinon ne pas l'afficher.
+
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)
 - Secret de déploiement pour la release
 - Menu : mode sombre / clair / système
 - Faire un gros travail de code review pour uniformiser les pratiques (exemple les oninit alors qu'on est en angular 21), supprimer le code mort, déplacer dans des services des comportement isolé sur certain fichiers trop gros, séparer les trop gros fichier intelligement, eviter les view child plutôt privilégier les services pour partager des données (ce n'est pas tout le temps possible)
-- Eviter de faire des input-output quand ce n'est pas des dub component et privilégier les services, sauf si ca génère de la complexité 
+- Eviter de faire des input-output quand ce n'est pas des dub component et privilégier les services, sauf si ca génère de la complexité
+- Simplifier les flou et les uniformiser en mettant via une seule valeur
+- simplifier le style.scss et dispatcher en plusierus sous fichier et les incorporer via des @use

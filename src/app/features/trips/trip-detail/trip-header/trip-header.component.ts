@@ -5,6 +5,7 @@ import { Textarea } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Trip } from '../../trip.model';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
+import { ViewportService } from '@core/services/viewport.service';
 
 @Component({
   selector: 'app-trip-header',
@@ -15,6 +16,7 @@ import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-c
 })
 export class TripHeaderComponent {
   private readonly fb = inject(FormBuilder);
+  protected readonly viewport = inject(ViewportService);
 
   readonly trip = input<Trip | null>(null);
   readonly title = input<string>('');

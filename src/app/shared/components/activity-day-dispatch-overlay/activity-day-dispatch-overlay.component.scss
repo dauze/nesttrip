@@ -7,7 +7,7 @@
 // ne changent pas selon le mode.
 
 .dispatch-overlay {
-  z-index: 1200;
+  z-index: var(--z-overlay-backdrop);
   pointer-events: none;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
@@ -159,7 +159,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1300;
+  z-index: var(--z-overlay-content);
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
