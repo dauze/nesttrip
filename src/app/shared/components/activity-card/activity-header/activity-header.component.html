@@ -44,10 +44,12 @@
     </p-autoComplete>
 
     <div class="flex align-items-center gap-2 flex-wrap">
+      @if (activity().startTime && dayId()) {
       <span class="text-color-secondary text-xs flex align-items-center gap-1">
         <i class="pi pi-clock" style="font-size:0.65rem"></i>
-        {{ activity().duration | duration }}
+        {{ activity().startTime | date:'HH:mm' }}
       </span>
+    }
       @if (activity().price.amount) {
         <span class="text-color-secondary text-xs flex align-items-center gap-1">
           <i class="pi pi-euro" style="font-size:0.65rem"></i>

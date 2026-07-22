@@ -11,8 +11,20 @@ import { DatePipe } from '@angular/common';
 export class DayLabelsListPipe implements PipeTransform {
   private readonly datePipe = new DatePipe('fr-FR');
 
-  transform(days: Date[] | null | undefined): string {
+  transform(
+    days: Date[] | null | undefined,
+    maxItems?: number,
+  ): string {
     if (!days?.length) return '';
-    return days.map((day) => this.datePipe.transform(day, 'dd/MM')).join(', ');
+
+    const labels = days.map(day => this.datePipe.transform(day, 'dd/MM')!);
+
+    if (!maxItems || labels.length <= maxItems) {
+      return labels.join(', ');
+    }
+    else  {
+      const remaining = labels.length - maxItems;
+      return `${labels.slice(0, maxItems).join(', ')} +${remaining}`;
+    }
   }
 }

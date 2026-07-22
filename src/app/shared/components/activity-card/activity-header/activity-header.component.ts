@@ -4,7 +4,6 @@ import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de 
 import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { DurationPipe } from '@app/shared/pipes/duration.pipe';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_META } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
@@ -15,7 +14,7 @@ import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 @Component({
   selector: 'app-activity-header',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AutoComplete, DurationPipe], // Remplacement de FormsModule
+  imports: [CommonModule, ReactiveFormsModule, AutoComplete], // Remplacement de FormsModule
   templateUrl: './activity-header.component.html',
   styleUrl: './activity-header.component.scss',
 })
@@ -24,6 +23,8 @@ export class ActivityHeaderComponent {
   private readonly photoCache = inject(GooglePhotoService);
 
   readonly activity = input.required<Activity>();
+  readonly dayId = input.required<Date | undefined>();
+  
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
 
