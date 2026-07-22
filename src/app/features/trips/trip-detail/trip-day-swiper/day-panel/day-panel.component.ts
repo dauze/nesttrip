@@ -790,6 +790,24 @@ export class DayPanelComponent {
   // 4. Trouver l'index de la carte par rapport à cette ligne
   const upcomingIndex = freshOffsets.findIndex(offset => offset.top > triggerLine);
 
+  if (upcomingIndex === 0) {
+    // Avant d'atteindre la 1re activité : la carte part d'une vue
+    // d'ensemble (tous les points du jour) en haut du jour (scrollY = 0) et
+    // se resserre progressivement sur la 1re activité au fur et à mesure du
+    // scroll, jusqu'à rejoindre exactement l'état que `followScroll`
+    // produirait pour t=0 sur le 1er segment (voir ROADMAP.md).
+    const firstOffset = freshOffsets[0];
+    const firstId = firstOffset.card.activity()?.id;
+    const firstPoint = firstId ? this.dayMapPoints().find(p => p.activityId === firstId) : undefined;
+    if (!firstPoint) return;
+
+    const scrollAtFirst = Math.max(0, firstOffset.top - totalStickyShield);
+    const t = scrollAtFirst > 0 ? Math.min(1, Math.max(0, scrollY / scrollAtFirst)) : 1;
+
+    this.mapRef()?.followFromOverview(this.dayMapPoints(), firstPoint, t);
+    return;
+  }
+
   let fromIndex: number;
   let toIndex: number;
   let t: number;
@@ -798,10 +816,6 @@ export class DayPanelComponent {
     fromIndex = freshOffsets.length - 1;
     toIndex = fromIndex;
     t = 1;
-  } else if (upcomingIndex === 0) {
-    fromIndex = 0;
-    toIndex = 0;
-    t = 0;
   } else {
     fromIndex = upcomingIndex - 1;
     toIndex = upcomingIndex;

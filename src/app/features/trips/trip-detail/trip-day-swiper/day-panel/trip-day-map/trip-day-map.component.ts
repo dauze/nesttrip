@@ -121,19 +121,138 @@ export class TripDayMapComponent {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
+    // Trajectoire non-linéaire : accélère entre 2 activités, ralentit à
+    // l'approche de chacune, plutôt qu'une vitesse de caméra constante
+    // calquée telle quelle sur la vitesse de scroll (voir ROADMAP.md).
+    const eased = this.easeInOutQuad(Math.min(1, Math.max(0, t)));
+
     const targetCenter = {
-      lat: this.lerp(from.latitude, to.latitude, t),
-      lng: this.lerp(from.longitude, to.longitude, t),
+      lat: this.lerp(from.latitude, to.latitude, eased),
+      lng: this.lerp(from.longitude, to.longitude, eased),
     };
 
     // Calcul du recul
-    const targetZoom = this.computeCinematicZoom(from, to, t);
+    const targetZoom = this.computeCinematicZoom(from, to, eased);
 
     // MOVE CAMERA : La magie vectorielle opère ici en une seule passe ultra-rapide
     map.moveCamera({
       center: targetCenter,
       zoom: targetZoom
     });
+  }
+
+  /**
+   * Segment "avant la 1re activité" : la caméra part d'une vue d'ensemble
+   * (tous les points du jour) et se resserre progressivement vers le focus
+   * sur `point` au fur et à mesure du scroll — voir `DayPanelComponent.updateMapFromScroll`
+   * pour le calcul de `t` (0 en haut du jour, 1 quand la 1re activité est
+   * "atteinte", où `followScroll` prend ensuite le relai).
+   */
+  followFromOverview(points: DayMapPoint[], point: DayMapPoint, t: number): void {
+    const map = this.mapRef()?.googleMap;
+    if (!map) return;
+
+    const eased = this.easeInOutQuad(Math.min(1, Math.max(0, t)));
+
+    const overview = this.computeOverviewCamera(points) ?? {
+      center: { lat: point.latitude, lng: point.longitude },
+      zoom: this.focusZoom(),
+    };
+
+    const targetCenter = {
+      lat: this.lerp(overview.center.lat, point.latitude, eased),
+      lng: this.lerp(overview.center.lng, point.longitude, eased),
+    };
+    const targetZoom = this.lerp(overview.zoom, this.focusZoom(), eased);
+
+    map.moveCamera({ center: targetCenter, zoom: targetZoom });
+  }
+
+  /**
+   * Centre + zoom calculés pour que tous les points du jour tiennent dans le
+   * conteneur de la carte (± une marge), sans dépendre de `map.fitBounds`
+   * (asynchrone, nécessite un cycle "idle" avant de pouvoir relire le zoom) —
+   * formule standard de calcul de zoom à partir d'une bbox lat/lng et d'une
+   * taille de viewport en pixels, ce qui la rend utilisable en synchrone dans
+   * la boucle de scroll.
+   */
+  private computeOverviewCamera(points: DayMapPoint[]): { center: google.maps.LatLngLiteral; zoom: number } | null {
+    if (!points.length) return null;
+    if (points.length === 1) {
+      return { center: { lat: points[0].latitude, lng: points[0].longitude }, zoom: this.focusZoom() };
+    }
+
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    for (const p of points) {
+      minLat = Math.min(minLat, p.latitude);
+      maxLat = Math.max(maxLat, p.latitude);
+      minLng = Math.min(minLng, p.longitude);
+      maxLng = Math.max(maxLng, p.longitude);
+    }
+
+    const center = { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 };
+
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    // Marge pour ne pas coller les marqueurs extrêmes aux bords de la carte —
+    // généreuse car un pin dépasse largement au-dessus de son point ancré
+    // (la pointe touche le point, la tête ronde avec le numéro est ~40-50px
+    // plus haut), pas juste un point ponctuel.
+    const PADDING_PX = 64;
+    const width = Math.max(1, rect.width - PADDING_PX * 2);
+    const height = Math.max(1, rect.height - PADDING_PX * 2);
+
+    // Petit dézoom de sécurité en plus de la marge ci-dessus : la formule
+    // bbox->zoom ne connaît que les coordonnées géographiques des points, pas
+    // la taille réelle des pins à l'écran (numéro inclus) — sans cette marge
+    // les pins des points extrêmes débordent legèrement du cadre visible.
+    const OVERVIEW_ZOOM_BUFFER = 0.4;
+
+    // Ne jamais dézoomer plus que nécessaire : si les points sont proches,
+    // pas d'intérêt à zoomer plus serré que le zoom de focus habituel.
+    const zoom = Math.max(
+      1,
+      Math.min(
+        this.getBoundsZoomLevel(minLat, maxLat, minLng, maxLng, width, height) - OVERVIEW_ZOOM_BUFFER,
+        this.focusZoom(),
+      ),
+    );
+
+    return { center, zoom };
+  }
+
+  /** cf. https://stackoverflow.com/a/13274361 — calcul déterministe du zoom Google Maps pour un bbox donné, sans passer par `fitBounds`. */
+  private getBoundsZoomLevel(
+    minLat: number,
+    maxLat: number,
+    minLng: number,
+    maxLng: number,
+    mapWidth: number,
+    mapHeight: number,
+  ): number {
+    const ZOOM_MAX = 21;
+    const WORLD_DIM = 256;
+
+    const latRad = (lat: number) => {
+      const sin = Math.sin((lat * Math.PI) / 180);
+      const radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+      return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
+    };
+
+    const zoomForFraction = (mapPx: number, fraction: number) =>
+      Math.log(mapPx / WORLD_DIM / fraction) / Math.LN2;
+
+    const latFraction = (latRad(maxLat) - latRad(minLat)) / Math.PI;
+    const lngDiff = maxLng - minLng;
+    const lngFraction = (lngDiff < 0 ? lngDiff + 360 : lngDiff) / 360;
+
+    const latZoom = zoomForFraction(mapHeight, latFraction);
+    const lngZoom = zoomForFraction(mapWidth, lngFraction);
+
+    return Math.max(1, Math.min(latZoom, lngZoom, ZOOM_MAX));
+  }
+
+  private easeInOutQuad(t: number): number {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
   }
 
   private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
@@ -151,25 +270,23 @@ export class TripDayMapComponent {
       return baseZoom;
     }
 
-    // On définit dynamiquement l'amplitude du dézoom (zoomDrop) selon la distance
-    let zoomDrop: number;
+    // Le dézoom croît avec la distance réelle, sur une échelle logarithmique
+    // (comme le zoom Google Maps lui-même : chaque niveau double/divise par 2
+    // l'étendue visible) plutôt qu'un barème par paliers — sans quoi 4km et
+    // 50km finissent avec exactement le même dézoom max, ce qui n'a pas de
+    // sens. REF_DISTANCE_METERS est la distance en dessous de laquelle aucun
+    // dézoom notable n'est nécessaire ; MAX_ZOOM_DROP plafonne l'effet pour
+    // rester un dip cinématique ponctuel, pas un vrai fit-bounds — sur de
+    // très longues distances (ex. 50km) on ne veut pas dézoomer massivement,
+    // juste suggérer le trajet.
+    const REF_DISTANCE_METERS = 300;
+    const ZOOM_DROP_PER_DOUBLING = 0.28;
+    const MAX_ZOOM_DROP = 1.8;
 
-  if (distanceMeters < 500) {
-  // Très proche (50m à 500m) : dézoom infime (entre 0 et 0.4 niveau de zoom max)
-  // On s'assure aussi de ne pas avoir de valeur négative si distanceMeters < 50
-  const ratio = Math.max(0, (distanceMeters - 50) / 450);
-  zoomDrop = this.lerp(0, 0.2, ratio);
-
-  } else if (distanceMeters < 3000) {
-    // Distance moyenne (500m à 3km) : dézoom léger à modéré (entre 0.4 et 1.5 niveaux de zoom)
-    const ratio = (distanceMeters - 500) / 2500;
-    zoomDrop = this.lerp(0.2, 1, ratio);
-
-  } else {
-    // Longue distance (Plus de 3km) : dézoom maximum bloqué à 2.5 niveaux de zoom
-    const ratio = (distanceMeters - 3000) / 10000;
-    zoomDrop = Math.min(2.5, this.lerp(1, 10000, ratio));
-  }
+    const zoomDrop = Math.min(
+      MAX_ZOOM_DROP,
+      Math.max(0, ZOOM_DROP_PER_DOUBLING * Math.log2(distanceMeters / REF_DISTANCE_METERS)),
+    );
 
     // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
     const arc = 4 * t * (1 - t);
