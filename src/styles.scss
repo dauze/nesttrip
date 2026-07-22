@@ -49,12 +49,24 @@
  *   par PrimeNG. Le zIndex, lui, est forcé plus haut avec `.p-menu-overlay`
  *   (voir plus haut) car le problème n'est pas spécifique au mobile.
  * - p-select : transformé en drawer qui remonte du bas, avec sa propre liste
- *   scrollable. Aucun masque natif ici (contrairement au datepicker), donc le
- *   fond flouté est un pseudo-élément sur <body> piloté par :has() — actif
- *   uniquement tant qu'un `.p-select-overlay` existe dans le DOM, sans JS.
- *   Le clic sur ce fond n'est ni le host ni le panneau du p-select : il est
- *   donc déjà traité comme un clic extérieur par OverlayAutoCloseService, qui
- *   ferme le select (annulation), sans logique supplémentaire à écrire ici.
+ *   scrollable. `p-select` délègue son overlay au composant partagé
+ *   `<p-overlay>` de PrimeNG : c'est SON élément racine (classe `.p-overlay`)
+ *   qui est reparenté comme enfant direct de <body> quand `appendTo="body"`
+ *   — pas `.p-select-overlay`, qui n'est qu'un descendant deux niveaux plus
+ *   bas (`.p-overlay` > `<p-motion>` > `.p-overlay-content` >
+ *   `.p-select-overlay`, voir le template de Select/Overlay dans
+ *   primeng/select et primeng/overlay). On positionne donc ce wrapper racine
+ *   en `fixed`/bas d'écran (`!important` nécessaire pour l'emporter sur le
+ *   `top`/`left`/`min-width` posés en style inline par `alignOverlay()`), et
+ *   on fait juste traverser ce `fixed` en `display:flex` sur les deux
+ *   niveaux intermédiaires pour que `.p-select-list-container` (voir plus
+ *   bas) reste la seule zone scrollable. Aucun masque natif ici
+ *   (contrairement au datepicker), donc le fond flouté est un pseudo-élément
+ *   sur <body> piloté par :has() — actif uniquement tant qu'un
+ *   `.p-select-overlay` existe dans le DOM, sans JS. Le clic sur ce fond
+ *   n'est ni le host ni le panneau du p-select : il est donc déjà traité
+ *   comme un clic extérieur par OverlayAutoCloseService, qui ferme le select
+ *   (annulation), sans logique supplémentaire à écrire ici.
  * ------------------------------------------------------------------- */
 @media screen and (max-width: 768px) {
   // Le masque touchUI de PrimeNG attache SON PROPRE listener `click` qui
@@ -111,7 +123,10 @@
     }
   }
 
-  .p-select-overlay {
+  // Vrai enfant de <body> une fois reparenté (voir commentaire plus haut) :
+  // c'est CE wrapper (transparent, sans fond ni bordure propre) qu'on fixe
+  // en bas d'écran, pas `.p-select-overlay` qui n'est qu'un descendant.
+  .p-overlay:has(.p-select-overlay) {
     position: fixed !important;
     top: auto !important;
     left: 0 !important;
@@ -120,18 +135,47 @@
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
     max-height: 70vh;
     margin: 0 !important;
-    border-radius: 1rem 1rem 0 0 !important;
     display: flex;
     flex-direction: column;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    overflow: hidden;
     visibility: visible;
     transition: visibility 0s 50ms;
 
     @starting-style {
       visibility: hidden;
     }
+
+    // Les deux niveaux intermédiaires (voir commentaire plus haut) ne
+    // doivent faire que transmettre la hauteur disponible en flex, sans
+    // ajouter de box qui casserait le calcul de `.p-select-list-container`.
+    > p-motion {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+  }
+
+  .p-overlay-content:has(> .p-select-overlay) {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  // Panneau visible (fond, bordure) du drawer : plus de positionnement ici,
+  // seulement l'habillage visuel et le flex qui laisse la liste s'étirer.
+  .p-select-overlay {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
 
   .p-select-list-container {
@@ -140,7 +184,7 @@
     overflow-y: auto !important;
   }
 
-  body:has(> .p-select-overlay)::after {
+  body:has(> .p-overlay .p-select-overlay)::after {
     content: '';
     position: fixed;
     inset: 0;
@@ -366,7 +410,8 @@ html.trip-detail-active body {
 // PrimeNG ('overlay'/'modal') peut tomber sous ce chrome fixe.
 .p-menu-overlay,
 .p-datepicker-panel:not(.p-datepicker-panel-inline),
-.p-select-overlay {
+.p-select-overlay,
+.p-overlay:has(.p-select-overlay) {
   z-index: var(--z-overlay-content) !important;
 }
 
@@ -514,17 +559,18 @@ html.nav-back::view-transition-new(root) {
 
 @media (max-width:768px) {
 
-  p-motion[name="p-anchored-overlay"] {
-      position: fixed !important;
-      inset: 0 !important;
+  p-motion[name="p-anchored-overlay"]:has(> .p-datepicker-panel) {
+    position: fixed !important;
+    inset: 0 !important;
 
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
-  p-motion[name="p-anchored-overlay"] > .p-datepicker-panel {
-      position: static !important;
-      transform: none !important;
+  p-motion[name="p-anchored-overlay"]:has(> .p-datepicker-panel)
+    > .p-datepicker-panel {
+    position: static !important;
+    transform: none !important;
   }
 }

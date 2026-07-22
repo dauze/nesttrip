@@ -15,7 +15,6 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
-import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
 import { ViewportService } from '@core/services/viewport.service';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
