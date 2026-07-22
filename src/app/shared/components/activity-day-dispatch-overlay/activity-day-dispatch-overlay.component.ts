@@ -3,12 +3,10 @@ import {
   Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild, viewChildren
 } from '@angular/core';
 import { Button } from 'primeng/button';
-import { TabsModule } from 'primeng/tabs';
 import { Day } from '@app/features/trips/trip.model';
 import { TripTab } from '@app/features/trips/trip-detail/trip-tab.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
-import { GooglePhotoService } from '@app/core/services/google-photo.service';
 
 interface MonthGroup {
   label: string;
@@ -28,11 +26,13 @@ const DROP_DURATION = 250;
 const RETURN_TRAVEL_DURATION = 300;
 const RETURN_EXPAND_DURATION = 250;
 /** Délai doigt-hors-calendrier avant désescalade d'un geste jour (voir `checkLeaveSheet`). */
-const LEAVE_SHEET_DELAY_MS = 250;
+const LEAVE_SHEET_DELAY_MS = 150;
 /** Durée de survol continu de la barre repliée avant d'escalader un cdkDrag en cours vers le calendrier de dispatch. */
 const DAY_DRAG_ESCALATE_HOVER_MS = 450;
-/** Désescalade (jour) : la bulle se redéploie en forme de carte sur place puis s'efface, sans translation vers une origine devenue obsolète. */
-const DAY_DRAG_COLLAPSE_DURATION_MS = 350;
+/** Désescalade (jour), phase 1 : la bulle ronde redevient une miniature (bords/rayon), sur place — même durée que RETURN_TRAVEL_DURATION côté pool (sinon le redéploiement y paraît plus lent). */
+const DAY_DRAG_COLLAPSE_DURATION_MS = 300;
+/** Désescalade (jour), phase 2 : la miniature se réélargit jusqu'à la taille pleine de la carte d'origine (révèle poignée/texte) — symétrique de RETURN_EXPAND_DURATION côté pool. */
+const DAY_DRAG_EXPAND_DURATION_MS = 250;
 const EDGE_SCROLL_ZONE = 56;
 const EDGE_SCROLL_SPEED = 8;
 /** FLIP des onglets de jours visibles vers leur bouton de grille correspondant. */
@@ -45,10 +45,10 @@ const TAB_FLIP_DURATION = 300;
  * soit la hauteur d'écran — sans quoi un grand écran (plus de px à parcourir
  * en 50vh) ferait paraître le morph plus rapide qu'un petit.
  */
-const EXPAND_DURATION_BASE_MS = 200;
-const EXPAND_DURATION_PX_FACTOR_MS = 1.1;
-const EXPAND_DURATION_MIN_MS = 500;
-const EXPAND_DURATION_MAX_MS = 1100;
+const EXPAND_DURATION_BASE_MS = 300;
+const EXPAND_DURATION_PX_FACTOR_MS = 0.7;
+const EXPAND_DURATION_MIN_MS = 300;
+const EXPAND_DURATION_MAX_MS = 650;
 /** Doit rester synchronisé avec `max-height: 50vh` sur `.dispatch-overlay--expanded .dispatch-overlay__sheet` (scss). */
 const EXPANDED_HEIGHT_VH_RATIO = 0.5;
 /** Rayon/épaisseurs de bordure de la miniature (phase 2, point de départ) et de la bulle (point d'arrivée), en px. */
@@ -58,6 +58,14 @@ const THUMB_BORDER_LEFT_PX = 6.4; // 0.4rem
 const THUMB_BORDER_THIN_PX = 1;
 /** Variable CSS du liseré gris de l'activity-header (voir `.booking` dans activity-card.component.scss). */
 const THUMB_BORDER_GRAY = 'var(--p-content-border-color)';
+/**
+ * Ajustement empirique (retour visuel direct, pas de calcul géométrique
+ * derrière) : même une fois poignée/texte/écart/padding réduits à 0, la
+ * miniature paraissait encore décalée de quelques pixels vers la droite —
+ * ce chouïa de recouvrement du bord gauche par le contenu compense. Un seul
+ * endroit à retoucher si besoin d'affiner.
+ */
+const BALL_CONTENT_LEFT_NUDGE_PX = 5;
 const BALL_BORDER_WIDTH_PX = 3;
 
 function lerp(from: number, to: number, t: number): number {
@@ -71,14 +79,13 @@ function easeInOutCubic(t: number): number {
 @Component({
   selector: 'app-activity-day-dispatch-overlay',
   standalone: true,
-  imports: [CommonModule, Button, TabsModule],
+  imports: [CommonModule, Button],
   templateUrl: './activity-day-dispatch-overlay.component.html',
   styleUrl: './activity-day-dispatch-overlay.component.scss',
 })
 export class ActivityDayDispatchOverlayComponent {
   protected readonly dispatchService = inject(ActivityDispatchService);
   private readonly tripFacade = inject(TripFacade);
-  private readonly googlePhotoService = inject(GooglePhotoService);
 
   readonly days = input<Day[]>([]);
   /** Mêmes onglets que app-trip-tabs-nav (Général + jours), pour en afficher une réplique identique au repos. */
@@ -89,6 +96,7 @@ export class ActivityDayDispatchOverlayComponent {
   private readonly sheetRef = viewChild<ElementRef<HTMLElement>>('sheet');
   private readonly gridRef = viewChild<ElementRef<HTMLElement>>('grid');
   private readonly ballRef = viewChild<ElementRef<HTMLElement>>('ball');
+  private readonly ballContentRef = viewChild<ElementRef<HTMLElement>>('ballContent');
   private readonly replicaNavRef = viewChild<ElementRef<HTMLElement>>('replicaNav');
   // `read: ElementRef` est indispensable ici : ces éléments portent des
   // composants PrimeNG (`p-button`/`p-tab`), donc sans lui, la référence
@@ -96,7 +104,29 @@ export class ActivityDayDispatchOverlayComponent {
   // l'élément DOM — c'est ce qui provoquait le crash "Cannot read properties
   // of undefined (reading 'dataset')".
   private readonly cellRefs = viewChildren('dayCell', { read: ElementRef<HTMLElement> });
-  private readonly replicaTabRefs = viewChildren('replicaTab', { read: ElementRef<HTMLElement> });
+  // Tailles "naturelles" (poignée/texte du clone, écart entre eux) mesurées
+  // une seule fois à chaque clonage (voir cloneOriginHeaderInto) — servent de
+  // bornes aux animations de collapse/expand du contenu de la bulle
+  // (playCollapseFollow, playDeescalateAnimation, playReturnAnimation),
+  // toutes synchronisées sur ELLES, pas sur des durées CSS séparées.
+  private ballHandleWidth = 0;
+  private ballMetaWidth = 0;
+  private ballRowGap = 0;
+  /** Padding gauche/droite (symétrique) de `.dispatch-ball__row`, l'enrobage AUTOUR du clone — voir sa doc dans cloneOriginHeaderInto pour pourquoi il doit lui aussi être synchronisé. */
+  private ballRowPadding = 0;
+  /**
+   * Contrairement au contenu de #ballContent (un clone jeté et recréé à
+   * chaque décrochage, voir cloneOriginHeaderInto), `.dispatch-ball__row`
+   * est LE MÊME nœud DOM d'un drag à l'autre — une animation WAAPI dessus
+   * avec `fill: 'forwards'` (voir expandBallContent) continue donc de
+   * prévaloir sur toute écriture directe de `.style.paddingLeft/Right` (voir
+   * collapseBallContent) tant qu'elle n'est pas explicitement annulée, même
+   * une fois "finie". Il faut donc la garder en mémoire et l'annuler avant
+   * toute réécriture directe, exactement comme `currentBallAnimation`.
+   */
+  private ballRowPaddingAnimation?: Animation;
+  /** Racine du dernier clone DOM inséré dans #replicaNav (voir cloneNavBarInto) — pas un viewChild : ce n'est pas du DOM rendu par Angular. */
+  private replicaCloneRoot?: HTMLElement;
 
   protected readonly dragged = this.dispatchService.dragged;
   protected readonly phase = this.dispatchService.phase;
@@ -148,6 +178,38 @@ export class ActivityDayDispatchOverlayComponent {
       const req = this.dispatchService.dropRequested();
       if (!req) return;
       this.tripFacade.dispatchActivity(req.tripId, req.activityId, req.origin, new Date(req.dayKey));
+    });
+
+    // Synchronise sur le clone courant les classes pilotées par les signaux
+    // d'animation (le clone étant du DOM brut, pas du template Angular, rien
+    // ne les lui applique automatiquement).
+    effect(() => {
+      const expanded = this.sheetExpanded();
+      const flipped = this.flippedDayIds();
+      const root = this.replicaCloneRoot;
+      if (!root) return;
+
+      // "Général" (id 'notes') n'a pas d'équivalent dans la grille : il
+      // s'efface pour de bon à l'expansion, où qu'il soit (visible ou
+      // scrollé hors champ — dans ce dernier cas l'effet est simplement
+      // invisible, sans conséquence).
+      const notesEl = root.querySelector<HTMLElement>('[data-tab-id="notes"]');
+      notesEl?.classList.toggle('dispatch-overlay__replica-tab--out', expanded);
+
+      root.querySelectorAll<HTMLElement>('[data-tab-id]').forEach(el => {
+        const id = el.dataset['tabId'];
+        if (!id || id === 'notes') return;
+        el.classList.toggle('dispatch-overlay__replica-tab--flipped', flipped.has(id));
+      });
+    });
+
+    // Bascule "remplissage" de la miniature clonée (voir cloneOriginHeaderInto) :
+    // même remarque que ci-dessus, un `[class.x]` de template ne peut pas
+    // cibler un nœud inséré à la main dans #ballContent.
+    effect(() => {
+      const filled = this.thumbFilled();
+      const thumb = this.ballContentRef()?.nativeElement.querySelector<HTMLElement>('.activity-header__thumb');
+      thumb?.classList.toggle('activity-header__thumb--fill', filled);
     });
 
     // Attention : seul `phase()` doit être une dépendance réactive de cet
@@ -212,10 +274,6 @@ export class ActivityDayDispatchOverlayComponent {
 
   protected dayKeyFor(day: Day): string {
     return day.id.toISOString();
-  }
-
-  protected photoUrl$(ref: string) {
-    return this.googlePhotoService.getPhotoUrl$(ref, 160);
   }
 
   protected onGridScroll(): void {
@@ -297,7 +355,7 @@ export class ActivityDayDispatchOverlayComponent {
     const sourceEl = this.dispatchService.activeDayDragElement();
     const rect = sourceEl?.getBoundingClientRect()
       ?? new DOMRect(pointer.x - BALL_SIZE / 2, pointer.y - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE);
-    this.dispatchService.beginLift(info, rect, pointer.x, pointer.y);
+    this.dispatchService.beginLift(info, rect, sourceEl, pointer.x, pointer.y);
   }
 
   private checkLeaveSheet(pointer: { x: number; y: number }): void {
@@ -372,6 +430,20 @@ export class ActivityDayDispatchOverlayComponent {
   // qui fait grandir sa hauteur en transition CSS pure (pas de FLIP/WAAPI) :
   // la barre s'étire donc littéralement sur place, ancrée en bas.
   private openSheet(): void {
+    // Le (re)clonage ne se fait QU'ici, une seule fois par décrochage réel
+    // (phase 'lifted'), jamais dès que la barre repliée devient un simple
+    // survol pré-escalade (`sheetVisible`) : un remplacement du sous-arbre
+    // DOM de #replicaNav à CHAQUE début de cdkDrag dans un jour — même les
+    // réordonnancements qui n'escaladent jamais vers le calendrier — se
+    // faisait repérer par le MutationObserver de Swiper (`observeParents`/
+    // `observeSlideChildren` dans TripDaySwiperComponent, qui observe le
+    // sous-arbre entier d'un ancêtre commun, donc aussi cette barre sœur) et
+    // déclenchait un `update()` en pleine séquence de pointeur, cassant le
+    // drag maison (retour immédiat au moindre pointermove, swipe qui
+    // récupère le geste). Ici, une seule fois par décrochage, c'est sans risque.
+    const replicaContainer = this.replicaNavRef()?.nativeElement;
+    if (replicaContainer) this.cloneNavBarInto(replicaContainer);
+
     const navRect = this.dispatchService.getNavBarRect();
     if (navRect) this.collapsedHeight.set(navRect.height);
 
@@ -421,28 +493,55 @@ export class ActivityDayDispatchOverlayComponent {
     });
   }
 
+  // ── Clone DOM de la barre de jours (réplique exacte, scroll inclus) ─────
+  //
+  // Un vrai `cloneNode(true)` du `<p-tabs>` réel (voir
+  // ActivityDispatchService.registerNavBarCloneSource) plutôt qu'une
+  // re-création Angular parallèle : garantit que la réplique montre EXACTEMENT
+  // ce que montre la vraie barre au moment du décrochage — y compris son
+  // décalage de scroll horizontal courant (donc quel que soit le jour actif,
+  // pas seulement quand "Général" est visible à gauche). `cloneNode` ne
+  // recopie pas le `scrollLeft` des descendants scrollables : on le fait à la
+  // main juste après insertion.
+  private cloneNavBarInto(container: HTMLElement): void {
+    const source = this.dispatchService.getNavBarCloneSource();
+    container.replaceChildren();
+    this.replicaCloneRoot = undefined;
+    if (!source) return;
+
+    const clone = source.cloneNode(true) as HTMLElement;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    container.appendChild(clone);
+
+    const sourceScroller = source.querySelector<HTMLElement>('.p-tablist-content');
+    const cloneScroller = clone.querySelector<HTMLElement>('.p-tablist-content');
+    if (sourceScroller && cloneScroller) cloneScroller.scrollLeft = sourceScroller.scrollLeft;
+
+    this.replicaCloneRoot = clone;
+  }
+
   // ── FLIP des onglets de jours visibles vers les boutons de la grille ─────
   //
-  // Les onglets déjà visibles dans la barre repliée (hors "Général") ne se
-  // contentent pas d'apparaître en dessous : ils "deviennent" littéralement
-  // le bouton correspondant de la grille — même technique FLIP que la bulle
-  // (mesurer avant, mesurer après, WAAPI entre les deux), appliquée ici à
-  // chaque bouton concerné plutôt qu'à un clone unique.
-
+  // Les onglets déjà visibles dans la barre repliée (hors "Général", qui n'a
+  // pas d'équivalent dans la grille) ne se contentent pas d'apparaître en
+  // dessous : ils "deviennent" littéralement le bouton correspondant de la
+  // grille — même technique FLIP que la bulle (mesurer avant, mesurer après,
+  // WAAPI entre les deux), appliquée ici à chaque bouton concerné. Le
+  // matching se fait par `data-tab-id` (posé sur chaque `p-tab` réel, donc
+  // présent sur le clone) plutôt que par index : robuste à n'importe quel
+  // décalage de scroll de la barre d'origine.
   private captureVisibleTabFlipTargets(): Map<string, DOMRect> {
     const map = new Map<string, DOMRect>();
-    const nav = this.replicaNavRef()?.nativeElement;
-    if (!nav) return map;
+    const root = this.replicaCloneRoot;
+    if (!root) return map;
 
-    const navRect = nav.getBoundingClientRect();
-    const tabEls = this.replicaTabRefs();
-    const tabsList = this.tabs();
+    const navRect = root.getBoundingClientRect();
 
-    // i = 0 est "Général" : il part vers la gauche, il ne "devient" rien.
-    for (let i = 1; i < tabEls.length; i++) {
-      const tab = tabsList[i];
-      const el = tabEls[i]?.nativeElement;
-      if (!tab || !el) continue;
+    for (const tab of this.tabs()) {
+      if (tab.id === 'notes') continue;
+      const el = root.querySelector<HTMLElement>(`[data-tab-id="${tab.id}"]`);
+      if (!el) continue;
       const rect = el.getBoundingClientRect();
       const isVisible = rect.width > 0 && rect.right > navRect.left && rect.left < navRect.right;
       if (!isVisible) continue;
@@ -496,6 +595,193 @@ export class ActivityDayDispatchOverlayComponent {
     this.flippedDayIds.set(new Set());
   }
 
+  // ── Contenu de la bulle : clone DOM du vrai en-tête d'activité ──────────
+  //
+  // Même logique que cloneNavBarInto pour la barre de jours : au lieu de
+  // reconstruire à la main l'apparence de l'en-tête (photo, titre, icône —
+  // ce que faisait l'ancien `.dispatch-ball__thumb`/`__text`), on clone le
+  // vrai `<app-activity-header>` (voir `ActivityDispatchService.originElement`,
+  // renseigné par les appelants de `beginLift`). La photo, déjà résolue dans
+  // le DOM source, arrive "gratuitement" — plus besoin de la resouscrire à
+  // GooglePhotoService ici. Un seul point délicat : `cloneNode` ne recopie
+  // PAS la valeur "vivante" d'un `<input>` (celle posée par Angular via la
+  // propriété IDL `.value`, pas l'attribut HTML) — le champ de titre
+  // (`p-autoComplete`) cloné se retrouverait donc vide ou obsolète si on ne
+  // le réécrivait pas explicitement avec le titre connu (`dragged().title`).
+  private cloneOriginHeaderInto(container: HTMLElement): void {
+    container.replaceChildren();
+
+    const originEl = this.dispatchService.originElement();
+    const headerEl = originEl?.querySelector<HTMLElement>('app-activity-header') ?? originEl;
+    if (!headerEl) return;
+
+    const clone = headerEl.cloneNode(true) as HTMLElement;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+
+    const input = clone.querySelector<HTMLInputElement>('input');
+    if (input) {
+      input.value = this.dragged()?.title ?? '';
+      // Décoratif seulement (toute la bulle est `pointer-events:none`) —
+      // évite juste qu'un vrai `<input>` (contrairement à l'ancien contenu
+      // fait de `span`/`div`) ne devienne atteignable au clavier (Tab)
+      // pendant le drag.
+      input.tabIndex = -1;
+    }
+
+    container.appendChild(clone);
+
+    // Mesuré une fois ici, juste après insertion (donc juste après layout
+    // "au repos", rien encore collapsé) : sert de borne aux animations de
+    // collapse/expand du contenu, voir playCollapseFollow/expandBallContent.
+    const handle = clone.querySelector<HTMLElement>('.drag-handle');
+    const meta = clone.querySelector<HTMLElement>('.activity-header__meta');
+    const row = clone.querySelector<HTMLElement>('.activity-header__row');
+    this.ballHandleWidth = handle?.getBoundingClientRect().width ?? 0;
+    this.ballMetaWidth = meta?.getBoundingClientRect().width ?? 0;
+    this.ballRowGap = row ? parseFloat(getComputedStyle(row).columnGap) || 0 : 0;
+    // `.dispatch-ball__row`, l'enrobage du template de CE composant-ci (pas
+    // du clone) autour de #ballContent — son padding gauche/droite décale
+    // lui aussi la miniature par rapport au bord de la bulle, exactement
+    // comme le ferait la poignée/l'écart : doit rétrécir en phase avec eux,
+    // sinon la miniature reste décalée à droite même une fois poignée/texte
+    // à 0, et "saute" au centre quand ce padding finit par disparaître
+    // séparément (ancien symptôme avec `.dispatch-ball__row--collapsed`).
+    const ballRow = container.parentElement;
+    this.ballRowPadding = ballRow ? parseFloat(getComputedStyle(ballRow).paddingLeft) || 0 : 0;
+
+    // La poignée n'a besoin d'aucune animation sur son padding/marge (juste
+    // un agrandissement invisible de la zone tactile, voir
+    // activity-header.component.scss) : à 0 net, immédiatement, pour que sa
+    // largeur puisse réellement atteindre 0 pendant le collapse (sinon le
+    // padding, lui, continue de réserver de la place même à `width: 0`).
+    if (handle) {
+      handle.style.padding = '0';
+      handle.style.margin = '0';
+    }
+  }
+
+  /**
+   * Rétrécit poignée/texte/écart EN PHASE avec le rétrécissement de #ball
+   * lui-même : appelée à chaque frame de `playCollapseFollow` avec le MÊME
+   * `eased` (0 = état naturel, 1 = totalement collapsé) que celui qui pilote
+   * la largeur de #ball — pas une transition CSS séparée avec sa propre
+   * durée (source du bug précédent : le texte disparaissait bien plus vite
+   * que la bulle ne rétrécissait). `flex: 'none'` sur la poignée/le texte
+   * retire leur `flex-shrink`/`flex-grow` naturels : sans ça, l'algorithme
+   * flex recalculerait leur taille indépendamment de la valeur qu'on leur
+   * impose ici, et les deux se battraient image par image.
+   */
+  private collapseBallContent(container: HTMLElement, eased: number): void {
+    const handle = container.querySelector<HTMLElement>('.drag-handle');
+    const meta = container.querySelector<HTMLElement>('.activity-header__meta');
+    const row = container.querySelector<HTMLElement>('.activity-header__row');
+    const ballRow = container.parentElement;
+
+    if (handle) {
+      handle.style.flex = 'none';
+      handle.style.width = `${lerp(this.ballHandleWidth, 0, eased)}px`;
+      handle.style.opacity = `${lerp(1, 0, eased)}`;
+    }
+    if (meta) {
+      meta.style.flex = 'none';
+      meta.style.width = `${lerp(this.ballMetaWidth, 0, eased)}px`;
+      meta.style.opacity = `${lerp(1, 0, eased)}`;
+    }
+    if (row) {
+      row.style.gap = `${lerp(this.ballRowGap, 0, eased)}px`;
+    }
+    // `.dispatch-ball__row` (l'enrobage, pas le clone) : son padding gauche/
+    // droite doit rétrécir dans le MÊME mouvement, sinon la miniature reste
+    // décalée à droite même une fois poignée/texte à 0 — voir la doc dans
+    // cloneOriginHeaderInto.
+    if (ballRow) {
+      const padding = `${lerp(this.ballRowPadding, 0, eased)}px`;
+      ballRow.style.paddingLeft = padding;
+      ballRow.style.paddingRight = padding;
+    }
+    // Voir la doc de BALL_CONTENT_LEFT_NUDGE_PX.
+    container.style.marginLeft = `${lerp(0, -BALL_CONTENT_LEFT_NUDGE_PX, eased)}px`;
+  }
+
+  /**
+   * Inverse de `collapseBallContent`, mais en WAAPI (pas de doigt à suivre
+   * ici, position et durée sont fixes) : joué en PARALLÈLE de `expandAnim`
+   * (même `duration`/`easing`, démarré dans le même bloc synchrone) par
+   * `playDeescalateAnimation`/`playReturnAnimation`, pour que la réouverture
+   * de la carte et la réapparition de poignée/texte se fassent dans le même
+   * mouvement — pas l'une après l'autre (symptôme observé : la photo se
+   * décale d'abord, puis la carte s'élargit ensuite).
+   */
+  private expandBallContent(container: HTMLElement, durationMs: number): void {
+    const handle = container.querySelector<HTMLElement>('.drag-handle');
+    const meta = container.querySelector<HTMLElement>('.activity-header__meta');
+    const row = container.querySelector<HTMLElement>('.activity-header__row');
+    const ballRow = container.parentElement;
+    const options: KeyframeAnimationOptions = { duration: durationMs, easing: 'ease-in-out', fill: 'forwards' };
+
+    handle?.animate(
+      [{ width: '0px', opacity: 0 }, { width: `${this.ballHandleWidth}px`, opacity: 1 }],
+      options,
+    );
+    meta?.animate(
+      [{ width: '0px', opacity: 0 }, { width: `${this.ballMetaWidth}px`, opacity: 1 }],
+      options,
+    );
+    row?.animate(
+      [{ gap: '0px' }, { gap: `${this.ballRowGap}px` }],
+      options,
+    );
+    // Voir la doc de BALL_CONTENT_LEFT_NUDGE_PX — `container` (#ballContent)
+    // est jeté/recréé à chaque décrochage (cloneOriginHeaderInto), donc pas
+    // besoin de la même protection contre une animation résiduelle que
+    // `.dispatch-ball__row` juste en dessous.
+    container.animate(
+      [{ marginLeft: `-${BALL_CONTENT_LEFT_NUDGE_PX}px` }, { marginLeft: '0px' }],
+      options,
+    );
+
+    // `.dispatch-ball__row` : nœud réutilisé d'un drag à l'autre (voir sa
+    // doc sur `ballRowPaddingAnimation`) — on annule l'éventuelle précédente
+    // avant d'en lancer une nouvelle.
+    this.ballRowPaddingAnimation?.cancel();
+    this.ballRowPaddingAnimation = ballRow?.animate(
+      [
+        { paddingLeft: '0px', paddingRight: '0px' },
+        { paddingLeft: `${this.ballRowPadding}px`, paddingRight: `${this.ballRowPadding}px` },
+      ],
+      options,
+    );
+  }
+
+  /**
+   * Taille "miniature" cible de #ball, une fois collapsé — UNE SEULE
+   * définition, utilisée par les 3 séquences qui en ont besoin
+   * (playFormAnimation, playDeescalateAnimation, playReturnAnimation) :
+   * les avoir dupliquées séparément est justement ce qui a fait dériver la
+   * désescalade/le retour (ancienne taille, non compensée) de la formation
+   * (nouvelle taille, compensée) après coup — la bulle "n'était plus
+   * réagrandie à la taille qu'elle avait en se rétrécissant". Voir le
+   * commentaire sur collapsedWidth/collapsedHeight ci-dessous pour le détail
+   * de la compensation.
+   */
+  private computeCollapsedSize(origin: DOMRect): { width: number; height: number } {
+    const thumbSize = Math.min(origin.height, 48);
+    // Pas juste la taille de la miniature elle-même, mais CETTE taille +
+    // l'épaisseur du bord de #ball à cet instant. `#ball` est en
+    // `box-sizing: border-box` (comme le reste de l'appli) : le bord "mange"
+    // sur la largeur/hauteur déclarées. Or la miniature
+    // (`.activity-header__thumb`) garde une taille FIXE (jamais rétrécie,
+    // voir collapseBallContent) — sans cette marge, l'espace intérieur
+    // réellement disponible (largeur du bord déduite) devient plus petit que
+    // la miniature elle-même, qui se retrouve donc décalée/serrée contre le
+    // bord gauche épais au lieu de le toucher exactement.
+    return {
+      width: thumbSize + THUMB_BORDER_LEFT_PX + THUMB_BORDER_THIN_PX,
+      height: thumbSize + THUMB_BORDER_THIN_PX * 2,
+    };
+  }
+
   // ── Formation / voyage / retour de la bulle ────────────────────────────────
 
   /**
@@ -520,24 +806,45 @@ export class ActivityDayDispatchOverlayComponent {
     this.thumbFilled.set(false);
     this.currentBallAnimation?.cancel();
     this.currentBallAnimation = undefined;
+    // Nœud réutilisé d'un drag à l'autre (voir sa doc) : sans cette
+    // annulation, une éventuelle réouverture précédente encore "finie mais
+    // pas annulée" continuerait de prévaloir sur les écritures directes de
+    // `collapseBallContent` pendant tout ce nouveau décrochage.
+    this.ballRowPaddingAnimation?.cancel();
+    this.ballRowPaddingAnimation = undefined;
     this.stopTravelFollow();
 
-    const thumbSize = Math.min(origin.height, 48);
-    // Une fois le texte tassé, plus aucune marge interne (cf. scss
-    // `--collapsed`) : le conteneur se réduit exactement à la taille de la
-    // miniature, qui passera ensuite en mode "remplissage total".
-    const collapsedWidth = thumbSize;
+    // Une seule fois par décrochage (comme cloneNavBarInto — voir la note
+    // dans openSheet sur le MutationObserver de Swiper) : le contenu de la
+    // bulle n'est plus reconstruit à la main, c'est un clone DOM du vrai
+    // <app-activity-header> de la carte.
+    const ballContent = this.ballContentRef()?.nativeElement;
+    if (ballContent) {
+      this.cloneOriginHeaderInto(ballContent);
+      // Seed synchrone à l'état "naturel" (eased = 0) — même raison que pour
+      // la géométrie de #ball juste en dessous : sans ça, le padding de
+      // `.dispatch-ball__row` (nœud réutilisé, voir ballRowPaddingAnimation)
+      // pourrait rester à sa valeur résiduelle d'un drag précédent le temps
+      // d'une frame avant que `playCollapseFollow` ne prenne la main.
+      this.collapseBallContent(ballContent, 0);
+    }
 
-    ball.classList.add('dispatch-ball--collapsing');
+    const { width: collapsedWidth, height: collapsedHeight } = this.computeCollapsedSize(origin);
 
-    // Position de départ : mêmes bords que l'activity-header qu'on masque à
-    // cet instant (fin liseré gris sur 3 côtés, bord gauche épais coloré) —
-    // posés SANS transition, pour un état identique au pixel près dès la
-    // première frame. `transition: none` + lecture de layout forcée avant de
-    // la retirer, sinon cette remise à zéro (utile lors d'un 2e drag, le
-    // même élément DOM étant réutilisé) se mettrait elle-même à fondre au
-    // lieu d'apparaître instantanément.
+    // Position de départ : mêmes bords ET même géométrie (taille/position)
+    // que l'activity-header/le clone qu'on masque à cet instant — posés SANS
+    // transition, pour un état identique au pixel près dès la première frame.
+    // Point important pour la taille/position : `playCollapseFollow` (plus
+    // bas) ne les fixe que dans sa boucle `requestAnimationFrame`, donc SANS
+    // ce réglage synchrone ici, la bulle est peinte au moins une frame avec
+    // sa géométrie résiduelle du drag précédent (ou aucune, au tout premier
+    // drag — position par défaut en haut à gauche) avant de "sauter" à la
+    // bonne place : c'est ce raté qui rendait la formation de la bulle
+    // saccadée plutôt que fluide.
     ball.style.transition = 'none';
+    ball.style.width = `${origin.width}px`;
+    ball.style.height = `${origin.height}px`;
+    ball.style.transform = `translate3d(${origin.left}px, ${origin.top}px, 0)`;
     ball.style.borderTopWidth = `${THUMB_BORDER_THIN_PX}px`;
     ball.style.borderRightWidth = `${THUMB_BORDER_THIN_PX}px`;
     ball.style.borderBottomWidth = `${THUMB_BORDER_THIN_PX}px`;
@@ -549,7 +856,7 @@ export class ActivityDayDispatchOverlayComponent {
     void ball.offsetHeight; // flush layout/style avant de réactiver les transitions
     ball.style.transition = '';
 
-    this.playCollapseFollow(ball, origin, collapsedWidth, thumbSize);
+    this.playCollapseFollow(ball, ballContent ?? null, origin, collapsedWidth, collapsedHeight);
   }
 
   /**
@@ -562,9 +869,10 @@ export class ActivityDayDispatchOverlayComponent {
    */
   private playCollapseFollow(
     ball: HTMLElement,
+    content: HTMLElement | null,
     origin: DOMRect,
     collapsedWidth: number,
-    thumbSize: number,
+    collapsedHeight: number,
   ): void {
     const startTime = performance.now();
 
@@ -579,13 +887,14 @@ export class ActivityDayDispatchOverlayComponent {
       const target = this.dispatchService.pointer();
 
       const width = lerp(origin.width, collapsedWidth, eased);
-      const height = lerp(origin.height, thumbSize, eased);
+      const height = lerp(origin.height, collapsedHeight, eased);
       const left = origin.left;
       const top = lerp(origin.top, target.y - height / 2, eased);
 
       ball.style.width = `${width}px`;
       ball.style.height = `${height}px`;
       ball.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      if (content) this.collapseBallContent(content, eased);
 
       if (t >= 1) {
         this.travelFollowLoop = undefined;
@@ -703,17 +1012,17 @@ export class ActivityDayDispatchOverlayComponent {
     this.currentBallAnimation.finished
       .then(() => {
         this.sheetExpanded.set(false);
-        ball.classList.remove('dispatch-ball--collapsing');
         // Attend la fermeture CSS du calendrier (même durée dynamique que
         // l'ouverture, cf. `expandDurationMs`) avant de tout masquer :
         // sinon `finish()` bascule `isVisible` à `false` — donc le sheet en
         // `display: none` — pendant que la réplique/la grille sont encore en
         // train de s'animer, ce qui les coupe net au lieu de les laisser finir.
-       this.dispatchService.finish();
-       this.expandDurationMs()
-        setTimeout(() => {
-          
-        }, );
+        const cssCloseRemaining = Math.max(0, this.expandDurationMs() - DROP_DURATION);
+        if (cssCloseRemaining > 0) {
+          setTimeout(() => this.dispatchService.finish(), cssCloseRemaining);
+        } else {
+          this.dispatchService.finish();
+        }
       })
       .catch(() => {
         /* animation annulée (ex. drag suivant démarré avant la fin) : rien à faire */
@@ -732,10 +1041,9 @@ export class ActivityDayDispatchOverlayComponent {
     this.formed.set(false);
     this.stopTravelFollow();
     const current = ball.getBoundingClientRect();
-    const thumbSize = Math.min(origin.height, 48);
-    const collapsedWidth = thumbSize;
+    const { width: collapsedWidth, height: collapsedHeight } = this.computeCollapsedSize(origin);
     const collapsedLeft = origin.left;
-    const collapsedTop = origin.top + (origin.height - thumbSize) / 2;
+    const collapsedTop = origin.top + (origin.height - collapsedHeight) / 2;
     const color = this.dragged()?.color ?? 'var(--p-primary-color)';
 
     // `transform` DOIT rester piloté par WAAPI ici, pas par une simple
@@ -762,7 +1070,7 @@ export class ActivityDayDispatchOverlayComponent {
         {
           transform: `translate3d(${collapsedLeft}px, ${collapsedTop}px, 0)`,
           width: `${collapsedWidth}px`,
-          height: `${thumbSize}px`,
+          height: `${collapsedHeight}px`,
           borderRadius: `${THUMB_BORDER_RADIUS_PX}px`,
           borderTopWidth: `${THUMB_BORDER_THIN_PX}px`,
           borderRightWidth: `${THUMB_BORDER_THIN_PX}px`,
@@ -809,7 +1117,7 @@ export class ActivityDayDispatchOverlayComponent {
             {
               transform: `translate3d(${collapsedLeft}px, ${collapsedTop}px, 0)`,
               width: `${collapsedWidth}px`,
-              height: `${thumbSize}px`,
+              height: `${collapsedHeight}px`,
             },
             {
               transform: `translate3d(${origin.left}px, ${origin.top}px, 0)`,
@@ -819,8 +1127,12 @@ export class ActivityDayDispatchOverlayComponent {
           ],
           { duration: RETURN_EXPAND_DURATION, easing: 'ease-in-out', fill: 'forwards' },
         );
-        ball.classList.remove('dispatch-ball--collapsing');
         this.currentBallAnimation = expandAnim;
+        // En parallèle, même durée/easing : poignée/texte réapparaissent
+        // dans le même mouvement que la carte se réélargit (voir
+        // expandBallContent) — pas après coup.
+        const returnContent = this.ballContentRef()?.nativeElement;
+        if (returnContent) this.expandBallContent(returnContent, RETURN_EXPAND_DURATION);
 
         expandAnim.finished
           .then(() => {
@@ -851,12 +1163,17 @@ export class ActivityDayDispatchOverlayComponent {
   }
 
   /**
-   * Désescalade (jour) : contrairement à `playReturnAnimation`, aucune
-   * position d'origine fixe n'a de sens ici (le drag sous-jacent a continué
-   * de bouger pendant l'escalade) — la bulle se redéploie donc en forme de
-   * carte SUR PLACE (aucune translation) puis s'efface en fondu, pendant que
-   * le clone qui suit le doigt redevient visible au même endroit dès que
-   * `dayEscalated()` repasse à `false` (voir DayPanelComponent.handleDragPointerMove).
+   * Désescalade (jour) : même structure en 2 phases que `playReturnAnimation`
+   * (bulle -> miniature, PUIS miniature -> pleine taille pour révéler
+   * poignée/texte), sauf que tout se joue SUR PLACE (aucune position
+   * d'origine fixe n'a de sens ici, le drag sous-jacent a continué de bouger
+   * pendant l'escalade) — puis la bulle s'efface d'un coup, pendant que le
+   * clone qui suit le doigt redevient visible au même endroit dès que
+   * `dayEscalated()` repasse à `false` (voir l'effect() dans
+   * DayPanelComponent). Une PREMIÈRE version s'arrêtait à la phase 1 (juste
+   * les bords qui basculent, jamais de réélargissement) : ne JAMAIS revenir
+   * à une seule phase ici, le réélargissement est ce qui rend le redéploiement
+   * visible.
    */
   private playDeescalateAnimation(): void {
     const ball = this.ballRef()?.nativeElement;
@@ -870,8 +1187,7 @@ export class ActivityDayDispatchOverlayComponent {
     this.thumbFilled.set(false);
     this.stopTravelFollow();
     const current = ball.getBoundingClientRect();
-    const thumbSize = Math.min(origin.height, 48);
-    const collapsedWidth = thumbSize;
+    const { width: collapsedWidth, height: collapsedHeight } = this.computeCollapsedSize(origin);
     const pos = `translate3d(${current.left}px, ${current.top}px, 0)`;
     // Inverse exact de `startBorderColorTransition`/`playTravelFollow` : la
     // bulle (bords colorés uniformes) redevient la carte au repos (fin
@@ -885,8 +1201,16 @@ export class ActivityDayDispatchOverlayComponent {
     // changements. Un effet WAAPI actif prévaut sur cette remise à zéro ; une
     // simple affectation de style se ferait écraser par ce `null`, ce qui
     // faisait sauter la bulle en haut à gauche de l'écran (transform perdu).
+    // Pas d'`opacity` dans ces keyframes : la bulle doit rester pleinement
+    // visible pendant TOUT le redéploiement en carte, pour qu'on voie
+    // réellement la forme changer. Elle disparaît d'un coup, INSTANTANÉMENT,
+    // seulement une fois `finish()` appelé (retrait de `.dispatch-ball--active`,
+    // sans transition CSS dessus) — au même moment où le clone qui suit le
+    // doigt redevient visible (voir l'effect() dans DayPanelComponent), pas
+    // en fondu pendant l'animation elle-même (ce qui la rendait quasi
+    // invisible avant même la fin du redéploiement).
     this.currentBallAnimation?.cancel();
-    const anim = ball.animate(
+    const shrinkAnim = ball.animate(
       [
         {
           transform: pos,
@@ -897,23 +1221,21 @@ export class ActivityDayDispatchOverlayComponent {
           borderRightWidth: `${BALL_BORDER_WIDTH_PX}px`,
           borderBottomWidth: `${BALL_BORDER_WIDTH_PX}px`,
           borderLeftWidth: `${BALL_BORDER_WIDTH_PX}px`,
-          opacity: 1,
         },
         {
           transform: pos,
           width: `${collapsedWidth}px`,
-          height: `${thumbSize}px`,
+          height: `${collapsedHeight}px`,
           borderRadius: `${THUMB_BORDER_RADIUS_PX}px`,
           borderTopWidth: `${THUMB_BORDER_THIN_PX}px`,
           borderRightWidth: `${THUMB_BORDER_THIN_PX}px`,
           borderBottomWidth: `${THUMB_BORDER_THIN_PX}px`,
           borderLeftWidth: `${THUMB_BORDER_LEFT_PX}px`,
-          opacity: 0,
         },
       ],
       { duration: DAY_DRAG_COLLAPSE_DURATION_MS, easing: 'ease-in-out', fill: 'forwards' },
     );
-    this.currentBallAnimation = anim;
+    this.currentBallAnimation = shrinkAnim;
 
     // `border-color`, lui, n'a pas besoin de cette protection (Angular n'y
     // touche jamais) — mais s'anime mal en keyframes WAAPI, d'où une
@@ -930,10 +1252,43 @@ export class ActivityDayDispatchOverlayComponent {
     ball.style.borderRightColor = THUMB_BORDER_GRAY;
     ball.style.borderBottomColor = THUMB_BORDER_GRAY;
 
-    anim.finished
+    shrinkAnim.finished
       .then(() => {
-        ball.classList.remove('dispatch-ball--collapsing');
-        this.dispatchService.finish();
+        if (this.phase() !== 'deescalating') return;
+        // Même piège que `playReturnAnimation` : sans `commitStyles()` avant
+        // ce `cancel()`, `shrinkAnim` (fill: 'forwards') perdrait
+        // instantanément taille/rayon/épaisseur de bord en repassant au style
+        // spécifié sous-jacent dès son annulation.
+        shrinkAnim.commitStyles();
+        shrinkAnim.cancel();
+
+        // Phase 2, absente d'une première version de ce correctif (d'où la
+        // bulle qui ne faisait que basculer ses bords sans jamais se
+        // rouvrir) : la miniature se réélargit jusqu'à la taille pleine de
+        // la carte d'origine, SUR PLACE — symétrique de `expandAnim` dans
+        // `playReturnAnimation`. Poignée/texte suivent tout seuls (voir
+        // styles.scss : ils peuvent rétrécir jusqu'à 0, contrairement à leur
+        // contexte carte normale) — pas de classe à retirer ici.
+        const expandAnim = ball.animate(
+          [
+            { transform: pos, width: `${collapsedWidth}px`, height: `${collapsedHeight}px` },
+            { transform: pos, width: `${origin.width}px`, height: `${origin.height}px` },
+          ],
+          { duration: DAY_DRAG_EXPAND_DURATION_MS, easing: 'ease-in-out', fill: 'forwards' },
+        );
+        this.currentBallAnimation = expandAnim;
+        // Même remarque que dans playReturnAnimation : synchronisé, pas
+        // séquentiel (voir expandBallContent) — c'est précisément ce qui
+        // manquait ici (la photo se décalait seule avant que la carte ne
+        // s'élargisse).
+        const deescalateContent = this.ballContentRef()?.nativeElement;
+        if (deescalateContent) this.expandBallContent(deescalateContent, DAY_DRAG_EXPAND_DURATION_MS);
+
+        expandAnim.finished
+          .then(() => this.dispatchService.finish())
+          .catch(() => {
+            /* animation annulée : rien à faire */
+          });
       })
       .catch(() => {
         /* animation annulée : rien à faire */

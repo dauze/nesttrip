@@ -40,8 +40,6 @@ interface DayDragState {
   readonly fromIndex: number;
   targetIndex: number;
   thresholdCrossed: boolean;
-  /** Dernier état d'escalade observé — détecte la transition pour masquer/réafficher la carte une seule fois (voir `handleDragPointerMove`). */
-  wasEscalated: boolean;
   readonly startClientX: number;
   readonly startClientY: number;
   /**
@@ -165,6 +163,36 @@ export class DayPanelComponent {
       if (map) {
         map.points.set(this.dayMapPoints());
       }
+    });
+
+    // Visibilité du clone de suivi réactive à l'escalade — pas seulement
+    // réévaluée au pointermove suivant (comme avant, voir historique dans
+    // `handleDragPointerMove`) : sinon, si le doigt reste immobile pile au
+    // moment où l'escalade démarre (fin du survol prolongé de la barre) ou
+    // se termine (désescalade), le clone garde son ancien état de visibilité
+    // jusqu'au prochain mouvement — fenêtre où ni lui ni la bulle
+    // (ActivityDayDispatchOverlayComponent) ne sont visibles.
+    effect(() => {
+      const escalated = this.dispatchService.dayEscalated();
+      const drag = this.drag;
+      const clone = drag?.cloneEl;
+      if (!clone || !drag) return;
+
+      if (escalated) {
+        clone.style.visibility = 'hidden';
+        return;
+      }
+
+      // À la réapparition (désescalade), son `transform` n'a plus bougé
+      // depuis le début de l'escalade : `handleDragPointerMove` s'arrête
+      // court-circuité tant que `dayEscalated()` est vrai (voir plus bas),
+      // donc le clone est resté figé à sa position d'AVANT le survol du
+      // calendrier. Sans le repositionner ici, il réapparaît loin de l'endroit
+      // où la bulle vient de s'effacer (sous le doigt) — d'où l'impression
+      // que "la bulle disparaît" sans que rien ne prenne le relais visible.
+      const pointer = this.dispatchService.pointer();
+      clone.style.transform = `translate3d(${pointer.x - drag.startClientX}px, ${pointer.y - drag.startClientY}px, 0)`;
+      clone.style.visibility = '';
     });
 
     // 2. Quand ce jour devient actif, on récupère l'instance UNIQUE de la
@@ -355,6 +383,9 @@ export class DayPanelComponent {
   onDragHandleDown(ev: { x: number; y: number; pointerId: number; activityId: string }): void {
     if (this.drag) return; // un seul geste de reorder actif à la fois
 
+    // DEBUG TEMPORAIRE — À RETIRER.
+    this.dispatchService.log(`onDragHandleDown activityId=${ev.activityId} pointerId=${ev.pointerId}`);
+
     const card = this.activityCards().find(c => c.activityId() === ev.activityId);
     const fromIndex = this.activities().findIndex(a => a.id === ev.activityId);
     if (!card || fromIndex === -1) return;
@@ -393,7 +424,6 @@ export class DayPanelComponent {
       offsets: [],
       slotHeight: 0,
       cloneEl: null,
-      wasEscalated: false,
     };
     this.pointerY = ev.y;
 
@@ -418,6 +448,23 @@ export class DayPanelComponent {
       return;
     }
 
+    // Appelé sur CHAQUE pointermove, y compris avant le franchissement du
+    // seuil : sur mobile, laisser passer ne serait-ce que les tout premiers
+    // events sans preventDefault() laisse une fenêtre où le navigateur peut
+    // encore arbitrer en faveur d'un scroll natif (le `touch-action: none`
+    // du handle protège la plupart des cas, mais pas cette fenêtre-là si le
+    // thread principal est chargé au même instant, ex. collapse simultané de
+    // toutes les cartes déclenché au pointerdown).
+    // DEBUG TEMPORAIRE — À RETIRER.
+    if (!drag.thresholdCrossed) {
+      this.dispatchService.log(
+        `day handleDragPointerMove (pre-threshold) type=${event.pointerType} cancelable=${event.cancelable} `
+        + `defaultPrevented(before)=${event.defaultPrevented}`,
+      );
+    }
+
+    if (event.cancelable) event.preventDefault();
+
     if (!drag.thresholdCrossed) {
       const dx = event.clientX - drag.startClientX;
       const dy = event.clientY - drag.startClientY;
@@ -425,21 +472,15 @@ export class DayPanelComponent {
       this.beginCardFollow(drag, event);
     }
 
-    if (event.cancelable) event.preventDefault();
-
     this.dispatchService.pointer.set({ x: event.clientX, y: event.clientY });
 
     // Pendant l'escalade (survol prolongé de la barre de jours), la bulle a
     // la main : on met le suivi local en pause sans le tuer (voir aussi
     // `startDayDragAutoScroll`), la reprise est automatique à la désescalade.
-    // Le clone, lui, est masqué le temps de l'escalade pour ne jamais
-    // l'avoir visible en même temps que la bulle.
-    const escalated = this.dispatchService.dayEscalated();
-    if (escalated !== drag.wasEscalated) {
-      drag.wasEscalated = escalated;
-      if (drag.cloneEl) drag.cloneEl.style.visibility = escalated ? 'hidden' : '';
-    }
-    if (escalated) return;
+    // Le clone, lui, est masqué le temps de l'escalade (visibilité pilotée
+    // par un effect() dans le constructeur, réactif à `dayEscalated()` —
+    // pas ici, voir sa doc : sinon la bascule attend le pointermove suivant).
+    if (this.dispatchService.dayEscalated()) return;
 
     if (drag.cloneEl) {
       drag.cloneEl.style.transform = `translate3d(${event.clientX - drag.startClientX}px, ${event.clientY - drag.startClientY}px, 0)`;

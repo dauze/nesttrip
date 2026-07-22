@@ -97,6 +97,14 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Activités réelles au niveau des days (form indépendant par jour) + version "light" dans le pool, fichiers centralisés sur l'activité de pool : une même activité peut être placée sur plusieurs jours
 - Login en `dvh` (prend en compte la barre Google)
 - Lorsque je drag and drop les activités, certaine se mettent avec des heure de début et de fin non renseigné (le bon cas ), d'autre s'alimente avec l'heure actuelle, ce n'est pas bien !
+- Vue d'ensemble avec zoom adapté pour voirs tous les point d'un jour quand on arrive sur un jour. Ensuite, lorsqeu l'on scroll juqu'à l'activité 1, il fautr que le zoom se positionne sur le jour 1, exactement comme la carte est aujourduit. Une fois arrivé à la, le zoom déjà en place par rapport au scrolling sera en place et tout fonctionnera.
+- Je veux améliorer le zoom au scroll : il faudrait accélerer entre 2 point ert ralentir quand on est proche d'un point, là la trajectoir est linéaire
+- Liste générale : rajouter l'info du/des jour(s) si l'activité est assignée (elle peut maintenant l'être sur plusieurs jours à la fois), mettre la mention "À assigner" sinon avec un truc visuel, une couleur.
+- Hauteur de la carte Google en % d'écran plutôt qu'en pixels
+- Taille minimum dynamique sur les fenêtres swipe
+- Slide : repenser le slide: metttre le slide directement dans chaque slider, comme ça, en allant au jour suivant le slide d'un élément n'est pas pollué par le slide précédant. Par contre, il faut une facon élégante de masquer le header fixe + le header de voyage en scollant vers le bas. On pourrait faire du ménage sur le calcul du window.scrollY sur le body, et il faut faire très attention au slide qui est calculé sur chaque slider pour caler les activités à la carte. Attention aussi à ne pas afficher le slider dans le slide je ne veux pas plusieurs assenseurs. Cela simplifiera peut etre aussi le sticky sur la carte qui était compliqué à réaliser.
+- Le changement de type sur une activité ne fonctionne plus ! 
+
 
 ## 🔧 À faire
 
@@ -115,18 +123,14 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Carte pliée par défaut dans "Général" (aperçu + "voir plus" → bon jour)
 - Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 - Rajouter la Position actuelle de l'utilisateur sur la carte
-- Vue d'ensemble avec zoom adapté pour voirs tous les point d'un jour quand on arrive sur un jour. Ensuite, lorsqeu l'on scroll juqu'à l'activité 1, il fautr que le zoom se positionne sur le jour 1, exactement comme la carte est aujourduit. Une fois arrivé à la, le zoom déjà en place par rapport au scrolling sera en place et tout fonctionnera.
-- Je veux améliorer le zoom au scroll : il faudrait accélerer entre 2 point ert ralentir quand on est proche d'un point, là la trajectoir est linéaire
 - Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin.
 - Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange
-- Hauteur de la carte Google en % d'écran plutôt qu'en pixels
 
 ### Activités
 - Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
 - Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
 - Tri par ville et par jour dans l'onglet activités, non assignées en bas
-- Liste générale : rajouter l'info du/des jour(s) si l'activité est assignée (elle peut maintenant l'être sur plusieurs jours à la fois), mettre la mention "À assigner" sinon avec un truc visuel, une couleur.
 - Calcul auto des trajets entre activités (à pied / voiture / vélo)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - Durée : autre méthode de saisie, gestion des durées > 24h si on a plusieurs jour plusieurs jours ! et il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
@@ -153,11 +157,9 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés 
 - Couleur différente sur texte modifiable : à voir car faudrait l'appliquer sur les dates, les listes, et touts element modifiable, pas juste les input. Pour les couleurs, un truc proche de la couleur de base
 - Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
-- Taille minimum dynamique sur les fenêtres swipe
 - Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
-- Slide : repenser le slide: metttre le slide directement dans chaque slider, comme ça, en allant au jour suivant le slide d'un élément n'est pas pollué par le slide précédant. Par contre, il faut une facon élégante de masquer le header fixe + le header de voyage en scollant vers le bas. On pourrait faire du ménage sur le calcul du window.scrollY sur le body, et il faut faire très attention au slide qui est calculé sur chaque slider pour caler les activités à la carte. Attention aussi à ne pas afficher le slider dans le slide je ne veux pas plusieurs assenseurs. Cela simplifiera peut etre aussi le sticky sur la carte qui était compliqué à réaliser.
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
-- Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi,; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
+- Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée et le curseur positionné sur le choix de l'activité
 - Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
@@ -171,6 +173,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
 - au niveau du slide de la carte, il faudrait calculer la hauteur à prendre en fonction de la distance à parcourir : plus il y a de distance, plus il faut reculer. Moins il y en a, moins il faut reculer
 - Mettre la carte sur le côté lorsque le téléphone est en mode allongé 
+- Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal
 
 
 ### Bugs / fixes
@@ -178,9 +181,9 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Depuis le pool, sélection d'une activité sous le calendrier : position mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
 - Si j'ai qu'un seul trip, je ne peux plus faire retour sur la première page, donc je ne peux pas créer de trip. C'est à la connexion qu'il faut aller sur le trip, pas tout le temps 
 - mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle
-- Le changement de type sur une activité ne fonctionne plus ! 
 - Le drag and drop fonctionne pas sur mobile, il s'annule dès que je drag :le redémarrage de serveur avait pourtant corrigé ce beug en serveur local
 - Si j'ajoute un titre à une activité dans le p-autocomplete, la valeur du titre est bien mit à jour mais les données de google ne sont pas ramené, alors que la deuxième fois si
+- Dans la modification de l'heure, si l'utilisateur positionne une heure puis une minute, alors il faut faire ok
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)

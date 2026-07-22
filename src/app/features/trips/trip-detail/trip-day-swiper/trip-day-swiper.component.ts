@@ -90,6 +90,20 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       if (map) this.mapHost.register(map);
     });
 
+    // Réactif à `isLocked()` lui-même (pas juste au changement de jour actif,
+    // voir plus bas) : sans ça, `swiperInstance.allowTouchMove` ne se remet
+    // à jour qu'au prochain changement d'onglet/jour, donc Swiper reste
+    // capable d'intercepter le geste tactile pendant TOUT un
+    // réordonnancement manuel dans un jour (voir DayPanelComponent.onDragHandleDown/
+    // handleDragPointerUp) — invisible à la souris (Swiper n'écoute pas les
+    // événements souris de la même façon), d'où un comportement qui ne casse
+    // que sur mobile.
+    effect(() => {
+      const locked = this.lockService.isLocked();
+      const swiperInstance = this.swiperRef()?.nativeElement?.swiper;
+      if (swiperInstance) swiperInstance.allowTouchMove = !locked;
+    });
+
     effect(() => {
       const days = this.trip().days.slice().sort((a, b) => a.id.getTime() - b.id.getTime());
       this.sortedDays.set(days);

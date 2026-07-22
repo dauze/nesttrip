@@ -92,6 +92,74 @@ html.trip-detail-active body {
   100% { transform: scale(1); }
 }
 
+/* ---------------------------------------------------------------------
+ * Réplique de la barre de jours dans ActivityDayDispatchOverlayComponent :
+ * un clone DOM du <p-tabs> réel (voir cloneNavBarInto), donc porteur de
+ * l'attribut de scope de TripTabsNavComponent, pas de celui de l'overlay —
+ * ces classes doivent rester globales (non scopées) pour continuer à
+ * s'appliquer une fois posées via classList.toggle() sur le clone.
+ * ------------------------------------------------------------------- */
+.dispatch-overlay__replica-tab--out {
+  flex: 0 0 0 !important;
+  max-width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+  transform: translateX(-120vw);
+  opacity: 0;
+  transition:
+    transform 650ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 400ms ease,
+    flex-basis 650ms cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 650ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 650ms ease,
+    margin 650ms ease;
+}
+
+.dispatch-overlay__replica-tab--flipped {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+/* ---------------------------------------------------------------------
+ * Contenu de la bulle de décrochage (ActivityDayDispatchOverlayComponent,
+ * voir cloneOriginHeaderInto) : un clone DOM du vrai <app-activity-header>
+ * de la carte, donc porteur de l'attribut de scope d'ActivityHeaderComponent
+ * — mêmes raisons de rester globales que le bloc .dispatch-overlay__replica-*
+ * ci-dessus. `.drag-handle` est le sélecteur déjà utilisé ailleurs pour
+ * cibler la poignée de l'en-tête (voir ActivityCardComponent.updateDragState) ;
+ * `.activity-header__thumb`/`__meta` sont posés dans le template de
+ * ActivityHeaderComponent spécifiquement comme accroches de style stables.
+ * ------------------------------------------------------------------- */
+// Pas de transition CSS ici : le rétrécissement/la réapparition de la
+// poignée et du texte sont pilotés image par image en JS, dans la MÊME
+// boucle (rAF) ou le MÊME appel WAAPI que celui qui anime #ball lui-même
+// (voir collapseBallContent/expandBallContent) — une transition CSS séparée,
+// avec sa propre durée, s'est révélée impossible à garder synchronisée avec
+// ça. Juste de quoi les clipper proprement pendant que leur largeur inline
+// varie.
+.dispatch-ball__content .drag-handle,
+.dispatch-ball__content .activity-header__meta {
+  overflow: hidden;
+}
+
+.activity-header__thumb {
+  transition: border-radius 300ms ease;
+
+  img {
+    display: block;
+  }
+}
+
+.dispatch-ball__content .activity-header__thumb--fill {
+  position: absolute;
+  inset: 0;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0;
+}
+
 .transparent-textarea {
   --p-textarea-background: transparent;
   --p-textarea-border-color: transparent;

@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  // Évite que la barre (fixed bottom-0) ne se retrouve sous la barre de
+  // gestes/multitâche des mobiles : la hauteur ajoutée ici est mesurée par
+  // le ResizeObserver du composant et automatiquement répercutée en
+  // padding-bottom du contenu via TripChromeService (voir constructeur).
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+// Les onglets se répartissent toute la largeur disponible quand il y en a
+// peu ; `min-width` sert de plancher de rétrécissement, au-delà duquel le
+// conteneur scrollable natif de p-tabs prend le relais (beaucoup de jours).
+// `display:flex` + `justify-content:center` recentrent verticalement le
+// contenu (pile de 3 lignes pour un jour, simple libellé pour "Général")
+// dans la hauteur du plus grand onglet de la barre.
+.p-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 3.75rem;
+}
+
+// `container-type: inline-size` fait de l'onglet un conteneur de requête CSS
+// (voir day-tab__short/__full ci-dessous) — seulement pour les onglets de
+// jour, PAS pour "Général" : la containment de taille qu'implique
+// `container-type` fait ignorer le contenu réel dans le calcul de la taille
+// de la boîte, ce qui casse `min-width: max-content` sur `.p-tab--general`
+// (le mot se retrouvait tronqué, la boîte pouvant être compressée en dessous
+// de sa propre largeur de texte malgré ce `min-width`).
+.p-tab--day {
+  container-type: inline-size;
+  container-name: day-tab;
+}
+
+.day-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.day-tab__number {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.day-tab__weekday,
+.day-tab__month {
+  font-size: 0.7rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+// Abrégé par défaut ; la version complète prend le relais dès que l'onglet
+// est assez large pour l'accueillir sans déborder (voir @container ci-dessous).
+.day-tab__full {
+  display: none;
+}
+
+@container day-tab (min-width: 5.5rem) {
+  .day-tab__short {
+    display: none;
+  }
+
+  .day-tab__full {
+    display: inline;
+  }
+}
+
+// "Général" n'a pas d'abrégé : toujours écrit en entier, jamais tronqué.
+// `min-width: 3.75rem` ci-dessus remplace le plancher automatique (basé sur
+// le contenu) que les flex items ont par défaut — sur une barre serrée
+// (beaucoup de jours), ça laissait "Général" se faire compresser en dessous
+// de la largeur de son propre texte, collant les lettres aux bords. On lui
+// redonne son propre plancher, basé sur son contenu réel + son padding.
+.p-tab--general {
+  min-width: max-content;
+}
+
+.general-tab {
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}

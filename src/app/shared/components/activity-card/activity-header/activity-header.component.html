@@ -1,9 +1,9 @@
-<div class="flex align-items-center gap-2 w-full min-w-0">
+<div class="activity-header__row flex align-items-center gap-2 w-full min-w-0">
   <span class="cursor-move text-color-secondary flex-shrink-0 drag-handle swiper-no-swiping">
     <i class="pi pi-bars"></i>
   </span>
 
-  <div class="flex-shrink-0 border-round overflow-hidden surface-100 flex align-items-center justify-content-center"
+  <div class="activity-header__thumb flex-shrink-0 border-round overflow-hidden surface-100 flex align-items-center justify-content-center"
       style="width:3rem;height:3rem">
       @if (firstPhotoRef(); as ref) {
         @if (getPhotoUrl$(ref, 120) | async; as url) {
@@ -15,8 +15,8 @@
   </div>
   
   <!-- Ajout de keydown pour stopper la propagation au clavier et valider l'a11y -->
-  <div class="flex flex-column flex-1 min-w-0 gap-1" 
-     (click)="$event.stopPropagation()" 
+  <div class="activity-header__meta flex flex-column flex-1 min-w-0 gap-1"
+     (click)="$event.stopPropagation()"
      (keydown)="$event.stopPropagation()"
      tabindex="-1">
        

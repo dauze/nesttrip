@@ -69,10 +69,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   readonly tabs = computed<TripTab[]>(() => [
     { id: 'notes', label: 'Général' },
-    ...this.sortedDays().map(d => ({
-      id: d.id.toISOString(),
-      label: this.formatDate(d.id),
-    })),
+    ...this.sortedDays().map(d => this.formatDayTab(d.id)),
   ]);
 
   constructor() {
@@ -223,8 +220,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
+  private formatDayTab(date: Date): TripTab {
+    return {
+      id: date.toISOString(),
+      label: new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(date),
+      dayNumber: new Intl.DateTimeFormat('fr-FR', { day: 'numeric' }).format(date),
+      weekday: new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(date),
+      weekdayFull: new Intl.DateTimeFormat('fr-FR', { weekday: 'long' }).format(date),
+      month: new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(date),
+      monthFull: new Intl.DateTimeFormat('fr-FR', { month: 'long' }).format(date),
+    };
   }
 
   private getTodayId(trip: Trip): string {

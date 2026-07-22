@@ -65,6 +65,15 @@ export class ActivityDispatchService {
   readonly phase = signal<DispatchVisualPhase>('idle');
   readonly dragged = signal<DraggedActivityInfo | null>(null);
   readonly originRect = signal<DOMRect | null>(null);
+  /**
+   * Élément représentatif de la carte au moment du décrochage (le conteneur
+   * de carte pour un décrochage pool, le clone qui suit déjà le doigt pour
+   * une escalade jour — voir les appelants de `beginLift`) : source du clone
+   * DOM que l'overlay insère dans la bulle (voir
+   * ActivityDayDispatchOverlayComponent.playFormAnimation) plutôt que de
+   * reconstruire à la main l'apparence de l'en-tête d'activité.
+   */
+  readonly originElement = signal<HTMLElement | null>(null);
   readonly pointer = signal<{ x: number; y: number }>({ x: 0, y: 0 });
   readonly hoveredDayKey = signal<string | null>(null);
   readonly hoveredDayRect = signal<DOMRect | null>(null);
@@ -115,9 +124,149 @@ export class ActivityDispatchService {
     this.activeDayDragElement.set(null);
   }
 
+  // ── DEBUG TEMPORAIRE — À RETIRER une fois le bug tactile diagnostiqué ────
+  // HUD textuel affiché par l'overlay (voir son template) : permet de lire
+  // la séquence d'événements pointer directement sur l'écran du téléphone,
+  // sans passer par un débogueur distant.
+  readonly debugLog = signal<string[]>([]);
+  private moveCount = 0;
+
+  log(msg: string): void {
+    const line = `${(performance.now() % 100000).toFixed(0)}ms ${msg}`;
+    this.debugLog.update(list => {
+      const next = [...list, line];
+      return next.length > 120 ? next.slice(-120) : next;
+    });
+    console.log('[dispatch-debug]', line);
+  }
+
+  clearDebugLog(): void {
+    this.debugLog.set([]);
+  }
+
+  private readonly onScrollBound = (e: Event) => {
+    const target = e.target as HTMLElement | Document;
+    const desc = target === document
+      ? 'document'
+      : `${(target as HTMLElement).tagName}.${(target as HTMLElement).className}`;
+    this.log(`⚠ SCROLL event target=${desc}`);
+  };
+
+  // ── EVENT TAP : capture ABSOLUMENT tout ce qui se passe sur le doigt ─────
+  // Écoute en phase de capture (donc même si un handler ailleurs appelle
+  // stopPropagation) TOUS les événements pointer/touch/selection pertinents,
+  // sans filtrage — pour voir, dans l'ordre exact, qui reçoit quoi et quand,
+  // plutôt que de deviner. Démarré au pointerdown sur une poignée (voir
+  // ActivityCardComponent.updateDragState), auto-arrêté après quelques
+  // secondes.
+  private eventTapHandlers: { type: string; fn: (e: Event) => void }[] = [];
+  private eventTapActive = false;
+  private eventTapStopTimer?: ReturnType<typeof setTimeout>;
+
+  private describeEvent(e: Event): string {
+    const t = e.target as HTMLElement | null;
+    const tDesc = t
+      ? `${t.nodeName}${t.className ? '.' + String(t.className).trim().replace(/\s+/g, '.') : ''}`
+      : 'null';
+    let extra = '';
+    if (typeof PointerEvent !== 'undefined' && e instanceof PointerEvent) {
+      extra = ` pid=${e.pointerId} primary=${e.isPrimary} cancelable=${e.cancelable} `
+        + `defaultPrevented=${e.defaultPrevented} x=${e.clientX.toFixed(0)} y=${e.clientY.toFixed(0)}`;
+    } else if (typeof TouchEvent !== 'undefined' && e instanceof TouchEvent) {
+      const touches = Array.from(e.changedTouches)
+        .map(pt => `(${pt.identifier}:${pt.clientX.toFixed(0)},${pt.clientY.toFixed(0)})`)
+        .join(',');
+      extra = ` cancelable=${e.cancelable} defaultPrevented=${e.defaultPrevented} touches=${touches}`;
+    }
+
+    // DEBUG : sur touchstart, remonte la chaîne d'ancêtres et logue le
+    // touch-action CALCULÉ (résolu par le CSS, pas juste ce qu'on a écrit
+    // dans la feuille de style) de chacun — confirme si "none" est vraiment
+    // la valeur effective au tout premier contact, ou si un ancêtre
+    // réintroduit du scroll autorisé quelque part dans la chaîne.
+    if (e.type === 'touchstart' && t) {
+      const chain: string[] = [];
+      let node: HTMLElement | null = t;
+      let depth = 0;
+      while (node && depth < 8) {
+        const ta = getComputedStyle(node).touchAction;
+        const label = `${node.nodeName}${node.className ? '.' + String(node.className).trim().replace(/\s+/g, '.').slice(0, 30) : ''}`;
+        chain.push(`${label}=${ta}`);
+        node = node.parentElement;
+        depth++;
+      }
+      extra += ` | touchAction chain: ${chain.join(' > ')}`;
+    }
+
+    return `${e.type} target=${tDesc}${extra}`;
+  }
+
+  startEventTap(): void {
+    if (this.eventTapActive) return;
+    this.eventTapActive = true;
+    this.log('══ EVENT TAP ON ══');
+
+    const types = [
+      'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerout', 'pointerleave',
+      'gotpointercapture', 'lostpointercapture',
+      'touchstart', 'touchmove', 'touchend', 'touchcancel',
+      'contextmenu', 'dragstart', 'selectionchange', 'scroll',
+    ];
+
+    for (const type of types) {
+      const fn = (e: Event) => this.log(`⋯ ${this.describeEvent(e)}`);
+      document.addEventListener(type, fn, { capture: true, passive: true });
+      this.eventTapHandlers.push({ type, fn });
+    }
+
+    clearTimeout(this.eventTapStopTimer);
+    this.eventTapStopTimer = setTimeout(() => this.stopEventTap(), 10000);
+  }
+
+  stopEventTap(): void {
+    if (!this.eventTapActive) return;
+    this.eventTapActive = false;
+    for (const { type, fn } of this.eventTapHandlers) {
+      document.removeEventListener(type, fn, { capture: true });
+    }
+    this.eventTapHandlers = [];
+    this.log('══ EVENT TAP OFF ══');
+  }
+  // ── FIN DEBUG TEMPORAIRE ──────────────────────────────────────────────────
+
   private dayCells = new Map<string, DOMRect>();
   private readonly onPointerMoveBound = (e: PointerEvent) => this.handlePointerMove(e);
-  private readonly onPointerUpBound = () => this.handlePointerUp();
+  private readonly onPointerUpBound = (e: PointerEvent) => {
+    this.log(`pointerup id=${e.pointerId}`);
+    this.handlePointerUp();
+  };
+  private readonly onPointerCancelBound = (e: PointerEvent) => {
+    // DEBUG : `pointercancel` ne porte PAS de coordonnées valides (toujours
+    // (0,0) per spec) — utiliser e.clientX/Y ici pointait donc TOUJOURS sur
+    // le coin (0,0) de l'écran (d'où `.app-toolbar`, qui y est bien réel,
+    // mais sans rapport avec le doigt). On utilise la dernière position
+    // RÉELLE connue (`this.pointer()`, mise à jour à chaque pointermove).
+    const last = this.pointer();
+    const el = document.elementFromPoint(last.x, last.y);
+    const pe = el ? getComputedStyle(el).pointerEvents : 'n/a';
+    this.log(`⚠ POINTERCANCEL id=${e.pointerId} lastPointer=(${last.x.toFixed(0)},${last.y.toFixed(0)}) elementFromPoint=${el?.tagName}.${(el as HTMLElement)?.className} pointerEvents=${pe}`);
+
+    // DEBUG : géométrie réelle de la grille du calendrier de dispatch (elle
+    // s'étend pile pendant le lift, voir openSheet) au moment précis du
+    // cancel — confirme si sa boîte recouvre VRAIMENT le dernier point connu.
+    const grid = document.querySelector('.dispatch-overlay__scroll');
+    if (grid) {
+      const r = grid.getBoundingClientRect();
+      const cs = getComputedStyle(grid);
+      this.log(
+        `.dispatch-overlay__scroll rect=(${r.left.toFixed(0)},${r.top.toFixed(0)})-(${r.right.toFixed(0)},${r.bottom.toFixed(0)}) `
+        + `touchAction=${cs.touchAction} pointerEvents=${cs.pointerEvents}`,
+      );
+    }
+    this.log(`document.documentElement.hasPointerCapture=${document.documentElement.hasPointerCapture(e.pointerId)}`);
+
+    this.handlePointerUp();
+  };
   // Le doigt/curseur traverse forcément d'autres cartes (donc d'autres
   // images) pendant le trajet vers un autre jour. Sans ce garde-fou, le
   // navigateur peut interpréter ce survol comme le début d'un drag natif
@@ -147,6 +296,24 @@ export class ActivityDispatchService {
   }
 
   /**
+   * Élément source pour le clone DOM de la réplique affichée par l'overlay
+   * (voir ActivityDayDispatchOverlayComponent.cloneNavBarInto) : le `<p-tabs>`
+   * interne, pas `navBarEl` (le host `app-trip-tabs-nav`, qui porte les
+   * classes utilitaires de positionnement `fixed bottom-0 left-0 right-0`
+   * posées par le parent — les cloner ferait fuir le clone hors de son
+   * conteneur `.dispatch-overlay__replica`).
+   */
+  private navBarCloneSourceEl?: HTMLElement;
+
+  registerNavBarCloneSource(el: HTMLElement): void {
+    this.navBarCloneSourceEl = el;
+  }
+
+  getNavBarCloneSource(): HTMLElement | null {
+    return this.navBarCloneSourceEl ?? null;
+  }
+
+  /**
    * Point d'ancrage `position:fixed` hors du swiper de jours (enregistré une
    * fois par TripDetailComponent, en frère de app-activity-day-dispatch-overlay)
    * — voir DayPanelComponent.beginCardFollow : le CLONE qui suit le doigt
@@ -171,19 +338,32 @@ export class ActivityDispatchService {
     this.dayCells = cells;
   }
 
-  beginLift(info: DraggedActivityInfo, originRect: DOMRect, pointerX: number, pointerY: number): void {
+  beginLift(
+    info: DraggedActivityInfo,
+    originRect: DOMRect,
+    originElement: HTMLElement | null,
+    pointerX: number,
+    pointerY: number,
+  ): void {
     this.dragged.set(info);
     this.originRect.set(originRect);
+    this.originElement.set(originElement);
     this.pointer.set({ x: pointerX, y: pointerY });
     this.hoveredDayKey.set(null);
     this.hoveredDayRect.set(null);
     this.phase.set('lifted');
+    this.moveCount = 0;
+    this.log(`▶ beginLift origin=${info.origin} start=(${pointerX.toFixed(0)},${pointerY.toFixed(0)})`);
 
-    document.addEventListener('pointermove', this.onPointerMoveBound, { passive: true });
+    document.addEventListener('pointermove', this.onPointerMoveBound, { passive: false });
     document.addEventListener('pointerup', this.onPointerUpBound, { passive: true });
-    document.addEventListener('pointercancel', this.onPointerUpBound, { passive: true });
+    document.addEventListener('pointercancel', this.onPointerCancelBound, { passive: true });
     document.addEventListener('dragstart', this.onDragStartBound, { capture: true });
     document.addEventListener('contextmenu', this.onContextMenuBound, { capture: true });
+    // DEBUG : capture:true remonte tout scroll déclenché sur N'IMPORTE QUEL
+    // conteneur descendant pendant le drag — sert à confirmer si un scroll
+    // natif se produit réellement, et sur quel élément.
+    document.addEventListener('scroll', this.onScrollBound, { capture: true, passive: true });
   }
 
   /** Appelé par l'overlay une fois l'animation de fin (drop ou retour) terminée. */
@@ -194,6 +374,7 @@ export class ActivityDispatchService {
     this.phase.set('idle');
     this.dragged.set(null);
     this.originRect.set(null);
+    this.originElement.set(null);
     this.hoveredDayKey.set(null);
     this.hoveredDayRect.set(null);
     this.dropRequested.set(null);
@@ -211,12 +392,35 @@ export class ActivityDispatchService {
    */
   deescalate(): void {
     if (this.phase() !== 'lifted') return;
+    this.log(`deescalate() called after move#${this.moveCount} (doigt éloigné du calendrier)`);
     this.detachDocumentListeners();
     this.phase.set('deescalating');
   }
 
   private handlePointerMove(event: PointerEvent): void {
     if (this.phase() !== 'lifted') return;
+
+    this.moveCount++;
+    // DEBUG : log les tout premiers moves (fenêtre critique) puis 1/10.
+    if (this.moveCount <= 8 || this.moveCount % 10 === 0) {
+      this.log(
+        `move#${this.moveCount} type=${event.pointerType} cancelable=${event.cancelable} `
+        + `defaultPrevented(before)=${event.defaultPrevented} x=${event.clientX.toFixed(0)} y=${event.clientY.toFixed(0)}`,
+      );
+    }
+
+    // Sur mobile, le thread principal est fortement sollicité pendant toute
+    // la formation/le voyage de la bulle (boucles rAF de playFormAnimation/
+    // playCollapseFollow/playTravelFollow dans l'overlay) : laisser passer
+    // ne serait-ce que les tout premiers pointermove sans preventDefault()
+    // laisse une fenêtre où le navigateur peut arbitrer en faveur du scroll
+    // natif malgré le `touch-action: none` posé sur la poignée d'origine —
+    // même symptôme (et même fix) que DayPanelComponent.handleDragPointerMove,
+    // qui doit lui aussi rappeler preventDefault() à CHAQUE mouvement, pas
+    // une seule fois au pointerdown. Sans ce fix ici, la bulle "perdait la
+    // main" au profit du scroll dès le premier déplacement tactile.
+    if (event.cancelable) event.preventDefault();
+
     this.pointer.set({ x: event.clientX, y: event.clientY });
 
     let hitKey: string | null = null;
@@ -247,6 +451,8 @@ export class ActivityDispatchService {
     const targetKey = this.hoveredDayKey();
     const targetRect = this.hoveredDayRect();
 
+    this.log(`handlePointerUp after move#${this.moveCount} hoveredDayKey=${targetKey ?? 'null'}`);
+
     // Drop valide uniquement sur un vrai bouton du calendrier
     if (info && targetKey && targetRect) {
       this.dropRequested.set({
@@ -256,6 +462,7 @@ export class ActivityDispatchService {
         origin: info.origin,
       });
 
+      this.log('phase -> dropping');
       this.phase.set('dropping');
       return;
     }
@@ -265,14 +472,17 @@ export class ActivityDispatchService {
     // moment de l'escalade, devenue obsolète depuis (le drag a continué en
     // arrière-plan) — y retourner ferait voler la bulle vers un point qui
     // n'a plus de sens.
-    this.phase.set(info?.origin === 'day' ? 'deescalating' : 'returning');
+    const nextPhase = info?.origin === 'day' ? 'deescalating' : 'returning';
+    this.log(`phase -> ${nextPhase}`);
+    this.phase.set(nextPhase);
   }
 
   private detachDocumentListeners(): void {
     document.removeEventListener('pointermove', this.onPointerMoveBound);
     document.removeEventListener('pointerup', this.onPointerUpBound);
-    document.removeEventListener('pointercancel', this.onPointerUpBound);
+    document.removeEventListener('pointercancel', this.onPointerCancelBound);
     document.removeEventListener('dragstart', this.onDragStartBound, { capture: true });
     document.removeEventListener('contextmenu', this.onContextMenuBound, { capture: true });
+    document.removeEventListener('scroll', this.onScrollBound, { capture: true });
   }
 }

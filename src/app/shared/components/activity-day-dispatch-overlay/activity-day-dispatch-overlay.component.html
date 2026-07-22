@@ -8,22 +8,11 @@
     [style.--dispatch-collapsed-h.px]="collapsedHeight()"
     [style.--dispatch-expand-duration.ms]="expandDurationMs()">
 
-    <!-- Réplique EXACTE de app-trip-tabs-nav -->
-    <div #replicaNav class="dispatch-overlay__replica"> 
-      <p-tabs [value]="activeDayId()" class="tabs-pop">
-        <p-tablist>
-          @for (tab of tabs(); track tab.id; let ti = $index) {
-            <p-tab
-              #replicaTab
-              [value]="tab.id"
-              [class.dispatch-overlay__replica-tab--out]="ti === 0 && sheetExpanded()"
-              [class.dispatch-overlay__replica-tab--flipped]="flippedDayIds().has(tab.id)">
-              {{ tab.label }}
-            </p-tab>
-          }
-        </p-tablist>
-      </p-tabs>
-    </div>
+    <!-- Réplique de app-trip-tabs-nav : un vrai clone DOM du <p-tabs> réel
+         (voir cloneNavBarInto), pas une re-création Angular parallèle — garantit
+         un rendu identique au pixel près, y compris le décalage de scroll
+         horizontal courant, quel que soit le jour actif. -->
+    <div #replicaNav class="dispatch-overlay__replica"></div>
 
     <div #grid class="dispatch-overlay__scroll" (scroll)="onGridScroll()">
       @for (group of monthGroups(); track group.label) {
@@ -64,27 +53,16 @@
   [class.dispatch-ball--formed]="formed()"
   [style.transform]="formed() ? ballTransform() : null"
   [style.borderLeftColor]="dragged()?.color ?? null">
-  <div class="dispatch-ball__row flex align-items-center h-full" [class.dispatch-ball__row--collapsed]="thumbFilled()">
-    <span class="dispatch-ball__handle text-color-secondary flex-shrink-0">
-      <i class="pi pi-bars"></i>
-    </span>
-    <div class="dispatch-ball__thumb flex-shrink-0 overflow-hidden surface-100" [class.dispatch-ball__thumb--fill]="thumbFilled()">
-      @if (dragged(); as info) {
-        @if (info.photoRef) {
-          @if (photoUrl$(info.photoRef) | async; as url) {
-            <img [src]="url" alt="" draggable="false" />
-          }
-        } @else {
-          <span class="flex align-items-center justify-content-center w-full h-full">
-            <i [class]="'pi text-color-secondary ' + info.icon"></i>
-          </span>
-        }
-      }
-    </div>
-    <div class="dispatch-ball__text flex flex-column flex-1 min-w-0">
-      @if (dragged(); as info) {
-        <span class="font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ info.title }}</span>
-      }
-    </div>
+  <!-- Contenu rempli impérativement par un clone DOM de <app-activity-header>
+       (voir playFormAnimation/cloneOriginHeaderInto) plutôt que reconstruit à
+       la main ici : la bulle reprend telle quelle l'apparence réelle de
+       l'en-tête d'activité (photo, titre, style), sans duplication à tenir
+       à jour si l'en-tête change. -->
+  <div class="dispatch-ball__row flex align-items-center h-full">
+    <div #ballContent class="dispatch-ball__content"></div>
   </div>
 </div>
+
+<!-- DEBUG TEMPORAIRE — À RETIRER une fois le bug tactile diagnostiqué.
+     HUD texte lisible directement sur le téléphone, sans câble/devtools. -->
+<pre class="dispatch-debug-hud">{{ dispatchService.debugLog().join('\n') }}</pre>

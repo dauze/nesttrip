@@ -3,9 +3,26 @@
     @for (tab of tabs(); track tab.id; let i = $index) {
       <p-tab
         [value]="tab.id"
+        [attr.data-tab-id]="tab.id"
         [class.is-active]="tab.id === activeId()"
+        [class.p-tab--day]="!!tab.dayNumber"
+        [class.p-tab--general]="!tab.dayNumber"
         (click)="onTabClick(tab.id, i)">
-        {{ tab.label }}
+        @if (tab.dayNumber) {
+          <span class="day-tab">
+            <span class="day-tab__weekday text-color-secondary">
+              <span class="day-tab__short">{{ tab.weekday }}</span>
+              <span class="day-tab__full">{{ tab.weekdayFull }}</span>
+            </span>
+            <span class="day-tab__number">{{ tab.dayNumber }}</span>
+            <span class="day-tab__month text-color-secondary">
+              <span class="day-tab__short">{{ tab.month }}</span>
+              <span class="day-tab__full">{{ tab.monthFull }}</span>
+            </span>
+          </span>
+        } @else {
+          <span class="general-tab">{{ tab.label }}</span>
+        }
       </p-tab>
     }
   </p-tablist>

@@ -16,9 +16,14 @@
 }
 
 // Léger feedback pendant le "hold" (avant de savoir si on décroche la carte).
+//
+// PAS de `transform: scale()` ici (retiré) : cet élément est encore la cible
+// RÉELLE du pointer/touch actif pendant tout le "hold" (le doigt est posé
+// dessus). Un `scale()` rétrécit la boîte AUTOUR DE SON CENTRE, ce qui
+// déplace la zone cliquable de quelques px par rapport à la position réelle
+// (inchangée) du doigt — voir la doc détaillée sur `.card-lifted` ci-dessous,
+// même mécanisme, juste un déplacement plus petit ici (scale 0.97 vs 0.92).
 .card-pending {
-  transform: scale(0.97);
-  transition: transform 150ms ease;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -26,9 +31,27 @@
 // La carte est décrochée : elle s'efface en place, la boule prend le relais
 // dans l'overlay. On ne retire pas la place occupée dans la liste pour
 // garder un repère visuel pendant le drag et éviter un saut au retour.
+//
+// PAS de `pointer-events: none` ni de `transform: scale()` ici (les deux ont
+// été retirés) : cet élément (ou un de ses enfants, la poignée) est encore
+// la cible RÉELLE du pointer/touch actif à l'instant où cette classe
+// s'applique (isBeingDragged() devient vrai dès `beginLift`, pendant que le
+// doigt est toujours posé).
+// - `pointer-events: none` sur l'élément qui possède encore un pointer
+//   tactile actif fait que Chrome (Android) invalide sa cible au prochain
+//   lot de `touchmove` et déclenche un `pointercancel`.
+// - `transform: scale(0.92)` rétrécit la carte AUTOUR DE SON CENTRE : la
+//   poignée (proche du bord gauche) se retrouve décalée de plusieurs px par
+//   rapport à la position RÉELLE (inchangée, elle) du doigt. Sans capture de
+//   pointeur explicite, chaque pointermove est re-hit-testé à sa position
+//   réelle — qui ne recouvre plus la carte rétrécie — et retombe sur
+//   n'importe quel élément fixed en dessous (ex. `.app-toolbar`, sans
+//   touch-action:none), d'où le `pointercancel` au premier vrai déplacement.
+// `opacity` seule suffit pour l'effet visuel de "fantôme" (elle ne change
+// pas la géométrie de la boîte, donc pas d'impact sur le hit-testing) ; un
+// second doigt qui taperait sur cette carte pendant un drag à un seul doigt
+// est un cas limite qu'on accepte de ne pas bloquer (pas de pointer-events).
 .card-lifted {
   opacity: 0.15;
-  transform: scale(0.92);
-  pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease;
+  transition: opacity 220ms ease;
 }

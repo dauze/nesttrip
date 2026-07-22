@@ -16,6 +16,7 @@ import { LoadingState, PlaceSummary, PlaceDetails, PlacePhotoRef } from '@app/co
 import { BookingStatus } from '@core/enums/booking.status';
 import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
+import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
 import { ActivityFilesComponent } from './activity-files/activity-files.component';
@@ -65,6 +66,11 @@ export class ActivityCardComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly dispatchService = inject(ActivityDispatchService);
+  // Optionnel : fourni par TripDaySwiperComponent (ancêtre commun aux vues
+  // jour ET pool général, qui vit elle aussi dans un swiper-slide — voir
+  // isBeingDragged ci-dessous) ; `null` si ce composant est un jour utilisé
+  // hors de ce contexte.
+  private readonly swiperLockService = inject(SwiperLockService, { optional: true });
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
@@ -178,6 +184,26 @@ export class ActivityCardComponent {
       if (returned && returned.activityId === this.activityId() && this.wasExpandedBeforeLift) {
         this.wasExpandedBeforeLift = false;
         this.collapsed.set(false);
+      }
+    });
+
+    // Verrouille le swiper (allowTouchMove = false, voir SwiperLockService)
+    // pendant TOUTE la durée d'un décrochage pool pour CETTE carte — pool
+    // général ET jours vivent tous les deux dans un swiper-slide (voir
+    // TripDaySwiperComponent), donc sans ce verrou, Swiper reste libre
+    // d'intercepter le geste tactile pour son propre swipe horizontal/vertical
+    // pendant qu'on essaie de faire voyager la bulle : symptôme observé,
+    // `pointercancel` dès le premier vrai déplacement du doigt, le scroll
+    // natif reprenant alors la main. DayPanelComponent verrouille déjà pour
+    // son propre réordonnancement intra-jour (et l'escalade qui en découle) ;
+    // ceci couvre le cas manquant, le décrochage pool démarré directement
+    // depuis ActivityCardComponent.beginLift. `onCleanup` (pas un simple
+    // `if/else` sur la valeur précédente) garantit le déverrouillage même si
+    // le composant est détruit en plein geste.
+    effect((onCleanup) => {
+      if (this.isBeingDragged()) {
+        this.swiperLockService?.lock();
+        onCleanup(() => this.swiperLockService?.unlock());
       }
     });
 
@@ -308,6 +334,29 @@ export class ActivityCardComponent {
     // le relâchement).
     event.preventDefault();
 
+    // Capture le pointer sur <html> — un élément STABLE qui ne sera jamais
+    // caché/transformé/repositionné pendant le drag, contrairement à la
+    // carte elle-même (voir card-lifted qui se rétrécissait, et
+    // leaveFlowHidden qui masque la vraie carte côté jour). Sans capture
+    // explicite, chaque pointermove est re-hit-testé à sa position réelle :
+    // dès que la géométrie de la carte d'origine bouge sous le doigt (qui,
+    // lui, ne bouge pas), le hit-test retombe sur un élément fixe quelconque
+    // en dessous (ex. la toolbar app, sans touch-action:none) — c'est ce qui
+    // provoquait un `pointercancel` au premier vrai déplacement du doigt.
+    try {
+      document.documentElement.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignoré : capture refusée par certains navigateurs/anciens Android —
+      // touch-action + preventDefault répété restent la protection de base.
+    }
+
+    // DEBUG TEMPORAIRE — À RETIRER.
+    this.dispatchService.startEventTap();
+    this.dispatchService.log(
+      `pointerdown activityId=${this.activityId()} type=${event.pointerType} `
+      + `cancelable=${event.cancelable} defaultPrevented(after)=${event.defaultPrevented} inDayList=${this.inDayList()}`,
+    );
+
     this.startDispatchGesture(event.clientX, event.clientY, event.pointerId);
   };
 
@@ -396,7 +445,7 @@ export class ActivityCardComponent {
     if (!info) return;
 
     if (!this.wasExpandedBeforeLift) {
-      this.dispatchService.beginLift(info, el.getBoundingClientRect(), x, y);
+      this.dispatchService.beginLift(info, el.getBoundingClientRect(), el, x, y);
       return;
     }
 
@@ -423,7 +472,7 @@ export class ActivityCardComponent {
         return;
       }
 
-      this.dispatchService.beginLift(info, el.getBoundingClientRect(), x, y);
+      this.dispatchService.beginLift(info, el.getBoundingClientRect(), el, x, y);
     }, PANEL_COLLAPSE_DELAY_MS);
   }
 

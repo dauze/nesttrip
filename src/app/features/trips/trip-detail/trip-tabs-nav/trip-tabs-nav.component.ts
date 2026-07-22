@@ -26,7 +26,14 @@ export class TripTabsNavComponent {
   constructor() {
     // Sert de point de départ géométrique à l'animation d'ouverture du
     // calendrier de dépose (voir ActivityDayDispatchOverlayComponent).
-    afterNextRender(() => this.dispatchService.registerNavBarElement(this.hostRef.nativeElement));
+    afterNextRender(() => {
+      this.dispatchService.registerNavBarElement(this.hostRef.nativeElement);
+      // Source du clone DOM affiché en réplique par l'overlay pendant un
+      // décrochage : le `<p-tabs>` lui-même, pas le host (voir
+      // ActivityDispatchService.registerNavBarCloneSource).
+      const tabsEl = this.tabsListRef()?.nativeElement;
+      if (tabsEl) this.dispatchService.registerNavBarCloneSource(tabsEl);
+    });
 
     // Hauteur réservée en padding-bottom par le contenu des slides (voir
     // TripChromeService/trip-day-swiper) pour que la dernière activité ne
