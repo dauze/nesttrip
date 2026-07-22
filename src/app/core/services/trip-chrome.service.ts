@@ -53,9 +53,36 @@ export class TripChromeService {
     return () => this.chromeEls.delete(el);
   }
 
+  /** Suivi continu du scroll (boucle rAF) : instantané, sans transition — toute latence ici serait visible face au scroll natif du contenu. */
   setScrollTop(px: number): void {
     this.currentTranslateY = -clamp(px, 0, this.chromeHeight());
     this.applyTransform();
+  }
+
+  /**
+   * Resynchronisation ponctuelle au changement de jour (swipe ou clic
+   * d'onglet) : chaque jour a son propre scroll mémorisé, donc le chrome doit
+   * sauter d'un état (ex. masqué) à un autre (ex. visible) d'un slide à
+   * l'autre. Un saut INSTANTANÉ ici est perçu comme un raté visuel — voir
+   * CLAUDE.md — donc on anime ce cas précis (durée alignée sur le swipe
+   * horizontal de Swiper, `speed: 360` dans TripDaySwiperComponent), tout en
+   * gardant `setScrollTop` (scroll continu) strictement sans transition.
+   */
+  setScrollTopAnimated(px: number, duration = 320): void {
+    for (const el of this.chromeEls) {
+      el.style.transition = `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`;
+    }
+    this.currentTranslateY = -clamp(px, 0, this.chromeHeight());
+    this.applyTransform();
+
+    for (const el of this.chromeEls) {
+      // Nettoyage après coup : les mises à jour issues de setScrollTop (scroll
+      // continu, boucle rAF) doivent rester instantanées, jamais traverser
+      // cette transition résiduelle.
+      const cleanup = () => { el.style.transition = ''; };
+      el.addEventListener('transitionend', cleanup, { once: true });
+      setTimeout(cleanup, duration + 50);
+    }
   }
 
   /** Remet le chrome pleinement visible — appelé en quittant trip-detail. */

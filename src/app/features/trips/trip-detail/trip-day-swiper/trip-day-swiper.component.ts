@@ -123,9 +123,11 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
 
         // Le slide actif vient d'être (re)positionné : son scrollTop propre
         // (0 si jamais visité, conservé nativement par le DOM sinon) devient
-        // la référence du chrome — resync instantanée, sans transition (voir
-        // TripChromeService).
-        this.syncChromeFromActiveSlide(swiperInstance);
+        // la référence du chrome. Instantané seulement au tout premier
+        // positionnement (rien à l'écran pour justifier une animation) ;
+        // ensuite, un changement de jour anime la resync (voir
+        // syncChromeFromActiveSlide / TripChromeService.setScrollTopAnimated).
+        this.syncChromeFromActiveSlide(swiperInstance, !isFirstSync);
 
         // Le slide actif est bien monté ET positionné : on attend encore
         // deux frames pour laisser le contenu enfant (images, map) se
@@ -240,12 +242,23 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     this.viewReady.set(true);
   }
 
-  /** Lit le scrollTop propre du slide actif et l'envoie au chrome (voir TripChromeService) — resync instantanée, sans transition. */
-  private syncChromeFromActiveSlide(swiper: SwiperContainer['swiper']): void {
+  /**
+   * Lit le scrollTop propre du slide actif et l'envoie au chrome (voir
+   * TripChromeService). `animated` (par défaut true) anime la transition
+   * plutôt que de sauter instantanément d'un état à l'autre — utile car deux
+   * jours consécutifs peuvent avoir des scrolls mémorisés très différents
+   * (un jour masque le chrome, l'autre non), et un saut instantané ici
+   * ressemble à un raté visuel plutôt qu'à une transition voulue.
+   */
+  private syncChromeFromActiveSlide(swiper: SwiperContainer['swiper'], animated = true): void {
     const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
     if (!activeSlide) return;
     this.lastChromeScrollTop = activeSlide.scrollTop;
-    this.chromeService.setScrollTop(activeSlide.scrollTop);
+    if (animated) {
+      this.chromeService.setScrollTopAnimated(activeSlide.scrollTop);
+    } else {
+      this.chromeService.setScrollTop(activeSlide.scrollTop);
+    }
   }
 
   /**
