@@ -17,6 +17,7 @@ import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, AutoComplete, DurationPipe], // Remplacement de FormsModule
   templateUrl: './activity-header.component.html',
+  styleUrl: './activity-header.component.scss',
 })
 export class ActivityHeaderComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);

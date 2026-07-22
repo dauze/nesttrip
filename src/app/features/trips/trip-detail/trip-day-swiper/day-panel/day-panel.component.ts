@@ -383,9 +383,6 @@ export class DayPanelComponent {
   onDragHandleDown(ev: { x: number; y: number; pointerId: number; activityId: string }): void {
     if (this.drag) return; // un seul geste de reorder actif à la fois
 
-    // DEBUG TEMPORAIRE — À RETIRER.
-    this.dispatchService.log(`onDragHandleDown activityId=${ev.activityId} pointerId=${ev.pointerId}`);
-
     const card = this.activityCards().find(c => c.activityId() === ev.activityId);
     const fromIndex = this.activities().findIndex(a => a.id === ev.activityId);
     if (!card || fromIndex === -1) return;
@@ -455,14 +452,6 @@ export class DayPanelComponent {
     // du handle protège la plupart des cas, mais pas cette fenêtre-là si le
     // thread principal est chargé au même instant, ex. collapse simultané de
     // toutes les cartes déclenché au pointerdown).
-    // DEBUG TEMPORAIRE — À RETIRER.
-    if (!drag.thresholdCrossed) {
-      this.dispatchService.log(
-        `day handleDragPointerMove (pre-threshold) type=${event.pointerType} cancelable=${event.cancelable} `
-        + `defaultPrevented(before)=${event.defaultPrevented}`,
-      );
-    }
-
     if (event.cancelable) event.preventDefault();
 
     if (!drag.thresholdCrossed) {

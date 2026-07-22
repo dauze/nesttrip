@@ -336,26 +336,17 @@ export class ActivityCardComponent {
 
     // Capture le pointer sur <html> — un élément STABLE qui ne sera jamais
     // caché/transformé/repositionné pendant le drag, contrairement à la
-    // carte elle-même (voir card-lifted qui se rétrécissait, et
-    // leaveFlowHidden qui masque la vraie carte côté jour). Sans capture
-    // explicite, chaque pointermove est re-hit-testé à sa position réelle :
-    // dès que la géométrie de la carte d'origine bouge sous le doigt (qui,
-    // lui, ne bouge pas), le hit-test retombe sur un élément fixe quelconque
-    // en dessous (ex. la toolbar app, sans touch-action:none) — c'est ce qui
-    // provoquait un `pointercancel` au premier vrai déplacement du doigt.
+    // carte elle-même (voir card-lifted, et leaveFlowHidden qui masque la
+    // vraie carte côté jour). Sans capture explicite, chaque pointermove est
+    // re-hit-testé à sa position réelle : si la géométrie de la carte
+    // d'origine bouge sous le doigt (qui, lui, ne bouge pas), le hit-test
+    // pourrait retomber sur un élément fixe quelconque en dessous.
     try {
       document.documentElement.setPointerCapture(event.pointerId);
     } catch {
       // Ignoré : capture refusée par certains navigateurs/anciens Android —
       // touch-action + preventDefault répété restent la protection de base.
     }
-
-    // DEBUG TEMPORAIRE — À RETIRER.
-    this.dispatchService.startEventTap();
-    this.dispatchService.log(
-      `pointerdown activityId=${this.activityId()} type=${event.pointerType} `
-      + `cancelable=${event.cancelable} defaultPrevented(after)=${event.defaultPrevented} inDayList=${this.inDayList()}`,
-    );
 
     this.startDispatchGesture(event.clientX, event.clientY, event.pointerId);
   };
