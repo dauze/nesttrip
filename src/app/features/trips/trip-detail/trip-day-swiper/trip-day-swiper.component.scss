@@ -1,13 +1,45 @@
-:host { display: block; } 
+:host { display: block; }
+// position:fixed, TOUJOURS calé plein écran (top:0, height:100dvh) — jamais
+// redimensionné : seul un `transform: translateY()` le déplace, piloté par
+// `chromeHeight + translateY` (voir TripChromeService). À scrollTop=0 ce
+// total vaut `chromeHeight` (le conteneur démarre juste sous le chrome
+// pleinement visible) ; une fois le chrome totalement masqué (translateY =
+// -chromeHeight), le total vaut 0 (le conteneur reprend TOUT l'écran, y
+// compris l'espace libéré par le chrome) — sans jamais toucher au
+// scrollHeight/padding du contenu scrollable (voir swiper-slide plus bas),
+// ce qui évite toute boucle de rétroaction avec le scroll natif du slide actif.
+// left/right: 0.5rem — reproduit le ml-2/mr-2 posé sur .app-content
+// (trips.component.html), qu'un conteneur position:fixed n'hérite plus (voir
+// la même remarque sur .app-trip-header-fixed dans trip-detail.component.scss).
+// Pas de `width` explicite ici : avec `left`+`right` déjà posés, une largeur
+// figée forcerait le navigateur à ignorer `right` (propriétés surcontraintes).
 .tab-content-wrapper {
-  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 100dvh;
   display: block;
 }
 
+// Chaque slide devient son propre conteneur de scroll isolé (voir
+// TripChromeService/DayPanelComponent) : plus de body-scroll partagé, plus
+// d'autoHeight Swiper. AUCUN padding-top ici volontairement : un
+// `position:sticky` interne (ex. .sticky-map) résout son "top:0" contre le
+// padding-box du scrollport — un padding posé ICI décalerait tout élément
+// sticky de la même valeur, même une fois le chrome masqué. L'espace du
+// header voyage est déjà réservé par le conteneur lui-même (voir
+// .tab-content-wrapper ci-dessus) ; seule la barre des jours (fixed bottom,
+// ne se masque jamais) garde une réservation statique, en padding-bottom sur
+// le contenu (day-panel/general-panel :host), qui lui n'est pas le scrollport.
 swiper-slide {
-  height: auto;
+  display: block;
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   transition: transform 150ms ease-out;
-  min-height: calc(100dvh - 205px - 45px);
   filter: blur(var(--slide-blur, 0px));
 }
 

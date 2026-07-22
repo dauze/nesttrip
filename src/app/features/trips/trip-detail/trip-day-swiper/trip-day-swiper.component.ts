@@ -20,24 +20,23 @@ import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.component';
-import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
-import { SwiperAutoHeightWatchDirective } from '@app/shared/directives/swiper-auto-height-watch.directive';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
 
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, GeneralPanelComponent, SwiperAutoHeightWatchDirective, TripDayMapComponent],
-  providers: [SwiperLockService, SwiperHeightSyncService, TripDayMapHostService],
+  imports: [DayPanelComponent, GeneralPanelComponent, TripDayMapComponent],
+  providers: [SwiperLockService, TripDayMapHostService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
 })
 export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
-  private readonly heightSync = inject(SwiperHeightSyncService);
   private readonly mapHost = inject(TripDayMapHostService);
+  protected readonly chromeService = inject(TripChromeService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
 
   readonly trip = input.required<Trip>();
@@ -93,8 +92,8 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       // preloadAround() vient d'écrire dans visitedDays : le DOM du slide
       // ciblé n'est pas encore inséré (le @if ne sera flush qu'à la prochaine
       // passe de change detection). Si on appelle slideTo() maintenant,
-      // Swiper marque "actif" un slide encore vide et fige sa hauteur à 0.
-      // On attend un flush DOM garanti avant de bouger le swiper.
+      // Swiper cible un slide encore vide (aucun scrollTop à restaurer, aucun
+      // contenu). On attend un flush DOM garanti avant de bouger le swiper.
       afterNextRender(() => {
         const swiperInstance = this.swiperRef()?.nativeElement?.swiper;
         if (!swiperInstance) return;
@@ -106,13 +105,15 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
           swiperInstance.slideTo(index, isFirstSync ? 0 : undefined);
         }
 
-        // Le slide est maintenant positionné sur du contenu réellement monté :
-        // on force un recalcul immédiat plutôt que d'attendre un resize hypothétique.
-        this.heightSync.update(0);
+        // Le slide actif vient d'être (re)positionné : son scrollTop propre
+        // (0 si jamais visité, conservé nativement par le DOM sinon) devient
+        // la référence du chrome — resync instantanée, sans transition (voir
+        // TripChromeService).
+        this.syncChromeFromActiveSlide(swiperInstance);
 
         // Le slide actif est bien monté ET positionné : on attend encore
-        // deux frames pour laisser autoHeight et le contenu enfant (images,
-        // map) se stabiliser avant de prévenir le parent.
+        // deux frames pour laisser le contenu enfant (images, map) se
+        // stabiliser avant de prévenir le parent.
         if (isFirstSync && !this.hasEmittedReady) {
           this.waitForStableLayout();
         }
@@ -128,11 +129,12 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.isDragging = false;
     this.isTransitioning = false;
+    this.swiperRef()?.nativeElement?.removeEventListener('scroll', this.onSlideScroll, { capture: true });
   }
 
   private waitForStableLayout(): void {
     // 1er afterNextRender : le DOM du slide vient d'être inséré par le @if,
-    // mais autoHeight/observer peuvent avoir encore un recalcul en attente.
+    // mais le contenu enfant (images, carte) peut avoir encore un recalcul en attente.
     afterNextRender(() => {
       afterNextRender(() => {
         if (this.hasEmittedReady) return;
@@ -152,7 +154,6 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       observer: true,
       observeParents: true,
       observeSlideChildren: true,
-      autoHeight: true,
       resistanceRatio: 0.85,
       spaceBetween: 8,
       longSwipesRatio: 0.45,
@@ -169,7 +170,13 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     });
 
     swiperEl.initialize();
-    this.heightSync.register(swiperEl);
+
+    // Un seul listener, posé une fois pour toute la durée de vie du swiper
+    // (jamais réattaché à chaque changement de slide) : phase de capture pour
+    // intercepter le scroll interne de N'IMPORTE QUEL slide, filtré par
+    // égalité avec le slide actif courant. Alimente le chrome (toolbar +
+    // header voyage, voir TripChromeService) au fil du scroll.
+    swiperEl.addEventListener('scroll', this.onSlideScroll, { capture: true, passive: true });
 
     swiperEl.addEventListener('swiperslidechangetransitionstart', () => {
       const newIndex = swiperEl.swiper?.activeIndex;
@@ -178,6 +185,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       if (!tab) return;
       this.preloadAround(newIndex);
       this.activeIdChange.emit(tab.id);
+      this.syncChromeFromActiveSlide(swiperEl.swiper);
     });
 
     // Flou dynamique : on démarre le suivi dès que le doigt touche l'écran
@@ -201,20 +209,28 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       this.isTransitioning = false;
     });
 
-    // Filet de sécurité : quelle que soit la raison pour laquelle le
-    // ResizeObserver de SwiperAutoHeightWatchDirective n'a pas (ou pas encore)
-    // corrigé la hauteur, on force un recalcul à la fin de chaque transition,
-    // une fois le layout garanti stable (2 frames, comme waitForStableLayout).
-    swiperEl.addEventListener('swiperslidechangetransitionend', () => {
-      afterNextRender(() => {
-        afterNextRender(() => {
-          this.heightSync.update(0);
-        }, { injector: this.injector });
-      }, { injector: this.injector });
-    });
-
     this.viewReady.set(true);
   }
+
+  /** Lit le scrollTop propre du slide actif et l'envoie au chrome (voir TripChromeService) — resync instantanée, sans transition. */
+  private syncChromeFromActiveSlide(swiper: SwiperContainer['swiper']): void {
+    const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
+    if (!activeSlide) return;
+    this.chromeService.setScrollTop(activeSlide.scrollTop);
+  }
+
+  /**
+   * Unique listener de scroll, posé une fois sur le conteneur du swiper (voir
+   * `setupSwiper`) : capture les évènements `scroll` de N'IMPORTE QUEL slide
+   * (le scroll interne d'un `swiper-slide` ne bulle pas mais est bien vu en
+   * phase de capture par un ancêtre), filtrés par égalité avec le slide actif.
+   */
+  private readonly onSlideScroll = (event: Event): void => {
+    const swiper = this.swiperRef()?.nativeElement?.swiper;
+    const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
+    if (!activeSlide || event.target !== activeSlide) return;
+    this.chromeService.setScrollTop(activeSlide.scrollTop);
+  };
 
   private preloadAround(index: number): void {
     const tabs = this.tabs();

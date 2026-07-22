@@ -1,10 +1,10 @@
-<div class="flex flex-column h-full">
-  <div class="w-full sub-tab-switch mt-auto pb-2">
-    <p-selectbutton 
-      [options]="subTabOptions" 
-      [ngModel]="activeSubTab()" 
+<div class="flex flex-column">
+  <div class="w-full sub-tab-switch pb-2">
+    <p-selectbutton
+      [options]="subTabOptions"
+      [ngModel]="activeSubTab()"
       (ngModelChange)="selectSubTab($event)"
-      optionLabel="label" 
+      optionLabel="label"
       optionValue="value"
       [allowEmpty]="false"
       fluid
@@ -15,7 +15,7 @@
       </ng-template>
     </p-selectbutton>
   </div>
-  <div class="flex-auto overflow-y-auto">
+  <div>
     @if (activeSubTab() === 'notes') {
       <app-notes [notes]="notes()" [tripId]="tripId()" />
     } @else {

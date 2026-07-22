@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { ToolbarModule } from 'primeng/toolbar';
@@ -10,6 +10,7 @@ import { filter, map, startWith } from 'rxjs';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
 
 @Component({
   selector: 'app-trips',
@@ -26,6 +27,25 @@ import { TripFacade } from './trip-facade.service';
 export class TripsComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  protected readonly chromeService = inject(TripChromeService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
+
+  constructor() {
+    afterNextRender(() => {
+      const el = this.toolbarRef()?.nativeElement;
+      if (!el) return;
+
+      // getBoundingClientRect (pas entry.contentRect, qui exclut le padding/bordure)
+      // pour mesurer le vrai encombrement visuel de l'élément observé.
+      const observer = new ResizeObserver(() => {
+        this.chromeService.registerHeight('toolbar', el.getBoundingClientRect().height);
+      });
+      observer.observe(el);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
 
   readonly currentUrl = toSignal(
     this.router.events.pipe(

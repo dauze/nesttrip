@@ -1,4 +1,14 @@
-:host { display: block; } 
+// Réserve l'espace de la barre des jours (fixed bottom, jamais masquée, voir
+// trip-day-swiper.component.scss) EN DEHORS du scrollport (le swiper-slide
+// parent n'a lui-même aucun padding) : un position:sticky à l'intérieur
+// (.sticky-map) doit rester libre de coller exactement à 0, sans hériter
+// d'un padding qui serait posé sur le scrollport lui-même. L'espace du header
+// voyage, lui, est réservé dynamiquement par .tab-content-wrapper (le
+// conteneur du swiper lui-même), pas ici.
+:host {
+  display: block;
+  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+}
 .sticky-map {
   position: sticky;
   top: 0;

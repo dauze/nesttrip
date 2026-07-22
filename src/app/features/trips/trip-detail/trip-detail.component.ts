@@ -14,6 +14,9 @@ import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
+
+const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 
 @Component({
   selector: 'app-trip-detail',
@@ -38,8 +41,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
+  protected readonly chromeService = inject(TripChromeService);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
+  private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
 
@@ -74,6 +79,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     afterNextRender(() => {
       const el = this.dragPortalRef()?.nativeElement;
       if (el) this.dispatchService.registerDragPortal(el);
+    });
+
+    // effect() (pas afterNextRender, qui ne s'exécute qu'une seule fois) :
+    // #headerWrapper est dans un @if (facade.activeTrip(); as trip) — au tout
+    // premier rendu, le trip n'a pas encore fini de charger (Firestore async),
+    // donc l'élément n'existe pas encore. Un afterNextRender ici ratait
+    // silencieusement l'attache de l'observer pour de bon (headerHeight
+    // restait à 0 à vie, empêchant le header de jamais se masquer entièrement,
+    // seulement de la hauteur de la toolbar). L'effect se relance quand le
+    // signal du viewChild change, donc capte l'élément dès qu'il apparaît.
+    effect((onCleanup) => {
+      const el = this.headerWrapperRef()?.nativeElement;
+      if (!el) return;
+
+      // getBoundingClientRect (pas entry.contentRect, qui exclut le padding
+      // vertical de .app-trip-header-fixed) pour mesurer le vrai encombrement.
+      const observer = new ResizeObserver(() => {
+        this.chromeService.registerHeight('header', el.getBoundingClientRect().height);
+      });
+      observer.observe(el);
+      onCleanup(() => observer.disconnect());
     });
 
     effect(() => {
@@ -114,11 +140,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.initializedTripId = null;
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.facade.loadTrip(id);
+
+    // Le scroll de la page est désormais géré slide par slide (voir
+    // trip-day-swiper.component.scss) : garde-fou contre tout débordement
+    // résiduel qui ferait apparaître un scrollbar body en plus de celui du
+    // slide actif. Retiré au démontage (voir ngOnDestroy) — les autres écrans
+    // (accueil-trip, new-trip) gardent leur scroll body classique.
+    document.documentElement.classList.add(TRIP_DETAIL_ACTIVE_CLASS);
   }
 
   ngOnDestroy(): void {
     this.facade.unloadTrip();
     this.clearReadyFallback();
+    document.documentElement.classList.remove(TRIP_DETAIL_ACTIVE_CLASS);
+    this.chromeService.registerHeight('header', 0);
+    this.chromeService.reset();
   }
 
   protected onSwiperReady(): void {

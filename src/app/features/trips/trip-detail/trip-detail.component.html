@@ -1,16 +1,22 @@
 <p-confirmDialog />
-<div class="flex flex-column pt-2 trip-detail-root">
+<div class="flex flex-column trip-detail-root">
   @if (facade.activeTrip(); as trip) {
-    <div  class="flex flex-column gap-2" [class.invisible-content]="!contentReady()">
-      <app-trip-header
-        [trip]="trip"
-        [title]="tripTitle()"
-        (titleChange)="onTitleChange($event)"
-        (datesChange)="onDatesChange($event)">
-        <app-trip-collaborators
-          trip-actions
-          [tripId]="trip.id" />
-      </app-trip-header>
+    <div  class="flex flex-column" [class.invisible-content]="!contentReady()">
+      <div
+        #headerWrapper
+        class="app-trip-header-fixed"
+        [style.top.px]="chromeService.toolbarHeight()"
+        [style.transform]="'translateY(' + chromeService.translateY() + 'px)'">
+        <app-trip-header
+          [trip]="trip"
+          [title]="tripTitle()"
+          (titleChange)="onTitleChange($event)"
+          (datesChange)="onDatesChange($event)">
+          <app-trip-collaborators
+            trip-actions
+            [tripId]="trip.id" />
+        </app-trip-header>
+      </div>
 
       <app-trip-tabs-nav
         class="fixed bottom-0 left-0 right-0 z-5"

@@ -25,6 +25,7 @@ import { Button } from 'primeng/button';
 import { Tag } from 'primeng/tag';
 import { ConfirmationService } from 'primeng/api';
 import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
+import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
 
 /**
  * Délai de "hold" à respecter, poignée enfoncée sans bouger, avant de
@@ -270,9 +271,12 @@ export class ActivityCardComponent {
 
   private scrollToMe(): void {
     const element = this.cardContainer().nativeElement;
+    const container = getScrollContainer(element);
+    if (!container) return;
+
     const offset = this.scrollOffset();
-    const y = window.scrollY + element.getBoundingClientRect().top - offset - 13;
-    window.scrollTo({ top: y, behavior: 'smooth' });
+    const y = container.scrollTop + element.getBoundingClientRect().top - container.getBoundingClientRect().top - offset - 13;
+    smoothScrollTo(container, y, 400);
   }
 
   confirmDelete(): void {

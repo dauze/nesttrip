@@ -15,6 +15,21 @@
 
 body {
   padding-bottom: 50px;
+  margin-top:0.3rem;
+}
+
+/* ---------------------------------------------------------------------
+ * trip-detail (voir TripDetailComponent.ngOnInit/ngOnDestroy) gère son
+ * propre scroll slide par slide (voir trip-day-swiper.component.scss) :
+ * garde-fou contre tout débordement résiduel qui ferait apparaître un
+ * scrollbar body EN PLUS de celui du slide actif. Scopé à cette classe pour
+ * ne pas casser le scroll body classique des autres écrans (accueil-trip,
+ * new-trip, login).
+ * ------------------------------------------------------------------- */
+html.trip-detail-active,
+html.trip-detail-active body {
+  height: 100%;
+  overflow: hidden;
 }
 
 .p-card {

@@ -27,10 +27,10 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
-import { SwiperHeightSyncService } from '@app/core/services/swiper-height-sync.service';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { getScrollContainer } from '@app/shared/utils/scroll-container';
 
 /** État d'un réordonnancement manuel en cours dans un jour — voir DayPanelComponent.onDragHandleDown. */
 interface DayDragState {
@@ -85,7 +85,7 @@ export class DayPanelComponent {
   private readonly zone = inject(NgZone);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly heightSync = inject(SwiperHeightSyncService);
+  private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly mapHost = inject(TripDayMapHostService);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
   protected readonly dispatchService = inject(ActivityDispatchService);
@@ -184,7 +184,7 @@ export class DayPanelComponent {
       const el = this.stickyMap()?.nativeElement;
       if (!el) return;
 
-      const mainContainer = el.parentElement; 
+      const mainContainer = el.parentElement;
       let globalObserver: ResizeObserver | undefined;
 
       if (mainContainer) {
@@ -193,14 +193,15 @@ export class DayPanelComponent {
         globalObserver.observe(mainContainer);
       }
 
+      // Le scroll pertinent est désormais celui du slide isolé (swiper-slide
+      // ancêtre), plus celui du document — chaque jour a son propre scroll,
+      // voir CLAUDE.md / TripChromeService.
+      const slideEl = this.getSlideEl();
+
       // Écouteurs globaux branchés directement sur la boucle cinématique dynamique
       this.wakeLoop();
       window.addEventListener('resize', this.wakeLoop, { passive: true });
-      window.addEventListener(
-          'scroll',
-          this.onWindowScroll,
-          { passive: true }
-        );
+      slideEl?.addEventListener('scroll', this.onSlideScroll, { passive: true });
 
         window.addEventListener(
           'touchstart',
@@ -223,10 +224,7 @@ export class DayPanelComponent {
         this.mapObserver?.disconnect();
         if (globalObserver) globalObserver.disconnect();
         window.removeEventListener('resize', this.wakeLoop);
-       window.removeEventListener(
-          'scroll',
-          this.onWindowScroll
-        );
+        slideEl?.removeEventListener('scroll', this.onSlideScroll);
 
         window.removeEventListener(
           'touchstart',
@@ -244,6 +242,11 @@ export class DayPanelComponent {
         if (this.drag) this.abortDrag(this.drag);
       });
     });
+  }
+
+  /** Conteneur de scroll isolé de ce jour : le `swiper-slide` ancêtre (voir shared/utils/scroll-container.ts). */
+  private getSlideEl(): HTMLElement | null {
+    return getScrollContainer(this.elRef.nativeElement);
   }
 
   /** Branche les listeners propres à l'instance partagée de la carte, une fois qu'elle vient d'être déplacée ici. */
@@ -331,11 +334,6 @@ export class DayPanelComponent {
       this.openCard(this.pendingActivityId);
       this.pendingActivityId = undefined;
     }
-    // Filet de sécurité : force un recalcul de la hauteur du swiper à la fin
-    // de l'animation PrimeNG, indépendamment du ResizeObserver de
-    // SwiperAutoHeightWatchDirective (qui peut manquer sa fenêtre si le
-    // contenu du panel n'a lui-même aucune raison de resize après montage).
-    setTimeout(() => this.heightSync.update(0), 300);
     // Laisse le temps à l'animation PrimeNG de se terminer avant d'ajuster le scroll
     setTimeout(() => this.wakeLoop(), 300);
   }
@@ -545,7 +543,11 @@ export class DayPanelComponent {
   private updateTargetIndex(drag: DayDragState, event: PointerEvent): void {
     if (!drag.offsets.length || drag.slotHeight <= 0) return;
 
-    const docY = event.clientY + window.scrollY;
+    // Même repère pseudo-absolu que getFreshCardOffsets() (relatif au slide isolé, pas au document).
+    const slideEl = this.getSlideEl();
+    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
+    const slideScrollTop = slideEl?.scrollTop ?? 0;
+    const docY = event.clientY - slideTop + slideScrollTop;
     const relative = docY - drag.offsets[0].top;
     let targetIndex = Math.round(relative / drag.slotHeight);
     targetIndex = Math.max(0, Math.min(drag.offsets.length - 1, targetIndex));
@@ -715,7 +717,7 @@ export class DayPanelComponent {
         }
 
         if (delta !== 0) {
-          window.scrollBy(0, delta);
+          this.getSlideEl()?.scrollBy(0, delta);
           this.wakeLoop();
         }
       }
@@ -743,7 +745,7 @@ export class DayPanelComponent {
   };
 
   private tick = (): void => {
-    const currentScrollY = window.scrollY;
+    const currentScrollY = this.getSlideEl()?.scrollTop ?? 0;
 
     if (currentScrollY !== this.lastScrollY) {
       this.lastScrollY = currentScrollY;
@@ -830,62 +832,67 @@ export class DayPanelComponent {
     return () => this.activeMapComponent();
   }
 
+  /**
+   * Offsets "pseudo-absolus" des cartes, stables quel que soit le scroll
+   * courant du slide : `rect.top` (relatif viewport, bouge avec le scroll
+   * interne du slide) - `slideRect.top` (position écran fixe du slide, la
+   * carte Google ne le déplace jamais verticalement) + `slideEl.scrollTop`
+   * (scroll interne courant) — même principe que l'ancien `rect.top + window.scrollY`,
+   * juste réancré sur le conteneur de scroll isolé du jour (voir CLAUDE.md).
+   */
   getFreshCardOffsets(): { card: ActivityCardComponent; top: number; height: number }[] {
     const cards = this.activityCards();
-    const currentScrollY = window.scrollY;
+    const slideEl = this.getSlideEl();
+    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
+    const slideScrollTop = slideEl?.scrollTop ?? 0;
 
     return cards.map(card => {
       const rect = card.element.getBoundingClientRect();
       return {
         card,
-        top: rect.top + currentScrollY, 
+        top: rect.top - slideTop + slideScrollTop,
         height: rect.height,
       };
     });
   }
 
   private smoothScrollTo(targetY: number, duration = 600): void {
-      if (!this.active()) {
-    return;
+    const slideEl = this.getSlideEl();
+    if (!this.active() || !slideEl) {
+      return;
+    }
+
+    this.isAutoScrolling = true;
+    const startY = slideEl.scrollTop;
+    const distance = targetY - startY;
+
+    const startTime = performance.now();
+
+    const easeOutCubic = (t: number) =>
+      1 - Math.pow(1 - t, 3);
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      const eased = easeOutCubic(progress);
+
+      slideEl.scrollTop = startY + distance * eased;
+
+      this.wakeLoop();
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        this.isAutoScrolling = false;
+        this.wakeLoop();
+      }
+    };
+
+    requestAnimationFrame(animate);
   }
 
-  this.isAutoScrolling = true;
-  const startY = window.scrollY;
-  const distance = targetY - startY;
-
-  const startTime = performance.now();
-
-  const easeOutCubic = (t: number) =>
-    1 - Math.pow(1 - t, 3);
-
-  const animate = (currentTime: number) => {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-
-    const eased = easeOutCubic(progress);
-
-    window.scrollTo(
-      0,
-      startY + distance * eased
-    );
-
-     this.wakeLoop();
-
-
-   if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      this.isAutoScrolling = false;
-      this.wakeLoop();
-    }
-  };
-
-  requestAnimationFrame(animate);
-}
-
-
-  private readonly onWindowScroll = (): void => {
-
+  private readonly onSlideScroll = (): void => {
     if (!this.active() || this.isTouching || this.isAutoScrolling) {
       return;
     }
@@ -919,15 +926,16 @@ export class DayPanelComponent {
       return;
     }
     const stickyElement = this.stickyMap()?.nativeElement;
+    const slideEl = this.getSlideEl();
 
-    if (!stickyElement) {
+    if (!stickyElement || !slideEl) {
       return;
     }
 
     const stickyHeight =
       stickyElement.getBoundingClientRect().height;
 
-    const anchor = window.scrollY + stickyHeight;
+    const anchor = slideEl.scrollTop + stickyHeight;
 
     const cards = this.getFreshCardOffsets();
 
@@ -951,12 +959,10 @@ export class DayPanelComponent {
       return;
     }
 
-    const maxScroll =
-      document.documentElement.scrollHeight -
-      window.innerHeight;
+    const maxScroll = slideEl.scrollHeight - slideEl.clientHeight;
 
     // Ne jamais perturber l'accès au bouton +
-    if (window.scrollY >= maxScroll - 200) {
+    if (slideEl.scrollTop >= maxScroll - 200) {
       return;
     }
 

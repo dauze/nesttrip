@@ -1,19 +1,23 @@
 <div class="map-anchor">
   <app-trip-day-map #dayMap></app-trip-day-map>
 </div>
-<swiper-container #swiperRef init="false" class="tab-content-wrapper">
+<swiper-container
+  #swiperRef
+  init="false"
+  class="tab-content-wrapper"
+  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavHeight()"
+  [style.transform]="'translateY(' + (chromeService.chromeHeight() + chromeService.translateY()) + 'px)'">
   <swiper-slide>
     @if (visitedDays().has('notes')) {
-      <app-general-panel appSwiperAutoHeightWatch  [notes]="trip().notes" [tripId]="trip().id" />
+      <app-general-panel [notes]="trip().notes" [tripId]="trip().id" />
     }
   </swiper-slide>
   @for (day of sortedDays(); track day.id) {
     <swiper-slide>
       @if (visitedDays().has(day.id.toISOString())) {
-        <app-day-panel 
-          appSwiperAutoHeightWatch 
-          [dayId]="day.id" 
-          [tripId]="trip().id" 
+        <app-day-panel
+          [dayId]="day.id"
+          [tripId]="trip().id"
           [active]="activeId() === day.id.toISOString()"
         />
       }
