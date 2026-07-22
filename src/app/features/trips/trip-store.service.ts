@@ -159,8 +159,14 @@ export class TripStore {
     };
   }
 
-  /** Compose la vue `Activity` "légère" d'une activité de pool (contexte général, sans instance/form). */
-  private composePoolView(pool: PoolActivity): Activity {
+  /**
+   * Compose la vue `Activity` "légère" d'une activité de pool (contexte général, sans form affiché).
+   * Le form n'est pas édité ici, mais le type/résa/etc. affichés (icône, couleur de résa...) doivent
+   * refléter une instance existante plutôt qu'un form par défaut figé, sinon un changement de type/résa
+   * fait depuis un jour n'apparaît jamais dans la vue générale. S'il y a plusieurs instances (activité
+   * placée sur plusieurs jours), on prend la première trouvée à défaut de valeur canonique unique.
+   */
+  private composePoolView(pool: PoolActivity, instance?: DayActivityInstance): Activity {
     return {
       id: pool.id,
       activityId: pool.id,
@@ -171,7 +177,17 @@ export class TripStore {
       latitude: pool.latitude,
       longitude: pool.longitude,
       photoRefs: pool.photoRefs,
-      ...defaultInstanceForm(),
+      ...(instance
+        ? {
+            type: instance.type,
+            duration: instance.duration,
+            startTime: instance.startTime,
+            endTime: instance.endTime,
+            price: instance.price,
+            booking: instance.booking,
+            notes: instance.notes,
+          }
+        : defaultInstanceForm()),
     };
   }
 
@@ -232,7 +248,9 @@ export class TripStore {
         poolId,
         computed(() => {
           const pool = this._poolActivities()[poolId];
-          return pool ? this.composePoolView(pool) : undefined as unknown as Activity;
+          if (!pool) return undefined as unknown as Activity;
+          const instance = Object.values(this._dayActivityInstances()).find((i) => i.activityId === poolId);
+          return this.composePoolView(pool, instance);
         }),
       );
     }

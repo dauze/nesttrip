@@ -2,7 +2,7 @@ import { Component, computed, inject, input, effect } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, tap } from 'rxjs/operators';
 
 import { SelectModule } from 'primeng/select';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -92,10 +92,32 @@ export class ActivityFormComponent {
   };
   private isProgrammaticUpdate = false;
 
+  /**
+   * true entre le moment où l'utilisateur modifie le form et le moment où le
+   * debounce ci-dessous a lu sa valeur pour l'envoyer au store. Évite une
+   * course : sans ce garde-fou, l'écho (optimiste) d'une édition n°1 pouvait
+   * arriver — et être appliqué via `patchValue` — PENDANT que l'édition n°2
+   * était encore en attente de son propre debounce, écrasant silencieusement
+   * la valeur en cours de saisie avant même qu'elle soit lue. Symptôme observé :
+   * un p-select (type, résa, devise) ne prenait en compte que la toute
+   * première sélection, les suivantes étant "avalées". Les champs texte/heure
+   * étaient épargnés car l'utilisateur continue de taper au-delà de la fenêtre
+   * de debounce, ce qui masque la course.
+   */
+  private hasUnflushedLocalEdit = false;
+  private lastSyncedActivityId: string | undefined;
+
   constructor() {
     effect(() => {
     const a = this.activity();
     if (!a) return;
+
+    // Une édition locale plus récente n'a pas encore été lue par le debounce
+    // ci-dessous : ne pas réappliquer cet écho (potentiellement encore
+    // relatif à une édition précédente), sauf si le form vient d'être monté
+    // pour une toute autre instance.
+    if (this.hasUnflushedLocalEdit && a.id === this.lastSyncedActivityId) return;
+    this.lastSyncedActivityId = a.id;
 
     // On force la date de dayId sur le startTime et endTime reçus si présents
     const patchedActivity = {
@@ -111,11 +133,13 @@ export class ActivityFormComponent {
 
   // Le reste de votre constructeur (valueChanges.pipe et setupTimeDurationSync) reste inchangé
   this.form.valueChanges.pipe(
+    tap(() => { this.hasUnflushedLocalEdit = true; }),
     debounceTime(300),
     takeUntilDestroyed(),
   ).subscribe(() => {
     const activity = this.activity();
     const value = this.form.getRawValue();
+    this.hasUnflushedLocalEdit = false;
     this.tripFacade.updateDayActivityInstance(this.tripId(), {
       id: activity.id,
       activityId: activity.activityId,
