@@ -11,6 +11,7 @@ import {
   AfterViewInit,
   OnDestroy,
   Injector,
+  NgZone,
   afterNextRender,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
@@ -35,9 +36,24 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
+  private readonly zone = inject(NgZone);
   private readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
+
+  // --- Synchro chrome (toolbar + header) au fil du scroll du slide actif ---
+  // Un `scroll` DOM event seul ne suffit pas : les navigateurs le dispatchent
+  // au mieux une fois par frame, parfois moins pendant un fling rapide sur
+  // mobile (coalescing), alors que le compositeur fait déjà défiler le
+  // contenu à chaque frame — d'où un chrome visiblement "en retard" sur le
+  // contenu. On relit donc le scrollTop du slide actif à CHAQUE frame via une
+  // boucle rAF tant que ça bouge (même pattern que DayPanelComponent.wakeLoop/
+  // tick pour l'interpolation de la carte), au lieu de ne réagir qu'aux
+  // évènements 'scroll' eux-mêmes.
+  private static readonly CHROME_IDLE_THRESHOLD = 20;
+  private chromeRafLoop?: number;
+  private lastChromeScrollTop = -1;
+  private chromeIdleFrames = 0;
 
   readonly trip = input.required<Trip>();
   readonly tabs = input<TripTab[]>([]);
@@ -130,6 +146,10 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     this.isDragging = false;
     this.isTransitioning = false;
     this.swiperRef()?.nativeElement?.removeEventListener('scroll', this.onSlideScroll, { capture: true });
+    window.removeEventListener('touchstart', this.wakeChromeLoop);
+    window.removeEventListener('touchmove', this.wakeChromeLoop);
+    window.removeEventListener('wheel', this.wakeChromeLoop);
+    if (this.chromeRafLoop) cancelAnimationFrame(this.chromeRafLoop);
   }
 
   private waitForStableLayout(): void {
@@ -174,9 +194,17 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     // Un seul listener, posé une fois pour toute la durée de vie du swiper
     // (jamais réattaché à chaque changement de slide) : phase de capture pour
     // intercepter le scroll interne de N'IMPORTE QUEL slide, filtré par
-    // égalité avec le slide actif courant. Alimente le chrome (toolbar +
-    // header voyage, voir TripChromeService) au fil du scroll.
+    // égalité avec le slide actif courant. Ne fait QUE réveiller la boucle
+    // rAF (voir wakeChromeLoop) — c'est elle qui relit le scrollTop et met à
+    // jour le chrome à chaque frame, pas ce listener directement.
     swiperEl.addEventListener('scroll', this.onSlideScroll, { capture: true, passive: true });
+    // Réveils supplémentaires dès le tout premier contact, avant même qu'un
+    // 'scroll' n'ait eu l'occasion de se déclencher (même pattern que
+    // DayPanelComponent.wakeLoop) : sans ça, la toute première frame de
+    // mouvement peut être ratée le temps qu'un premier évènement 'scroll' arrive.
+    window.addEventListener('touchstart', this.wakeChromeLoop, { passive: true });
+    window.addEventListener('touchmove', this.wakeChromeLoop, { passive: true });
+    window.addEventListener('wheel', this.wakeChromeLoop, { passive: true });
 
     swiperEl.addEventListener('swiperslidechangetransitionstart', () => {
       const newIndex = swiperEl.swiper?.activeIndex;
@@ -216,6 +244,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private syncChromeFromActiveSlide(swiper: SwiperContainer['swiper']): void {
     const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
     if (!activeSlide) return;
+    this.lastChromeScrollTop = activeSlide.scrollTop;
     this.chromeService.setScrollTop(activeSlide.scrollTop);
   }
 
@@ -224,12 +253,52 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
    * `setupSwiper`) : capture les évènements `scroll` de N'IMPORTE QUEL slide
    * (le scroll interne d'un `swiper-slide` ne bulle pas mais est bien vu en
    * phase de capture par un ancêtre), filtrés par égalité avec le slide actif.
+   * Ne fait que réveiller la boucle rAF — voir `wakeChromeLoop`.
    */
   private readonly onSlideScroll = (event: Event): void => {
     const swiper = this.swiperRef()?.nativeElement?.swiper;
     const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
     if (!activeSlide || event.target !== activeSlide) return;
-    this.chromeService.setScrollTop(activeSlide.scrollTop);
+    this.wakeChromeLoop();
+  };
+
+  private readonly wakeChromeLoop = (): void => {
+    this.chromeIdleFrames = 0;
+    if (this.chromeRafLoop == null) {
+      this.zone.runOutsideAngular(() => {
+        this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
+      });
+    }
+  };
+
+  /**
+   * Relit le scrollTop du slide actif à CHAQUE frame (au lieu de ne réagir
+   * qu'aux évènements 'scroll', que les navigateurs peuvent coalescer/limiter
+   * à moins d'une fois par frame pendant un fling rapide) : le chrome reste
+   * ainsi visuellement collé au scroll réel, sans retard perceptible.
+   */
+  private readonly chromeTick = (): void => {
+    const swiper = this.swiperRef()?.nativeElement?.swiper;
+    const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
+    const scrollTop = activeSlide?.scrollTop ?? 0;
+
+    if (scrollTop !== this.lastChromeScrollTop) {
+      this.lastChromeScrollTop = scrollTop;
+      this.chromeIdleFrames = 0;
+      // setScrollTop écrit le transform directement en DOM (voir
+      // TripChromeService) — pas de signal/template en jeu, donc pas besoin
+      // de rentrer dans la zone Angular : rester outside-zone de bout en bout
+      // évite tout passage par la détection de changement sur ce chemin chaud.
+      this.chromeService.setScrollTop(scrollTop);
+    } else {
+      this.chromeIdleFrames++;
+    }
+
+    if (this.chromeIdleFrames < TripDaySwiperComponent.CHROME_IDLE_THRESHOLD) {
+      this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
+    } else {
+      this.chromeRafLoop = undefined;
+    }
   };
 
   private preloadAround(index: number): void {

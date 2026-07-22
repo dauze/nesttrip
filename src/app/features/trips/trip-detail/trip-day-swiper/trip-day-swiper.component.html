@@ -5,8 +5,8 @@
   #swiperRef
   init="false"
   class="tab-content-wrapper"
-  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavHeight()"
-  [style.transform]="'translateY(' + (chromeService.chromeHeight() + chromeService.translateY()) + 'px)'">
+  [style.--chrome-top-offset.px]="chromeService.chromeHeight()"
+  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavHeight()">
   <swiper-slide>
     @if (visitedDays().has('notes')) {
       <app-general-panel [notes]="trip().notes" [tripId]="trip().id" />

@@ -1,14 +1,31 @@
-// Réserve l'espace de la barre des jours (fixed bottom, jamais masquée, voir
-// trip-day-swiper.component.scss) EN DEHORS du scrollport (le swiper-slide
-// parent n'a lui-même aucun padding) : un position:sticky à l'intérieur
-// (.sticky-map) doit rester libre de coller exactement à 0, sans hériter
-// d'un padding qui serait posé sur le scrollport lui-même. L'espace du header
-// voyage, lui, est réservé dynamiquement par .tab-content-wrapper (le
-// conteneur du swiper lui-même), pas ici.
+// Réserve l'espace TOOLBAR + header voyage (--chrome-top-offset = les deux
+// cumulés, voir TripChromeService.chromeHeight) + barre des jours, tous
+// `position:fixed` (voir trip-detail.component.scss / trip-day-swiper.component.scss)
+// EN DEHORS du scrollport (le swiper-slide parent n'a lui-même AUCUN padding) :
+// un position:sticky à l'intérieur (.sticky-map) doit rester libre de coller
+// exactement à 0, sans hériter d'un padding qui serait posé sur le scrollport
+// lui-même. Important : .tab-content-wrapper (le conteneur du swiper) est lui
+// aussi `position:fixed`, donc échappe totalement au padding-top de
+// TripsComponent qui réserve la toolbar pour accueil-trip/new-trip — ici,
+// c'est CETTE réservation (toolbar + header) qu'il faut reproduire, pas
+// seulement le header.
+// Réservation VOLONTAIREMENT STATIQUE (pas pilotée par le scroll) :
+// une réservation dynamique nécessite un calcul JS à chaque frame de scroll,
+// qui accumule un retard perceptible face au scroll natif — exactement ce qui
+// causait le désynchronisme chrome/contenu (voir CLAUDE.md). Une valeur figée
+// est le seul moyen d'obtenir un scroll du contenu 100% natif, donc
+// parfaitement synchrone avec le hide/reveal du chrome (lui-même piloté par
+// TripChromeService, seule partie qui reste forcément JS). Contrepartie
+// assumée : une fois le chrome masqué, cet espace réservé reste "consommé" en
+// bas de la liste (quelques dizaines de px de scroll en plus) — comportement
+// identique au flux document natif d'origine (un header qui défile normalement
+// "gèle" lui aussi cet espace, il ne le libère jamais).
 :host {
   display: block;
+  padding-top: var(--chrome-top-offset, 0px);
   padding-bottom: var(--chrome-tabs-nav-height, 0px);
 }
+
 .sticky-map {
   position: sticky;
   top: 0;

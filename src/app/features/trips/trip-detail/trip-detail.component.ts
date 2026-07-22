@@ -99,7 +99,15 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.chromeService.registerHeight('header', el.getBoundingClientRect().height);
       });
       observer.observe(el);
-      onCleanup(() => observer.disconnect());
+
+      // Écriture DOM directe du transform (voir TripChromeService) : pas de
+      // binding [style.transform] dans le template.
+      const unregister = this.chromeService.registerChromeElement(el);
+
+      onCleanup(() => {
+        observer.disconnect();
+        unregister();
+      });
     });
 
     effect(() => {

@@ -43,7 +43,17 @@ export class TripsComponent {
         this.chromeService.registerHeight('toolbar', el.getBoundingClientRect().height);
       });
       observer.observe(el);
-      this.destroyRef.onDestroy(() => observer.disconnect());
+
+      // Écriture DOM directe du transform (voir TripChromeService) : pas de
+      // binding [style.transform] dans le template, pour ne pas ajouter le
+      // cycle de détection de changement d'Angular entre le scroll natif et
+      // l'application visuelle du translateY.
+      const unregister = this.chromeService.registerChromeElement(el);
+
+      this.destroyRef.onDestroy(() => {
+        observer.disconnect();
+        unregister();
+      });
     });
   }
 

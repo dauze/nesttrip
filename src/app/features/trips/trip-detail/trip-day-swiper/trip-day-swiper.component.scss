@@ -1,13 +1,12 @@
 :host { display: block; }
-// position:fixed, TOUJOURS calé plein écran (top:0, height:100dvh) — jamais
-// redimensionné : seul un `transform: translateY()` le déplace, piloté par
-// `chromeHeight + translateY` (voir TripChromeService). À scrollTop=0 ce
-// total vaut `chromeHeight` (le conteneur démarre juste sous le chrome
-// pleinement visible) ; une fois le chrome totalement masqué (translateY =
-// -chromeHeight), le total vaut 0 (le conteneur reprend TOUT l'écran, y
-// compris l'espace libéré par le chrome) — sans jamais toucher au
-// scrollHeight/padding du contenu scrollable (voir swiper-slide plus bas),
-// ce qui évite toute boucle de rétroaction avec le scroll natif du slide actif.
+// position:fixed, plein écran, STATIQUE — jamais transformé/redimensionné.
+// Un conteneur JS-driven (dont la position suivrait le scroll pour "libérer"
+// l'espace du header) introduit un aller-retour lecture-scroll -> calcul ->
+// écriture qui accumule un frame de retard par rapport au scroll natif du
+// contenu à l'intérieur : visible et gênant en scroll rapide. La réservation
+// de l'espace du header est donc déléguée à un "sticky spacer" NATIF (voir
+// day-panel/general-panel .chrome-spacer) — géré entièrement par le
+// compositeur, donc parfaitement synchrone avec le scroll, sans aucun JS.
 // left/right: 0.5rem — reproduit le ml-2/mr-2 posé sur .app-content
 // (trips.component.html), qu'un conteneur position:fixed n'hérite plus (voir
 // la même remarque sur .app-trip-header-fixed dans trip-detail.component.scss).
@@ -24,14 +23,12 @@
 
 // Chaque slide devient son propre conteneur de scroll isolé (voir
 // TripChromeService/DayPanelComponent) : plus de body-scroll partagé, plus
-// d'autoHeight Swiper. AUCUN padding-top ici volontairement : un
-// `position:sticky` interne (ex. .sticky-map) résout son "top:0" contre le
-// padding-box du scrollport — un padding posé ICI décalerait tout élément
-// sticky de la même valeur, même une fois le chrome masqué. L'espace du
-// header voyage est déjà réservé par le conteneur lui-même (voir
-// .tab-content-wrapper ci-dessus) ; seule la barre des jours (fixed bottom,
-// ne se masque jamais) garde une réservation statique, en padding-bottom sur
-// le contenu (day-panel/general-panel :host), qui lui n'est pas le scrollport.
+// d'autoHeight Swiper. AUCUN padding ici volontairement : un `position:sticky`
+// interne (.sticky-map, .chrome-spacer) résout son "top" contre le
+// padding-box du scrollport — un padding posé ICI décalerait ces éléments
+// sticky de la même valeur. Toutes les réservations d'espace (header voyage,
+// barre des jours) se font plus bas, sur le contenu (day-panel/general-panel),
+// qui lui n'est pas le scrollport.
 swiper-slide {
   display: block;
   box-sizing: border-box;

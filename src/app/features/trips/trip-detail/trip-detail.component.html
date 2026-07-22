@@ -5,8 +5,7 @@
       <div
         #headerWrapper
         class="app-trip-header-fixed"
-        [style.top.px]="chromeService.toolbarHeight()"
-        [style.transform]="'translateY(' + chromeService.translateY() + 'px)'">
+        [style.top.px]="chromeService.toolbarHeight()">
         <app-trip-header
           [trip]="trip"
           [title]="tripTitle()"

@@ -1,9 +1,8 @@
-// Réserve l'espace de la barre des jours (fixed bottom, jamais masquée, voir
-// trip-day-swiper.component.scss) EN DEHORS du scrollport (le swiper-slide
-// parent n'a lui-même aucun padding, voir day-panel.component.scss pour la
-// même règle côté jours). L'espace du header voyage, lui, est réservé
-// dynamiquement par .tab-content-wrapper (le conteneur du swiper), pas ici.
+// Réserve l'espace toolbar + header voyage + barre des jours (fixed) EN
+// DEHORS du scrollport — réservation volontairement STATIQUE, voir la doc
+// complète dans day-panel.component.scss.
 :host {
   display: block;
+  padding-top: var(--chrome-top-offset, 0px);
   padding-bottom: var(--chrome-tabs-nav-height, 0px);
 }
