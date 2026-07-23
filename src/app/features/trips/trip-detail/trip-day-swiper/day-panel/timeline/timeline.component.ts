@@ -6,12 +6,12 @@ import { FormsModule } from '@angular/forms';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
-import { DurationPipe } from '../../../../../../shared/pipes/duration.pipe';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-timeline',
   standalone: true,
-  imports: [SelectModule, FormsModule, PanelModule, DurationPipe, DividerModule],
+  imports: [SelectModule, FormsModule, PanelModule, DatePipe, DividerModule],
   templateUrl: 'timeline.component.html',
   styleUrl: 'timeline.component.scss',
 })

@@ -44,17 +44,30 @@
     </p-autoComplete>
 
     <div class="flex align-items-center gap-2 flex-wrap">
-      @if (activity().startTime && dayId()) {
-      <span class="text-color-secondary text-xs flex align-items-center gap-1">
-        <i class="pi pi-clock" style="font-size:0.65rem"></i>
-        {{ activity().startTime | date:'HH:mm' }}
-      </span>
-    }
-      @if (activity().price.amount) {
+      @if (dayId()) {
+        @if (activity().startTime ) {
         <span class="text-color-secondary text-xs flex align-items-center gap-1">
-          <i class="pi pi-euro" style="font-size:0.65rem"></i>
-          {{ activity().price.amount }} {{ activity().price.currency }}
+          <i class="pi pi-clock" style="font-size:0.65rem"></i>
+          {{ activity().startTime | date:'HH:mm' }}
         </span>
+        }
+        @if (activity().price.amount) {
+          <span class="text-color-secondary text-xs flex align-items-center gap-1">
+            <i class="pi pi-euro" style="font-size:0.65rem"></i>
+            {{ activity().price.amount }} {{ activity().price.currency }}
+          </span>
+        }
+      }
+      @else{
+        @if (isPlacedNowhere()) {
+          <p-tag severity="warn" value="À assigner" class="flex-shrink-0" />
+        } @else {
+          <p-tag
+            severity="success"
+            [value]="assignedDays() | dayLabelsList:2"
+            class="flex-shrink-0"
+          />
+        }
       }
     </div>
   </div>

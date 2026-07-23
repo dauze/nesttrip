@@ -23,9 +23,7 @@ import { ActivityFilesComponent } from './activity-files/activity-files.componen
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { Button } from 'primeng/button';
-import { Tag } from 'primeng/tag';
 import { ConfirmationService } from 'primeng/api';
-import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
 import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
 
 /**
@@ -54,7 +52,7 @@ const INSTANT_PANEL_MOTION: { duration: number } = { duration: 0 };
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, Button, Tag, DayLabelsListPipe,
+    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, Button,
     ActivityHeaderComponent, ActivityFormComponent,
     ActivityFilesComponent, ActivityGoogleInfoComponent,
   ],
@@ -93,11 +91,11 @@ export class ActivityCardComponent {
   private readonly tripActivityDayIds = computed(() => this.tripFacade.getActivityDayIds(this.tripId())());
   /** true uniquement en contexte pool, quand cette activité n'est placée sur AUCUN jour. */
   readonly isPlacedNowhere = computed(() =>
-    !this.dayId() && (this.tripActivityDayIds().get(this.activityId())?.length ?? 0) === 0
+    !this.dayId() && (this.tripActivityDayIds().get(this.activity().activityId)?.length ?? 0) === 0
   );
   /** Jours où cette activité est placée, triés — uniquement pertinent en contexte pool (vue générale). */
   readonly assignedDays = computed(() =>
-    [...(this.tripActivityDayIds().get(this.activityId()) ?? [])].sort((a, b) => a.getTime() - b.getTime())
+    [...(this.tripActivityDayIds().get(this.activity().activityId) ?? [])].sort((a, b) => a.getTime() - b.getTime())
   );
 
   readonly bookingMeta = computed(() => {

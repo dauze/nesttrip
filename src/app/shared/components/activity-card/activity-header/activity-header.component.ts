@@ -10,11 +10,13 @@ import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
+import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
+import { Tag } from 'primeng/tag';
 
 @Component({
   selector: 'app-activity-header',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AutoComplete], // Remplacement de FormsModule
+  imports: [CommonModule, ReactiveFormsModule, AutoComplete,  Tag, DayLabelsListPipe,],
   templateUrl: './activity-header.component.html',
   styleUrl: './activity-header.component.scss',
 })
@@ -24,6 +26,8 @@ export class ActivityHeaderComponent {
 
   readonly activity = input.required<Activity>();
   readonly dayId = input.required<Date | undefined>();
+  readonly isPlacedNowhere = input.required<boolean>();
+  readonly assignedDays = input.required<Date[]>();
   
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();

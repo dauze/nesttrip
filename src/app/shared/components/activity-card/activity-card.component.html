@@ -15,21 +15,10 @@
             class="flex-1 min-w-0"
             [activity]="activity"
             [dayId] = "dayId()"
+            [assignedDays] = "assignedDays()"
+            [isPlacedNowhere]="isPlacedNowhere()"
             (placeSelected)="onPlaceSelected($event)"
             (titleEdited)="onTitleChanged($event)" />
-
-          @if (!dayId()) {
-            @if (isPlacedNowhere()) {
-              <p-tag severity="warn" value="À assigner" class="flex-shrink-0 ml-2" />
-            } @else {
-              <p-tag
-                severity="success"
-                [value]="assignedDays() | dayLabelsList:2"
-                class="flex-shrink-0 ml-2"
-              />
-            }
-          }
-
           <p-button
             icon="pi pi-trash"
             [rounded]="true"
