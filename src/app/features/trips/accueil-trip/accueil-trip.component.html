@@ -1,19 +1,17 @@
-<p-card>
+<app-card>
 
     <!-- Header -->
-    <ng-template pTemplate="title">
-      <div class="flex justify-content-between align-items-center w-full">
-        <span class="text-2xl font-semibold">Mes voyages</span> 
-        @if (trips().length > 0){      
-          <p-button
-            [label]="editMode ? 'Annuler' : 'Modifier'"
-            [icon]="editMode ? 'pi pi-times' : 'pi pi-pencil'"
-            [severity]="editMode ? 'secondary' : 'primary'"
-            size="small"
-            (click)="toggleEditMode()"
-          />}
-      </div>
-    </ng-template>
+    <div cardTitle class="flex justify-content-between align-items-center w-full">
+      <span class="text-2xl font-semibold">Mes voyages</span>
+      @if (trips().length > 0){
+        <app-button
+          [label]="editMode ? 'Annuler' : 'Modifier'"
+          [icon]="editMode ? 'pi pi-times' : 'pi pi-pencil'"
+          [severity]="editMode ? 'secondary' : 'primary'"
+          size="small"
+          (click)="toggleEditMode()"
+        />}
+    </div>
 
     <!-- Content -->
     <div class="mt-3">
@@ -23,10 +21,10 @@
         <div class="grid">
           @for (i of [1, 2, 3]; track i) {
             <div class="col-12 md:col-6 lg:col-4">
-              <p-card class="h-full">
-                <p-skeleton height="1.5rem" class="mb-2"></p-skeleton>
-                <p-skeleton height="1rem" width="60%"></p-skeleton>
-              </p-card>
+              <app-card class="h-full">
+                <app-skeleton height="1.5rem" class="mb-2"></app-skeleton>
+                <app-skeleton height="1rem" width="60%"></app-skeleton>
+              </app-card>
             </div>
           }
         </div>
@@ -34,10 +32,10 @@
       <!-- Empty -->
       } @else if (trips().length === 0) {
         <div class="flex justify-content-center align-items-center">
-          <p-message
+          <app-message
             severity="info"
             text="Aucun voyage pour l'instant. Créer ton premier voyage !"
-            styleClass="w-full md:w-6"
+            class="w-full md:w-6"
           />
         </div>
 
@@ -47,7 +45,7 @@
   <div class="grid">
     @for (trip of trips(); track trip.id) {
       <div class="col-12 md:col-6 lg:col-4">
-        <p-card
+        <app-card
           [ngClass]="{
             'cursor-pointer hover:surface-100': !editMode || user?.uid === trip.ownerId,
             'cursor-default opacity-80': editMode && user?.uid !== trip.ownerId
@@ -62,11 +60,10 @@
 
             <!-- Checkbox (only in edit mode) -->
             @if (editMode && user?.uid === trip.ownerId) {
-              <p-checkbox
-                [binary]="true"
-                [(ngModel)]="selectedTripsMap[trip.id]"
+              <app-checkbox
+                [(checked)]="selectedTripsMap[trip.id]"
                 (click)="$event.stopPropagation()"
-              ></p-checkbox>
+              ></app-checkbox>
             }
 
             <!-- Title with conditional disabled color -->
@@ -81,7 +78,7 @@
               <i class="pi pi-arrow-right text-color-secondary"></i>
             }
           </div>
-        </p-card>
+        </app-card>
       </div>
     }
   </div>
@@ -90,31 +87,28 @@
     </div>
 
     <!-- Footer buttons -->
-    <ng-template pTemplate="footer">
-      <div class="flex justify-content-end gap-2">
-        <!-- Supprimer -->
-        @if (editMode) {
-          <p-button
-            label="Supprimer"
-            icon="pi pi-trash"
-            severity="danger"
-            size="small"
-            [disabled]="!hasSelection()"
-            (click)="confirmDelete()"
-          />
-        }
-        <!-- Ajouter -->
-        <p-button
-          label="Créer un voyage"
-          icon="pi pi-plus"
+    <div cardFooter class="flex justify-content-end gap-2">
+      <!-- Supprimer -->
+      @if (editMode) {
+        <app-button
+          label="Supprimer"
+          icon="pi pi-trash"
+          severity="danger"
           size="small"
-          routerLink="/trips/new"
+          [disabled]="!hasSelection()"
+          (click)="confirmDelete()"
         />
+      }
+      <!-- Ajouter -->
+      <app-button
+        label="Créer un voyage"
+        icon="pi pi-plus"
+        size="small"
+        routerLink="/trips/new"
+      />
+    </div>
 
-      </div>
-    </ng-template>
-
-  </p-card>
+  </app-card>
 
   <!-- Confirm dialog -->
   <p-confirmDialog />

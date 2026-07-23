@@ -60,9 +60,9 @@
       }
       @else{
         @if (isPlacedNowhere()) {
-          <p-tag severity="warn" value="À assigner" class="flex-shrink-0" />
+          <app-tag severity="warn" value="À assigner" class="flex-shrink-0" />
         } @else {
-          <p-tag
+          <app-tag
             severity="success"
             [value]="assignedDays() | dayLabelsList:2"
             class="flex-shrink-0"

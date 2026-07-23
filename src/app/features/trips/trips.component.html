@@ -1,34 +1,28 @@
 <div #toolbarRef class="app-toolbar">
-  <p-toolbar class="mb-2 mt-1 ml-1 mr-1">
-    <ng-template #start>
-      <div class="w-3rem flex justify-content-center">
-        @if (showBack()) {
-          <p-button
-            icon="pi pi-arrow-left"
-            [text]="true"
-            [rounded]="true"
-            (click)="goBack()"
-          />
-        }
-      </div>
-    </ng-template>
-
-    <ng-template #center>
-      <span class="nesttrip-logo">NestTrip</span>
-    </ng-template>
-
-    <ng-template #end>
-      <div class="w-3rem flex justify-content-center">
-        <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" [baseZIndex]="200" />
-        <p-button
-          (click)="menu.toggle($event)"
-          icon="pi pi-cog"
-          [rounded]="true"
+  <app-toolbar class="mb-2 mt-1 ml-1 mr-1">
+    <div toolbarStart class="w-3rem flex justify-content-center">
+      @if (showBack()) {
+        <app-button
+          icon="pi pi-arrow-left"
           [text]="true"
+          [rounded]="true"
+          (click)="goBack()"
         />
-      </div>
-    </ng-template>
-  </p-toolbar>
+      }
+    </div>
+
+    <span toolbarCenter class="nesttrip-logo">NestTrip</span>
+
+    <div toolbarEnd class="w-3rem flex justify-content-center">
+      <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" [baseZIndex]="200" />
+      <app-button
+        (click)="menu.toggle($event)"
+        icon="pi pi-cog"
+        [rounded]="true"
+        [text]="true"
+      />
+    </div>
+  </app-toolbar>
 </div>
 <div class="app-content" style="min-width: 24rem;" [style.padding-top.px]="chromeService.toolbarHeight()">
   <router-outlet />

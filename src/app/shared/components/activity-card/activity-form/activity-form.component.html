@@ -22,7 +22,7 @@
         </div>
       </div>
       
-      <p-divider class="m-1"/>
+      <app-divider class="m-1"/>
   
       <!-- DEBUT -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
@@ -44,7 +44,7 @@
         </div>
       </div>
       
-      <p-divider class="m-1"/>
+      <app-divider class="m-1"/>
       
       <!-- DUREE -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
@@ -63,11 +63,11 @@
             <i class="pi pi-euro text-sm"></i>Prix
           </label>
           <div class="flex align-items-center gap-1 w-full min-w-0">
-            <p-inputNumber
+            <app-input-number
               inputId="price-amount"
               formControlName="amount"
               class="flex-1 min-w-0 transparent-inputtext"
-              inputStyleClass="w-full min-w-0 text-sm" />
+              inputClass="w-full min-w-0 text-sm" />
             <p-select
               [options]="currencyOptions"
               formControlName="currency"
@@ -79,7 +79,7 @@
       
       <!-- DEADLINE -->
       @if (showDeadline()) {
-        <p-divider class="m-1" />
+        <app-divider class="m-1" />
         <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
           <div class="flex flex-column gap-1 w-full min-w-0">
             <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
@@ -92,13 +92,13 @@
     </div>
   </div>
 
-  <p-divider class="m-1" />
+  <app-divider class="m-1" />
   
   <!-- NOTES -->
   <div class="flex flex-column gap-2 mb-2">
     <label for="form-notes" class="text-color-secondary text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes
     </label>
-    <textarea id="form-notes" pTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" autoResize="true" class="w-full"></textarea>
+    <textarea id="form-notes" appTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" class="w-full"></textarea>
   </div>
 </form>

@@ -1,11 +1,11 @@
 import { Component, computed, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AvatarModule } from 'primeng/avatar';
+import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
 import { TooltipModule } from 'primeng/tooltip';
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
+import { InputTextDirective } from '@app/shared/directives/input-text.directive';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripMember } from '@app/features/trips/trip.model';
 import { Companion } from '@app/core/models/user-profile.dto';
 import { getInitials } from '@app/shared/utils/get-initials';
@@ -13,7 +13,7 @@ import { getInitials } from '@app/shared/utils/get-initials';
 @Component({
   selector: 'app-collaborators-dialog',
   standalone: true,
-  imports: [FormsModule, AvatarModule, TooltipModule, ButtonModule, DialogModule, InputTextModule, MessageModule],
+  imports: [FormsModule, AvatarComponent, TooltipModule, ButtonComponent, DialogModule, InputTextDirective, MessageComponent],
   templateUrl: './collaborators-dialog.component.html',
   styleUrl: './collaborators-dialog.component.scss',
 })

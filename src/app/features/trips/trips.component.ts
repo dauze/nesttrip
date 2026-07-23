@@ -1,7 +1,7 @@
 import { Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { AuthService } from '@core/services/auth.service';
@@ -15,7 +15,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 @Component({
   selector: 'app-trips',
   standalone: true,
-  imports: [RouterOutlet, ToolbarModule, ButtonModule, MenuModule],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuModule],
   providers: [
     FirebaseTripRepository,
       TripFacade,

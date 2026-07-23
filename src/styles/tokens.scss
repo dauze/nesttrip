@@ -1,0 +1,191 @@
+/* ---------------------------------------------------------------------
+ * Tokens CSS maison (--nt-*) — Phase 0 de la sortie de PrimeNG, voir
+ * PRIMENG_MIGRATION.md à la racine.
+ *
+ * Reproduit les valeurs actuellement fournies par le preset Aura (via
+ * @primeuix/themes) pour que le rendu ne bouge pas tant que les
+ * composants n'ont pas encore été migrés : la palette `primary` est celle
+ * définie dans app.config.ts (definePreset), le reste (surface, texte,
+ * rayons, focus ring...) reprend les valeurs par défaut du preset Aura,
+ * jamais redéfinies dans ce projet.
+ *
+ * Le bloc `@media (prefers-color-scheme: dark)` reproduit le comportement
+ * actuel de PrimeNG (`darkModeSelector` par défaut = "system", résolu en
+ * media query) : pas de toggle manuel, uniquement la préférence OS. Voir
+ * la section "Dark mode" de PRIMENG_MIGRATION.md avant d'en ajouter un.
+ * ------------------------------------------------------------------- */
+
+:root {
+  // Palette primary (definePreset dans app.config.ts)
+  --nt-primary-50: #ECF6F5;
+  --nt-primary-100: #D0EAE7;
+  --nt-primary-200: #A1D5D0;
+  --nt-primary-300: #6CBBB3;
+  --nt-primary-400: #43A198;
+  --nt-primary-500: #2A7871;
+  --nt-primary-600: #21615B;
+  --nt-primary-700: #1A4C47;
+  --nt-primary-800: #133834;
+  --nt-primary-900: #0C2422;
+  --nt-primary-950: #061312;
+
+  --nt-primary-color: var(--nt-primary-500);
+  --nt-primary-contrast-color: #ffffff;
+  --nt-primary-hover-color: var(--nt-primary-600);
+  --nt-primary-active-color: var(--nt-primary-700);
+
+  // Palette surface (slate — valeur par défaut Aura en light, non redéfinie)
+  --nt-surface-0: #ffffff;
+  --nt-surface-50: #f8fafc;
+  --nt-surface-100: #f1f5f9;
+  --nt-surface-200: #e2e8f0;
+  --nt-surface-300: #cbd5e1;
+  --nt-surface-400: #94a3b8;
+  --nt-surface-500: #64748b;
+  --nt-surface-600: #475569;
+  --nt-surface-700: #334155;
+  --nt-surface-800: #1e293b;
+  --nt-surface-900: #0f172a;
+  --nt-surface-950: #020617;
+
+  // Texte
+  --nt-text-color: var(--nt-surface-700);
+  --nt-text-hover-color: var(--nt-surface-800);
+  --nt-text-muted-color: var(--nt-surface-500);
+  --nt-text-hover-muted-color: var(--nt-surface-600);
+
+  // Contenu (cards, panels...)
+  --nt-content-background: var(--nt-surface-0);
+  --nt-content-hover-background: var(--nt-surface-100);
+  --nt-content-border-color: var(--nt-surface-200);
+  --nt-content-border-radius: var(--nt-radius-md);
+
+  // Overlays (dialog, popover/select/autocomplete...)
+  --nt-overlay-background: var(--nt-surface-0);
+  --nt-overlay-border-color: var(--nt-surface-200);
+  --nt-overlay-modal-border-radius: var(--nt-radius-xl);
+  --nt-overlay-modal-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --nt-overlay-popover-border-radius: var(--nt-radius-md);
+  --nt-overlay-popover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --nt-mask-background: rgba(0, 0, 0, 0.4);
+
+  // Champs de formulaire
+  --nt-form-field-background: var(--nt-surface-0);
+  --nt-form-field-disabled-background: var(--nt-surface-200);
+  --nt-form-field-border-color: var(--nt-surface-300);
+  --nt-form-field-hover-border-color: var(--nt-surface-400);
+  --nt-form-field-focus-border-color: var(--nt-primary-color);
+  --nt-form-field-invalid-border-color: #f87171;
+  --nt-form-field-color: var(--nt-surface-700);
+  --nt-form-field-disabled-color: var(--nt-surface-500);
+  --nt-form-field-placeholder-color: var(--nt-surface-500);
+  --nt-form-field-icon-color: var(--nt-surface-400);
+  --nt-form-field-border-radius: var(--nt-radius-md);
+  --nt-form-field-padding-x: 0.75rem;
+  --nt-form-field-padding-y: 0.5rem;
+
+  // Rayons de bordure
+  --nt-radius-none: 0;
+  --nt-radius-xs: 2px;
+  --nt-radius-sm: 4px;
+  --nt-radius-md: 6px;
+  --nt-radius-lg: 8px;
+  --nt-radius-xl: 12px;
+
+  // Focus ring / transitions / états
+  --nt-focus-ring-width: 1px;
+  --nt-focus-ring-style: solid;
+  --nt-focus-ring-color: var(--nt-primary-color);
+  --nt-focus-ring-offset: 2px;
+  --nt-transition-duration: 0.2s;
+  --nt-disabled-opacity: 0.6;
+
+  // Couleurs de statut (utilisées par .to_book/.booked/.not_needed/.waitlist
+  // dans styles.scss)
+  --nt-red-500: #ef4444;
+  --nt-green-500: #22c55e;
+  --nt-blue-500: #3b82f6;
+  --nt-yellow-500: #eab308;
+
+  // "Secondary"/neutre (Button, Tag...) — PAS un simple alias vers
+  // --nt-surface-100/200/300 : ces primitives gardent la même convention de
+  // numérotation (100 = toujours clair) dans les DEUX modes, alors qu'en
+  // dark mode PrimeNG bascule vers l'AUTRE bout de l'échelle (700-900) pour
+  // qu'un bouton/tag "neutre" reste lisible sur fond sombre. D'où ces jetons
+  // dédiés, redéfinis explicitement par mode plutôt que dérivés d'une seule
+  // formule commune.
+  --nt-secondary-bg: var(--nt-surface-100);
+  --nt-secondary-hover-bg: var(--nt-surface-200);
+  --nt-secondary-active-bg: var(--nt-surface-300);
+  --nt-secondary-color: var(--nt-surface-600);
+  --nt-secondary-outlined-color: var(--nt-surface-500);
+  --nt-secondary-outlined-hover-bg: var(--nt-surface-50);
+  --nt-secondary-outlined-active-bg: var(--nt-surface-100);
+
+  // Skeleton — en dark mode PrimeNG n'utilise pas la palette surface du tout
+  // (un simple gris n'y suffit pas visuellement) mais un blanc translucide.
+  --nt-skeleton-bg: var(--nt-surface-200);
+  --nt-skeleton-shimmer: rgba(255, 255, 255, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nt-primary-color: var(--nt-primary-400);
+    --nt-primary-contrast-color: var(--nt-surface-900);
+    --nt-primary-hover-color: var(--nt-primary-300);
+    --nt-primary-active-color: var(--nt-primary-200);
+
+    // Palette surface (zinc — valeur par défaut Aura en dark)
+    --nt-surface-0: #ffffff;
+    --nt-surface-50: #fafafa;
+    --nt-surface-100: #f4f4f5;
+    --nt-surface-200: #e4e4e7;
+    --nt-surface-300: #d4d4d8;
+    --nt-surface-400: #a1a1aa;
+    --nt-surface-500: #71717a;
+    --nt-surface-600: #52525b;
+    --nt-surface-700: #3f3f46;
+    --nt-surface-800: #27272a;
+    --nt-surface-900: #18181b;
+    --nt-surface-950: #09090b;
+
+    --nt-text-color: var(--nt-surface-0);
+    --nt-text-hover-color: var(--nt-surface-0);
+    --nt-text-muted-color: var(--nt-surface-400);
+    --nt-text-hover-muted-color: var(--nt-surface-300);
+
+    --nt-content-background: var(--nt-surface-900);
+    --nt-content-hover-background: var(--nt-surface-800);
+    --nt-content-border-color: var(--nt-surface-700);
+
+    --nt-overlay-background: var(--nt-surface-900);
+    --nt-overlay-border-color: var(--nt-surface-700);
+    --nt-mask-background: rgba(0, 0, 0, 0.6);
+
+    --nt-form-field-background: var(--nt-surface-950);
+    --nt-form-field-disabled-background: var(--nt-surface-700);
+    --nt-form-field-border-color: var(--nt-surface-600);
+    --nt-form-field-hover-border-color: var(--nt-surface-500);
+    --nt-form-field-invalid-border-color: #fca5a5;
+    --nt-form-field-color: var(--nt-surface-0);
+    --nt-form-field-disabled-color: var(--nt-surface-400);
+    --nt-form-field-placeholder-color: var(--nt-surface-400);
+    --nt-form-field-icon-color: var(--nt-surface-400);
+
+    --nt-red-500: #f87171;
+    --nt-green-500: #4ade80;
+    --nt-blue-500: #60a5fa;
+    --nt-yellow-500: #facc15;
+
+    --nt-secondary-bg: var(--nt-surface-800);
+    --nt-secondary-hover-bg: var(--nt-surface-700);
+    --nt-secondary-active-bg: var(--nt-surface-600);
+    --nt-secondary-color: var(--nt-surface-300);
+    --nt-secondary-outlined-color: var(--nt-surface-400);
+    --nt-secondary-outlined-hover-bg: rgba(255, 255, 255, 0.04);
+    --nt-secondary-outlined-active-bg: rgba(255, 255, 255, 0.16);
+
+    --nt-skeleton-bg: rgba(255, 255, 255, 0.06);
+    --nt-skeleton-shimmer: rgba(255, 255, 255, 0.04);
+  }
+}

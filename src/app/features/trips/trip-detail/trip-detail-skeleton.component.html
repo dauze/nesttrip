@@ -1,20 +1,20 @@
   <div class="flex flex-column gap-2">
-    <p-skeleton height="7rem" borderRadius="12px" />
-    <p-skeleton height="3rem"  borderRadius="0px"  />
+    <app-skeleton height="7rem" borderRadius="12px" />
+    <app-skeleton height="3rem"  borderRadius="0px"  />
     @for (panel of panels; track $index) {
       <div class="surface-card border-1 surface-border border-round-lg overflow-hidden">
 
         <!-- Header -->
         <div class="flex align-items-center gap-2 px-3 py-3 border-bottom-1 surface-border">
-          <p-skeleton shape="square" size="1rem" />
+          <app-skeleton shape="square" size="1rem" />
 
-          <p-skeleton
+          <app-skeleton
             [width]="panel.titleWidth"
             height="1.25rem"
             class="flex-1"
           />
 
-          <p-skeleton shape="circle" size="1.5rem" class="ml-auto" />
+          <app-skeleton shape="circle" size="1.5rem" class="ml-auto" />
         </div>
 
         <!-- Contenu -->
@@ -24,16 +24,16 @@
             <div class="flex align-items-center gap-3 mb-3">
 
               <!-- poignée drag -->
-              <p-skeleton width="0.5rem" height="1rem" />
+              <app-skeleton width="0.5rem" height="1rem" />
 
               @if (panel.hasCheckbox) {
-                <p-skeleton
+                <app-skeleton
                   shape="square"
                   size="1rem"
                   class="border-round flex-shrink-0"
                 />
               } @else {
-                <p-skeleton
+                <app-skeleton
                   shape="square"
                   size="2.5rem"
                   class="border-round flex-shrink-0"
@@ -41,25 +41,25 @@
               }
 
               <div class="flex-1 flex flex-column gap-2">
-                <p-skeleton
+                <app-skeleton
                   [width]="(55 + ($index % 3) * 15) + '%'"
                   height="1rem"
                 />
 
                 @if (!panel.hasCheckbox) {
-                  <p-skeleton width="4rem" height=".75rem" />
+                  <app-skeleton width="4rem" height=".75rem" />
                 }
               </div>
 
               @if (!panel.hasCheckbox) {
-                <p-skeleton shape="circle" size="1.25rem" />
+                <app-skeleton shape="circle" size="1.25rem" />
               }
             </div>
           }
 
           <!-- Bouton + à l'intérieur -->
           <div class="flex justify-content-center pt-2">
-            <p-skeleton shape="circle" size="2.25rem" />
+            <app-skeleton shape="circle" size="2.25rem" />
           </div>
 
         </div>
@@ -68,6 +68,6 @@
     }
     <!-- Faux bouton "+" en bas -->
     <div class="flex justify-content-center">
-      <p-skeleton shape="circle" size="2.25rem" />
+      <app-skeleton shape="circle" size="2.25rem" />
     </div>
   </div>

@@ -1,0 +1,25 @@
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: var(--nt-radius-md);
+  background: var(--nt-content-background);
+  border: 1px solid var(--nt-content-border-color);
+}
+
+.app-toolbar__start,
+.app-toolbar__end {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.app-toolbar__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  text-align: center;
+}

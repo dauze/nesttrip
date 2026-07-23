@@ -1,7 +1,7 @@
 import { Component, effect, inject, input, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { CardModule } from 'primeng/card';
-import { Textarea } from 'primeng/textarea';
+import { CardComponent } from '@app/shared/components/card/card.component';
+import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Trip } from '../../trip.model';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
@@ -10,7 +10,7 @@ import { ViewportService } from '@core/services/viewport.service';
 @Component({
   selector: 'app-trip-header',
   standalone: true,
-  imports: [ReactiveFormsModule, CardModule, Textarea, DatePickerModule, OverlayAutoCloseDirective],
+  imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerModule, OverlayAutoCloseDirective],
   templateUrl: './trip-header.component.html',
   styleUrl: './trip-header.component.scss',
 })

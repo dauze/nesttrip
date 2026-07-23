@@ -1,0 +1,8 @@
+<input
+  type="number"
+  [id]="inputId()"
+  [class]="'app-input-text ' + inputClass()"
+  [value]="value ?? ''"
+  [disabled]="disabled"
+  (input)="onInput($any($event.target).value)"
+  (blur)="onTouched?.()" />

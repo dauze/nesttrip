@@ -1,0 +1,36 @@
+:host {
+  display: flex;
+  width: 100%;
+  border-radius: var(--nt-form-field-border-radius);
+  overflow: hidden;
+  border: 1px solid var(--nt-form-field-border-color);
+}
+
+.app-select-button__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1 1 0;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+  border: none;
+  background: var(--nt-form-field-background);
+  color: var(--nt-text-muted-color);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:not(:last-child) {
+    border-right: 1px solid var(--nt-form-field-border-color);
+  }
+
+  &:hover:not(.app-select-button__item--active) {
+    background: var(--nt-content-hover-background);
+  }
+}
+
+.app-select-button__item--active {
+  background: var(--nt-primary-color);
+  color: var(--nt-primary-contrast-color);
+}

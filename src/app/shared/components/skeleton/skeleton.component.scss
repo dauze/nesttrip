@@ -1,0 +1,30 @@
+:host {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  background: var(--nt-skeleton-bg);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--nt-skeleton-shimmer),
+      transparent
+    );
+    animation: app-skeleton-wave 1.5s infinite;
+  }
+}
+
+.app-skeleton--circle {
+  border-radius: 50%;
+}
+
+@keyframes app-skeleton-wave {
+  100% {
+    transform: translateX(100%);
+  }
+}

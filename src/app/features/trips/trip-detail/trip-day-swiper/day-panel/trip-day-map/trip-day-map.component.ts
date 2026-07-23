@@ -3,12 +3,12 @@ import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { environment } from '@environments/environment';
-import { Panel } from 'primeng/panel';
+import { PanelComponent } from '@app/shared/components/panel/panel.component';
 
 @Component({
   selector: 'app-trip-day-map',
   standalone: true,
-  imports: [GoogleMap, MapAdvancedMarker, Panel,],
+  imports: [GoogleMap, MapAdvancedMarker, PanelComponent,],
   templateUrl: 'trip-day-map.component.html',
   styleUrl: 'trip-day-map.component.scss',
 })

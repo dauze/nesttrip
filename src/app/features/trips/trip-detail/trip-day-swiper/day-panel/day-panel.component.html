@@ -3,26 +3,22 @@
     <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
     <div #stickyMap class="sticky-map">
       @if (!activeMapComponent()) {
-        <p-panel [toggleable]="true" [collapsed]="collapsed()">
-          <ng-template #header>
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-calendar"></i>
-              <span>Carte</span>
-            </div>
-          </ng-template>
-          <p-skeleton height="250px" width="100%" borderRadius="3px" />
-        </p-panel>
+        <app-panel [toggleable]="true" [collapsed]="collapsed()">
+          <div panelHeader class="flex align-items-center gap-2">
+            <i class="pi pi-calendar"></i>
+            <span>Carte</span>
+          </div>
+          <app-skeleton height="250px" width="100%" borderRadius="3px" />
+        </app-panel>
       }
     </div>
   }
-  <p-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
-  (onAfterToggle)="onActivitiesPanelToggled()">
-    <ng-template  #header>
-      <div class="flex align-items-center gap-2">
-        <i class="pi pi-calendar"></i>
-        <span>Activités</span>
-      </div>
-    </ng-template>
+  <app-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
+  (afterToggle)="onActivitiesPanelToggled()">
+    <div panelHeader class="flex align-items-center gap-2">
+      <i class="pi pi-calendar"></i>
+      <span>Activités</span>
+    </div>
     <div class="flex flex-column gap-2">
       <div #activityList class="flex flex-column gap-2">
         @for (activity of activities(); track activity.id) {
@@ -31,7 +27,7 @@
         }
       </div>
       @if (activities().length === 0) {
-          <p-message
+          <app-message
             severity="info"
             icon="pi pi-info-circle"
             text="Aucune activitée pour l'instant, n'hésitez pas à en créer avec le bouton +."
@@ -39,8 +35,8 @@
           />
         }
       <div class="flex justify-content-center w-full">
-        <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addActivity()" />
+        <app-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (click)="addActivity()" />
       </div>
     </div>
-  </p-panel>
+  </app-panel>
 </div>

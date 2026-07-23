@@ -1,0 +1,34 @@
+:host {
+  display: block;
+  width: 100%;
+  // `flex: 1 1 100%` (pas juste `width: 100%`) : dans un conteneur flex/grid
+  // en `flex-wrap` (ex. la grille `.col-6`/`.grid` de PrimeFlex dans
+  // activity-form), un enfant block sans base flex explicite se comporte
+  // comme un item de contenu (largeur quasi nulle, pas de saut de ligne)
+  // plutôt que de forcer sa propre ligne — d'où les dividers invisibles et
+  // le contenu suivant qui remontait sur la mauvaise ligne.
+  flex: 1 1 100%;
+}
+
+.app-divider {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  color: var(--nt-text-muted-color);
+  font-size: 0.875rem;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1 1 auto;
+    border-bottom: 1px solid var(--nt-content-border-color);
+  }
+
+  &:not(:empty)::before {
+    margin-right: 0.75rem;
+  }
+
+  &:not(:empty)::after {
+    margin-left: 0.75rem;
+  }
+}

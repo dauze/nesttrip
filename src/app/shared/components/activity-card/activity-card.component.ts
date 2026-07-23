@@ -3,9 +3,8 @@ import {
   input, linkedSignal, output, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PanelModule } from 'primeng/panel';
-import { DividerModule } from 'primeng/divider';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, distinctUntilChanged, filter, map, of, switchMap, take } from 'rxjs';
 
@@ -22,7 +21,7 @@ import { ActivityHeaderComponent } from './activity-header/activity-header.compo
 import { ActivityFilesComponent } from './activity-files/activity-files.component';
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
-import { Button } from 'primeng/button';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ConfirmationService } from 'primeng/api';
 import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
 
@@ -36,23 +35,12 @@ import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-con
 const HOLD_DELAY_MS = 20;
 /** Laisse le temps à l'animation de repli du panneau de se terminer avant de décrocher la carte. */
 const PANEL_COLLAPSE_DELAY_MS = 300;
-/**
- * `[transitionOptions]` est dépréciée depuis PrimeNG 21 et n'est plus lue par
- * le composant (voir `computedMotionOptions` dans primeng-panel.mjs, qui ne
- * dépend plus que de `motionOptions`/`ptm('motion')`) — la fixer à '0ms'
- * n'avait donc plus AUCUN effet : le panneau continuait de replier avec
- * l'animation normale, d'où la carte encore dépliée capturée par le drag.
- * `[motionOptions]="{ duration: 0 }"` est le remplaçant qui fonctionne
- * réellement (voir `resolveDuration`/`el.style.transitionDuration` dans
- * primeng-motion.mjs).
- */
-const INSTANT_PANEL_MOTION: { duration: number } = { duration: 0 };
 
 @Component({
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule, PanelModule, DividerModule, ProgressSpinnerModule, Button,
+    CommonModule, PanelComponent, DividerComponent, ButtonComponent,
     ActivityHeaderComponent, ActivityFormComponent,
     ActivityFilesComponent, ActivityGoogleInfoComponent,
   ],
@@ -105,8 +93,8 @@ export class ActivityCardComponent {
 
   readonly collapsed = linkedSignal(() => this.initCollapsed());;
   readonly scrollOffset = input(0);
-  /** Piloté par `collapseInstantly()` : passe à une durée nulle le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. `undefined` = comportement/durée par défaut de PrimeNG. */
-  protected readonly panelMotionOptions = signal<{ duration: number } | undefined>(undefined);
+  /** Piloté par `collapseInstantly()` : coupe la transition CSS du panel le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. */
+  protected readonly panelInstant = signal(false);
 
   /**
    * Émis dès le pointerdown sur la poignée quand `inDayList()` est vrai —
@@ -252,15 +240,13 @@ export class ActivityCardComponent {
    * `detectChanges()` force ce rendu de façon synchrone plutôt que d'attendre
    * la détection de changements normale (asynchrone, après le déroulement
    * complet de l'événement) : DayPanelComponent lit la géométrie de la carte
-   * juste après cet appel, dans le même geste. Voir `INSTANT_PANEL_MOTION`
-   * pour pourquoi `motionOptions` (et pas l'ancienne `transitionOptions`) est
-   * ce qui doit réellement être mis à zéro.
+   * juste après cet appel, dans le même geste.
    */
   collapseInstantly(): void {
-    this.panelMotionOptions.set(INSTANT_PANEL_MOTION);
+    this.panelInstant.set(true);
     this.collapsed.set(true);
     this.cdr.detectChanges();
-    requestAnimationFrame(() => this.panelMotionOptions.set(undefined));
+    requestAnimationFrame(() => this.panelInstant.set(false));
   }
 
   openAndScroll(): void {

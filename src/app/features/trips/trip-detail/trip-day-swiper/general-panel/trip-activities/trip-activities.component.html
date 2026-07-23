@@ -1,14 +1,12 @@
-<p-card>
+<app-card>
 <div class="flex flex-column gap-2">
   @for (group of cityGroups(); track group.city) {
-    <p-panel [toggleable]="true" [collapsed]="false">
-      <ng-template #header>
-        <div class="flex align-items-center gap-2">
-          <i class="pi pi-map-marker"></i>
-          <span>{{ group.city }}</span>
-          <span class="text-color-secondary text-sm">({{ group.activities.length }})</span>
-        </div>
-      </ng-template>
+    <app-panel [toggleable]="true" [collapsed]="false">
+      <div panelHeader class="flex align-items-center gap-2">
+        <i class="pi pi-map-marker"></i>
+        <span>{{ group.city }}</span>
+        <span class="text-color-secondary text-sm">({{ group.activities.length }})</span>
+      </div>
 
       <div class="flex flex-column gap-2">
         @for (activity of group.activities; track activity.id) {
@@ -19,11 +17,11 @@
           />
         }
       </div>
-    </p-panel>
+    </app-panel>
   }
 
   @if (cityGroups().length === 0) {
-    <p-message
+    <app-message
       severity="info"
       icon="pi pi-info-circle"
       text="Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +."
@@ -32,7 +30,7 @@
   }
 
   <div class="flex justify-content-center w-full">
-    <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addActivity()" />
+    <app-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (click)="addActivity()" />
   </div>
 </div>
-</p-card>
+</app-card>

@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, EMPTY } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { DividerModule } from 'primeng/divider';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
-import { MessageModule } from 'primeng/message';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { CardComponent } from '@app/shared/components/card/card.component';
+import { DividerComponent } from '@app/shared/components/divider/divider.component';
+import { InputTextDirective } from '@app/shared/directives/input-text.directive';
+import { PasswordComponent } from '@app/shared/components/password/password.component';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 
 @Component({
   selector: 'app-login',
@@ -16,12 +16,12 @@ import { MessageModule } from 'primeng/message';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    ButtonModule,
-    CardModule,
-    DividerModule,
-    InputTextModule,
-    PasswordModule,
-    MessageModule,
+    ButtonComponent,
+    CardComponent,
+    DividerComponent,
+    InputTextDirective,
+    PasswordComponent,
+    MessageComponent,
   ],
   templateUrl: 'login.component.html',
   styleUrls: ['login.component.scss'],

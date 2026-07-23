@@ -1,0 +1,77 @@
+:host {
+  display: block;
+  border: 1px solid var(--nt-content-border-color);
+  border-radius: var(--nt-content-border-radius);
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+}
+
+.app-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  font-weight: 600;
+}
+
+.app-panel__header-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-panel__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+}
+
+.app-panel__chevron {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transition: transform var(--nt-transition-duration) ease;
+  transform: rotate(45deg);
+  margin-top: -0.2rem;
+}
+
+.app-panel__toggle[aria-expanded='false'] .app-panel__chevron {
+  transform: rotate(-45deg);
+  margin-top: 0;
+}
+
+.app-panel__content {
+  overflow: hidden;
+  transition: max-height var(--nt-transition-duration) ease;
+}
+
+.app-panel__content--instant {
+  transition: none;
+}
+
+// Le padding vit sur CET enfant, jamais sur `.app-panel__content` lui-même
+// (l'élément dont `max-height` est animé) : à `max-height: 0`, un padding
+// posé directement dessus resterait visible (il s'ajoute en dehors de la
+// hauteur de contenu en `box-sizing: content-box`) — d'où le sliver de
+// contenu qui restait visible même panel replié.
+.app-panel__content-inner {
+  min-width: 0;
+  padding: 0 0.5rem 0.5rem 0.5rem;
+}

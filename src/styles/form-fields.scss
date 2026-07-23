@@ -1,0 +1,53 @@
+/* ---------------------------------------------------------------------
+ * Styles globaux des champs texte maison (Phase 4 de la sortie de PrimeNG,
+ * voir PRIMENG_MIGRATION.md). `appInputText`/`appTextarea` sont de simples
+ * directives sur `<input>`/`<textarea>` natifs (comme `pInputText`/
+ * `pTextarea` chez PrimeNG) : pas de composant, pas de ControlValueAccessor
+ * à réécrire, `formControlName`/`ngModel` fonctionnent déjà nativement sur
+ * ces éléments. D'où un style global plutôt que scopé à un composant.
+ * ------------------------------------------------------------------- */
+
+.app-input-text,
+.app-textarea {
+  width: 100%;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+  border: 1px solid var(--nt-form-field-border-color);
+  border-radius: var(--nt-form-field-border-radius);
+  background: var(--nt-form-field-background);
+  color: var(--nt-form-field-color);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: border-color var(--nt-transition-duration) ease, box-shadow var(--nt-transition-duration) ease;
+
+  &::placeholder {
+    color: var(--nt-form-field-placeholder-color);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--nt-form-field-hover-border-color);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--nt-form-field-focus-border-color);
+    box-shadow: 0 0 0 var(--nt-focus-ring-width) color-mix(in srgb, var(--nt-form-field-focus-border-color) 30%, transparent);
+  }
+
+  &:disabled {
+    background: var(--nt-form-field-disabled-background);
+    color: var(--nt-form-field-disabled-color);
+    opacity: var(--nt-disabled-opacity);
+  }
+
+  &.ng-invalid.ng-touched,
+  &[aria-invalid='true'] {
+    border-color: var(--nt-form-field-invalid-border-color);
+  }
+}
+
+.app-textarea {
+  // Pas de poignée de resize manuelle : la hauteur est déjà pilotée en JS
+  // (TextareaDirective.resize, toujours actif) — voir PRIMENG_MIGRATION.md.
+  resize: none;
+  overflow: hidden;
+}

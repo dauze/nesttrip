@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild, viewChildren
 } from '@angular/core';
-import { Button } from 'primeng/button';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { Day } from '@app/features/trips/trip.model';
 import { TripTab } from '@app/features/trips/trip-detail/trip-tab.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -79,7 +79,7 @@ function easeInOutCubic(t: number): number {
 @Component({
   selector: 'app-activity-day-dispatch-overlay',
   standalone: true,
-  imports: [CommonModule, Button],
+  imports: [CommonModule, ButtonComponent],
   templateUrl: './activity-day-dispatch-overlay.component.html',
   styleUrl: './activity-day-dispatch-overlay.component.scss',
 })

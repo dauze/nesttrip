@@ -1,10 +1,8 @@
-<p-panel [toggleable]="true" [(collapsed)]="collapsed">
-    <ng-template #header>
-      <div class="flex align-items-center gap-2">
-        <i class="pi pi-calendar"></i>
-        <span>Carte</span>
-      </div>
-    </ng-template>
+<app-panel [toggleable]="true" [(collapsed)]="collapsed">
+    <div panelHeader class="flex align-items-center gap-2">
+      <i class="pi pi-calendar"></i>
+      <span>Carte</span>
+    </div>
 
     <div class="flex flex-column gap-2 swiper-no-swiping map-container" >
       <google-map
@@ -24,4 +22,4 @@
         }
   </google-map>
   </div>
-</p-panel>
+</app-panel>

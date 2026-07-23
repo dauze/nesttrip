@@ -1,0 +1,47 @@
+:host {
+  // PrimeNG affiche un tag en "teinte claire" (fond translucide de la
+  // couleur + texte dans la même teinte), pas un pastille pleine avec texte
+  // blanc — d'où le fond dérivé de --nt-tag-color via color-mix plutôt qu'un
+  // second jeton --nt-tag-contrast séparé.
+  --nt-tag-color: var(--nt-primary-color);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--nt-content-border-radius);
+  background: color-mix(in srgb, var(--nt-tag-color) 16%, transparent);
+  color: var(--nt-tag-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+// `:host(.x)`, pas `.x` seul : la classe de sévérité est posée sur le :host
+// lui-même (voir TagComponent.hostClass), qui porte l'attribut Angular
+// `_nghost-*` — un sélecteur `.x` nu ne matcherait que des DESCENDANTS
+// (`_ngcontent-*`), jamais le host.
+:host(.app-tag--secondary) {
+  --nt-tag-color: var(--nt-secondary-color);
+  background: var(--nt-secondary-bg);
+}
+
+:host(.app-tag--danger) {
+  --nt-tag-color: var(--nt-red-500);
+}
+
+:host(.app-tag--success) {
+  --nt-tag-color: var(--nt-green-500);
+}
+
+:host(.app-tag--warn) {
+  // Le jaune reste trop clair pour servir de texte même mixé à 100% : on le
+  // fonce nettement, contrairement aux autres teintes.
+  --nt-tag-color: color-mix(in srgb, var(--nt-yellow-500) 60%, black);
+}
+
+:host(.app-tag--info) {
+  --nt-tag-color: var(--nt-blue-500);
+}

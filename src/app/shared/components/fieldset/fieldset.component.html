@@ -1,0 +1,17 @@
+<div
+  class="app-fieldset__header"
+  [class.app-fieldset__header--toggleable]="toggleable()"
+  [attr.role]="toggleable() ? 'button' : null"
+  [attr.tabindex]="toggleable() ? 0 : null"
+  (click)="toggle()"
+  (keydown.enter)="toggle()">
+  <ng-content select="[fieldsetHeader]" />
+  @if (toggleable()) {
+    <i class="pi" [class.pi-chevron-down]="isCollapsed()" [class.pi-chevron-up]="!isCollapsed()"></i>
+  }
+</div>
+@if (!isCollapsed()) {
+  <div class="app-fieldset__content">
+    <ng-content />
+  </div>
+}

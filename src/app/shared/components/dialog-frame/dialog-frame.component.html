@@ -1,0 +1,24 @@
+<div class="dialog-frame">
+  @if (title() || showCloseButton()) {
+    <header class="dialog-frame__header">
+      <h2 class="dialog-frame__title">{{ title() }}</h2>
+      @if (showCloseButton()) {
+        <button
+          type="button"
+          class="dialog-frame__close"
+          aria-label="Fermer"
+          (click)="closeRequested.emit()">
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </header>
+  }
+
+  <div class="dialog-frame__content">
+    <ng-content />
+  </div>
+
+  <footer class="dialog-frame__footer">
+    <ng-content select="[dialogFooter]" />
+  </footer>
+</div>

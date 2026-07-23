@@ -1,6 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { Day, Trip } from '../trip.model';
@@ -22,7 +21,6 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   selector: 'app-trip-detail',
   standalone: true,
   imports: [
-    SkeletonModule,
     ConfirmDialog,
     TripDetailSkeletonComponent,
     TripHeaderComponent,

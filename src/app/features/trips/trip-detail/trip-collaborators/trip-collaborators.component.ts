@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { AvatarModule } from 'primeng/avatar';
-import { AvatarGroupModule } from 'primeng/avatargroup';
+import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
+import { AvatarGroupComponent } from '@app/shared/components/avatar-group/avatar-group.component';
 import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
 import { TripFacade } from '../../trip-facade.service';
@@ -12,7 +12,7 @@ import { getInitials } from '@app/shared/utils/get-initials';
 @Component({
   selector: 'app-trip-collaborators',
   standalone: true,
-  imports: [AvatarModule, AvatarGroupModule, TooltipModule, CollaboratorsDialogComponent],
+  imports: [AvatarComponent, AvatarGroupComponent, TooltipModule, CollaboratorsDialogComponent],
   templateUrl: './trip-collaborators.component.html',
   styleUrl: './trip-collaborators.component.scss',
 })

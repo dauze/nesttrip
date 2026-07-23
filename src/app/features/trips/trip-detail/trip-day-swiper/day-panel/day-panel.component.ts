@@ -16,13 +16,13 @@ import {
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { PanelModule } from 'primeng/panel';
-import { Button } from 'primeng/button';
-import { Skeleton } from 'primeng/skeleton';
+import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
-import { MessageModule } from 'primeng/message';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
@@ -73,7 +73,7 @@ interface DayDragState {
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, PanelModule, Button, MessageModule, Skeleton],
+  imports: [TimelineComponent, ActivityCardComponent, PanelComponent, ButtonComponent, MessageComponent, SkeletonComponent],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
 })

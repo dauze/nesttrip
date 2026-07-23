@@ -1,10 +1,8 @@
-<p-panel [toggleable]="true" [collapsed]="false">
-  <ng-template pTemplate="header">
-    <div class="flex align-items-center gap-2">
-      <i class="pi pi-calendar"></i>
-      <span>Vue d'ensemble de la journée</span>
-    </div>
-  </ng-template>
+<app-panel [toggleable]="true" [collapsed]="false">
+  <div panelHeader class="flex align-items-center gap-2">
+    <i class="pi pi-calendar"></i>
+    <span>Vue d'ensemble de la journée</span>
+  </div>
 
   <div class="flex flex-column gap-2">
     @for (activity of activities(); track activity.id; let last = $last) {
@@ -31,8 +29,8 @@
         
       </div>
        @if (!last) {
-      <p-divider class="m-0"></p-divider>
+      <app-divider class="m-0"></app-divider>
        }
     }
   </div>
-</p-panel>
+</app-panel>

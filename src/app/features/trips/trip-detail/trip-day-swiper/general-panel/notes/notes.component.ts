@@ -1,22 +1,22 @@
 import {Component, inject, input, ChangeDetectionStrategy, computed, signal} from '@angular/core';
-import { PanelModule } from 'primeng/panel';
-import { Textarea } from 'primeng/textarea';
+import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { FormsModule } from '@angular/forms';
-import { Button } from 'primeng/button';
-import { Fieldset } from 'primeng/fieldset';
-import { Checkbox } from 'primeng/checkbox';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { FieldsetComponent } from '@app/shared/components/fieldset/fieldset.component';
+import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import { ConfirmationService } from 'primeng/api';
 import {Notes, Item, Point} from './notes.model';
-import { MessageModule } from 'primeng/message';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { NotesType } from '@app/core/enums/notes.type';
-import { Card } from 'primeng/card';
+import { CardComponent } from '@app/shared/components/card/card.component';
 
 @Component({
   selector: 'app-notes',
   standalone: true,
-  imports: [PanelModule, Textarea, FormsModule, Checkbox, Button, DragDropModule, Fieldset, MessageModule, Card],
+  imports: [PanelComponent, TextareaDirective, FormsModule, CheckboxComponent, ButtonComponent, DragDropModule, FieldsetComponent, MessageComponent, CardComponent],
   templateUrl: './notes.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

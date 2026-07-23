@@ -1,10 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
+import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { DatePickerModule } from 'primeng/datepicker';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { CardComponent } from '@app/shared/components/card/card.component';
 import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
 import { Notes } from '../trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -20,8 +20,8 @@ import { ViewportService } from '@core/services/viewport.service';
   selector: 'app-new-trip',
   standalone: true,
   imports: [
-    ReactiveFormsModule, InputTextModule, DatePickerModule, ButtonModule,
-    CardModule, FluidModule, AutoComplete, OverlayAutoCloseDirective
+    ReactiveFormsModule, InputTextDirective, DatePickerModule, ButtonComponent,
+    CardComponent, FluidModule, AutoComplete, OverlayAutoCloseDirective
   ],
   templateUrl: 'new-trip.component.html',
 })

@@ -20,10 +20,10 @@
           <div class="dispatch-overlay__month-label surface-0 font-semibold text-sm">{{ group.label }}</div>
           <div class="flex flex-wrap gap-2 mb-2">
             @for (day of group.days; track day.id.getTime(); let di = $index) {
-             <p-button
+             <app-button
                 #dayCell
                 [rounded]="true"
-                [text]="hoveredDayKey() !== dayKeyFor(day)" 
+                [text]="hoveredDayKey() !== dayKeyFor(day)"
                 [severity]="hoveredDayKey() === dayKeyFor(day) ? undefined : 'secondary'"
                 [attr.data-day-key]="dayKeyFor(day)"
                 [style.transitionDelay.ms]="sheetExpanded() ? di * 25 : 0"
@@ -37,7 +37,7 @@
                 @if ((countsByDay().get(dayKeyFor(day)) ?? 0) > 0) {
                   <span class="dispatch-overlay__day-count">{{ countsByDay().get(dayKeyFor(day)) }}</span>
                 }
-              </p-button>
+              </app-button>
             }
           </div>
         </div>

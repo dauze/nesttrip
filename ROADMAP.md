@@ -199,3 +199,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Mieux gérer la portée de chaque services : enlever un maximum root et les déclarer au bon endrois
 - déplacer des fonctions purement utilitaires dans des utils et alléger les composants trop gros
 - Eviter les sujets de plus de 500 lignes 
+- éviter les settimeout 
+
+

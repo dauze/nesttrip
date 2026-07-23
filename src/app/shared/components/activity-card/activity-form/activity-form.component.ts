@@ -5,10 +5,10 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
 
 import { SelectModule } from 'primeng/select';
-import { InputNumberModule } from 'primeng/inputnumber';
+import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
 import { DatePickerModule } from 'primeng/datepicker';
-import { DividerModule } from 'primeng/divider';
-import { TextareaModule } from 'primeng/textarea';
+import { DividerComponent } from '@app/shared/components/divider/divider.component';
+import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
@@ -24,7 +24,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
-    SelectModule, InputNumberModule, DatePickerModule, DividerModule, TextareaModule,
+    SelectModule, InputNumberComponent, DatePickerModule, DividerComponent, TextareaDirective,
     OverlayAutoCloseDirective, TimePickerDialogComponent
   ],
   templateUrl: './activity-form.component.html',

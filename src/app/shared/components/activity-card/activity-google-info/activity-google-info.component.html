@@ -1,5 +1,5 @@
 @if (isVisible()) {
-  <p-divider class="m-1"/>
+  <app-divider class="m-1"/>
   
   <div class="flex flex-column gap-2 mb-1">
     <span class="font-semibold text-sm text-color-secondary">Google</span>
@@ -11,16 +11,14 @@
     }
   </div>
 
-  <p-panel 
-    header="Plus d'infos (Photos, Horaires, avis...)" 
-    [toggleable]="true" 
-    [collapsed]="true" 
+  <app-panel
+    header="Plus d'infos (Photos, Horaires, avis...)"
+    [toggleable]="true"
+    [collapsed]="true"
     class="shadow-1"
-    (onBeforeToggle)="onPanelToggle($event)">
+    (beforeToggle)="onPanelToggle($event)">
 
-    <!-- C'est ici la magie PrimeNG : le template retarde l'instanciation du DOM -->
-    <ng-template pTemplate="content">
-      <div class="flex flex-column gap-2">        
+      <div class="flex flex-column gap-2">
         @if (detailsLoading()) {
           <div class="flex align-items-center gap-2 text-color-secondary py-2">
             <i class="pi pi-spin pi-spinner"></i>
@@ -39,7 +37,7 @@
               </div>
             }
             @if (isOpenNow() !== null) {
-              <p-tag [value]="isOpenNow() ? 'Ouvert' : 'Fermé'" [severity]="isOpenNow() ? 'success' : 'danger'" styleClass="text-xs font-semibold px-2" />
+              <app-tag [value]="isOpenNow() ? 'Ouvert' : 'Fermé'" [severity]="isOpenNow() ? 'success' : 'danger'" class="text-xs font-semibold px-2" />
             }
 
           
@@ -63,21 +61,20 @@
           <app-activity-gallery [placeId]="activity().placeId ?? ''" [altText]="activity().title" />
 
           @if (data.openingHours) {
-            <p-panel header="Horaires d'ouverture" [toggleable]="true" [collapsed]="true" styleClass="p-panel-sm mt-1">
-              <!-- Sous-panel : tu pourrais aussi y mettre un ng-template pTemplate="content" si ce contenu était lourd -->
+            <app-panel header="Horaires d'ouverture" [toggleable]="true" [collapsed]="true" class="mt-1">
               <ul class="list-none p-0 m-0 flex flex-column gap-1">
                 @for (line of data.openingHours; track $index) {
-                  <li class="py-1 text-xs flex justify-content-between border-bottom-1 surface-border last:border-none" 
+                  <li class="py-1 text-xs flex justify-content-between border-bottom-1 surface-border last:border-none"
                       [ngClass]="line.toLowerCase().startsWith(todayDayName()) ? 'font-semibold text-primary' : 'text-color-secondary'">
                     {{ line }}
                   </li>
                 }
               </ul>
-            </p-panel>
+            </app-panel>
           }
 
           @if (data.reviewCount && data.reviews) {
-            <p-panel header="Avis récents" [toggleable]="true" [collapsed]="true" styleClass="p-panel-sm mt-1">
+            <app-panel header="Avis récents" [toggleable]="true" [collapsed]="true" class="mt-1">
               <div class="flex flex-column gap-2">
                 @for (review of data.reviews; track review.author) {
                   <div class="surface-50 border-round p-2 flex flex-column gap-1">
@@ -92,10 +89,9 @@
                   </div>
                 }
               </div>
-            </p-panel>
+            </app-panel>
           }
         }
       </div>
-    </ng-template>
-  </p-panel>
+  </app-panel>
 }

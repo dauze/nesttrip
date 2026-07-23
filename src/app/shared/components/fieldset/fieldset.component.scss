@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  border: 1px solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-md);
+}
+
+.app-fieldset__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.app-fieldset__header--toggleable {
+  cursor: pointer;
+}
+
+.app-fieldset__content {
+  padding: 0 0.75rem 0.75rem 0.75rem;
+}

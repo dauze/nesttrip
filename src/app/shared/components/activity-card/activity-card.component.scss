@@ -3,7 +3,11 @@
     border-left-width: 0.4rem;
     border-left-color: var(--booking-status-color); 
 }
-.not-dispatched ::ng-deep > .p-panel {
+// `app-panel` est écrit directement dans CE template (pas du contenu
+// projeté), donc porte le même attribut de scope Angular que `.not-dispatched`
+// — contrairement à l'ancien `.p-panel` (une classe posée par PrimeNG sur un
+// élément interne à SA PROPRE vue), pas besoin de `::ng-deep` ici.
+.not-dispatched > app-panel {
   border-style: dashed;
   border-left-style: inset;
 }

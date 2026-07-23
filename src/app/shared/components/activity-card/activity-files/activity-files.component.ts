@@ -1,8 +1,8 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChipModule } from 'primeng/chip';
+import { ChipComponent } from '@app/shared/components/chip/chip.component';
 import { FileUploadModule } from 'primeng/fileupload';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
 import { tap } from 'rxjs/operators';
 
 import { FileService } from '@core/services/file.service';
@@ -12,7 +12,7 @@ import { Activity, ActivityFile } from '../activity.model';
 @Component({
   selector: 'app-activity-files',
   standalone: true,
-  imports: [CommonModule, ChipModule, FileUploadModule, ProgressSpinnerModule],
+  imports: [CommonModule, ChipComponent, FileUploadModule, ProgressSpinnerComponent],
   templateUrl: './activity-files.component.html',
   styleUrl: './activity-files.component.scss',
 })
@@ -77,9 +77,7 @@ export class ActivityFilesComponent {
     ).subscribe();
   }
 
-  openFile(file: ActivityFile, event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (target.closest('.p-chip-remove-icon')) return;
+  openFile(file: ActivityFile): void {
     window.open(file.url, '_blank', 'noopener');
   }
 

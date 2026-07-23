@@ -1,10 +1,8 @@
 import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TagModule } from 'primeng/tag';
-import { PanelBeforeToggleEvent, PanelModule } from 'primeng/panel';
-import { DividerModule } from 'primeng/divider';
-// Assure-toi que PrimeTemplate est bien importé (parfois inclus dans SharedModule)
-import { PrimeTemplate } from 'primeng/api'; 
+import { TagComponent } from '@app/shared/components/tag/tag.component';
+import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/divider/divider.component';
 
 import { Activity } from '../activity.model';
 import { LoadingState, PlaceDetails } from '@app/core/models/place.dto';
@@ -15,8 +13,7 @@ const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'
 @Component({
   selector: 'app-activity-google-info',
   standalone: true,
-  // Ajout de PrimeTemplate aux imports si ton environment l'exige
-  imports: [CommonModule, TagModule, PanelModule, DividerModule, PrimeTemplate, ActivityGalleryComponent],
+  imports: [CommonModule, TagComponent, PanelComponent, DividerComponent, ActivityGalleryComponent],
   templateUrl: './activity-google-info.component.html',
 })
 export class ActivityGoogleInfoComponent {
@@ -70,7 +67,7 @@ export class ActivityGoogleInfoComponent {
     });
   });
 
-  onPanelToggle(event: PanelBeforeToggleEvent) {
+  onPanelToggle(event: PanelToggleEvent) {
     if (!event.collapsed) return;
     
     const placeId = this.activity().placeId;

@@ -1,4 +1,8 @@
 /* styles.css */
+@use 'styles/tokens';
+@use 'styles/dialog';
+@use 'styles/form-fields';
+
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
 :root {
@@ -234,14 +238,6 @@ html.trip-detail-active body {
   --p-dialog-content-padding: 0 0.5rem 0.5rem 0.5rem;
 }
 
-.p-panel-content {
-  --p-panel-content-padding: 0 0.5rem 0.5rem 0.5rem; 
-}
-
-.p-panel-content-container {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .pi-ellipsis-v {
   display: block;
   width: 6px;
@@ -348,6 +344,14 @@ html.trip-detail-active body {
   --p-textarea-hover-border-color: transparent;
   --p-textarea-focus-border-color: transparent;
   --p-textarea-disabled-background: transparent;
+  // --nt-form-field-* : équivalent maison, voir src/styles/form-fields.scss
+  // (AppTextareaDirective/InputNumberComponent/PasswordComponent lisent ces
+  // variables, pas les --p-textarea-* ci-dessus, qui ne restent utiles que
+  // tant que le composant PrimeNG correspondant n'est pas encore migré).
+  --nt-form-field-background: transparent;
+  --nt-form-field-border-color: transparent;
+  --nt-form-field-hover-border-color: transparent;
+  --nt-form-field-focus-border-color: transparent;
 }
 
 .transparent-inputtext {
@@ -359,6 +363,11 @@ html.trip-detail-active body {
   --p-inputtext-disabled-background: transparent;
   --p-inputtext-disabled-color: transparent;
   --p-inputtext-disabled-border-color: transparent;
+  // --nt-form-field-* : voir la note dans .transparent-textarea ci-dessus.
+  --nt-form-field-background: transparent;
+  --nt-form-field-border-color: transparent;
+  --nt-form-field-hover-border-color: transparent;
+  --nt-form-field-focus-border-color: transparent;
 }
 
 .transparent-select {
@@ -452,36 +461,6 @@ swiper-slide,
 .p-chip {
   --p-chip-padding-y: 0.2rem;
   --p-chip-padding-x: 0.6rem;
-}
-
-/* ---------------------------------------------------------------------
- * Remplacement des icones du toggle
- * ------------------------------------------------------------------- */
-
-/* Cache les SVG natifs PrimeNG */
-.p-panel-toggle-button .p-icon {
-  display: none;
-}
-
-/* Crée notre chevron */
-.p-panel-toggle-button::before {
-  content: "";
-  width: 0.55rem;
-  height: 0.55rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transition: transform 200ms ease;
-  margin-top: -0.25rem;
-}
-
-/* Fermé : > */
-.p-panel-header-actions > p-button[aria-expanded="false"] .p-panel-toggle-button::before {
-  transform: rotate(-45deg);
-}
-
-/* Ouvert : v */
-.p-panel-header-actions > p-button[aria-expanded="true"] .p-panel-toggle-button::before {
-  transform: rotate(45deg);
 }
 
 /* ---------------------------------------------------------------------

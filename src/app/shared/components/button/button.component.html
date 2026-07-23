@@ -1,0 +1,22 @@
+<button
+  [type]="type()"
+  class="app-button"
+  [class]="'app-button--' + effectiveSeverity()"
+  [class.app-button--text]="text()"
+  [class.app-button--outlined]="outlined()"
+  [class.app-button--rounded]="rounded()"
+  [class.app-button--link]="link()"
+  [class.app-button--icon-only]="icon() && !label()"
+  [class.app-button--small]="size() === 'small'"
+  [class.app-button--large]="size() === 'large'"
+  [disabled]="isDisabled()">
+  @if (loading()) {
+    <i class="pi pi-spin pi-spinner"></i>
+  } @else if (icon()) {
+    <i [class]="icon()"></i>
+  }
+  @if (label()) {
+    <span>{{ label() }}</span>
+  }
+  <ng-content />
+</button>

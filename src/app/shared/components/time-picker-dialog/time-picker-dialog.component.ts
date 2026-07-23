@@ -13,7 +13,7 @@ import {
     NG_VALUE_ACCESSOR
 } from '@angular/forms';
 
-import { ButtonModule } from 'primeng/button';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogModule } from 'primeng/dialog';
 
 interface ClockItem {
@@ -30,7 +30,7 @@ interface ClockItem {
     imports: [
         CommonModule,
         FormsModule,
-        ButtonModule,
+        ButtonComponent,
         DialogModule
     ],
     providers: [

@@ -1,0 +1,27 @@
+<div class="app-panel__header">
+  <div class="app-panel__header-content">
+    @if (header()) {
+      <span>{{ header() }}</span>
+    }
+    <ng-content select="[panelHeader]" />
+  </div>
+  @if (toggleable()) {
+    <button
+      type="button"
+      class="app-panel__toggle"
+      [attr.aria-expanded]="!collapsed()"
+      aria-label="Afficher/masquer"
+      (click)="toggle()">
+      <i class="app-panel__chevron"></i>
+    </button>
+  }
+</div>
+<div
+  #content
+  class="app-panel__content"
+  [class.app-panel__content--instant]="instant()"
+  [style.max-height]="collapsed() ? '0px' : (maxHeightPx() ? maxHeightPx() + 'px' : 'none')">
+  <div class="app-panel__content-inner">
+    <ng-content />
+  </div>
+</div>

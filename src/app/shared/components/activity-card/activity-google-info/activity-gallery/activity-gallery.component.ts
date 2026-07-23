@@ -1,11 +1,9 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DividerModule } from 'primeng/divider';
-import { PanelModule } from 'primeng/panel';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
+import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { distinctUntilChanged, of, switchMap } from 'rxjs';
-import { PanelBeforeToggleEvent } from 'primeng/panel';
 
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
@@ -16,7 +14,7 @@ const MAX_PHOTOS = 6;
 @Component({
   selector: 'app-activity-gallery',
   standalone: true,
-  imports: [CommonModule, DividerModule, PanelModule, ProgressSpinnerModule],
+  imports: [CommonModule, PanelComponent, ProgressSpinnerComponent],
   templateUrl: './activity-gallery.component.html',
   styleUrl: './activity-gallery.component.scss',
 })
@@ -49,7 +47,7 @@ export class ActivityGalleryComponent {
 
   readonly currentIndex = signal(0);
 
-  onPanelToggle(event: PanelBeforeToggleEvent): void {
+  onPanelToggle(event: PanelToggleEvent): void {
      if (!event.collapsed) return;
     this.shouldLoad.set(true);
   }

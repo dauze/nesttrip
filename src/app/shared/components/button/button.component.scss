@@ -1,0 +1,192 @@
+:host {
+  display: inline-flex;
+}
+
+.app-button {
+  --nt-btn-color: var(--nt-primary-color);
+  --nt-btn-hover-color: var(--nt-primary-hover-color);
+  --nt-btn-active-color: var(--nt-primary-active-color);
+  --nt-btn-contrast: var(--nt-primary-contrast-color);
+  // Couleur de premier plan pour text/outlined/link — distincte de
+  // --nt-btn-color : pour les sévérités colorées (danger/success...) le même
+  // ton sert de fond ET de texte-sur-transparent, mais "secondary" a besoin
+  // d'un fond clair/neutre ET d'un texte plus contrasté que ce fond, d'où
+  // cette redirection séparée (voir .app-button--secondary plus bas).
+  --nt-btn-fg: var(--nt-btn-color);
+  --nt-btn-fg-hover-bg: color-mix(in srgb, var(--nt-btn-fg) 12%, transparent);
+  --nt-btn-fg-active-bg: color-mix(in srgb, var(--nt-btn-fg) 20%, transparent);
+
+  // Épouse la largeur du :host (voir plus bas) — n'a d'effet que si le
+  // consommateur pose une classe genre `w-full` sur <app-button> : sans
+  // largeur explicite sur le host, ce pourcentage se comporte comme `auto`.
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+  border: 1px solid transparent;
+  border-radius: var(--nt-form-field-border-radius);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--nt-btn-color);
+  color: var(--nt-btn-contrast);
+  transition: background-color var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--nt-btn-hover-color);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--nt-btn-active-color);
+  }
+
+  &:disabled {
+    opacity: var(--nt-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+// --- Sévérités : chacune ne redéfinit que la palette --nt-btn-* ---
+
+.app-button--secondary {
+  --nt-btn-color: var(--nt-secondary-bg);
+  --nt-btn-hover-color: var(--nt-secondary-hover-bg);
+  --nt-btn-active-color: var(--nt-secondary-active-bg);
+  --nt-btn-contrast: var(--nt-secondary-color);
+  --nt-btn-fg: var(--nt-secondary-outlined-color);
+  --nt-btn-fg-hover-bg: var(--nt-secondary-outlined-hover-bg);
+  --nt-btn-fg-active-bg: var(--nt-secondary-outlined-active-bg);
+}
+
+.app-button--danger {
+  --nt-btn-color: var(--nt-red-500);
+  --nt-btn-hover-color: color-mix(in srgb, var(--nt-red-500) 85%, black);
+  --nt-btn-active-color: color-mix(in srgb, var(--nt-red-500) 70%, black);
+  --nt-btn-contrast: #ffffff;
+}
+
+.app-button--success {
+  --nt-btn-color: var(--nt-green-500);
+  --nt-btn-hover-color: color-mix(in srgb, var(--nt-green-500) 85%, black);
+  --nt-btn-active-color: color-mix(in srgb, var(--nt-green-500) 70%, black);
+  --nt-btn-contrast: #ffffff;
+}
+
+.app-button--warn {
+  --nt-btn-color: var(--nt-yellow-500);
+  --nt-btn-hover-color: color-mix(in srgb, var(--nt-yellow-500) 85%, black);
+  --nt-btn-active-color: color-mix(in srgb, var(--nt-yellow-500) 70%, black);
+  --nt-btn-contrast: var(--nt-surface-900);
+}
+
+.app-button--info {
+  --nt-btn-color: var(--nt-blue-500);
+  --nt-btn-hover-color: color-mix(in srgb, var(--nt-blue-500) 85%, black);
+  --nt-btn-active-color: color-mix(in srgb, var(--nt-blue-500) 70%, black);
+  --nt-btn-contrast: #ffffff;
+}
+
+// --- Variantes visuelles (text / outlined / link) ---
+// Retirent le fond plein, utilisent --nt-btn-color posé par la sévérité
+// comme couleur de premier plan.
+
+.app-button--text {
+  background: transparent;
+  color: var(--nt-btn-fg);
+  border-color: transparent;
+
+  &:hover:not(:disabled) {
+    background: var(--nt-btn-fg-hover-bg);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--nt-btn-fg-active-bg);
+  }
+}
+
+.app-button--outlined {
+  background: transparent;
+  color: var(--nt-btn-fg);
+  border-color: var(--nt-btn-fg);
+
+  &:hover:not(:disabled) {
+    background: var(--nt-btn-fg-hover-bg);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--nt-btn-fg-active-bg);
+  }
+}
+
+// Certains appelants posent [text] ET [outlined] ensemble (repris tel quel
+// de l'ancien markup PrimeNG, qui faisait déjà gagner "text" visuellement,
+// sans bordure) — sans cette règle, `.app-button--outlined` (même
+// spécificité que `.app-button--text`, définie après elle) l'emportait sur
+// la cascade et redessinait une bordure/un cercle visible autour des
+// boutons icône-seule (ex. notes.component).
+.app-button--text.app-button--outlined {
+  border-color: transparent;
+}
+
+.app-button--link {
+  background: transparent;
+  border-color: transparent;
+  color: var(--nt-primary-color);
+  padding: 0;
+  width: auto;
+  font-weight: inherit;
+  text-decoration: none;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+    background: transparent;
+  }
+}
+
+// --- Tailles ---
+
+.app-button--small {
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+}
+
+.app-button--large {
+  padding: 0.625rem 0.875rem;
+  font-size: 1.125rem;
+}
+
+// --- Forme ---
+
+.app-button--rounded {
+  border-radius: 2rem;
+}
+
+.app-button--icon-only {
+  padding: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+
+  &.app-button--small {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  &.app-button--large {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  &.app-button--rounded {
+    border-radius: 50%;
+  }
+}

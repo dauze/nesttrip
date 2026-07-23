@@ -3,37 +3,34 @@
        [class.not-dispatched]="isPlacedNowhere()"
        [class.card-lifted]="isBeingDragged()"
        [class.card-pending]="isPendingLift()">
-    <p-panel
+    <app-panel
         [ngClass]="'trip booking ' + bookingMeta().className"
         [toggleable]="true"
-        [motionOptions]="panelMotionOptions()"
+        [instant]="panelInstant()"
         [(collapsed)]="collapsed">
 
-      <ng-template pTemplate="header">
-        <div class="flex align-items-center w-full">
-          <app-activity-header
-            class="flex-1 min-w-0"
-            [activity]="activity"
-            [dayId] = "dayId()"
-            [assignedDays] = "assignedDays()"
-            [isPlacedNowhere]="isPlacedNowhere()"
-            (placeSelected)="onPlaceSelected($event)"
-            (titleEdited)="onTitleChanged($event)" />
-          <p-button
-            icon="pi pi-trash"
-            [rounded]="true"
-            [text]="true"
-            severity="secondary"
-            class="ml-2 flex-shrink-0"
-            (onClick)="confirmDelete(); $event.stopPropagation()"
-          />
-        </div>
-      </ng-template>
-
+      <div panelHeader class="flex align-items-center w-full">
+        <app-activity-header
+          class="flex-1 min-w-0"
+          [activity]="activity"
+          [dayId] = "dayId()"
+          [assignedDays] = "assignedDays()"
+          [isPlacedNowhere]="isPlacedNowhere()"
+          (placeSelected)="onPlaceSelected($event)"
+          (titleEdited)="onTitleChanged($event)" />
+        <app-button
+          icon="pi pi-trash"
+          [rounded]="true"
+          [text]="true"
+          severity="secondary"
+          class="ml-2 flex-shrink-0"
+          (click)="confirmDelete(); $event.stopPropagation()"
+        />
+      </div>
 
       @if (dayId(); as day) {
         <app-activity-form [tripId]="tripId()" [dayId]="day" [activity]="activity" />
-        <p-divider class="m-1"/>
+        <app-divider class="m-1"/>
       }
 
       <app-activity-files [tripId]="tripId()" [activity]="activity" />
@@ -42,8 +39,8 @@
       <app-activity-google-info
         [activity]="activity"
         [dayId]="dayId()"
-        [detailsState]="detailsState()" 
+        [detailsState]="detailsState()"
         (expandDetails)="loadGoogleDetails($event)"/>
-    </p-panel>
+    </app-panel>
   </div>
 }

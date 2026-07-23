@@ -1,0 +1,9 @@
+@if (icon()) {
+  <i [class]="icon()"></i>
+}
+<ng-content />
+@if (removable()) {
+  <button type="button" class="app-chip__remove" aria-label="Retirer" (click)="onRemoveClick($event)">
+    <i class="pi pi-times"></i>
+  </button>
+}

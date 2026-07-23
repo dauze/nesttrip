@@ -1,7 +1,7 @@
 <div class="flex align-items-center gap-3 cursor-pointer" (click)="openDialog()" role="button" tabindex="0">
-  <p-avatarGroup>
+  <app-avatar-group>
     @for (entry of visibleMembers(); track entry[0]) {
-      <p-avatar
+      <app-avatar
         [label]="getInitials(entry[1].displayName, entry[1].email)"
         shape="circle"
         size="normal"
@@ -10,14 +10,14 @@
         tooltipPosition="bottom" />
     }
     @if (extraCount() > 0) {
-      <p-avatar
+      <app-avatar
         [label]="'+' + extraCount()"
         shape="circle"
         size="normal"
         [pTooltip]="extraTooltip()"
         tooltipPosition="bottom" />
     }
-  </p-avatarGroup>
+  </app-avatar-group>
 </div>
 
 <app-collaborators-dialog

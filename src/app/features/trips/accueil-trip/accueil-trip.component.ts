@@ -1,10 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
-import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
-import { MessageModule } from 'primeng/message';
-import { CheckboxModule } from 'primeng/checkbox';
+import { CardComponent } from '@app/shared/components/card/card.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
+import { MessageComponent } from '@app/shared/components/message/message.component';
+import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { FormsModule } from '@angular/forms';
@@ -17,12 +17,12 @@ import { Tooltip } from 'primeng/tooltip';
   selector: 'app-accueil-trip',
   standalone: true,
   imports: [
-    CardModule,
-    ButtonModule,
-    SkeletonModule,
-    MessageModule,
+    CardComponent,
+    ButtonComponent,
+    SkeletonComponent,
+    MessageComponent,
     RouterModule,
-    CheckboxModule,
+    CheckboxComponent,
     ConfirmDialogModule,
     FormsModule,
     NgClass,

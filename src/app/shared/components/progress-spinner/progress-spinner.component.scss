@@ -1,0 +1,16 @@
+:host {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: var(--nt-primary-color);
+  border-right-color: transparent;
+  animation: app-progress-spinner-rotate 0.75s linear infinite;
+}
+
+@keyframes app-progress-spinner-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}

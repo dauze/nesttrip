@@ -1,0 +1,35 @@
+/* ---------------------------------------------------------------------
+ * Habillage du dialog maison (Phase 2 de la sortie de PrimeNG, voir
+ * PRIMENG_MIGRATION.md) : `DialogService` (src/app/shared/services)
+ * ouvre les dialogs via `@angular/cdk/dialog`, dont les éléments
+ * (backdrop, pane) sont ajoutés dans `.cdk-overlay-container`, en dehors
+ * de l'arbre de vue du composant hôte — ces classes doivent donc rester
+ * globales pour continuer à s'appliquer, même topologie que les classes
+ * globales `.p-datepicker-mask`/`.p-select-overlay` déjà présentes plus
+ * bas dans styles.scss.
+ * ------------------------------------------------------------------- */
+
+.app-dialog-backdrop {
+  background: var(--nt-mask-background);
+  backdrop-filter: blur(4px);
+}
+
+.app-dialog-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-width: min(28rem, 95vw);
+  max-height: 85vh;
+  border-radius: var(--nt-overlay-modal-border-radius);
+  background: var(--nt-overlay-background);
+  color: var(--nt-text-color);
+  box-shadow: var(--nt-overlay-modal-shadow);
+  overflow: hidden;
+
+  transition: opacity 150ms ease, transform 150ms ease;
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}

@@ -1,40 +1,37 @@
-<p-card>
+<app-card>
 <div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
   @for (item of items(); track item.id) {
-    <p-panel [toggleable]="true" cdkDrag>
-      <ng-template pTemplate="header">
-        <div class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
-          <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
-          <textarea
-            pTextarea
-            class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
-            [autoResize]="true"
-            [rows]="1"
-            [value]="item.title"
-            (blur)="updateTitle(item, $any($event.target).value.trim())"
-            [attr.data-title-id]="item.id"
-            (keydown.arrowdown)="focusRow(item.id, 0, 0)"
-          ></textarea>
-          <div class="flex gap-1 flex-shrink-0">
-            <p-button
-              icon="pi pi-trash"
-              [rounded]="true"
-              [text]="true"
-              severity="secondary"
-              [outlined]="true"
-              (onClick)="confirmDelete(item)"
-            />
-            <p-button
-              [icon]="item.type === NotesType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
-              [rounded]="true"
-              [text]="true"
-              severity="secondary"
-              [outlined]="true"
-              (onClick)="toggleType(item)"
-            />
-          </div>
+    <app-panel [toggleable]="true" cdkDrag>
+      <div panelHeader class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
+        <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
+        <textarea
+          appTextarea
+          class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
+          [rows]="1"
+          [value]="item.title"
+          (blur)="updateTitle(item, $any($event.target).value.trim())"
+          [attr.data-title-id]="item.id"
+          (keydown.arrowdown)="focusRow(item.id, 0, 0)"
+        ></textarea>
+        <div class="flex gap-1 flex-shrink-0">
+          <app-button
+            icon="pi pi-trash"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            [outlined]="true"
+            (click)="confirmDelete(item)"
+          />
+          <app-button
+            [icon]="item.type === NotesType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            [outlined]="true"
+            (click)="toggleType(item)"
+          />
         </div>
-      </ng-template>
+      </div>
       <div
         cdkDropList
         [cdkDropListData]="item.elements"
@@ -50,16 +47,14 @@
               <i class="pi pi-ellipsis-v"></i>
             </span>
             @if (item.type === NotesType.TODO) {
-              <p-checkbox
+              <app-checkbox
                 class="flex-shrink-0"
-                [binary]="true"
-                [ngModel]="point.checked"
-                (ngModelChange)="toggleCheck(item, $index)"
+                [checked]="point.checked"
+                (checkedChange)="toggleCheck(item, $index)"
               />
             }
             <textarea
-              pTextarea
-              [autoResize]="true"
+              appTextarea
               [rows]="1"
               [value]="point.text"
               class="flex-1 overflow-hidden min-w-0 transparent-textarea"
@@ -76,7 +71,7 @@
               [attr.data-item-id]="item.id"
               [attr.data-index]="$index"
             ></textarea>
-            <p-button
+            <app-button
               icon="pi pi-times"
               [rounded]="true"
               [text]="true"
@@ -90,39 +85,29 @@
           }
         }
         <div class="pl-2">
-          <p-button
+          <app-button
               label="Élément de liste"
               icon="pi pi-plus"
               [text]="true"
               severity="secondary"
-              (onClick)="addPoint(item)"
+              (click)="addPoint(item)"
             />
         </div>
         @if (item.type === NotesType.TODO && item.elements.some(p => p.checked)) {
-          <p-fieldset [toggleable]="true" [collapsed]="true" styleClass="completed-fieldset border-none p-2">
-            <ng-template #header>
-              <span class="text-sm text-color-secondary">
-                {{ item.elements.filter(p => p.checked).length }} éléments terminés
-              </span>
-            </ng-template>
-            <ng-template #expandicon>
-              <i class="pi pi-chevron-down"></i>
-            </ng-template>
-            <ng-template #collapseicon>
-                <i class="pi pi-chevron-up"></i>
-            </ng-template>
+          <app-fieldset [toggleable]="true" [collapsed]="true" class="completed-fieldset border-none p-2">
+            <span fieldsetHeader class="text-sm text-color-secondary">
+              {{ item.elements.filter(p => p.checked).length }} éléments terminés
+            </span>
             @for (point of item.elements; track point.id) {
               @if (point.checked) {
                 <div class="flex align-items-center gap-2 w-full opacity-70 pl-2">
                   <span class="w-1rem"></span>
-                  <p-checkbox
-                    [binary]="true"
-                    [ngModel]="point.checked"
-                    (ngModelChange)=" toggleCheck(item, item.elements.indexOf(point))"
+                  <app-checkbox
+                    [checked]="point.checked"
+                    (checkedChange)="toggleCheck(item, item.elements.indexOf(point))"
                   />
                   <textarea
-                    pTextarea
-                    [autoResize]="true"
+                    appTextarea
                     [rows]="1"
                     [value]="point.text"
                     class="flex-1 overflow-hidden min-w-0  transparent-textarea"
@@ -139,7 +124,7 @@
                     [attr.data-item-id]="item.id"
                     [attr.data-index]="$index"
                   ></textarea>
-                  <p-button
+                  <app-button
                     icon="pi pi-times"
                     [rounded]="true"
                     [text]="true"
@@ -152,13 +137,13 @@
                 </div>
               }
             }
-          </p-fieldset>
+          </app-fieldset>
         }
       </div>
-    </p-panel>
+    </app-panel>
   }
   @if (items().length === 0) {
-    <p-message
+    <app-message
       severity="info"
       icon="pi pi-info-circle"
       text="Aucune notes pour l'instant, n'hésitez pas à en créer avec le bouton +."
@@ -166,7 +151,7 @@
     />
   }
   <div class="flex justify-content-center w-full">
-    <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (onClick)="addItem()" />
+    <app-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (click)="addItem()" />
   </div>
 </div>
-</p-card>
+</app-card>

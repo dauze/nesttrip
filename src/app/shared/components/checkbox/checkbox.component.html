@@ -1,0 +1,12 @@
+<button
+  type="button"
+  class="app-checkbox"
+  role="checkbox"
+  [attr.aria-checked]="checked()"
+  [class.app-checkbox--checked]="checked()"
+  [disabled]="disabled()"
+  (click)="toggle()">
+  @if (checked()) {
+    <i class="pi pi-check"></i>
+  }
+</button>

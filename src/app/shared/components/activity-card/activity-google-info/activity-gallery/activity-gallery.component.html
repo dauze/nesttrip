@@ -1,9 +1,9 @@
 @if (placeId()) {
-  <p-panel header="Photos" [toggleable]="true" [collapsed]="true"
-           (onBeforeToggle)="onPanelToggle($event)">
+  <app-panel header="Photos" [toggleable]="true" [collapsed]="true"
+           (beforeToggle)="onPanelToggle($event)">
     @if (loading()) {
       <div class="flex justify-content-center py-3">
-        <p-progressSpinner strokeWidth="3" [style]="{ width: '2rem', height: '2rem' }" />
+        <app-progress-spinner [strokeWidth]="3" [style]="{ width: '2rem', height: '2rem' }" />
       </div>
     } @else if (photoRefs().length) {
       <div class="photo-carousel">
@@ -26,5 +26,5 @@
         <span class="photo-carousel__counter">{{ currentIndex() + 1 }} / {{ photoRefs().length }}</span>
       </div>
     }
-  </p-panel>
+  </app-panel>
 }

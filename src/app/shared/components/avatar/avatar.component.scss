@@ -1,0 +1,41 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--nt-content-border-radius);
+  background: var(--nt-content-border-color);
+  color: var(--nt-text-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+:host(.app-avatar--circle) {
+  border-radius: 50%;
+}
+
+:host(.app-avatar--large) {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.2rem;
+}
+
+:host(.app-avatar--xlarge) {
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.5rem;
+}
+
+// Empilement dans <app-avatar-group> : chevauchement + liseré pour détacher
+// visuellement chaque avatar du suivant, voir avatar-group.component.ts.
+:host-context(app-avatar-group) {
+  margin-left: -0.75rem;
+  border: 2px solid var(--nt-content-background);
+
+  &:first-child {
+    margin-left: 0;
+  }
+}

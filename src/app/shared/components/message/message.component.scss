@@ -1,0 +1,33 @@
+:host {
+  --nt-msg-color: var(--nt-blue-500);
+
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--nt-content-border-radius);
+  border: 1px solid color-mix(in srgb, var(--nt-msg-color) 35%, transparent);
+  // Mixé vers `transparent`, pas vers --nt-surface-0 (toujours blanc, y
+  // compris en dark mode) : sinon le fond restait clair quel que soit le
+  // thème, au lieu de se fondre dans la page.
+  background: color-mix(in srgb, var(--nt-msg-color) 15%, transparent);
+  color: var(--nt-msg-color);
+  font-size: 0.9rem;
+
+  i {
+    flex-shrink: 0;
+  }
+}
+
+// Voir la note dans tag.component.scss : `:host(.x)`, pas `.x` seul.
+:host(.app-message--success) {
+  --nt-msg-color: var(--nt-green-500);
+}
+
+:host(.app-message--warn) {
+  --nt-msg-color: var(--nt-yellow-500);
+}
+
+:host(.app-message--error) {
+  --nt-msg-color: var(--nt-red-500);
+}

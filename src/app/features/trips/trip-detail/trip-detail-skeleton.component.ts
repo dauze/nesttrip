@@ -1,11 +1,11 @@
 import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { SkeletonModule } from 'primeng/skeleton';
+import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-trip-detail-skeleton',
   standalone: true,
-  imports: [SkeletonModule, CommonModule],
+  imports: [SkeletonComponent, CommonModule],
   templateUrl: './trip-detail-skeleton.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
