@@ -14,12 +14,25 @@
   backdrop-filter: blur(4px);
 }
 
-.app-dialog-panel {
+// `.cdk-overlay-pane.app-dialog-panel` (pas juste `.app-dialog-panel`) :
+// `.cdk-overlay-pane` pose déjà `max-width:100%`/`max-height:100%` dans
+// overlay-prebuilt.css, même spécificité qu'un simple `.app-dialog-panel`
+// (une classe) — en dev (`ng serve`), l'ordre d'injection des styles ne
+// respecte pas forcément l'ordre du tableau `styles` d'angular.json, donc
+// compter sur "chargé après = gagne" n'est pas fiable. Le sélecteur composé
+// (deux classes) gagne par spécificité, peu importe l'ordre de chargement —
+// vérifié empiriquement : `max-width:100%` de `.cdk-overlay-pane` l'emportait
+// bien sur notre `max-width` sans ce renfort.
+.cdk-overlay-pane.app-dialog-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  max-width: min(28rem, 95vw);
-  max-height: 85vh;
+  // `calc(100v* - 2rem)` (pas `95vw`/`85vh`) : une marge en pourcentage de
+  // viewport rétrécit avec l'écran (2.5vw ne fait que 8px sur un mobile de
+  // 320px) — avec un calc(), la marge minimale (1rem de chaque côté) reste
+  // constante quelle que soit la taille d'écran.
+  max-width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
   border-radius: var(--nt-overlay-modal-border-radius);
   background: var(--nt-overlay-background);
   color: var(--nt-text-color);

@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
+import { DialogRef } from '@angular/cdk/dialog';
 import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
 import { AvatarGroupComponent } from '@app/shared/components/avatar-group/avatar-group.component';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
@@ -6,13 +7,14 @@ import { finalize } from 'rxjs';
 import { TripFacade } from '../../trip-facade.service';
 import { AuthService } from '@app/core/services/auth.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
-import { CollaboratorsDialogComponent } from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
+import { CollaboratorsDialogComponent, CollaboratorsDialogData } from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
+import { DialogService } from '@app/shared/services/dialog.service';
 import { getInitials } from '@app/shared/utils/get-initials';
 
 @Component({
   selector: 'app-trip-collaborators',
   standalone: true,
-  imports: [AvatarComponent, AvatarGroupComponent, TooltipDirective, CollaboratorsDialogComponent],
+  imports: [AvatarComponent, AvatarGroupComponent, TooltipDirective],
   templateUrl: './trip-collaborators.component.html',
   styleUrl: './trip-collaborators.component.scss',
 })
@@ -20,6 +22,7 @@ export class TripCollaboratorsComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly authService = inject(AuthService);
   protected readonly userProfileService = inject(UserProfileService);
+  private readonly dialogService = inject(DialogService);
   private readonly MAX_VISIBLE = 5;
 
   readonly tripId = input.required<string>();
@@ -28,9 +31,10 @@ export class TripCollaboratorsComponent {
   protected readonly currentUserId = computed(() => this.authService.getCurrentUser()?.uid ?? '');
   protected readonly isOwner = computed(() => this.members()[this.currentUserId()]?.role === 'owner');
 
-  protected showDialog = false;
-  readonly addLoading = signal(false);
-  readonly addError = signal<string | null>(null);
+  private readonly addLoading = signal(false);
+  private readonly addError = signal<string | null>(null);
+  /** Réf. du dialog ouvert par `openDialog` — utilisée pour le refermer depuis `onAdd` en cas de succès. */
+  private dialogRef?: DialogRef<void, CollaboratorsDialogComponent>;
 
   readonly visibleMembers = computed(() =>
     Object.entries(this.members()).slice(0, this.MAX_VISIBLE)
@@ -49,10 +53,26 @@ export class TripCollaboratorsComponent {
 
   protected openDialog(): void {
     this.addError.set(null);
-    this.showDialog = true;
+    // Les signaux (pas leur valeur au moment de l'ouverture) passent tels
+    // quels via DIALOG_DATA : le contenu du dialog (monté hors de l'arbre de
+    // vue de ce composant, via DialogService/cdk-overlay) reste ainsi
+    // réactif aux mises à jour temps réel des membres/companions, et à
+    // addLoading/addError pendant l'ajout, sans passer par des `@Input()`.
+    const data: CollaboratorsDialogData = {
+      members: this.members,
+      currentUserId: this.currentUserId,
+      isOwner: this.isOwner,
+      companions: this.userProfileService.companions,
+      addLoading: this.addLoading,
+      addError: this.addError,
+      onAdd: (email) => this.onAdd(email),
+      onRemove: (uid) => this.onRemove(uid),
+      onRemoveCompanion: (uid) => this.onRemoveCompanion(uid),
+    };
+    this.dialogRef = this.dialogService.open<void, CollaboratorsDialogData, CollaboratorsDialogComponent>(CollaboratorsDialogComponent, { data });
   }
 
-  protected onAdd(email: string): void {
+  private onAdd(email: string): void {
     this.addLoading.set(true);
     this.addError.set(null);
 
@@ -61,7 +81,7 @@ export class TripCollaboratorsComponent {
       .pipe(finalize(() => this.addLoading.set(false)))
       .subscribe({
         next: () => {
-          this.showDialog = false;
+          this.dialogRef?.close();
         },
         error: (err) => {
           const message = err?.error?.error ?? err?.message ?? 'Une erreur est survenue';
@@ -70,13 +90,13 @@ export class TripCollaboratorsComponent {
       });
   }
 
-  protected onRemove(memberUid: string): void {
+  private onRemove(memberUid: string): void {
     this.tripFacade.removeCollaborator(this.tripId(), memberUid).subscribe({
       error: (err) => console.error('[TripCollaborators] Erreur suppression collaborateur', err),
     });
   }
 
-  protected onRemoveCompanion(companionUid: string): void {
+  private onRemoveCompanion(companionUid: string): void {
     this.userProfileService.removeCompanion(companionUid).subscribe({
       error: (err) => console.error('[TripCollaborators] Erreur suppression companion', err),
     });

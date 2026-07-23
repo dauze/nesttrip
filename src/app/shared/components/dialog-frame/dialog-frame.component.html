@@ -1,7 +1,7 @@
 <div class="dialog-frame">
-  @if (title() || showCloseButton()) {
+  @if (header() || showCloseButton()) {
     <header class="dialog-frame__header">
-      <h2 class="dialog-frame__title">{{ title() }}</h2>
+      <h2 class="dialog-frame__title">{{ header() }}</h2>
       @if (showCloseButton()) {
         <button
           type="button"

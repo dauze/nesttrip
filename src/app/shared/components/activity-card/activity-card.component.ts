@@ -22,7 +22,7 @@ import { ActivityFilesComponent } from './activity-files/activity-files.componen
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
 
 /**
@@ -50,7 +50,7 @@ const PANEL_COLLAPSE_DELAY_MS = 300;
 export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly dispatchService = inject(ActivityDispatchService);
   // Optionnel : fourni par TripDaySwiperComponent (ancêtre commun aux vues
   // jour ET pool général, qui vit elle aussi dans un swiper-slide — voir
@@ -291,7 +291,7 @@ export class ActivityCardComponent {
 
   confirmDelete(): void {
     const dayId = this.dayId();
-    this.confirmationService.confirm({
+    this.confirmDialogService.confirm({
       message: dayId
         ? 'Supprimer cette activité de ce jour ?'
         : 'Supprimer cette activité et tous ses placements sur les jours ?',

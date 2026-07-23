@@ -1,7 +1,19 @@
+// `<app-dialog-frame>` (le host, pas `.dialog-frame`) est un flex item direct
+// de `.cdk-overlay-pane` (voir dialog.scss/.app-dialog-panel) : sans
+// `min-width: 0` explicite, le défaut `min-width: auto` d'un flex item
+// l'empêche de rétrécir sous la largeur intrinsèque de son contenu, ce qui
+// pouvait produire un dépassement horizontal (ascenseur) le temps que la
+// largeur du panneau se stabilise à l'ouverture.
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .dialog-frame {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
 }
 
 .dialog-frame__header {
@@ -41,8 +53,12 @@
 }
 
 .dialog-frame__content {
-  padding: 0 0.5rem 0.5rem 0.5rem;
+  padding: 0.5rem;
   overflow-y: auto;
+  // Explicite (pas juste "visible" par défaut) : sans ça, la spec CSS calcule
+  // overflow-x comme `auto` dès que overflow-y ne vaut pas `visible`, ce qui
+  // pouvait faire apparaître un ascenseur horizontal non voulu.
+  overflow-x: hidden;
 }
 
 .dialog-frame__footer {

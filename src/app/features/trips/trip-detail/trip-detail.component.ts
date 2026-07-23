@@ -1,7 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ConfirmDialog } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { Day, Trip } from '../trip.model';
 import { TripDetailSkeletonComponent } from './trip-detail-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
@@ -21,7 +20,6 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   selector: 'app-trip-detail',
   standalone: true,
   imports: [
-    ConfirmDialog,
     TripDetailSkeletonComponent,
     TripHeaderComponent,
     TripCollaboratorsComponent,
@@ -29,14 +27,13 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
   ],
-  providers: [ConfirmationService],
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
@@ -208,7 +205,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     };
 
     if (toDelete.length > 0) {
-      this.confirmationService.confirm({
+      this.confirmDialogService.confirm({
         message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
         accept: applyChanges,
         reject: () => this.headerRef()?.resetDates(),

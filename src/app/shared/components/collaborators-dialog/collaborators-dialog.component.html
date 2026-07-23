@@ -1,11 +1,4 @@
-<p-dialog
-  header="Collaborateurs"
-  [(visible)]="visible"
-  [modal]="true"
-  [draggable]="false"
-  appendTo="body"
-  [style]="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
-
+<app-dialog-frame header="Collaborateurs" (closeRequested)="close()">
   <div class="flex flex-column gap-2 member-list">
     @for (entry of memberEntries(); track entry[0]) {
       <div class="flex align-items-center gap-2">
@@ -21,7 +14,7 @@
           [rounded]="true"
           [text]="true"
           severity="danger"
-          [disabled]="!canRemove(entry[0])"
+          [ariaDisabled]="!canRemove(entry[0])"
           [appTooltip]="removeTooltip(entry[0])"
           [tooltipDisabled]="canRemove(entry[0])"
           tooltipPosition="left"
@@ -39,16 +32,16 @@
         name="inviteeEmail"
         [(ngModel)]="inviteeEmail"
         placeholder="collaborateur@email.com"
-        [disabled]="addLoading()"
+        [disabled]="data.addLoading()"
         class="flex-1" />
       <app-button
         label="Inviter"
-        [loading]="addLoading()"
+        [loading]="data.addLoading()"
         [disabled]="!inviteeEmail"
         (click)="submitInvite()" />
     </div>
-    @if (addError()) {
-      <app-message severity="error" [text]="addError()!" />
+    @if (data.addError()) {
+      <app-message severity="error" [text]="data.addError()!" />
     }
   </div>
 
@@ -84,7 +77,7 @@
     </div>
   }
 
-  <ng-template #footer>
+  <ng-container dialogFooter>
     <app-button label="Fermer" severity="secondary" [outlined]="true" (click)="close()" />
-  </ng-template>
-</p-dialog>
+  </ng-container>
+</app-dialog-frame>

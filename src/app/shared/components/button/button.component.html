@@ -9,6 +9,8 @@
   [class.app-button--icon-only]="icon() && !label()"
   [class.app-button--small]="size() === 'small'"
   [class.app-button--large]="size() === 'large'"
+  [class.app-button--aria-disabled]="ariaDisabled()"
+  [attr.aria-disabled]="ariaDisabled() ? 'true' : null"
   [disabled]="isDisabled()">
   @if (loading()) {
     <i class="pi pi-spin pi-spinner"></i>

@@ -1,0 +1,137 @@
+.clock-face {
+    position: relative;
+
+    width: 16.5rem;
+    height: 16.5rem;
+
+    margin: auto;
+
+    border-radius: 50%;
+
+    background: var(--nt-content-border-color);
+
+    touch-action: none;
+}
+
+.time-box {
+    width: 5rem;
+    height: 3.5rem;
+
+    border: none;
+    border-radius: 0.5rem;
+
+    font-size: 2rem;
+
+    background: var(--nt-content-border-color);
+    color: var(--nt-text-color);
+
+    cursor: pointer;
+}
+
+.time-box.active {
+    background: var(--nt-primary-50);
+    color: var(--nt-primary-color);
+}
+
+.time-separator {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.clock-number {
+    position: absolute;
+
+    width: 2.35rem;
+    height: 2.35rem;
+
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+
+    color: var(--nt-text-color);
+
+    cursor: pointer;
+
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+
+    z-index: 6;
+
+    transition:
+        background-color 150ms,
+        color 150ms;
+}
+
+.clock-number.inner {
+    font-size: 1.05rem;
+}
+
+.clock-number.selected {
+    background: var(--nt-primary-color);
+    color: var(--nt-surface-900);
+    z-index: 7;
+}
+
+.clock-center {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 0.65rem;
+    height: 0.65rem;
+
+    border-radius: 50%;
+
+    background: var(--nt-primary-color);
+
+    transform: translate(-50%, -50%);
+
+    z-index: 3;
+}
+
+.clock-hand {
+    position: absolute;
+
+    left: 50%;
+
+    width: 0.125rem;
+
+    margin-left: -0.0625rem;
+
+    background: var(--nt-primary-color);
+
+    transform-origin: center bottom;
+
+    z-index: 2;
+}
+
+.clock-selector {
+    position: absolute;
+
+    width: 2.35rem;
+    height: 2.35rem;
+
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: var(--nt-primary-color);
+    color: var(--nt-primary-contrast-color);
+
+    z-index: 5;
+
+    pointer-events: none;
+}

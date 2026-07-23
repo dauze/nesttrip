@@ -6,10 +6,10 @@
 
 .companion-row {
   cursor: pointer;
-  border-radius: var(--p-border-radius-md, 6px);
+  border-radius: var(--nt-radius-md);
   padding: 0.25rem;
 
   &:hover {
-    background: var(--p-content-hover-background, rgba(0, 0, 0, 0.04));
+    background: var(--nt-content-hover-background);
   }
 }

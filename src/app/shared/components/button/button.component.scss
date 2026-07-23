@@ -41,15 +41,16 @@
     font-size: 1rem;
   }
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not(.app-button--aria-disabled) {
     background: var(--nt-btn-hover-color);
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled):not(.app-button--aria-disabled) {
     background: var(--nt-btn-active-color);
   }
 
-  &:disabled {
+  &:disabled,
+  &.app-button--aria-disabled {
     opacity: var(--nt-disabled-opacity);
     cursor: not-allowed;
   }
@@ -104,11 +105,11 @@
   color: var(--nt-btn-fg);
   border-color: transparent;
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not(.app-button--aria-disabled) {
     background: var(--nt-btn-fg-hover-bg);
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled):not(.app-button--aria-disabled) {
     background: var(--nt-btn-fg-active-bg);
   }
 }
@@ -118,11 +119,11 @@
   color: var(--nt-btn-fg);
   border-color: var(--nt-btn-fg);
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not(.app-button--aria-disabled) {
     background: var(--nt-btn-fg-hover-bg);
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled):not(.app-button--aria-disabled) {
     background: var(--nt-btn-fg-active-bg);
   }
 }

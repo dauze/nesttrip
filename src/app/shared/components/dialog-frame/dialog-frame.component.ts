@@ -14,7 +14,14 @@ import { Component, input, output } from '@angular/core';
   styleUrl: './dialog-frame.component.scss',
 })
 export class DialogFrameComponent {
-  readonly title = input<string>('');
+  // Volontairement PAS `title` : un attribut statique `title="..."` (sans
+  // crochets) sur un tag de composant est aussi écrit tel quel comme
+  // attribut HTML natif sur l'élément hôte, en plus d'initialiser l'input —
+  // le navigateur affichait alors SA PROPRE bulle native (celle du titre du
+  // dialog) au survol de n'importe quel descendant sans tooltip à lui,
+  // masquant/perturbant `appTooltip`. `header` (même nom que PanelComponent)
+  // n'entre pas en collision avec un attribut HTML global.
+  readonly header = input<string>('');
   readonly showCloseButton = input(true);
 
   readonly closeRequested = output<void>();

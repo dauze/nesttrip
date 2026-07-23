@@ -217,18 +217,6 @@ html.trip-detail-active body {
   overflow: hidden;
 }
 
-.p-dialog-header {
-  --p-dialog-header-padding: 0.5rem;
-}
-
-.p-dialog-footer {
-  --p-dialog-footer-padding: 0 0.5rem 0.5rem 0.5rem;
-}
-
-.p-dialog-content {
-  --p-dialog-content-padding: 0 0.5rem 0.5rem 0.5rem;
-}
-
 .pi-ellipsis-v {
   display: block;
   width: 6px;
@@ -383,10 +371,6 @@ html.trip-detail-active body {
   --p-autocomplete-hover-border-color:transparent;
   --p-autocomplete-shadow: none;
   --p-autocomplete-background: transparent;
-}
-
-.p-confirmdialog.p-dialog {
-  width: min(28rem, 95vw);
 }
 
 // Le popup roue crantée est passé en Phase 7b sur app-menu/@angular/cdk/overlay

@@ -81,7 +81,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 4 | Champs simples : InputText, Password, Textarea, InputNumber, Checkbox, SelectButton | Faible | ✅ Fait (suppression de `Fluid` reportée à la Phase 7, voir note) |
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
 | 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
-| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a, 7b faits) |
+| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a, 7b, 7c faits) |
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
@@ -114,7 +114,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | Tabs / Tab / TabList | trip-tabs-nav (+ clone dans activity-day-dispatch-overlay) | 6 |
 | Menu / MenuItem | trips (roue crantée) | 7b ✅ |
 | Tooltip | accueil-trip, collaborators-dialog, trip-collaborators | 7a ✅ |
-| Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7c |
+| Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7c ✅ |
 | Select | activity-form, timeline | 7d |
 | AutoComplete | new-trip, activity-header | 7e |
 | DatePicker | new-trip, trip-header, activity-form | 7f |
@@ -499,6 +499,215 @@ premier consommateur de `cdk/overlay` du projet, dont
 
 Vérifié par `ng build`/`ng lint`, plus aucun import `primeng/menu` dans le
 projet. **Pas de test de rendu réel dans un navigateur.**
+
+#### Correctif post-Phase 7b (trouvé en testant dans le navigateur)
+
+- **États hover/icône illisibles en dark mode** : `menu.component.scss`
+  utilisait des primitives brutes (`--nt-surface-100`/`400`/`500`) pour le
+  fond au survol et la couleur des icônes — même piège qu'en Phase 3
+  (Button/Tag/Avatar/Skeleton/Message) : ces jetons gardent la même
+  tonalité (claire) dans les DEUX modes, "100" désignant une position sur
+  l'échelle, pas "clair en light". En dark mode ça donnait un flash de fond
+  quasi blanc au survol sur un panneau sombre. Corrigé en passant aux jetons
+  sémantiques déjà éprouvés ailleurs dans l'appli :
+  `--nt-content-hover-background` (fond survol), `--nt-text-muted-color`/
+  `--nt-text-hover-muted-color` (icône au repos/au survol) — tous correctement
+  inversés par mode depuis la Phase 0.
+
+### Phase 7c — Dialog / ConfirmDialog / ConfirmationService
+
+La plus grosse sous-phase de la Phase 7 jusqu'ici (6 fichiers touchés) :
+retire `<p-dialog>`, `<p-confirmDialog>` et `ConfirmationService`, en
+consommant enfin la primitive `DialogService`/`DialogFrameComponent`
+construite (mais jamais utilisée) en Phase 2.
+
+**ConfirmDialog + ConfirmationService** (accueil-trip, trip-detail,
+activity-card, notes) :
+- `ConfirmDialogService` (`providedIn: 'root'`, `src/app/shared/services/`)
+  remplace `ConfirmationService` : un seul singleton pour toute l'appli,
+  plutôt qu'un provider par composant hôte comme avant (`accueil-trip` et
+  `trip-detail` fournissaient chacun leur propre instance, chacune couplée à
+  son propre `<p-confirmDialog />` monté dans le template — nécessaire côté
+  PrimeNG puisque le "dialog" n'était qu'un hôte caché en attente d'un
+  événement). Avec `DialogService.open()` (CDK), le contenu est créé
+  dynamiquement à la demande : plus besoin d'hôte pré-monté nulle part, donc
+  plus de `<p-confirmDialog />` dans aucun template, ni de `providers:
+  [ConfirmationService]` sur les composants.
+- `ConfirmDialogComponent` (contenu, `src/app/shared/components/confirm-dialog/`)
+  reçoit son message/header/icône/labels via `DIALOG_DATA`, ferme avec
+  `DialogRef.close(true|false)`. `ConfirmDialogService.confirm()` traduit ça
+  en `accept()`/`reject()` — une fermeture par Échap/clic extérieur (CDK,
+  actif par défaut) ferme avec `undefined`, `!confirmed` route donc
+  naturellement vers `reject()`, cohérent avec le seul usage d'un `reject`
+  explicite (annulation des dates dans `trip-detail`).
+- API calquée sur `ConfirmationService.confirm()` pour un portage 1:1 des 4
+  call sites (`message`/`header`/`icon`/`acceptLabel`/`rejectLabel`/`accept`/
+  `reject` identiques) : seul `this.confirmationService.confirm(...)` devient
+  `this.confirmDialogService.confirm(...)`.
+- Labels par défaut "Oui"/"Non" (pas de valeur PrimeNG "Yes"/"No" à
+  reproduire : la locale FR du projet, `primelocale/fr.json`, les redéfinit
+  déjà ainsi — vérifié directement dans le JSON).
+
+**CollaboratorsDialog** (collaborators-dialog + trip-collaborators) — cas
+plus délicat que ConfirmDialog : le dialog n'a pas un contenu figé au
+moment de l'ouverture, il reste réactif pendant qu'il est ouvert (liste de
+membres qui peut changer en temps réel via Firestore, `addLoading`/
+`addError` qui évoluent pendant l'ajout d'un collaborateur). Comme
+`DIALOG_DATA` est une valeur transmise une seule fois à l'ouverture (pas un
+`@Input()` qui se met à jour), la solution retenue est de transmettre les
+**signaux eux-mêmes** (pas leur valeur lue à l'instant `open()`) plus des
+callbacks, dans `CollaboratorsDialogData` :
+```ts
+{ members: Signal<...>, currentUserId: Signal<...>, isOwner: Signal<...>,
+  companions: Signal<...>, addLoading: Signal<...>, addError: Signal<...>,
+  onAdd, onRemove, onRemoveCompanion }
+```
+`CollaboratorsDialogComponent` lit `data.members()` etc. dans ses `computed`/
+son template exactly comme avant avec ses `input()` — la réactivité continue
+de fonctionner malgré le contenu monté hors de l'arbre de vue de
+`TripCollaboratorsComponent` (via `cdk-overlay-container`), puisque les
+signaux passés restent les MÊMES instances, juste lues depuis un autre
+composant. `TripCollaboratorsComponent` garde une référence au `DialogRef`
+ouvert pour le refermer lui-même (`dialogRef?.close()`) une fois
+`addCollaborator` résolu avec succès — avant, c'était juste
+`this.showDialog = false`.
+
+**TimePickerDialog** — cas le plus structurel : contrairement aux deux
+précédents, ce composant N'ÉTAIT PAS ouvert par un appelant externe, il
+hébergeait directement son `<p-dialog>` dans son propre template (le
+composant EST à la fois le déclencheur — la zone cliquable affichant l'heure
+— et le contenu). `Dialog.open()` de CDK instancie toujours un composant à
+part (pas un `<ng-template>` local) : la logique du cadran (drag, calcul
+d'angle, état `tempHour`/`tempMinute`/`selectionMode`) a donc été extraite
+telle quelle dans un nouveau composant `TimePickerClockComponent`
+(`time-picker-dialog/time-picker-clock/`), ouvert via `DialogService` avec
+la date initiale en `DIALOG_DATA` et qui referme avec la date choisie via
+`DialogRef.close(date)`. `TimePickerDialogComponent` (fichier d'origine) ne
+garde que le déclencheur + le `ControlValueAccessor` — API externe
+(`formControlName`/`formControl` dans `activity-form`) strictement
+inchangée. Effet de bord positif : deux erreurs de lint préexistantes dans
+ce fichier (avant même le début de cette migration) corrigées au passage —
+`onChange`/`onTouch` rendus optionnels (`?.()`) au lieu d'assignations de
+fonctions vides par défaut, même pattern qu'en Phase 4
+(InputNumber/Password).
+
+**Nettoyage connexe** : `--p-*` restants dans les styles propres à ces
+composants (`collaborators-dialog.component.scss`,
+`time-picker-clock.component.scss`, déplacé depuis
+`time-picker-dialog.component.scss`) migrés vers `--nt-*` au passage. CSS
+globale morte supprimée de `styles.scss` : `.p-dialog-header/-footer/-content`
+(overrides de padding), `.p-confirmdialog.p-dialog` (largeur) — plus aucun
+`p-dialog` dans le projet pour les cibler.
+
+Vérifié par `ng build`/`ng lint` (aucune régression, y compris sur les
+fichiers non touchés), plus aucun import `primeng/dialog`/
+`primeng/confirmdialog`/`ConfirmationService` dans le projet. **Pas de test
+de rendu réel dans un navigateur** — phase la plus à risque de régression
+visuelle/comportementale jusqu'ici (réactivité cross-composant via signaux
+en DIALOG_DATA, split trigger/contenu du time-picker) : mérite un passage
+manuel attentif sur les 3 flux avant de continuer.
+
+#### Correctifs post-Phase 7c (trouvés en testant dans le navigateur)
+
+- **Tooltip muette sur un bouton "désactivé pour expliquer pourquoi"**
+  (collaborators-dialog, bouton retirer un membre) : `[disabled]` pose
+  l'attribut natif `disabled` sur le `<button>` interne, or un élément de
+  formulaire disabled ne déclenche plus AUCUN événement souris (y compris
+  `mouseenter`), même sur ses ancêtres — coupant le `appTooltip` censé
+  justement expliquer pourquoi il est désactivé. `onRemove` revérifiant déjà
+  `canRemove` avant d'agir, la désactivation est passée en CSS pur
+  (`.member-remove--disabled` : opacité + `cursor:not-allowed`) plutôt que
+  via l'attribut natif — confirmé par debug (`console.log` temporaire dans
+  `TooltipDirective.show()`) : `mouseenter` se déclenche à nouveau avec le
+  bon texte.
+- **Padding haut manquant + ascenseur horizontal (puis vertical) sur le
+  contenu de tout dialog** : `.dialog-frame__content` reprenait
+  l'ancien padding PrimeNG `0 0.5rem 0.5rem 0.5rem` (zéro en haut) →
+  uniformisé à `0.5rem`. Ascenseur horizontal : `overflow-y:auto` sans
+  `overflow-x` explicite fait calculer ce dernier à `auto` par la spec CSS
+  dès que l'un des deux axes n'est pas `visible` → `overflow-x:hidden`
+  ajouté explicitement. `min-width:0` ajouté sur `:host`/`.dialog-frame`
+  (`<app-dialog-frame>` est un flex item direct de `.cdk-overlay-pane`, dont
+  le `min-width:auto` par défaut l'empêchait de rétrécir sous la largeur
+  intrinsèque de son contenu).
+- **Gap disparu entre les boutons du footer** : `<div dialogFooter>` (au
+  lieu d'un simple élément par bouton) devient l'UNIQUE enfant flex de
+  `.dialog-frame__footer` — son `gap` n'a alors plus rien entre quoi
+  s'appliquer. `<ng-container dialogFooter>` à la place : pas de nœud DOM
+  emballant, les boutons redeviennent des enfants flex directs.
+- **"Non" quasi invisible en light mode** : `[text]="true"` (pas de fond, pas
+  de bordure) pour un bouton secondaire de premier plan dans un dialog se lit
+  comme "rien" plutôt que comme un bouton. Remplacé par `[outlined]="true"`,
+  la convention déjà utilisée par le bouton "Fermer" de collaborators-dialog.
+- **Dialog pleine largeur/hauteur, sans marge (surtout visible sur
+  ConfirmDialog, contenu court)** : `.cdk-overlay-pane` (overlay-prebuilt.css)
+  pose déjà `max-width:100%`/`max-height:100%` — même spécificité qu'un
+  simple `.app-dialog-panel` (une classe chacun). En dev (`ng serve`),
+  l'ordre d'injection des styles ne respecte pas forcément l'ordre du
+  tableau `styles` d'angular.json : confirmé empiriquement (DevTools) que
+  `max-width:100%` de `.cdk-overlay-pane` l'emportait sur notre propre
+  `max-width`. Corrigé en ciblant le sélecteur composé
+  `.cdk-overlay-pane.app-dialog-panel` (deux classes, spécificité plus
+  élevée, gagne indépendamment de l'ordre de chargement) — au passage,
+  `95vw`/`85vh` (marge en % de viewport, qui rétrécit vers zéro sur un petit
+  écran) remplacés par `min(28rem, calc(100vw - 2rem))`/
+  `calc(100vh - 2rem)` (marge minimale constante de 1rem, quelle que soit la
+  taille d'écran).
+- **La bulle native du navigateur ("Collaborateurs") s'affichait au survol
+  au lieu du `appTooltip`** : `<app-dialog-frame title="Collaborateurs">`
+  (attribut statique, sans crochets) — Angular écrit un attribut statique
+  tel quel sur l'élément DOM hôte EN PLUS d'initialiser l'input du même nom.
+  Comme `title` est un attribut HTML global reconnu par le navigateur (bulle
+  native au survol de l'élément ET de ses descendants sans tooltip propre),
+  ça faisait apparaître la bulle native du navigateur — masquant/perturbant
+  `appTooltip` sur les boutons à l'intérieur du dialog. Input renommé
+  `title` → `header` (même nom que `PanelComponent`) dans
+  `DialogFrameComponent` : `header` n'a aucune signification spéciale pour
+  le navigateur, plus aucun risque de collision.
+- **Curseur "pointer" au lieu de "not-allowed" sur le bouton de suppression
+  désactivé visuellement** : le correctif `[disabled]` → classe CSS (voir
+  plus haut) posait `cursor:not-allowed` sur le HOST `<app-button>`, mais le
+  `<button>` NATIF à l'intérieur a sa propre règle explicite
+  `cursor:pointer` (`.app-button`) — une règle explicite sur l'élément
+  lui-même gagne toujours sur une valeur seulement héritée d'un ancêtre,
+  peu importe où elle est posée. Généralisé proprement dans
+  `ButtonComponent` : nouvel input `ariaDisabled` (pattern standard
+  `aria-disabled` du web, distinct de `disabled` natif) qui pose la classe
+  `.app-button--aria-disabled` DIRECTEMENT sur le `<button>` interne (même
+  traitement visuel que `:disabled` — opacité, `cursor:not-allowed` — mais
+  sans bloquer les événements souris). `collaborators-dialog` utilise
+  maintenant `[ariaDisabled]="!canRemove(entry[0])"` au lieu d'une classe
+  ad hoc locale ; réutilisable pour tout futur bouton "désactivé mais dont
+  il faut expliquer pourquoi via une tooltip".
+- **Tooltip invisible (mais bien présente dans le DOM, bien positionnée) au
+  survol d'un bouton À L'INTÉRIEUR d'un dialog** — le correctif le plus
+  significatif de cette phase, avec une implication qui dépasse le tooltip.
+  Diagnostiqué par inspection DevTools en direct (position `fixed` confirmée,
+  boîte réelle 165×73.5px, bonne couleur, `window.innerHeight` largement
+  suffisant — donc ni un problème de `position`, ni de calcul de coordonnées,
+  ni de viewport trop petit) : **`@angular/cdk/overlay` pose par défaut
+  `popover="manual"` sur ses panneaux** (`usePopover` vrai par défaut dans
+  `createOverlayRef`, si le navigateur supporte l'API Popover), ce qui les
+  place dans le **"top layer"** natif du navigateur. Un élément du top layer
+  s'affiche TOUJOURS au-dessus du document normal, quel que soit son
+  z-index — un `<div>` classique, même avec `z-index: 999999 !important`
+  (testé), ne peut structurellement jamais passer au-dessus d'un panneau CDK.
+  `TooltipDirective` pose donc elle aussi `popover="manual"` sur sa bulle
+  (avec repli sur le comportement `position:fixed` classique si l'API n'est
+  pas supportée par le navigateur) : elle rejoint le même top layer, où
+  l'ordre d'empilement suit l'ordre d'affichage — ouverte après le dialog,
+  elle passe naturellement au-dessus. Le style UA par défaut d'un `[popover]`
+  (`inset:0`, `margin:auto`, `border:solid`, `overflow:auto`) est neutralisé
+  dans `tooltip.scss` (`&:popover-open { inset:auto; margin:0; border:none;
+  overflow:visible; }`) pour ne pas entrer en conflit avec le positionnement
+  `top`/`left` calculé en JS.
+  **Implication pour la suite de la Phase 7** (Select 7d, AutoComplete 7e,
+  DatePicker 7f) : tout futur overlay maison qui doit pouvoir s'afficher
+  par-dessus un `Dialog`/`Menu` CDK (ou l'inverse) devra soit lui aussi
+  utiliser `popover`, soit passer par `@angular/cdk/overlay` directement
+  (qui gère déjà `usePopover`) plutôt que par un `<div>` `position:fixed`
+  fait main — le z-index seul ne suffit structurellement plus dès qu'un
+  panneau CDK est dans la course.
 
 ## Après la migration
 

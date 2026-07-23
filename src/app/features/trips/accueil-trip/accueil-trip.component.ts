@@ -5,8 +5,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
-import { ConfirmationService } from 'primeng/api';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { FormsModule } from '@angular/forms';
 import { TripFacade } from '../trip-facade.service';
 import { AuthService } from '@app/core/services/auth.service';
@@ -23,18 +22,16 @@ import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
     MessageComponent,
     RouterModule,
     CheckboxComponent,
-    ConfirmDialogModule,
     FormsModule,
     NgClass,
     TooltipDirective
   ],
-  providers: [ConfirmationService],
   templateUrl: 'accueil-trip.component.html',
 })
 export class AccueilTripComponent {
   protected readonly tripFacade = inject(TripFacade);
   private readonly router = inject(Router);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
    private readonly authService = inject(AuthService);
   
 
@@ -84,7 +81,7 @@ export class AccueilTripComponent {
   }
 
   confirmDelete(): void {
-    this.confirmationService.confirm({
+    this.confirmDialogService.confirm({
       message: 'Êtes-vous sûr de vouloir supprimer ces voyages ? Ils seront perdus définitivement.',
       header: 'Confirmation',
       icon: 'pi pi-exclamation-triangle',

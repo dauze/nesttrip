@@ -1,0 +1,13 @@
+<app-dialog-frame [header]="data.header || 'Confirmation'" [showCloseButton]="false">
+  <div class="confirm-dialog__body">
+    @if (data.icon) {
+      <i class="confirm-dialog__icon" [class]="data.icon"></i>
+    }
+    <p class="confirm-dialog__message">{{ data.message }}</p>
+  </div>
+
+  <ng-container dialogFooter>
+    <app-button [outlined]="true" severity="secondary" [label]="data.rejectLabel || 'Non'" (click)="reject()" />
+    <app-button [label]="data.acceptLabel || 'Oui'" (click)="accept()" />
+  </ng-container>
+</app-dialog-frame>

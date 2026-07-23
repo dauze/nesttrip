@@ -15,6 +15,18 @@ const VIEWPORT_MARGIN_PX = 4;
  * trap/clic extérieur à gérer, contrairement à Dialog/Menu/Select) — un
  * `<div>` positionné en `fixed` directement sur `document.body` suffit,
  * sans dépendance supplémentaire.
+ *
+ * Point piégeux découvert en testant la tooltip depuis l'intérieur d'un
+ * dialog (collaborators-dialog) : `@angular/cdk/overlay` pose par défaut
+ * `popover="manual"` sur ses panneaux (`usePopover` vrai par défaut, voir
+ * `createOverlayRef`), ce qui les place dans le "top layer" natif du
+ * navigateur. Un élément du top layer s'affiche TOUJOURS au-dessus du
+ * document normal, quel que soit son z-index — un `z-index` aussi élevé
+ * soit-il sur un `<div>` classique ne peut jamais rivaliser. La bulle utilise
+ * donc elle aussi `popover="manual"` (avec repli sur le comportement
+ * `position:fixed` classique si l'API n'est pas supportée) : elle rejoint le
+ * même top layer, où l'ordre d'empilement suit l'ordre d'affichage — ouverte
+ * après le dialog, elle passe naturellement au-dessus.
  */
 @Directive({
   selector: '[appTooltip]',
@@ -81,8 +93,15 @@ export class TooltipDirective {
     const el = this.renderer.createElement('div') as HTMLElement;
     el.className = 'app-tooltip';
     el.textContent = this.appTooltip();
+    // Voir la doc de la classe : rejoint le top layer natif, comme les
+    // panneaux CDK, plutôt que de rivaliser en z-index avec eux (perdu
+    // d'avance). `showPopover()` doit être appelé APRÈS insertion dans le
+    // DOM et AVANT `position()` : un élément `[popover]` reste `display:none`
+    // (donc sans layout mesurable) tant qu'il n'a pas été affiché.
+    if ('showPopover' in el) el.setAttribute('popover', 'manual');
     this.renderer.appendChild(document.body, el);
     this.tooltipEl = el;
+    if ('showPopover' in el) el.showPopover();
     this.position();
 
     this.reposition = () => this.position();
@@ -92,6 +111,7 @@ export class TooltipDirective {
 
   private hide(): void {
     if (!this.tooltipEl) return;
+    if ('hidePopover' in this.tooltipEl) this.tooltipEl.hidePopover();
     this.renderer.removeChild(document.body, this.tooltipEl);
     this.tooltipEl = undefined;
     if (this.reposition) {

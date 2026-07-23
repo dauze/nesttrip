@@ -7,10 +7,11 @@
 
 .app-tooltip {
   position: fixed;
-  // Au-dessus de `.cdk-overlay-container` (1000) et du `p-dialog` encore en
-  // place (collaborators-dialog, migré en Phase 7 également) : un tooltip
-  // doit toujours rester visible même déclenché depuis l'intérieur d'un
-  // dialog ouvert.
+  // Toujours utile en repli si `popover` n'est pas supporté (voir la doc de
+  // TooltipDirective) ; avec `popover`, le top layer gère déjà l'empilement
+  // au-dessus du reste du document (dialogs/menu CDK y sont aussi), donc
+  // cette valeur ne rivalise plus vraiment avec `.cdk-overlay-*` — gardée
+  // par simple cohérence/lisibilité et pour le repli sans `popover`.
   z-index: 1200;
   max-width: 12.5rem;
   padding: 0.5rem 0.75rem;
@@ -22,4 +23,15 @@
   line-height: 1.4;
   pointer-events: none;
   word-wrap: break-word;
+
+  // Neutralise le style UA par défaut d'un `[popover]` (`inset: 0`,
+  // `margin: auto`, `border: solid`, `overflow: auto`...) : sans ça, ces
+  // valeurs entrent en conflit avec le positionnement `top`/`left` posé en
+  // JS par `TooltipDirective.position()`.
+  &:popover-open {
+    inset: auto;
+    margin: 0;
+    border: none;
+    overflow: visible;
+  }
 }

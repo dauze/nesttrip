@@ -19,15 +19,3 @@
     }
   </app-avatar-group>
 </div>
-
-<app-collaborators-dialog
-  [(visible)]="showDialog"
-  [members]="members()"
-  [currentUserId]="currentUserId()"
-  [isOwner]="isOwner()"
-  [companions]="userProfileService.companions()"
-  [addLoading]="addLoading()"
-  [addError]="addError()"
-  (add)="onAdd($event)"
-  (remove)="onRemove($event)"
-  (removeCompanion)="onRemoveCompanion($event)" />

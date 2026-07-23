@@ -6,7 +6,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { FieldsetComponent } from '@app/shared/components/fieldset/fieldset.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import {Notes, Item, Point} from './notes.model';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -22,7 +22,7 @@ import { CardComponent } from '@app/shared/components/card/card.component';
 })
 export class NotesComponent {
   private readonly tripFacade = inject(TripFacade);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
 
   readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
@@ -64,7 +64,7 @@ export class NotesComponent {
   }
 
   confirmDelete(item: Item): void {
-    this.confirmationService.confirm({
+    this.confirmDialogService.confirm({
       message: 'Supprimer cet élément ?',
       accept: () => this.tripFacade.removeItem(this.tripId(), item.id)
     });

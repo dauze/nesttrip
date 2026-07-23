@@ -29,6 +29,15 @@ export class ButtonComponent {
   readonly type = input<'button' | 'submit'>('button');
   readonly loading = input(false);
   readonly disabled = input(false);
+  /**
+   * Désactivation VISUELLE seulement (pas l'attribut natif `disabled`) : un
+   * `<button disabled>` ne déclenche plus AUCUN événement souris (y compris
+   * `mouseenter`), même sur ses ancêtres — inutilisable si un `appTooltip`
+   * doit justement expliquer pourquoi le bouton est désactivé. À utiliser à
+   * la place de `disabled` quand l'appelant revérifie déjà la condition dans
+   * son propre handler (le bouton reste techniquement cliquable).
+   */
+  readonly ariaDisabled = input(false);
 
   protected readonly effectiveSeverity = computed<ButtonSeverity>(() => this.severity() ?? 'primary');
   protected readonly isDisabled = computed(() => this.disabled() || this.loading());
