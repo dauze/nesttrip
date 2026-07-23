@@ -56,8 +56,12 @@ export class TripFacade {
     this.store._activeTripId.set(null);
   }
 
-  addCollaborator(tripId: string, email: string): Observable<{success: boolean;}> {
+  addCollaborator(tripId: string, email: string): Observable<{ success: boolean; uid: string; email: string; displayName: string | null }> {
     return this.store.addCollaborator(tripId, email);
+  }
+
+  removeCollaborator(tripId: string, memberUid: string): Observable<{ success: boolean }> {
+    return this.store.removeCollaborator(tripId, memberUid);
   }
 
   // ── Commandes ─────────────────────────────────────────────────────────────

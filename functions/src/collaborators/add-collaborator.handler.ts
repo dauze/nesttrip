@@ -31,6 +31,7 @@ export async function addCollaboratorHandler(req: Request, res: Response) {
     }
 
     const invitee = await admin.auth().getUserByEmail(inviteeEmail);
+    const actor = await admin.auth().getUser(uid);
 
     // Dénormalisation : on stocke role + email + displayName
     await tripRef.update({
@@ -41,7 +42,47 @@ export async function addCollaboratorHandler(req: Request, res: Response) {
       },
     });
 
-    res.json({ success: true });
+    // Companions de route bidirectionnels : A invite B => B apparaît chez A ET A apparaît chez B.
+    // set(..., { merge: true }) crée les docs users/{uid} s'ils n'existent pas encore.
+    await Promise.all([
+      db.doc(`users/${actor.uid}`).set(
+        {
+          uid: actor.uid,
+          email: actor.email ?? null,
+          displayName: actor.displayName ?? null,
+          companions: {
+            [invitee.uid]: {
+              uid: invitee.uid,
+              email: invitee.email ?? inviteeEmail,
+              displayName: invitee.displayName ?? null,
+            },
+          },
+        },
+        { merge: true },
+      ),
+      db.doc(`users/${invitee.uid}`).set(
+        {
+          uid: invitee.uid,
+          email: invitee.email ?? inviteeEmail,
+          displayName: invitee.displayName ?? null,
+          companions: {
+            [actor.uid]: {
+              uid: actor.uid,
+              email: actor.email ?? null,
+              displayName: actor.displayName ?? null,
+            },
+          },
+        },
+        { merge: true },
+      ),
+    ]);
+
+    res.json({
+      success: true,
+      uid: invitee.uid,
+      email: invitee.email ?? inviteeEmail,
+      displayName: invitee.displayName ?? null,
+    });
   } catch (err: any) {
     if (err.code === 'auth/user-not-found') {
       res.status(404).json({ error: 'Utilisateur introuvable' });

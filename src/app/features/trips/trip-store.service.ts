@@ -18,7 +18,7 @@ type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
 type PoolActivityEntities = Record<string, PoolActivity>;
 type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
-type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<email, Member>
+type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
 
 /** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché). */
 function defaultInstanceForm(): Omit<DayActivityInstance, 'id' | 'activityId'> {
@@ -393,18 +393,30 @@ export class TripStore {
   }
 
   // 5. Ajouter la commande addCollaborator (Mise à jour optimiste isolée)
-  addCollaborator(tripId: string, email: string) : Observable<{success: boolean;}>{
+  addCollaborator(tripId: string, email: string): Observable<{ success: boolean; uid: string; email: string; displayName: string | null }> {
     return this.collaborationService.addCollaborator(tripId, email).pipe(
-      tap(() => {
+      tap(({ uid, email, displayName }) => {
         this._tripMembers.update((map) => {
           const currentMembers = map[tripId] ?? {};
           return {
             ...map,
             [tripId]: {
               ...currentMembers,
-              [email]: { email, displayName: email.split('@')[0] } as TripMember
+              [uid]: { role: 'editor', email, displayName: displayName ?? undefined } as TripMember
             }
           };
+        });
+      })
+    );
+  }
+
+  removeCollaborator(tripId: string, memberUid: string): Observable<{ success: boolean }> {
+    return this.collaborationService.removeCollaborator(tripId, memberUid).pipe(
+      tap(() => {
+        this._tripMembers.update((map) => {
+          const currentMembers = { ...(map[tripId] ?? {}) };
+          delete currentMembers[memberUid];
+          return { ...map, [tripId]: currentMembers };
         });
       })
     );

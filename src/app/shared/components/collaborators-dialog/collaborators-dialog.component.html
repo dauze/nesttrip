@@ -1,0 +1,90 @@
+<p-dialog
+  header="Collaborateurs"
+  [(visible)]="visible"
+  [modal]="true"
+  [draggable]="false"
+  appendTo="body"
+  [style]="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
+
+  <div class="flex flex-column gap-2 member-list">
+    @for (entry of memberEntries(); track entry[0]) {
+      <div class="flex align-items-center gap-2">
+        <p-avatar [label]="getInitials(entry[1].displayName, entry[1].email)" shape="circle" size="normal" />
+        <div class="flex-1 flex flex-column overflow-hidden">
+          <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].displayName || entry[1].email }}</span>
+          @if (entry[1].displayName) {
+            <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].email }}</span>
+          }
+        </div>
+        <p-button
+          icon="pi pi-times"
+          [rounded]="true"
+          [text]="true"
+          severity="danger"
+          [disabled]="!canRemove(entry[0])"
+          [pTooltip]="removeTooltip(entry[0])"
+          [tooltipDisabled]="canRemove(entry[0])"
+          tooltipPosition="left"
+          (onClick)="onRemove(entry[0])" />
+      </div>
+    }
+  </div>
+
+  <div class="flex flex-column gap-2 pt-3">
+    <label for="inviteeEmail">Ajouter</label>
+    <div class="flex gap-2">
+      <input
+        pInputText
+        id="inviteeEmail"
+        name="inviteeEmail"
+        [(ngModel)]="inviteeEmail"
+        placeholder="collaborateur@email.com"
+        [disabled]="addLoading()"
+        class="flex-1" />
+      <p-button
+        label="Inviter"
+        [loading]="addLoading()"
+        [disabled]="!inviteeEmail"
+        (onClick)="submitInvite()" />
+    </div>
+    @if (addError()) {
+      <p-message severity="error" [text]="addError()!" />
+    }
+  </div>
+
+  @if (availableCompanions().length > 0) {
+    <div class="flex flex-column gap-2 pt-3">
+      <span class="font-medium">Companions de route</span>
+      <div class="flex flex-column gap-2 companion-list">
+        @for (companion of availableCompanions(); track companion.uid) {
+          <div
+            class="flex align-items-center gap-2 companion-row"
+            role="button"
+            tabindex="0"
+            (click)="onAddCompanion(companion)"
+            (keydown.enter)="onAddCompanion(companion)">
+            <p-avatar [label]="getInitials(companion.displayName, companion.email)" shape="circle" size="normal" />
+            <div class="flex-1 flex flex-column overflow-hidden">
+              <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.displayName || companion.email }}</span>
+              @if (companion.displayName) {
+                <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.email }}</span>
+              }
+            </div>
+            <p-button
+              icon="pi pi-times"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              pTooltip="Retirer de mes companions"
+              tooltipPosition="left"
+              (onClick)="onRemoveCompanionClick($event, companion.uid)" />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <ng-template #footer>
+    <p-button label="Fermer" severity="secondary" [outlined]="true" (onClick)="close()" />
+  </ng-template>
+</p-dialog>

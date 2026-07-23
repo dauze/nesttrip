@@ -14,6 +14,8 @@ import localeFr from '@angular/common/locales/fr';
 import { registerLocaleData } from '@angular/common';
 import { GoogleMapsLoaderService } from './core/services/google-maps-loader.service';
 import { onViewTransitionCreated } from './core/navigation/route-transition';
+import { UserProfileRepository } from './core/infra/firebase/services/user-profile-repository';
+import { FirebaseUserProfileRepository } from './core/infra/firebase/services/firebase-user-profile-repository';
 
 registerLocaleData(localeFr);
 
@@ -52,5 +54,7 @@ export const appConfig: ApplicationConfig = {
         }),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     provideAppInitializer(() => inject(GoogleMapsLoaderService).load()),
+    FirebaseUserProfileRepository,
+    { provide: UserProfileRepository, useExisting: FirebaseUserProfileRepository },
   ]
 };

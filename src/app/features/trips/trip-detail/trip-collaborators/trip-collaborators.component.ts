@@ -1,45 +1,36 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { TooltipModule } from 'primeng/tooltip';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { MessageModule } from 'primeng/message';
 import { finalize } from 'rxjs';
-import { TripMember } from '../../trip.model';
 import { TripFacade } from '../../trip-facade.service';
+import { AuthService } from '@app/core/services/auth.service';
+import { UserProfileService } from '@app/core/services/user-profile.service';
+import { CollaboratorsDialogComponent } from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
+import { getInitials } from '@app/shared/utils/get-initials';
 
 @Component({
   selector: 'app-trip-collaborators',
   standalone: true,
-  imports: [
-    FormsModule,
-    AvatarModule,
-    AvatarGroupModule,
-    TooltipModule,
-    ButtonModule,
-    DialogModule,
-    InputTextModule,
-    SelectModule,
-    MessageModule,
-  ],
+  imports: [AvatarModule, AvatarGroupModule, TooltipModule, CollaboratorsDialogComponent],
   templateUrl: './trip-collaborators.component.html',
   styleUrl: './trip-collaborators.component.scss',
 })
 export class TripCollaboratorsComponent {
   private readonly tripFacade = inject(TripFacade);
+  private readonly authService = inject(AuthService);
+  protected readonly userProfileService = inject(UserProfileService);
   private readonly MAX_VISIBLE = 5;
 
   readonly tripId = input.required<string>();
   readonly members = computed(() => this.tripFacade.getTripMembers(this.tripId())());
 
-  protected showInviteDialog = false;
-  protected inviteeEmail = '';
-  readonly inviteLoading = signal(false);
-  readonly inviteError = signal<string | null>(null);
+  protected readonly currentUserId = computed(() => this.authService.getCurrentUser()?.uid ?? '');
+  protected readonly isOwner = computed(() => this.members()[this.currentUserId()]?.role === 'owner');
+
+  protected showDialog = false;
+  readonly addLoading = signal(false);
+  readonly addError = signal<string | null>(null);
 
   readonly visibleMembers = computed(() =>
     Object.entries(this.members()).slice(0, this.MAX_VISIBLE)
@@ -48,49 +39,46 @@ export class TripCollaboratorsComponent {
     Math.max(0, Object.keys(this.members()).length - this.MAX_VISIBLE)
   );
   readonly extraTooltip = computed(() =>
-    Object.keys(this.members()).slice(this.MAX_VISIBLE).join(', ')
+    Object.values(this.members())
+      .slice(this.MAX_VISIBLE)
+      .map((m) => m.displayName || m.email)
+      .join(', ')
   );
 
-  getInitials(member: TripMember): string {
-    if (member.displayName) {
-      return member.displayName
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-    }
-    return member.email.slice(0, 2).toUpperCase();
+  protected readonly getInitials = getInitials;
+
+  protected openDialog(): void {
+    this.addError.set(null);
+    this.showDialog = true;
   }
 
-  protected openInviteDialog(): void {
-    this.inviteeEmail = '';
-    this.inviteError.set(null);
-    this.showInviteDialog = true;
-  }
-
-  protected closeInviteDialog(): void {
-    this.showInviteDialog = false;
-  }
-
-  protected inviteCollaborator(): void {
-    if (!this.inviteeEmail) return;
-
-    this.inviteLoading.set(true);
-    this.inviteError.set(null);
+  protected onAdd(email: string): void {
+    this.addLoading.set(true);
+    this.addError.set(null);
 
     this.tripFacade
-      .addCollaborator(this.tripId(), this.inviteeEmail)
-      .pipe(finalize(() => this.inviteLoading.set(false)))
+      .addCollaborator(this.tripId(), email)
+      .pipe(finalize(() => this.addLoading.set(false)))
       .subscribe({
         next: () => {
-          this.closeInviteDialog();
-          this.inviteeEmail = '';
+          this.showDialog = false;
         },
         error: (err) => {
           const message = err?.error?.error ?? err?.message ?? 'Une erreur est survenue';
-          this.inviteError.set(message);
+          this.addError.set(message);
         },
       });
+  }
+
+  protected onRemove(memberUid: string): void {
+    this.tripFacade.removeCollaborator(this.tripId(), memberUid).subscribe({
+      error: (err) => console.error('[TripCollaborators] Erreur suppression collaborateur', err),
+    });
+  }
+
+  protected onRemoveCompanion(companionUid: string): void {
+    this.userProfileService.removeCompanion(companionUid).subscribe({
+      error: (err) => console.error('[TripCollaborators] Erreur suppression companion', err),
+    });
   }
 }

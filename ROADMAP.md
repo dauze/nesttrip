@@ -110,6 +110,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
 - Si on ajoute des activités sur le pool, l'ordre ne doit pas changer.
 - au niveau du slide de la carte, il faudrait calculer la hauteur à prendre en fonction de la distance à parcourir : plus il y a de distance, plus il faut reculer. Moins il y en a, moins il faut reculer
+- Pouvoir supprimer des collaborateurs (via un clique sur les pastilles affiché:  ouvre la popup d'ajout des collob modifié qui permet la gestion des collab associés à ce trip, l'ajout d'un nouveau collab, la selection d'un companion de route à ajouter en clique rapide depuis une liste, la suppression d'un collab de route via une croix. Il faut donc stocker la liste des companions de route sur l'utilisateur, ou ? nouvelle bdd user ? => dans firestore ? Ca pourra servire pour le stockage des reglages du user.  faut faire attention à la gestion des user, seul l'owner peut supprimer des membres, et  il ne peut pas se supprimer lui même et doit supprimer le voyage, information à donner si son nom est grisé. Parti du dialog existant au clique sur "add collaborator". On pourrait supprimer le bouton "add colaborator" car le cluque sur la pastille remplacerai ça ? 
+- Et sortir le p-dialog pour le mettre dasn un composant à part, transverse comme ça sa taille n'est pas limité au composant
 
 ## 🔧 À faire
 
@@ -148,9 +150,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 
 ### Collaborateurs
 - Email quand ajouté à un trip  (non prioritaire)
-- Pouvoir supprimer des collaborateurs (via un clique sur les pastilles affiché:  ouvre la popup d'ajout des collob modifié qui permet la gestion des collab associés à ce trip, l'ajout d'un nouveau collab, la selection d'un companion de route à ajouter en clique rapide depuis une liste, la suppression d'un collab de route via une croix. Il faut donc stocker la liste des companions de route sur l'utilisateur, ou ? nouvelle bdd user ? => dans firestore ? Ca pourra servire pour le stockage des reglages du user.  faut faire attention à la gestion des user, seul l'owner peut supprimer des membres, et  il ne peut pas se supprimer lui même et doit supprimer le voyage, information à donner si son nom est grisé. Parti du dialog existant au clique sur "add collaborator". On pourrait supprimer le bouton "add colaborator" car le cluque sur la pastille remplacerai ça ? 
-- Et sortir le p-dialog pour le mettre dasn un composant à part, transverse comme ça sa taille n'est pas limité au composant
-
 ### Administratif
 - Onglet dédié : vols, hébergements, trains, location de voiture : composant à définir 
 - Dates début/fin pour hébergements, catégorisation "en cours" / "future" / "passée" (grisée en bas si date renseignée, sinon non catégorisé)
@@ -197,3 +196,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Eviter de faire des input-output quand ce n'est pas des dub component et privilégier les services, sauf si ca génère de la complexité
 - Simplifier les flou et les uniformiser en mettant via une seule valeur
 - simplifier le style.scss et dispatcher en plusierus sous fichier et les incorporer via des @use
+- Mieux gérer la portée de chaque services : enlever un maximum root et les déclarer au bon endrois
+- déplacer des fonctions purement utilitaires dans des utils et alléger les composants trop gros
+- Eviter les sujets de plus de 500 lignes 

@@ -1,11 +1,11 @@
-<div class="flex align-items-center gap-3">
+<div class="flex align-items-center gap-3 cursor-pointer" (click)="openDialog()" role="button" tabindex="0">
   <p-avatarGroup>
     @for (entry of visibleMembers(); track entry[0]) {
       <p-avatar
-        [label]="getInitials(entry[1])"
+        [label]="getInitials(entry[1].displayName, entry[1].email)"
         shape="circle"
         size="normal"
-        [pTooltip]="entry[1].email"
+        [pTooltip]="entry[1].displayName || entry[1].email"
         tooltipEvent="both"
         tooltipPosition="bottom" />
     }
@@ -18,46 +18,16 @@
         tooltipPosition="bottom" />
     }
   </p-avatarGroup>
-
-  <p-button
-    icon="pi pi-user-plus"
-    [rounded]="true"
-    [text]="true"
-    severity="secondary"
-    (onClick)="openInviteDialog()" />
 </div>
 
-<p-dialog
-  header="Inviter un collaborateur"
-  [(visible)]="showInviteDialog"
-  [modal]="true"
-  [draggable]="false">
-  <div class="flex flex-column gap-3 pt-2">
-    <div class="flex flex-column gap-2">
-      <label for="inviteeEmail">Adresse email</label>
-      <input
-        pInputText
-        id="inviteeEmail"
-        name="inviteeEmail"
-        [(ngModel)]="inviteeEmail"
-        placeholder="collaborateur@email.com"
-        [disabled]="inviteLoading()"
-        class="w-full" />
-    </div>
-    @if (inviteError()) {
-      <p-message severity="error" [text]="inviteError()!" />
-    }
-  </div>
-  <ng-template #footer>
-    <p-button
-      label="Annuler"
-      severity="secondary"
-      [outlined]="true"
-      (onClick)="closeInviteDialog()" />
-    <p-button
-      label="Inviter"
-      [loading]="inviteLoading()"
-      [disabled]="!inviteeEmail"
-      (onClick)="inviteCollaborator()" />
-  </ng-template>
-</p-dialog>
+<app-collaborators-dialog
+  [(visible)]="showDialog"
+  [members]="members()"
+  [currentUserId]="currentUserId()"
+  [isOwner]="isOwner()"
+  [companions]="userProfileService.companions()"
+  [addLoading]="addLoading()"
+  [addError]="addError()"
+  (add)="onAdd($event)"
+  (remove)="onRemove($event)"
+  (removeCompanion)="onRemoveCompanion($event)" />
