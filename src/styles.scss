@@ -24,8 +24,7 @@
   // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay,
   //   masque de p-datepicker en touchUI, backdrop mobile de p-select).
   // - overlay-content : le contenu flottant lui-même, au dessus de son
-  //   propre backdrop (p-menu-overlay, p-datepicker-panel, p-select-overlay,
-  //   dispatch-ball).
+  //   propre backdrop (p-datepicker-panel, p-select-overlay, dispatch-ball).
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
@@ -51,8 +50,8 @@
  *   l'essentiel (masque `.p-datepicker-mask`, reparenting sur <body>) ; on ne
  *   fait ici que recentrer le panneau et flouter son masque, `!important`
  *   nécessaire pour l'emporter sur le `position/top` posés en style inline
- *   par PrimeNG. Le zIndex, lui, est forcé plus haut avec `.p-menu-overlay`
- *   (voir plus haut) car le problème n'est pas spécifique au mobile.
+ *   par PrimeNG. Le zIndex, lui, est forcé plus haut avec `.p-datepicker-panel`
+ *   (voir plus bas) car le problème n'est pas spécifique au mobile.
  * - p-select : transformé en drawer qui remonte du bas, avec sa propre liste
  *   scrollable. `p-select` délègue son overlay au composant partagé
  *   `<p-overlay>` de PrimeNG : c'est SON élément racine (classe `.p-overlay`)
@@ -390,15 +389,15 @@ html.trip-detail-active body {
   width: min(28rem, 95vw);
 }
 
-// Le popup du menu roue crantée (appendTo="body") doit rester au-dessus de
-// .app-toolbar et .app-trip-header-fixed : leur z-index dépasse celui posé
-// dynamiquement par PrimeNG (voir baseZIndex sur le p-menu dans
-// trips.component.html), donc on le force ici en dernier recours. Même
-// problème pour tout p-datepicker/p-select en appendTo="body"
-// (TripHeaderComponent en particulier, dont le champ dates flotte au dessus
-// de .app-trip-header-fixed une fois reparenté sur <body>) : leur zIndex
-// PrimeNG ('overlay'/'modal') peut tomber sous ce chrome fixe.
-.p-menu-overlay,
+// Le popup roue crantée est passé en Phase 7b sur app-menu/@angular/cdk/overlay
+// (z-index 1000 par défaut de .cdk-overlay-container, largement au-dessus de
+// --z-app-toolbar : plus besoin d'override ici). Reste : p-datepicker/p-select
+// en appendTo="body" (TripHeaderComponent en particulier, dont le champ dates
+// flotte au dessus de .app-trip-header-fixed une fois reparenté sur <body>) —
+// leur zIndex PrimeNG ('overlay'/'modal') peut tomber sous ce chrome fixe,
+// dont le z-index dépasse celui posé dynamiquement par PrimeNG, d'où le
+// forçage ici en dernier recours, encore nécessaire tant qu'ils ne sont pas
+// migrés (Phase 7d/7f).
 .p-datepicker-panel:not(.p-datepicker-panel-inline),
 .p-select-overlay,
 .p-overlay:has(.p-select-overlay) {

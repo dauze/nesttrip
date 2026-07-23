@@ -196,9 +196,10 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Eviter de faire des input-output quand ce n'est pas des dub component et privilégier les services, sauf si ca génère de la complexité
 - Simplifier les flou et les uniformiser en mettant via une seule valeur
 - simplifier le style.scss et dispatcher en plusierus sous fichier et les incorporer via des @use
-- Mieux gérer la portée de chaque services : enlever un maximum root et les déclarer au bon endrois
+- Mieux gérer la portée de chaque services : enlever un maximum root et les déclarer au bon endroits
 - déplacer des fonctions purement utilitaires dans des utils et alléger les composants trop gros
 - Eviter les sujets de plus de 500 lignes 
 - éviter les settimeout 
-
+- supprimer le scss de primeng + supprimer les !important du scss
+- eviter les ::ngdeep et :host qui sont une mauvais pratique scss
 

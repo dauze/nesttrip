@@ -1,0 +1,26 @@
+<ng-template #panel>
+  <div class="app-menu-panel">
+    @for (group of items(); track $index) {
+      @if (group.items) {
+        @if (group.label) {
+          <div class="app-menu-panel__group-label">{{ group.label }}</div>
+        }
+        @for (item of group.items; track item.label) {
+          <button type="button" class="app-menu-panel__item" (click)="runCommand(item)">
+            @if (item.icon) {
+              <i [class]="item.icon"></i>
+            }
+            <span>{{ item.label }}</span>
+          </button>
+        }
+      } @else {
+        <button type="button" class="app-menu-panel__item" (click)="runCommand(group)">
+          @if (group.icon) {
+            <i [class]="group.icon"></i>
+          }
+          <span>{{ group.label }}</span>
+        </button>
+      }
+    }
+  </div>
+</ng-template>

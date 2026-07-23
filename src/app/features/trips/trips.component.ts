@@ -2,8 +2,7 @@ import { Component, computed, ElementRef, inject, viewChild, afterNextRender, De
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
-import { MenuModule } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.component';
 import { AuthService } from '@core/services/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
@@ -15,7 +14,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 @Component({
   selector: 'app-trips',
   standalone: true,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuModule],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent],
   providers: [
     FirebaseTripRepository,
       TripFacade,
@@ -70,7 +69,7 @@ export class TripsComponent {
     return /^\/trips\/.+/.test(url);
   });
 
-  readonly menuItems: MenuItem[] = [
+  readonly menuItems: AppMenuItem[] = [
     {
       label: 'Compte',
       items: [

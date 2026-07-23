@@ -81,7 +81,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 4 | Champs simples : InputText, Password, Textarea, InputNumber, Checkbox, SelectButton | Faible | ✅ Fait (suppression de `Fluid` reportée à la Phase 7, voir note) |
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
 | 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
-| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a fait) |
+| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a, 7b faits) |
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
@@ -112,7 +112,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | Fluid | new-trip | 4 (suppression) |
 | Panel | activity-card, activity-google-info, activity-gallery, trip-activities, notes, timeline, day-panel, trip-day-map | 5 |
 | Tabs / Tab / TabList | trip-tabs-nav (+ clone dans activity-day-dispatch-overlay) | 6 |
-| Menu / MenuItem | trips (roue crantée) | 7b |
+| Menu / MenuItem | trips (roue crantée) | 7b ✅ |
 | Tooltip | accueil-trip, collaborators-dialog, trip-collaborators | 7a ✅ |
 | Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7c |
 | Select | activity-form, timeline | 7d |
@@ -456,6 +456,48 @@ réel est interne) — seuls les événements qui remontent permettent au
 listener posé sur le host de les capter.
 
 Vérifié par `ng build`/`ng lint`, plus aucun import `primeng/tooltip` dans le
+projet. **Pas de test de rendu réel dans un navigateur.**
+
+### Phase 7b — Menu
+
+Un seul consommateur (`TripsComponent`, roue crantée), toujours en mode
+`[popup]="true"` (aucun mode inline à porter). Contrairement au Tooltip
+(7a), un vrai popup ancré a besoin de fermeture au clic extérieur/Échap et
+de repositionnement anti-débordement d'écran — cette fois construit sur
+`@angular/cdk/overlay` directement (pas `cdk/dialog`, dont la sémantique
+modale/focus-trap ne convient pas à un simple menu ancré à un bouton) :
+premier consommateur de `cdk/overlay` du projet, dont
+`overlay-prebuilt.css` est déjà chargé depuis la Phase 2 (`Dialog`).
+
+- `MenuComponent` (`src/app/shared/components/menu/`) expose `toggle(event)`
+  (identique à l'ancien `menu.toggle($event)` du template), et une
+  `<ng-template #panel>` attachée à l'overlay via `TemplatePortal` au moment
+  de l'ouverture — le contenu (labels/icônes) reste donc du vrai template
+  Angular avec CD normale, pas du DOM construit à la main.
+- `AppMenuItem` (type local, remplace `MenuItem` de `primeng/api`) reprend le
+  même modèle que PrimeNG : une entrée top-level avec `items` est un groupe
+  (affiche son `label` en en-tête, ses `items` en dessous) ; sans `items`,
+  l'entrée elle-même est un item cliquable à plat — les deux formes
+  cohabitent dans le même tableau, gérées par un simple `@if (group.items)`
+  dans le template.
+- Positionnement `flexibleConnectedTo(trigger)` ancré sous le bord droit du
+  bouton déclencheur (`event.currentTarget`), bascule au-dessus si la place
+  manque en bas (`withPush(true)` + deux `ConnectedPosition` haut/bas) —
+  équivalent du positionnement automatique de PrimeNG.
+- Style (`menu.component.scss`) repris du preset Aura navigation/menu :
+  fond/bordure/rayon `--nt-content-*`, ombre `--nt-overlay-popover-shadow`,
+  hover d'item en `--nt-surface-100`, en-tête de groupe en
+  `--nt-text-muted-color` — tous des tokens déjà existants depuis la Phase 0,
+  aucun nouveau token nécessaire.
+- **z-index simplifié** : `.cdk-overlay-container` a un z-index par défaut
+  de 1000, largement au-dessus de l'échelle `--z-*` de l'appli (max 100) —
+  contrairement à PrimeNG dont le zIndex dynamique pouvait tomber sous le
+  chrome fixe (`.app-toolbar`/`.app-trip-header-fixed`), d'où le
+  `!important` sur `.p-menu-overlay` supprimé de `styles.scss` (l'override
+  équivalent reste nécessaire pour `.p-datepicker-panel`/`.p-select-overlay`,
+  pas encore migrés — Phases 7d/7f).
+
+Vérifié par `ng build`/`ng lint`, plus aucun import `primeng/menu` dans le
 projet. **Pas de test de rendu réel dans un navigateur.**
 
 ## Après la migration
