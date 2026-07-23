@@ -217,15 +217,6 @@ html.trip-detail-active body {
   overflow: hidden;
 }
 
-.p-card {
-  --p-card-body-padding: 0.5rem;
-}
-
-.p-tabpanels {
-  display: block;
-  --p-tabs-tabpanel-padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-}
-
 .p-dialog-header {
   --p-dialog-header-padding: 0.5rem;
 }
@@ -245,7 +236,7 @@ html.trip-detail-active body {
 
 .compact-form {
   .p-select-label,
-  .p-inputtext {
+  .app-input-text {
     padding: 0.25rem !important;
     min-width: 0;
     width: auto;
@@ -257,8 +248,8 @@ html.trip-detail-active body {
 }
 
 .tabs-pop {
-  p-tab.is-active,
-  p-tab.is-active > * {
+  .app-tab.is-active,
+  .app-tab.is-active > * {
     animation: tab-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
@@ -271,7 +262,7 @@ html.trip-detail-active body {
 
 /* ---------------------------------------------------------------------
  * Réplique de la barre de jours dans ActivityDayDispatchOverlayComponent :
- * un clone DOM du <p-tabs> réel (voir cloneNavBarInto), donc porteur de
+ * un clone DOM de la barre réelle (`.app-tabs`, voir cloneNavBarInto), donc porteur de
  * l'attribut de scope de TripTabsNavComponent, pas de celui de l'overlay —
  * ces classes doivent rester globales (non scopées) pour continuer à
  * s'appliquer une fois posées via classList.toggle() sur le clone.
@@ -396,17 +387,6 @@ html.trip-detail-active body {
 
 .p-confirmdialog.p-dialog {
   width: min(28rem, 95vw);
-}
-
-.p-tab {
---p-tabs-tab-border-width: 2px 0 0 0;
---p-tabs-tab-hover-color: var(--p-tabs-tab-color);
-}
-.p-tablist-tab-list {
-  --p-tabs-tablist-border-width: 0;
-}
-.p-toolbar {
-  --p-toolbar-padding: 0.2rem;
 }
 
 // Le popup du menu roue crantée (appendTo="body") doit rester au-dessus de

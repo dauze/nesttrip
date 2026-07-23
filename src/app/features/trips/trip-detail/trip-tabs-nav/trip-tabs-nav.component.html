@@ -1,12 +1,15 @@
-<p-tabs #tabsListRef [value]="activeId()" class="tabs-pop">
-  <p-tablist>
+<div #tabsListRef class="app-tabs tabs-pop">
+  <div class="app-tabs__list" role="tablist">
     @for (tab of tabs(); track tab.id; let i = $index) {
-      <p-tab
-        [value]="tab.id"
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab.id === activeId()"
         [attr.data-tab-id]="tab.id"
+        class="app-tab"
         [class.is-active]="tab.id === activeId()"
-        [class.p-tab--day]="!!tab.dayNumber"
-        [class.p-tab--general]="!tab.dayNumber"
+        [class.app-tab--day]="!!tab.dayNumber"
+        [class.app-tab--general]="!tab.dayNumber"
         (click)="onTabClick(tab.id, i)">
         @if (tab.dayNumber) {
           <span class="day-tab">
@@ -23,7 +26,7 @@
         } @else {
           <span class="general-tab">{{ tab.label }}</span>
         }
-      </p-tab>
+      </button>
     }
-  </p-tablist>
-</p-tabs>
+  </div>
+</div>

@@ -7,29 +7,57 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.app-tabs__list {
+  display: flex;
+  overflow-x: auto;
+  background: var(--nt-content-background);
+  border-bottom: 1px solid var(--nt-content-border-color);
+}
+
 // Les onglets se répartissent toute la largeur disponible quand il y en a
 // peu ; `min-width` sert de plancher de rétrécissement, au-delà duquel le
-// conteneur scrollable natif de p-tabs prend le relais (beaucoup de jours).
-// `display:flex` + `justify-content:center` recentrent verticalement le
-// contenu (pile de 3 lignes pour un jour, simple libellé pour "Général")
+// conteneur scrollable (`.app-tabs__list`) prend le relais (beaucoup de
+// jours). `display:flex` + `justify-content:center` recentrent verticalement
+// le contenu (pile de 3 lignes pour un jour, simple libellé pour "Général")
 // dans la hauteur du plus grand onglet de la barre.
-.p-tab {
+.app-tab {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex: 1 1 0;
   min-width: 3.75rem;
+  padding: 1rem 1.125rem;
+  border: none;
+  // Indicateur du haut (pas du bas, choix déjà fait dans ce projet avant la
+  // migration) : transparent au repos, coloré en primary une fois actif.
+  border-top: 2px solid transparent;
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+
+  // Pas d'assombrissement au survol : le contenu (pile jour/libellé) est déjà
+  // dense, un changement de couleur au hover n'apportait rien de plus lisible.
+  &:hover {
+    color: var(--nt-text-muted-color);
+  }
+}
+
+.app-tab.is-active {
+  color: var(--nt-primary-color);
+  border-top-color: var(--nt-primary-color);
 }
 
 // `container-type: inline-size` fait de l'onglet un conteneur de requête CSS
 // (voir day-tab__short/__full ci-dessous) — seulement pour les onglets de
 // jour, PAS pour "Général" : la containment de taille qu'implique
 // `container-type` fait ignorer le contenu réel dans le calcul de la taille
-// de la boîte, ce qui casse `min-width: max-content` sur `.p-tab--general`
+// de la boîte, ce qui casse `min-width: max-content` sur `.app-tab--general`
 // (le mot se retrouvait tronqué, la boîte pouvant être compressée en dessous
 // de sa propre largeur de texte malgré ce `min-width`).
-.p-tab--day {
+.app-tab--day {
   container-type: inline-size;
   container-name: day-tab;
 }
@@ -75,7 +103,7 @@
 // (beaucoup de jours), ça laissait "Général" se faire compresser en dessous
 // de la largeur de son propre texte, collant les lettres aux bords. On lui
 // redonne son propre plancher, basé sur son contenu réel + son padding.
-.p-tab--general {
+.app-tab--general {
   min-width: max-content;
 }
 

@@ -1,5 +1,4 @@
 import { Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, viewChild } from '@angular/core';
-import { TabsModule } from 'primeng/tabs';
 import { TripTab } from '../trip-tab.model';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
@@ -7,7 +6,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 @Component({
   selector: 'app-trip-tabs-nav',
   standalone: true,
-  imports: [TabsModule],
+  imports: [],
   templateUrl: './trip-tabs-nav.component.html',
   styleUrl: './trip-tabs-nav.component.scss',
 })
@@ -33,6 +32,11 @@ export class TripTabsNavComponent {
       // ActivityDispatchService.registerNavBarCloneSource).
       const tabsEl = this.tabsListRef()?.nativeElement;
       if (tabsEl) this.dispatchService.registerNavBarCloneSource(tabsEl);
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG trip-tabs-nav afterNextRender]', {
+        hostRectHeight: this.hostRef.nativeElement.getBoundingClientRect().height,
+        tabsElRectHeight: tabsEl?.getBoundingClientRect().height,
+      });
     });
 
     // Hauteur réservée en padding-bottom par le contenu des slides (voir

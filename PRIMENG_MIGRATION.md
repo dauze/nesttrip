@@ -80,7 +80,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 3 | Composants visuels simples : Button, Tag, Chip, Divider, Fieldset, Avatar/AvatarGroup, ProgressSpinner, Skeleton, Message, Card, Toolbar | Faible | ✅ Fait |
 | 4 | Champs simples : InputText, Password, Textarea, InputNumber, Checkbox, SelectButton | Faible | ✅ Fait (suppression de `Fluid` reportée à la Phase 7, voir note) |
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
-| 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | À faire |
+| 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
 | 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison) | Élevé | À faire |
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
@@ -309,6 +309,110 @@ Vérifié par `ng build`/`ng lint`. **Pas de test de rendu réel dans un
 navigateur** — vu la complexité des interactions (drag-and-drop de notes,
 repli forcé pendant le drag d'activité, lazy-loading Google), ce composant
 mériterait particulièrement un test visuel avant de continuer.
+
+#### Correctifs post-Phase 5 (trouvés en testant dans le navigateur)
+
+Le test visuel a bien révélé des bugs que la compilation ne pouvait pas
+attraper — trois corrections après coup :
+
+- **Hauteur de repli/dépli fausse + lazy-load figé à l'ancienne hauteur** :
+  le hack CSS `grid-template-rows: 1fr/0fr` abandonné au profit d'une mesure
+  JS réelle (`scrollHeight`) → `max-height` animé, avec le padding déplacé
+  sur un enfant interne (jamais sur l'élément dont la hauteur est animée,
+  sinon il reste visible même à `max-height: 0`).
+- **Lazy-load qui se déclenchait à la fermeture au lieu de l'ouverture** :
+  `beforeToggle` émettait l'état CIBLE : corrigé pour émettre l'état COURANT
+  (celui d'avant bascule) — contre-intuitif vu le nom, mais c'est ce
+  qu'attend `if (!event.collapsed) return` côté
+  `activity-google-info`/`activity-gallery`.
+- **Spinner de chargement invisible au premier dépli** : la mesure de
+  hauteur s'exécutait avant que l'effet asynchrone déclenché par
+  `beforeToggle` (`toObservable`/`effect`, jamais synchrone avec un
+  `.set()`) ait eu le temps de peindre le spinner — elle attend maintenant
+  une frame (`requestAnimationFrame`) après `beforeToggle`.
+- **Bouton entouré d'un cercle visible** (notes.component) : certains
+  appelants posent `[text]="true"` ET `[outlined]="true"` en même temps
+  (repris tel quel de l'ancien markup) ; les deux classes avaient la même
+  spécificité CSS et `outlined` l'emportait. Ajout d'une règle combinée
+  `.app-button--text.app-button--outlined` pour que `text` gagne.
+- **Poignée de resize native réapparue sur les textarea** : `resize:
+  vertical` au lieu de `resize: none` dans `form-fields.scss` — corrigé (le
+  redimensionnement reste piloté par `TextareaDirective`, pas la poignée
+  native).
+- **Texte des textarea barrés illisible/hauteur à 0** : deux tentatives
+  avant la bonne. D'abord un `effect()` sur un `value` input dédié
+  (intercepter `[value]="..."` pour réagir aussi aux changements
+  PROGRAMMATIQUES, pas seulement `(input)`) — mais l'effet pouvait
+  s'exécuter avant la passe de layout du navigateur, mesurait un
+  `scrollHeight` de 0 et le figeait en dur. Solution finale, plus simple et
+  plus robuste : `afterEveryRender()` (pas `afterNextRender`, qui ne tourne
+  qu'une fois) — recalcule après CHAQUE rendu de l'app, sans essayer de
+  deviner quel événement a changé la valeur affichée.
+
+### Phase 6 — Tabs
+
+Un seul consommateur (`trip-tabs-nav`), contenu de chaque onglet entièrement
+custom (pile jour/libellé "Général"), construit directement dans SON PROPRE
+template — pas de composant `Tabs`/`Tab` générique à part créé sous
+`shared/components/` (aurait été une abstraction sans second appelant) :
+juste `<p-tabs>`/`<p-tablist>`/`<p-tab>` remplacés par du HTML/CSS natif
+(`.app-tabs` / `.app-tabs__list` / `.app-tab`) directement dans
+`trip-tabs-nav.component.html/scss`.
+
+Piège anticipé en Phase 0 (voir plus haut) traité en même temps, comme
+prévu : `ActivityDayDispatchOverlayComponent.cloneNavBarInto` clone
+`.app-tabs` (avant `<p-tabs>`) et cherche `.app-tabs__list` (avant
+`.p-tablist-content`) pour synchroniser le scroll horizontal de la réplique.
+`data-tab-id`/`role="tab"` conservés à l'identique (déjà posés sur les
+éléments d'origine, donc déjà présents sur le clone) : aucune autre logique
+de l'overlay (FLIP, matching par id) n'a eu besoin de changer.
+
+Le style actif/hover (indicateur du haut en `primary`, pas d'assombrissement
+au survol) vivait éparpillé dans des surcharges de variables PrimeNG
+globales (`--p-tabs-tab-border-width`, `--p-tabs-tab-hover-color`) dans
+`styles.scss` — regroupé directement dans `trip-tabs-nav.component.scss`,
+plus lisible et sans dépendre d'un composant externe. `.tabs-pop` (animation
+de "pop" au changement d'onglet, styles.scss) mis à jour pour cibler
+`.app-tab` au lieu du tag `p-tab`.
+
+Nettoyage connexe : plusieurs autres surcharges PrimeNG déjà mortes
+supprimées de `styles.scss` en même temps (`.p-tabpanels` — aucun
+`<p-tabpanel>` dans le projet, la navigation entre jours passe par Swiper,
+pas par le système de panels de PrimeNG ; `.p-card`, `.p-toolbar` — morts
+depuis la Phase 3). Un vrai oubli corrigé au passage : `.compact-form`
+(activity-form) ciblait encore `.p-inputtext` pour le padding compact du
+champ prix, alors que ce champ est `app-input-number`/`.app-input-text`
+depuis la Phase 4 — la classe ne matchait plus rien, régression silencieuse
+(padding non compact) jamais signalée.
+
+Vérifié par `ng build`/`ng lint` — le chunk `trip-detail-component` a
+nettement rétréci (1,01 Mo → 965 Ko), confirmant que `primeng/tabs` a bien
+disparu du bundle. **Pas de test de rendu réel dans un navigateur.**
+
+#### Correctifs post-Phase 6 (trouvés en testant dans le navigateur)
+
+- **Réplique clonée désynchronisée du scroll horizontal réel** :
+  `cloneNavBarInto` (`ActivityDayDispatchOverlayComponent`) copiait bien
+  `scrollLeft` depuis la barre source vers le clone `.app-tabs__list`, mais
+  juste après `appendChild` un nœud fraîchement inséré n'a pas encore de zone
+  scrollable établie côté navigateur — l'écriture de `scrollLeft` était donc
+  silencieusement clampée à 0. Corrigé en forçant une passe de layout
+  synchrone (`void cloneScroller.offsetWidth;`) entre l'insertion et
+  l'écriture de `scrollLeft`.
+- **Carte de dépose mal dimensionnée, uniquement au tout premier drag de la
+  session, avant tout survol de la barre** : `openSheet()` (le seul endroit
+  qui clonait la barre et mesurait sa hauteur repliée) n'est appelé qu'à une
+  vraie escalade (`phase === 'lifted'`). Mais l'aperçu "barre repliée"
+  (`.dispatch-overlay--bar-visible`, piloté par
+  `dispatchService.activeDayDrag() !== null`) s'affiche dès le tout premier
+  `cdkDrag`, AVANT toute escalade réelle — sur une session fraîche, la
+  réplique était donc vide et à la hauteur de secours CSS (56px, au lieu de
+  la vraie hauteur ~77px), d'où le contenu tronqué. Logique de clonage +
+  mesure extraite dans une méthode partagée `primeReplicaPreview()`, appelée
+  une fois à l'amorçage du composant (`afterNextRender` dans le constructeur,
+  aucun drag en cours donc aucun risque pour le `MutationObserver` de Swiper,
+  voir "Piège identifié" plus haut) ET par `openSheet()` à chaque décrochage
+  réel (pour rester fidèle à un éventuel scroll entre-temps).
 
 ## Après la migration
 

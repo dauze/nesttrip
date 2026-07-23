@@ -98,11 +98,11 @@ export class ActivityDayDispatchOverlayComponent {
   private readonly ballRef = viewChild<ElementRef<HTMLElement>>('ball');
   private readonly ballContentRef = viewChild<ElementRef<HTMLElement>>('ballContent');
   private readonly replicaNavRef = viewChild<ElementRef<HTMLElement>>('replicaNav');
-  // `read: ElementRef` est indispensable ici : ces éléments portent des
-  // composants PrimeNG (`p-button`/`p-tab`), donc sans lui, la référence
-  // résout vers l'instance du composant (pas d'`.nativeElement`) et non vers
-  // l'élément DOM — c'est ce qui provoquait le crash "Cannot read properties
-  // of undefined (reading 'dataset')".
+  // `read: ElementRef` est indispensable ici : ces éléments portent le
+  // composant `app-button`, donc sans lui, la référence résout vers
+  // l'instance du composant (pas d'`.nativeElement`) et non vers l'élément
+  // DOM — c'est ce qui provoquait le crash "Cannot read properties of
+  // undefined (reading 'dataset')".
   private readonly cellRefs = viewChildren('dayCell', { read: ElementRef<HTMLElement> });
   // Tailles "naturelles" (poignée/texte du clone, écart entre eux) mesurées
   // une seule fois à chaque clonage (voir cloneOriginHeaderInto) — servent de
@@ -171,6 +171,33 @@ export class ActivityDayDispatchOverlayComponent {
   private sheetTransitionListenerBound = false;
 
   constructor() {
+    // Amorce le clone + la hauteur repliée UNE FOIS que la vraie barre s'est
+    // enregistrée (voir `ActivityDispatchService.registerNavBarCloneSource`),
+    // pas au premier rendu DE CE composant : `TripTabsNavComponent` n'est
+    // monté qu'une fois le trip chargé (async, derrière un `@if`), donc
+    // potentiellement APRÈS le premier rendu de cet overlay — un
+    // `afterNextRender` one-shot ici s'exécutait alors trop tôt (avant que
+    // `registerNavBarCloneSource` n'ait jamais été appelé), et ne se
+    // redéclenchant jamais, l'amorçage échouait silencieusement pour le
+    // reste de la session. En réagissant au signal d'enregistrement lui-même,
+    // l'amorçage a lieu au bon moment quel que soit l'ordre de montage. Aucun
+    // drag n'est en cours à cet instant (aucun risque pour le
+    // MutationObserver de Swiper, voir la note détaillée dans `openSheet` sur
+    // pourquoi on ne reclone JAMAIS pendant un cdkDrag pré-escalade) : sans
+    // cet amorçage, l'aperçu "barre repliée" affiché dès le tout premier
+    // cdkDrag de la session (`sheetVisible`/`--bar-visible`, voir
+    // ActivityDispatchService) restait vide et à la hauteur par défaut
+    // (56px, celle du fallback CSS) tant qu'aucune escalade réelle
+    // (`openSheet`) n'avait encore eu lieu — d'où le contenu tronqué observé
+    // uniquement au tout premier survol de la barre, jamais ensuite.
+    let replicaPreviewPrimed = false;
+    effect(() => {
+      const cloneSource = this.dispatchService.getNavBarCloneSource();
+      if (!cloneSource || replicaPreviewPrimed) return;
+      replicaPreviewPrimed = true;
+      this.primeReplicaPreview('init');
+    });
+
     // La demande de dispatch réelle est émise par le service ; c'est ici,
     // dans un contexte qui a accès au TripFacade (fourni au niveau de la
     // route trips), qu'on l'exécute réellement contre le store.
@@ -268,6 +295,28 @@ export class ActivityDayDispatchOverlayComponent {
         this.checkEscalate(pointer, dragInfo);
       } else {
         this.clearEscalateTimer();
+      }
+    });
+
+    // DEBUG temporaire : capture l'état exact au moment où
+    // `.dispatch-overlay--bar-visible` s'active (voir template), pour
+    // comparer avec ce qu'a capturé `primeReplicaPreview('init')`.
+    let loggedBarVisible = false;
+    effect(() => {
+      const dragInfo = this.dispatchService.activeDayDrag();
+      if (dragInfo && !loggedBarVisible) {
+        loggedBarVisible = true;
+        // eslint-disable-next-line no-console
+        console.log('[DEBUG bar-visible activated]', {
+          collapsedHeightSignal: this.collapsedHeight(),
+          replicaCloneRootHeight: this.replicaCloneRoot?.getBoundingClientRect().height,
+          liveNavBarRectHeight: this.dispatchService.getNavBarRect()?.height,
+          liveCloneSourceRectHeight: this.dispatchService.getNavBarCloneSource()?.getBoundingClientRect().height,
+          sheetRectHeight: this.sheetRef()?.nativeElement.getBoundingClientRect().height,
+          replicaContainerRectHeight: this.replicaNavRef()?.nativeElement.getBoundingClientRect().height,
+        });
+      } else if (!dragInfo) {
+        loggedBarVisible = false;
       }
     });
   }
@@ -419,6 +468,31 @@ export class ActivityDayDispatchOverlayComponent {
     }
   }
 
+  /**
+   * Clone + mesure la barre repliée, sans rien d'autre (pas d'expansion, pas
+   * de FLIP de la grille) : appelé une fois à l'amorçage (constructeur, via
+   * `afterNextRender`, aucun drag en cours donc aucun risque pour le
+   * MutationObserver de Swiper) ET à chaque décrochage réel (`openSheet`,
+   * phase 'lifted') — jamais entre les deux, voir la note détaillée dans
+   * `openSheet`.
+   */
+  private primeReplicaPreview(origin: string): void {
+    const replicaContainer = this.replicaNavRef()?.nativeElement;
+    if (replicaContainer) this.cloneNavBarInto(replicaContainer);
+
+    const navRect = this.dispatchService.getNavBarRect();
+    if (navRect) this.collapsedHeight.set(navRect.height);
+
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG primeReplicaPreview]', origin, {
+      navRectHeight: navRect?.height,
+      collapsedHeightSignalAfter: this.collapsedHeight(),
+      replicaContainerFound: !!replicaContainer,
+      cloneSourceFound: !!this.dispatchService.getNavBarCloneSource(),
+      replicaCloneRootHeight: this.replicaCloneRoot?.getBoundingClientRect().height,
+    });
+  }
+
   // ── Ouverture du calendrier : la barre d'onglets grandit sur elle-même ────
   //
   // Le clone (#replicaNav + #grid dans #sheet) est un composant à part,
@@ -430,22 +504,21 @@ export class ActivityDayDispatchOverlayComponent {
   // qui fait grandir sa hauteur en transition CSS pure (pas de FLIP/WAAPI) :
   // la barre s'étire donc littéralement sur place, ancrée en bas.
   private openSheet(): void {
-    // Le (re)clonage ne se fait QU'ici, une seule fois par décrochage réel
-    // (phase 'lifted'), jamais dès que la barre repliée devient un simple
-    // survol pré-escalade (`sheetVisible`) : un remplacement du sous-arbre
-    // DOM de #replicaNav à CHAQUE début de cdkDrag dans un jour — même les
-    // réordonnancements qui n'escaladent jamais vers le calendrier — se
-    // faisait repérer par le MutationObserver de Swiper (`observeParents`/
-    // `observeSlideChildren` dans TripDaySwiperComponent, qui observe le
-    // sous-arbre entier d'un ancêtre commun, donc aussi cette barre sœur) et
-    // déclenchait un `update()` en pleine séquence de pointeur, cassant le
-    // drag maison (retour immédiat au moindre pointermove, swipe qui
-    // récupère le geste). Ici, une seule fois par décrochage, c'est sans risque.
-    const replicaContainer = this.replicaNavRef()?.nativeElement;
-    if (replicaContainer) this.cloneNavBarInto(replicaContainer);
-
-    const navRect = this.dispatchService.getNavBarRect();
-    if (navRect) this.collapsedHeight.set(navRect.height);
+    // Le (re)clonage ne se fait QU'ici et à l'amorçage initial
+    // (`primeReplicaPreview`, voir le constructeur), jamais dès que la barre
+    // repliée devient un simple survol pré-escalade (`sheetVisible`) : un
+    // remplacement du sous-arbre DOM de #replicaNav à CHAQUE début de
+    // cdkDrag dans un jour — même les réordonnancements qui n'escaladent
+    // jamais vers le calendrier — se faisait repérer par le
+    // MutationObserver de Swiper (`observeParents`/`observeSlideChildren`
+    // dans TripDaySwiperComponent, qui observe le sous-arbre entier d'un
+    // ancêtre commun, donc aussi cette barre sœur) et déclenchait un
+    // `update()` en pleine séquence de pointeur, cassant le drag maison
+    // (retour immédiat au moindre pointermove, swipe qui récupère le
+    // geste). Ici, une seule fois par décrochage réel (phase 'lifted'),
+    // c'est sans risque : re-mesurer/re-cloner à chaque vraie escalade
+    // garde la réplique fidèle à un éventuel scroll entre-temps.
+    this.primeReplicaPreview('openSheet');
 
     const expandedHeightPx = window.innerHeight * EXPANDED_HEIGHT_VH_RATIO;
     const travelPx = Math.max(0, expandedHeightPx - this.collapsedHeight());
@@ -495,7 +568,7 @@ export class ActivityDayDispatchOverlayComponent {
 
   // ── Clone DOM de la barre de jours (réplique exacte, scroll inclus) ─────
   //
-  // Un vrai `cloneNode(true)` du `<p-tabs>` réel (voir
+  // Un vrai `cloneNode(true)` de `.app-tabs` (voir
   // ActivityDispatchService.registerNavBarCloneSource) plutôt qu'une
   // re-création Angular parallèle : garantit que la réplique montre EXACTEMENT
   // ce que montre la vraie barre au moment du décrochage — y compris son
@@ -514,9 +587,17 @@ export class ActivityDayDispatchOverlayComponent {
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
     container.appendChild(clone);
 
-    const sourceScroller = source.querySelector<HTMLElement>('.p-tablist-content');
-    const cloneScroller = clone.querySelector<HTMLElement>('.p-tablist-content');
-    if (sourceScroller && cloneScroller) cloneScroller.scrollLeft = sourceScroller.scrollLeft;
+    const sourceScroller = source.querySelector<HTMLElement>('.app-tabs__list');
+    const cloneScroller = clone.querySelector<HTMLElement>('.app-tabs__list');
+    if (sourceScroller && cloneScroller) {
+      // Force une passe de layout synchrone avant d'écrire `scrollLeft` : à
+      // peine inséré (juste après cet `appendChild`), le clone n'a pas encore
+      // de zone scrollable établie côté navigateur, donc l'écriture pouvait
+      // être clampée à 0 silencieusement — d'où le décalage de scroll
+      // (réplique toujours à gauche, même en scrollant sur un jour éloigné).
+      void cloneScroller.offsetWidth;
+      cloneScroller.scrollLeft = sourceScroller.scrollLeft;
+    }
 
     this.replicaCloneRoot = clone;
   }
@@ -528,7 +609,7 @@ export class ActivityDayDispatchOverlayComponent {
   // dessous : ils "deviennent" littéralement le bouton correspondant de la
   // grille — même technique FLIP que la bulle (mesurer avant, mesurer après,
   // WAAPI entre les deux), appliquée ici à chaque bouton concerné. Le
-  // matching se fait par `data-tab-id` (posé sur chaque `p-tab` réel, donc
+  // matching se fait par `data-tab-id` (posé sur chaque `.app-tab` réel, donc
   // présent sur le clone) plutôt que par index : robuste à n'importe quel
   // décalage de scroll de la barre d'origine.
   private captureVisibleTabFlipTargets(): Map<string, DOMRect> {
