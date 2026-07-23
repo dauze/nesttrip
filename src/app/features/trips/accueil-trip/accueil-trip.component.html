@@ -52,7 +52,7 @@
           }"
           class="w-full h-full transition-colors transition-duration-200"
           (click)="editMode ? (user?.uid === trip.ownerId && toggleTripSelection(trip.id)) : selectTrip(trip.id)"
-          pTooltip="Seul le propriétaire de ce voyage peut le supprimer."
+          appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
           tooltipEvent="both"
           [tooltipDisabled]="!editMode || user?.uid === trip.ownerId"
         >

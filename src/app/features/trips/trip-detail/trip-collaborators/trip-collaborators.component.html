@@ -5,7 +5,7 @@
         [label]="getInitials(entry[1].displayName, entry[1].email)"
         shape="circle"
         size="normal"
-        [pTooltip]="entry[1].displayName || entry[1].email"
+        [appTooltip]="entry[1].displayName || entry[1].email"
         tooltipEvent="both"
         tooltipPosition="bottom" />
     }
@@ -14,7 +14,7 @@
         [label]="'+' + extraCount()"
         shape="circle"
         size="normal"
-        [pTooltip]="extraTooltip()"
+        [appTooltip]="extraTooltip()"
         tooltipPosition="bottom" />
     }
   </app-avatar-group>

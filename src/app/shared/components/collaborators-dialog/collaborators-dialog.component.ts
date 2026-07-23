@@ -1,7 +1,7 @@
 import { Component, computed, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
-import { TooltipModule } from 'primeng/tooltip';
+import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
@@ -13,7 +13,7 @@ import { getInitials } from '@app/shared/utils/get-initials';
 @Component({
   selector: 'app-collaborators-dialog',
   standalone: true,
-  imports: [FormsModule, AvatarComponent, TooltipModule, ButtonComponent, DialogModule, InputTextDirective, MessageComponent],
+  imports: [FormsModule, AvatarComponent, TooltipDirective, ButtonComponent, DialogModule, InputTextDirective, MessageComponent],
   templateUrl: './collaborators-dialog.component.html',
   styleUrl: './collaborators-dialog.component.scss',
 })

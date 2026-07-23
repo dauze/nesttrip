@@ -81,7 +81,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 4 | Champs simples : InputText, Password, Textarea, InputNumber, Checkbox, SelectButton | Faible | ✅ Fait (suppression de `Fluid` reportée à la Phase 7, voir note) |
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
 | 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
-| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison) | Élevé | À faire |
+| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a fait) |
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
@@ -112,12 +112,12 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | Fluid | new-trip | 4 (suppression) |
 | Panel | activity-card, activity-google-info, activity-gallery, trip-activities, notes, timeline, day-panel, trip-day-map | 5 |
 | Tabs / Tab / TabList | trip-tabs-nav (+ clone dans activity-day-dispatch-overlay) | 6 |
-| Menu / MenuItem | trips (roue crantée) | 7 |
-| Tooltip | accueil-trip, collaborators-dialog, trip-collaborators | 7 |
-| Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7 |
-| Select | activity-form, timeline | 7 |
-| AutoComplete | new-trip, activity-header | 7 |
-| DatePicker | new-trip, trip-header, activity-form | 7 |
+| Menu / MenuItem | trips (roue crantée) | 7b |
+| Tooltip | accueil-trip, collaborators-dialog, trip-collaborators | 7a ✅ |
+| Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7c |
+| Select | activity-form, timeline | 7d |
+| AutoComplete | new-trip, activity-header | 7e |
+| DatePicker | new-trip, trip-header, activity-form | 7f |
 | FileUpload | activity-files | 8 |
 
 ## Journal des phases faites
@@ -409,10 +409,54 @@ disparu du bundle. **Pas de test de rendu réel dans un navigateur.**
   réplique était donc vide et à la hauteur de secours CSS (56px, au lieu de
   la vraie hauteur ~77px), d'où le contenu tronqué. Logique de clonage +
   mesure extraite dans une méthode partagée `primeReplicaPreview()`, appelée
-  une fois à l'amorçage du composant (`afterNextRender` dans le constructeur,
-  aucun drag en cours donc aucun risque pour le `MutationObserver` de Swiper,
-  voir "Piège identifié" plus haut) ET par `openSheet()` à chaque décrochage
-  réel (pour rester fidèle à un éventuel scroll entre-temps).
+  par `openSheet()` à chaque décrochage réel (pour rester fidèle à un
+  éventuel scroll entre-temps) ET une fois à l'amorçage — mais **pas** via un
+  `afterNextRender` one-shot dans le constructeur de l'overlay, tentative
+  initiale qui s'est révélée insuffisante : `TripTabsNavComponent` n'est monté
+  qu'une fois le trip chargé (async, derrière un `@if`), donc potentiellement
+  APRÈS le premier rendu de l'overlay — l'`afterNextRender` s'exécutait alors
+  avant que la barre réelle ne se soit jamais enregistrée
+  (`registerNavBarCloneSource`), et ne se redéclenchant jamais, l'amorçage
+  restait cassé pour le reste de la session (confirmé par un `console.log`
+  temporaire : `collapsedHeightSignal` bloqué à 56 alors que la vraie barre
+  mesurait déjà 76.95px). Solution retenue : `navBarEl`/`navBarCloneSourceEl`
+  dans `ActivityDispatchService` transformés en `signal` plutôt que de simples
+  champs, et l'overlay amorce sa réplique via un `effect()` qui réagit au
+  moment réel de l'enregistrement de la barre (une seule fois, via un flag
+  local), quel que soit l'ordre de montage des deux composants.
+
+### Phase 7a — Tooltip
+
+Trois usages seulement (accueil-trip, trip-collaborators,
+collaborators-dialog), tous de simples bulles de texte sans interaction —
+contrairement au reste de la Phase 7 (Menu, Select, AutoComplete, DatePicker),
+qui a besoin de vrai positionnement d'overlay/focus-trap/fermeture au clic
+extérieur. `TooltipDirective` (`src/app/shared/directives/tooltip.directive.ts`)
+n'utilise donc **pas** `@angular/cdk/overlay` : juste un `<div class="app-tooltip">`
+créé à la volée et ajouté en enfant direct de `document.body`, positionné en
+`position: fixed` à partir de `getBoundingClientRect()` de la cible, avec
+repositionnement sur `scroll`/`resize` tant qu'elle est affichée. Style
+(`src/styles/tooltip.scss`, global comme `dialog.scss` — même raison, DOM
+ajouté hors de l'arbre de vue du composant hôte) repris du preset Aura :
+fond `--nt-surface-700`/texte `--nt-surface-0` (bulle sombre dans les deux
+modes, comme PrimeNG), `--nt-overlay-popover-shadow`/`-border-radius`
+(déjà définis en Phase 0, réutilisés tels quels). `z-index: 1200` choisi
+explicitement au-dessus de `.cdk-overlay-container` (1000) et du `zIndex.tooltip`
+par défaut de PrimeNG (~1100) : un tooltip doit rester visible même déclenché
+depuis l'intérieur d'un dialog encore ouvert (`p-dialog` dans
+collaborators-dialog, pas encore migré — voir Phase 7c).
+
+API calquée sur `pTooltip` pour un portage quasi 1:1 des templates
+(`pTooltip="..."` → `appTooltip="..."`, `tooltipPosition`/`tooltipDisabled`/
+`tooltipEvent` identiques) : seul le nom de l'attribut principal change.
+Écoute `focusin`/`focusout` plutôt que `focus`/`blur` (qui ne bubblent pas) :
+la directive est parfois posée sur un composant dont le host n'est pas
+lui-même l'élément focusable (`<app-button appTooltip>`, dont le `<button>`
+réel est interne) — seuls les événements qui remontent permettent au
+listener posé sur le host de les capter.
+
+Vérifié par `ng build`/`ng lint`, plus aucun import `primeng/tooltip` dans le
+projet. **Pas de test de rendu réel dans un navigateur.**
 
 ## Après la migration
 

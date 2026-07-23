@@ -22,7 +22,7 @@
           [text]="true"
           severity="danger"
           [disabled]="!canRemove(entry[0])"
-          [pTooltip]="removeTooltip(entry[0])"
+          [appTooltip]="removeTooltip(entry[0])"
           [tooltipDisabled]="canRemove(entry[0])"
           tooltipPosition="left"
           (click)="onRemove(entry[0])" />
@@ -75,7 +75,7 @@
               [rounded]="true"
               [text]="true"
               severity="secondary"
-              pTooltip="Retirer de mes companions"
+              appTooltip="Retirer de mes companions"
               tooltipPosition="left"
               (click)="onRemoveCompanionClick($event, companion.uid)" />
           </div>

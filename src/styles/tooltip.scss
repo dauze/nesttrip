@@ -1,0 +1,25 @@
+/* ---------------------------------------------------------------------
+ * Bulle du tooltip maison (Phase 7 de la sortie de PrimeNG, voir
+ * PRIMENG_MIGRATION.md) : `TooltipDirective` l'insère directement en enfant
+ * de <body> (pas via `@angular/cdk/overlay`, voir sa doc), donc cette classe
+ * doit rester globale, même topologie que `.app-dialog-panel` dans dialog.scss.
+ * ------------------------------------------------------------------- */
+
+.app-tooltip {
+  position: fixed;
+  // Au-dessus de `.cdk-overlay-container` (1000) et du `p-dialog` encore en
+  // place (collaborators-dialog, migré en Phase 7 également) : un tooltip
+  // doit toujours rester visible même déclenché depuis l'intérieur d'un
+  // dialog ouvert.
+  z-index: 1200;
+  max-width: 12.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--nt-overlay-popover-border-radius);
+  box-shadow: var(--nt-overlay-popover-shadow);
+  background: var(--nt-surface-700);
+  color: var(--nt-surface-0);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: none;
+  word-wrap: break-word;
+}

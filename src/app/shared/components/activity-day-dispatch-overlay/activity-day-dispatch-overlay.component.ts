@@ -195,7 +195,7 @@ export class ActivityDayDispatchOverlayComponent {
       const cloneSource = this.dispatchService.getNavBarCloneSource();
       if (!cloneSource || replicaPreviewPrimed) return;
       replicaPreviewPrimed = true;
-      this.primeReplicaPreview('init');
+      this.primeReplicaPreview();
     });
 
     // La demande de dispatch réelle est émise par le service ; c'est ici,
@@ -295,28 +295,6 @@ export class ActivityDayDispatchOverlayComponent {
         this.checkEscalate(pointer, dragInfo);
       } else {
         this.clearEscalateTimer();
-      }
-    });
-
-    // DEBUG temporaire : capture l'état exact au moment où
-    // `.dispatch-overlay--bar-visible` s'active (voir template), pour
-    // comparer avec ce qu'a capturé `primeReplicaPreview('init')`.
-    let loggedBarVisible = false;
-    effect(() => {
-      const dragInfo = this.dispatchService.activeDayDrag();
-      if (dragInfo && !loggedBarVisible) {
-        loggedBarVisible = true;
-        // eslint-disable-next-line no-console
-        console.log('[DEBUG bar-visible activated]', {
-          collapsedHeightSignal: this.collapsedHeight(),
-          replicaCloneRootHeight: this.replicaCloneRoot?.getBoundingClientRect().height,
-          liveNavBarRectHeight: this.dispatchService.getNavBarRect()?.height,
-          liveCloneSourceRectHeight: this.dispatchService.getNavBarCloneSource()?.getBoundingClientRect().height,
-          sheetRectHeight: this.sheetRef()?.nativeElement.getBoundingClientRect().height,
-          replicaContainerRectHeight: this.replicaNavRef()?.nativeElement.getBoundingClientRect().height,
-        });
-      } else if (!dragInfo) {
-        loggedBarVisible = false;
       }
     });
   }
@@ -476,21 +454,12 @@ export class ActivityDayDispatchOverlayComponent {
    * phase 'lifted') — jamais entre les deux, voir la note détaillée dans
    * `openSheet`.
    */
-  private primeReplicaPreview(origin: string): void {
+  private primeReplicaPreview(): void {
     const replicaContainer = this.replicaNavRef()?.nativeElement;
     if (replicaContainer) this.cloneNavBarInto(replicaContainer);
 
     const navRect = this.dispatchService.getNavBarRect();
     if (navRect) this.collapsedHeight.set(navRect.height);
-
-    // eslint-disable-next-line no-console
-    console.log('[DEBUG primeReplicaPreview]', origin, {
-      navRectHeight: navRect?.height,
-      collapsedHeightSignalAfter: this.collapsedHeight(),
-      replicaContainerFound: !!replicaContainer,
-      cloneSourceFound: !!this.dispatchService.getNavBarCloneSource(),
-      replicaCloneRootHeight: this.replicaCloneRoot?.getBoundingClientRect().height,
-    });
   }
 
   // ── Ouverture du calendrier : la barre d'onglets grandit sur elle-même ────
@@ -518,7 +487,7 @@ export class ActivityDayDispatchOverlayComponent {
     // geste). Ici, une seule fois par décrochage réel (phase 'lifted'),
     // c'est sans risque : re-mesurer/re-cloner à chaque vraie escalade
     // garde la réplique fidèle à un éventuel scroll entre-temps.
-    this.primeReplicaPreview('openSheet');
+    this.primeReplicaPreview();
 
     const expandedHeightPx = window.innerHeight * EXPANDED_HEIGHT_VH_RATIO;
     const travelPx = Math.max(0, expandedHeightPx - this.collapsedHeight());

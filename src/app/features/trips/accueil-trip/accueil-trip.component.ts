@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { TripFacade } from '../trip-facade.service';
 import { AuthService } from '@app/core/services/auth.service';
 import { NgClass } from '@angular/common';
-import { Tooltip } from 'primeng/tooltip';
+import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -26,7 +26,7 @@ import { Tooltip } from 'primeng/tooltip';
     ConfirmDialogModule,
     FormsModule,
     NgClass,
-    Tooltip
+    TooltipDirective
   ],
   providers: [ConfirmationService],
   templateUrl: 'accueil-trip.component.html',

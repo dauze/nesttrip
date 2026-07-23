@@ -3,9 +3,9 @@ import { Component, HostBinding, input } from '@angular/core';
 /**
  * Remplacement maison de `p-avatar` (Phase 3 de la sortie de PrimeNG, voir
  * PRIMENG_MIGRATION.md). Host-as-box comme Tag/Message (voir leur doc) :
- * pas d'élément interne, juste le label centré. `pTooltip` (PrimeNG,
- * toujours en place jusqu'à sa Phase 7) continue de s'appliquer directement
- * sur `<app-avatar>` sans changement, indépendant du composant qui le porte.
+ * pas d'élément interne, juste le label centré. `appTooltip`
+ * (`TooltipDirective`, Phase 7) s'applique directement sur `<app-avatar>`
+ * sans changement, indépendant du composant qui le porte.
  */
 @Component({
   selector: 'app-avatar',

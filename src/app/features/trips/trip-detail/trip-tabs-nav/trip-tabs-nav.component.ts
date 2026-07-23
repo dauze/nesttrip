@@ -32,11 +32,6 @@ export class TripTabsNavComponent {
       // ActivityDispatchService.registerNavBarCloneSource).
       const tabsEl = this.tabsListRef()?.nativeElement;
       if (tabsEl) this.dispatchService.registerNavBarCloneSource(tabsEl);
-      // eslint-disable-next-line no-console
-      console.log('[DEBUG trip-tabs-nav afterNextRender]', {
-        hostRectHeight: this.hostRef.nativeElement.getBoundingClientRect().height,
-        tabsElRectHeight: tabsEl?.getBoundingClientRect().height,
-      });
     });
 
     // Hauteur réservée en padding-bottom par le contenu des slides (voir
