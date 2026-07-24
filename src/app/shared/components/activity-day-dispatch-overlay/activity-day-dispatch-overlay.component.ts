@@ -130,7 +130,6 @@ export class ActivityDayDispatchOverlayComponent {
 
   protected readonly dragged = this.dispatchService.dragged;
   protected readonly phase = this.dispatchService.phase;
-  protected readonly hoveredDayKey = this.dispatchService.hoveredDayKey;
 
   /** true une fois la bulle "formée" : à partir de là elle suit le pointeur en direct via binding, plus de WAAPI. */
   protected readonly formed = signal(false);
@@ -980,6 +979,28 @@ export class ActivityDayDispatchOverlayComponent {
   }
 
   /**
+   * Inverse de `startBorderColorTransition` : la bulle (bords colorés
+   * uniformes) redevient la carte au repos (fin liseré gris 3 côtés, bord
+   * gauche épais qui reste coloré) — utilisé par `playReturnAnimation` et
+   * `playDeescalateAnimation`. `border-color` n'a pas besoin de la protection
+   * `commitStyles`/WAAPI (Angular n'y touche jamais) mais s'anime mal en
+   * keyframes WAAPI, d'où une transition CSS dédiée, en parallèle, ciblant
+   * uniquement cette propriété.
+   */
+  private resetBorderColorToGray(ball: HTMLElement, color: string, durationMs: number, easing: string): void {
+    ball.style.borderLeftColor = color;
+    ball.style.transition = 'none';
+    ball.style.borderTopColor = color;
+    ball.style.borderRightColor = color;
+    ball.style.borderBottomColor = color;
+    void ball.offsetHeight; // flush layout/style avant de réactiver la transition
+    ball.style.transition = `border-color ${durationMs}ms ${easing}`;
+    ball.style.borderTopColor = THUMB_BORDER_GRAY;
+    ball.style.borderRightColor = THUMB_BORDER_GRAY;
+    ball.style.borderBottomColor = THUMB_BORDER_GRAY;
+  }
+
+  /**
    * Phase 2 : la miniature s'arrondit en bulle en voyageant vers le doigt.
    * Contrairement à un WAAPI figé sur la position du doigt au moment T, cette
    * boucle relit `pointer()` À CHAQUE FRAME : si le doigt continue de bouger
@@ -1062,21 +1083,31 @@ export class ActivityDayDispatchOverlayComponent {
     this.currentBallAnimation.finished
       .then(() => {
         this.sheetExpanded.set(false);
-        // Attend la fermeture CSS du calendrier (même durée dynamique que
-        // l'ouverture, cf. `expandDurationMs`) avant de tout masquer :
-        // sinon `finish()` bascule `isVisible` à `false` — donc le sheet en
-        // `display: none` — pendant que la réplique/la grille sont encore en
-        // train de s'animer, ce qui les coupe net au lieu de les laisser finir.
-        const cssCloseRemaining = Math.max(0, this.expandDurationMs() - DROP_DURATION);
-        if (cssCloseRemaining > 0) {
-          setTimeout(() => this.dispatchService.finish(), cssCloseRemaining);
-        } else {
-          this.dispatchService.finish();
-        }
+        this.finishAfterSheetClose(DROP_DURATION);
       })
       .catch(() => {
         /* animation annulée (ex. drag suivant démarré avant la fin) : rien à faire */
       });
+  }
+
+  /**
+   * Attend la fermeture CSS du calendrier (même durée dynamique que
+   * l'ouverture, cf. `expandDurationMs`) avant d'appeler `finish()` : sinon
+   * `finish()` bascule `isVisible` à `false` — donc le sheet en
+   * `display: none` — pendant que la réplique/la grille sont encore en train
+   * de s'animer, ce qui les coupe net au lieu de les laisser finir.
+   * `alreadyElapsedMs` est la durée déjà écoulée en parallèle de cette
+   * fermeture CSS (l'animation de la bulle elle-même) — voir les deux
+   * appelants (`playDropAnimation`/`playReturnAnimation`) pour leur calcul
+   * respectif.
+   */
+  private finishAfterSheetClose(alreadyElapsedMs: number): void {
+    const cssCloseRemaining = Math.max(0, this.expandDurationMs() - alreadyElapsedMs);
+    if (cssCloseRemaining > 0) {
+      setTimeout(() => this.dispatchService.finish(), cssCloseRemaining);
+    } else {
+      this.dispatchService.finish();
+    }
   }
 
   /** Retour "aimant" : trajet inverse (bulle -> miniature) puis redéploiement du texte. */
@@ -1132,20 +1163,7 @@ export class ActivityDayDispatchOverlayComponent {
     );
     this.currentBallAnimation = travelBackAnim;
 
-    // `border-color`, lui, n'a pas besoin de cette protection (Angular n'y
-    // touche jamais) — mais s'anime mal en keyframes WAAPI, d'où une
-    // transition CSS dédiée, en parallèle, ciblant uniquement cette
-    // propriété : gris <- coloré sur les 3 côtés, gauche reste coloré.
-    ball.style.borderLeftColor = color;
-    ball.style.transition = 'none';
-    ball.style.borderTopColor = color;
-    ball.style.borderRightColor = color;
-    ball.style.borderBottomColor = color;
-    void ball.offsetHeight; // flush layout/style avant de réactiver la transition
-    ball.style.transition = `border-color ${RETURN_TRAVEL_DURATION}ms ease`;
-    ball.style.borderTopColor = THUMB_BORDER_GRAY;
-    ball.style.borderRightColor = THUMB_BORDER_GRAY;
-    ball.style.borderBottomColor = THUMB_BORDER_GRAY;
+    this.resetBorderColorToGray(ball, color, RETURN_TRAVEL_DURATION, 'ease');
 
     travelBackAnim.finished
       .then(() => {
@@ -1193,15 +1211,7 @@ export class ActivityDayDispatchOverlayComponent {
             // (`expandDurationMs`) dépasse maintenant celle, fixe, de la
             // bulle. On complète l'attente avant `finish()` pour ne pas
             // couper la réplique/la grille en plein milieu de leur retour.
-            const cssCloseRemaining = Math.max(
-              0,
-              this.expandDurationMs() - (RETURN_TRAVEL_DURATION + RETURN_EXPAND_DURATION),
-            );
-            if (cssCloseRemaining > 0) {
-              setTimeout(() => this.dispatchService.finish(), cssCloseRemaining);
-            } else {
-              this.dispatchService.finish();
-            }
+            this.finishAfterSheetClose(RETURN_TRAVEL_DURATION + RETURN_EXPAND_DURATION);
           })
           .catch(() => {
             /* animation annulée : rien à faire */
@@ -1239,9 +1249,6 @@ export class ActivityDayDispatchOverlayComponent {
     const current = ball.getBoundingClientRect();
     const { width: collapsedWidth, height: collapsedHeight } = this.computeCollapsedSize(origin);
     const pos = `translate3d(${current.left}px, ${current.top}px, 0)`;
-    // Inverse exact de `startBorderColorTransition`/`playTravelFollow` : la
-    // bulle (bords colorés uniformes) redevient la carte au repos (fin
-    // liseré gris 3 côtés, bord gauche épais qui reste coloré).
     const color = this.dragged()?.color ?? 'var(--p-primary-color)';
 
     // `transform` DOIT rester piloté par WAAPI (même s'il ne change pas de
@@ -1287,20 +1294,7 @@ export class ActivityDayDispatchOverlayComponent {
     );
     this.currentBallAnimation = shrinkAnim;
 
-    // `border-color`, lui, n'a pas besoin de cette protection (Angular n'y
-    // touche jamais) — mais s'anime mal en keyframes WAAPI, d'où une
-    // transition CSS dédiée, en parallèle, ciblant uniquement cette
-    // propriété : gris <- coloré sur les 3 côtés, gauche reste coloré.
-    ball.style.borderLeftColor = color;
-    ball.style.transition = 'none';
-    ball.style.borderTopColor = color;
-    ball.style.borderRightColor = color;
-    ball.style.borderBottomColor = color;
-    void ball.offsetHeight; // flush layout/style avant de réactiver la transition
-    ball.style.transition = `border-color ${DAY_DRAG_COLLAPSE_DURATION_MS}ms ease-in-out`;
-    ball.style.borderTopColor = THUMB_BORDER_GRAY;
-    ball.style.borderRightColor = THUMB_BORDER_GRAY;
-    ball.style.borderBottomColor = THUMB_BORDER_GRAY;
+    this.resetBorderColorToGray(ball, color, DAY_DRAG_COLLAPSE_DURATION_MS, 'ease-in-out');
 
     shrinkAnim.finished
       .then(() => {

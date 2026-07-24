@@ -1,4 +1,4 @@
-import { Component, ElementRef, TemplateRef, ViewContainerRef, contentChild, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, TemplateRef, ViewContainerRef, contentChild, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
@@ -38,6 +38,7 @@ const POSITIONS: ConnectedPosition[] = [
   imports: [NgTemplateOutlet],
   templateUrl: './autocomplete.component.html',
   styleUrl: './autocomplete.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

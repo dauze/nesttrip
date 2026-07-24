@@ -10,7 +10,7 @@ import {
   LoadingState, PlaceSummary, PlaceDetails, PlacePhotos
 } from '../models/place.dto';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class GooglePlaceService {
   private http = inject(HttpClient);
 

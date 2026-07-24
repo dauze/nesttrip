@@ -1,4 +1,4 @@
-import { Component, HostBinding, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, computed, input } from '@angular/core';
 
 export type TagSeverity = 'primary' | 'secondary' | 'danger' | 'success' | 'warn' | 'info';
 
@@ -16,6 +16,7 @@ export type TagSeverity = 'primary' | 'secondary' | 'danger' | 'success' | 'warn
   standalone: true,
   templateUrl: './tag.component.html',
   styleUrl: './tag.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TagComponent {
   readonly value = input<string>('');

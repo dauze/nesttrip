@@ -23,7 +23,7 @@ type ChromeKey = 'toolbar' | 'header' | 'tabsNav';
  * dans trip-detail) : sur accueil-trip/new-trip, rien ne l'appelle, donc la
  * toolbar y reste toujours visible (translateY jamais modifié), comme voulu.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class TripChromeService {
   private readonly heights = signal<Record<ChromeKey, number>>({ toolbar: 0, header: 0, tabsNav: 0 });
   private readonly chromeEls = new Set<HTMLElement>();

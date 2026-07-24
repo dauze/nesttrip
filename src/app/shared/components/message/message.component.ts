@@ -1,4 +1,4 @@
-import { Component, HostBinding, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, computed, input } from '@angular/core';
 
 export type MessageSeverity = 'info' | 'success' | 'warn' | 'error';
 
@@ -20,6 +20,7 @@ const DEFAULT_ICON: Record<MessageSeverity, string> = {
   standalone: true,
   templateUrl: './message.component.html',
   styleUrl: './message.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MessageComponent {
   readonly text = input<string>('');

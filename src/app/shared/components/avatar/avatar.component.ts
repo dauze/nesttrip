@@ -1,4 +1,4 @@
-import { Component, HostBinding, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, input } from '@angular/core';
 
 /**
  * Remplacement maison de `p-avatar` (Phase 3 de la sortie de PrimeNG, voir
@@ -12,6 +12,7 @@ import { Component, HostBinding, input } from '@angular/core';
   standalone: true,
   templateUrl: './avatar.component.html',
   styleUrl: './avatar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AvatarComponent {
   readonly label = input<string>('');

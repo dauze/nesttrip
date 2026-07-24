@@ -1,5 +1,5 @@
 import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { Component, EventEmitter, input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
@@ -12,9 +12,10 @@ import { DatePipe } from '@angular/common';
   imports: [PanelComponent, DatePipe, DividerComponent],
   templateUrl: 'timeline.component.html',
   styleUrl: 'timeline.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TimelineComponent {
-  @Output() activitySelected = new EventEmitter<string>();
+  readonly activitySelected = output<string>();
   readonly activities = input.required<Activity[]>();
   readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META;
 }

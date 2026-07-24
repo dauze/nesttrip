@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { environment } from '@environments/environment';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class GooglePhotoService {
   private http = inject(HttpClient);
   private readonly cache = new Map<string, Observable<string>>();

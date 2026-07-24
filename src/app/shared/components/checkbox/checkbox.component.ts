@@ -1,4 +1,4 @@
-import { Component, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
 
 /**
  * Remplacement maison de `p-checkbox` (Phase 4 de la sortie de PrimeNG, voir
@@ -11,6 +11,7 @@ import { Component, input, model } from '@angular/core';
   standalone: true,
   templateUrl: './checkbox.component.html',
   styleUrl: './checkbox.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CheckboxComponent {
   readonly checked = model(false);

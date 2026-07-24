@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
@@ -9,6 +9,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
   imports: [],
   templateUrl: './trip-tabs-nav.component.html',
   styleUrl: './trip-tabs-nav.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripTabsNavComponent {
   private readonly hostRef = inject(ElementRef<HTMLElement>);

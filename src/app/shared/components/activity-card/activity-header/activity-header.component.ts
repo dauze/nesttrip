@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de ReactiveForms
 import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
@@ -19,6 +19,7 @@ import { TagComponent } from '@app/shared/components/tag/tag.component';
   imports: [CommonModule, ReactiveFormsModule, AutoCompleteComponent, TagComponent, DayLabelsListPipe,],
   templateUrl: './activity-header.component.html',
   styleUrl: './activity-header.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivityHeaderComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);

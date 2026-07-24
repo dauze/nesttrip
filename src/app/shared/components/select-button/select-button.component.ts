@@ -1,4 +1,4 @@
-import { Component, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
 
 export interface SelectButtonOption<T = unknown> {
   label: string;
@@ -19,6 +19,7 @@ export interface SelectButtonOption<T = unknown> {
   standalone: true,
   templateUrl: './select-button.component.html',
   styleUrl: './select-button.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SelectButtonComponent<T = unknown> {
   readonly options = input.required<SelectButtonOption<T>[]>();

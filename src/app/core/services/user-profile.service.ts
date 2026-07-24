@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 import { CollaborationService } from './collaboration.service';
 import { Companion } from '@app/core/models/user-profile.dto';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class UserProfileService {
   private readonly repo = inject(UserProfileRepository);
   private readonly authService = inject(AuthService);

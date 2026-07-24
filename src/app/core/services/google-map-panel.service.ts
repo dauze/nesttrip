@@ -1,8 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
-@Injectable({
-  providedIn: 'root' // Permet de partager la même instance dans toute l'application
-})
+// Instance partagée par DayPanelComponent/TripDayMapComponent — fournie au niveau de TripsComponent (voir ses `providers`), pas root : aucun usage en dehors de /trips.
+@Injectable()
 export class GoogleMapPanelService {
   // 1. Le signal privé qui stocke l'état (écriture interne uniquement)
   private readonly _isCollapsed = signal<boolean>(false);

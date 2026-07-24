@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
  * Remplacement maison de `p-progressSpinner` (Phase 3 de la sortie de
@@ -17,6 +17,7 @@ import { Component, input } from '@angular/core';
     class: 'app-progress-spinner',
     '[style.border-width.px]': 'strokeWidth()',
   },
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProgressSpinnerComponent {
   readonly strokeWidth = input(2);

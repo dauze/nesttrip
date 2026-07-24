@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
@@ -11,6 +11,7 @@ import { Trip } from '../../trip.model';
   imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerComponent],
   templateUrl: './trip-header.component.html',
   styleUrl: './trip-header.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripHeaderComponent {
   private readonly fb = inject(FormBuilder);

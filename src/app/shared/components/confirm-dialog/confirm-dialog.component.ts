@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
@@ -26,6 +26,7 @@ export interface ConfirmDialogData {
   imports: [ButtonComponent, DialogFrameComponent],
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
   protected readonly dialogRef = inject<DialogRef<boolean>>(DialogRef);

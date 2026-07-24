@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
  * Remplacement maison de `p-avatarGroup` (Phase 3 de la sortie de PrimeNG,
@@ -11,5 +11,6 @@ import { Component } from '@angular/core';
   standalone: true,
   templateUrl: './avatar-group.component.html',
   styleUrl: './avatar-group.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AvatarGroupComponent {}

@@ -8,7 +8,7 @@ import { tripFromFb } from '@app/core/infra/firebase/mappers/trip.mapper';
 import { Trip } from '@app/features/trips/trip.model';
 import { AuthService } from '@app/core/services/auth.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class TripDataSource {
   private readonly db = inject(FirebaseService).db;
   private readonly authService = inject(AuthService);

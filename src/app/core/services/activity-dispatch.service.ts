@@ -48,7 +48,7 @@ export interface ReturnPulse {
  * TripFacade (qui n'est pas injectable depuis un service `root`, puisqu'il
  * est fourni au niveau du composant `TripsComponent`).
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ActivityDispatchService {
   // ── Micro-feedback avant même le décrochage (le temps du "hold") ─────────
   readonly pendingActivityId = signal<string | null>(null);

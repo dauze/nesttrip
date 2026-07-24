@@ -8,9 +8,10 @@ import {
   signOut,
   updateProfile,
   User,
+  UserCredential,
 } from 'firebase/auth';
 import { from, Observable, switchMap } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { firebaseAuth } from '../../app.config';
 
 @Injectable({ providedIn: 'root' })
@@ -21,24 +22,24 @@ export class AuthService {
     return firebaseAuth.currentUser;
   }
 
-  loginWithEmail(email: string, password: string): Observable<any> {
+  loginWithEmail(email: string, password: string): Observable<UserCredential> {
     return from(signInWithEmailAndPassword(firebaseAuth, email, password)).pipe(
       tap(() => this.router.navigate(['/app'])),
     );
   }
 
-  registerWithEmail(email: string, password: string, firstName: string, lastName: string): Observable<any> {
+  registerWithEmail(email: string, password: string, firstName: string, lastName: string): Observable<UserCredential> {
     return from(createUserWithEmailAndPassword(firebaseAuth, email, password)).pipe(
       switchMap((credential) =>
         from(updateProfile(credential.user, {
           displayName: `${firstName} ${lastName}`,
-        }))
+        })).pipe(map(() => credential))
       ),
       tap(() => this.router.navigate(['/app'])),
     );
   }
 
-  loginWithGoogle(): Observable<any> {
+  loginWithGoogle(): Observable<UserCredential> {
     const provider = new GoogleAuthProvider();
     return from(signInWithPopup(firebaseAuth, provider)).pipe(
       // Google remplit displayName automatiquement, rien à faire

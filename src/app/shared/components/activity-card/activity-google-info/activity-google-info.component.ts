@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TagComponent } from '@app/shared/components/tag/tag.component';
 import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
@@ -15,6 +15,7 @@ const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'
   standalone: true,
   imports: [CommonModule, TagComponent, PanelComponent, DividerComponent, ActivityGalleryComponent],
   templateUrl: './activity-google-info.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivityGoogleInfoComponent {
   readonly activity = input.required<Activity>();

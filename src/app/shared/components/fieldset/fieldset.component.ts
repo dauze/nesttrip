@@ -1,4 +1,4 @@
-import { Component, input, linkedSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, linkedSignal } from '@angular/core';
 
 /**
  * Remplacement maison de `p-fieldset` (Phase 3 de la sortie de PrimeNG, voir
@@ -15,6 +15,7 @@ import { Component, input, linkedSignal } from '@angular/core';
   standalone: true,
   templateUrl: './fieldset.component.html',
   styleUrl: './fieldset.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FieldsetComponent {
   readonly toggleable = input(false);

@@ -85,8 +85,8 @@ export class DayPanelComponent {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly mapHost = inject(TripDayMapHostService);
-  readonly googleMapPanelService = inject(GoogleMapPanelService);
-  protected readonly dispatchService = inject(ActivityDispatchService);
+  private readonly googleMapPanelService = inject(GoogleMapPanelService);
+  private readonly dispatchService = inject(ActivityDispatchService);
   
   readonly collapsed = this.googleMapPanelService.isCollapsed;
 
@@ -109,7 +109,6 @@ export class DayPanelComponent {
   private mapObserver?: ResizeObserver;
 
   readonly stickyHeight = signal(0);
-  readonly stickyOffset = this.stickyHeight.asReadonly();
   readonly active = input(false);
   private rafLoop?: number;
   private lastScrollY = -1;
@@ -137,7 +136,6 @@ export class DayPanelComponent {
   private drag?: DayDragState;
 
   activitiesCollapsed = false;
-  private pendingActivityId?: string;
   /** Instantané de l'état ouvert/fermé des cartes + de la carte Google, pris au début d'un drag dans ce jour pour tout restaurer à la fin. */
   private collapseSnapshot?: { cards: Map<string, boolean>; map: boolean };
 
@@ -358,19 +356,8 @@ export class DayPanelComponent {
   }
 
   onActivitiesPanelToggled() {
-    if (this.pendingActivityId) {
-      this.openCard(this.pendingActivityId);
-      this.pendingActivityId = undefined;
-    }
     // Laisse le temps à l'animation PrimeNG de se terminer avant d'ajuster le scroll
     setTimeout(() => this.wakeLoop(), 300);
-  }
-
-  private openCard(activityId: string): void {
-    const card = this.activityCards().find(c => c.activity()?.id === activityId);
-    if (card) {
-      card.openAndScroll();
-    }
   }
 
   /**
@@ -458,7 +445,7 @@ export class DayPanelComponent {
       const dx = event.clientX - drag.startClientX;
       const dy = event.clientY - drag.startClientY;
       if (Math.hypot(dx, dy) < this.DAY_DRAG_MOVE_THRESHOLD) return;
-      this.beginCardFollow(drag, event);
+      this.beginCardFollow(drag);
     }
 
     this.dispatchService.pointer.set({ x: event.clientX, y: event.clientY });
@@ -516,7 +503,7 @@ export class DayPanelComponent {
   };
 
   /** Sort réellement la carte du flux (sur place, voir `leaveFlowHidden`) et fait apparaître un clone SOUS LE DOIGT (voir `grabOffsetX/Y`, pas sa position mesurée après collapse) hors du swiper (voir ActivityDispatchService.registerDragPortal), puis fige les offsets des voisines pour le hit-test. */
-  private beginCardFollow(drag: DayDragState, event: PointerEvent): void {
+  private beginCardFollow(drag: DayDragState): void {
     drag.thresholdCrossed = true;
 
     const el = drag.card.hostElement;
@@ -614,12 +601,9 @@ export class DayPanelComponent {
       if (!id || id === activityId) continue;
 
       const index = order.findIndex(a => a.id === id);
-      let offset = 0;
-      if (index > fromIndex) {
-        offset = (targetIndex > fromIndex && index <= targetIndex) ? 0 : slotHeight;
-      } else {
-        offset = (targetIndex < fromIndex && index >= targetIndex) ? slotHeight : 0;
-      }
+      const offset = index > fromIndex
+        ? ((targetIndex > fromIndex && index <= targetIndex) ? 0 : slotHeight)
+        : ((targetIndex < fromIndex && index >= targetIndex) ? slotHeight : 0);
 
       c.setShiftOffset(offset);
     }
@@ -834,7 +818,7 @@ export class DayPanelComponent {
     const scrollAtFirst = Math.max(0, firstOffset.top - totalStickyShield);
     const t = scrollAtFirst > 0 ? Math.min(1, Math.max(0, scrollY / scrollAtFirst)) : 1;
 
-    this.mapRef()?.followFromOverview(this.dayMapPoints(), firstPoint, t);
+    this.activeMapComponent()?.followFromOverview(this.dayMapPoints(), firstPoint, t);
     return;
   }
 
@@ -869,12 +853,8 @@ export class DayPanelComponent {
   const toPoint = this.dayMapPoints().find(p => p.activityId === toId);
   if (!fromPoint || !toPoint) return;
 
-  this.mapRef()?.followScroll(fromPoint, toPoint, t);
+  this.activeMapComponent()?.followScroll(fromPoint, toPoint, t);
 }
-
-  private get mapRef(): () => TripDayMapComponent | null {
-    return () => this.activeMapComponent();
-  }
 
   /**
    * Offsets "pseudo-absolus" des cartes, stables quel que soit le scroll

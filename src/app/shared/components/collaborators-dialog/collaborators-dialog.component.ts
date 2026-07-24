@@ -1,4 +1,4 @@
-import { Component, Signal, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Signal, computed, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { FormsModule } from '@angular/forms';
 import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
@@ -35,6 +35,7 @@ export interface CollaboratorsDialogData {
   imports: [FormsModule, AvatarComponent, TooltipDirective, ButtonComponent, DialogFrameComponent, InputTextDirective, MessageComponent],
   templateUrl: './collaborators-dialog.component.html',
   styleUrl: './collaborators-dialog.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollaboratorsDialogComponent {
   private readonly dialogRef = inject(DialogRef<void>);

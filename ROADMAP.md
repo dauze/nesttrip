@@ -193,12 +193,5 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)
 - Secret de déploiement pour la release
 
-- Faire un gros travail de code review pour uniformiser les pratiques (exemple les oninit alors qu'on est en angular 21), supprimer le code mort, déplacer dans des services des comportement isolé sur certain fichiers trop gros, séparer les trop gros fichier intelligement, eviter les view child plutôt privilégier les services pour partager des données (ce n'est pas tout le temps possible)
-- Eviter de faire des input-output quand ce n'est pas des dub component et privilégier les services, sauf si ca génère de la complexité
-
-- Mieux gérer la portée de chaque services : enlever un maximum root et les déclarer au bon endroits
-- déplacer des fonctions purement utilitaires dans des utils et alléger les composants trop gros
-- Eviter les sujets de plus de 500 lignes 
-- éviter les settimeout 
 
 

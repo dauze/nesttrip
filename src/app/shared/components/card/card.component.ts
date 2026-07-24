@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
  * Remplacement maison de `p-card` (Phase 3 de la sortie de PrimeNG, voir
@@ -19,5 +19,6 @@ import { Component } from '@angular/core';
   standalone: true,
   templateUrl: './card.component.html',
   styleUrl: './card.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CardComponent {}

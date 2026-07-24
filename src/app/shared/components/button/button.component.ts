@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 export type ButtonSeverity = 'primary' | 'secondary' | 'danger' | 'success' | 'warn' | 'info';
 
@@ -16,6 +16,7 @@ export type ButtonSeverity = 'primary' | 'secondary' | 'danger' | 'success' | 'w
   standalone: true,
   templateUrl: './button.component.html',
   styleUrl: './button.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ButtonComponent {
   readonly label = input<string>('');

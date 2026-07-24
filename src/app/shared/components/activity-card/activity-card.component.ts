@@ -23,7 +23,6 @@ import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
-import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
 
 /**
  * Délai de "hold" à respecter, poignée enfoncée sans bouger, avant de
@@ -91,8 +90,7 @@ export class ActivityCardComponent {
     return BOOKING_STATUS_META[status];
   });
 
-  readonly collapsed = linkedSignal(() => this.initCollapsed());;
-  readonly scrollOffset = input(0);
+  readonly collapsed = linkedSignal(() => this.initCollapsed());
   /** Piloté par `collapseInstantly()` : coupe la transition CSS du panel le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. */
   protected readonly panelInstant = signal(false);
 
@@ -249,15 +247,6 @@ export class ActivityCardComponent {
     requestAnimationFrame(() => this.panelInstant.set(false));
   }
 
-  openAndScroll(): void {
-    if (this.collapsed()) {
-      this.collapsed.set(false);
-      setTimeout(() => this.scrollToMe(), 300);
-    } else {
-      this.scrollToMe();
-    }
-  }
-
   onPlaceSelected(place: PlaceSummary): void {
     if (!place.placeId) return;
     this.selectedPlace.set(place);
@@ -277,16 +266,6 @@ export class ActivityCardComponent {
       longitude: 0,
       photoRefs: [],
     });
-  }
-
-  private scrollToMe(): void {
-    const element = this.cardContainer().nativeElement;
-    const container = getScrollContainer(element);
-    if (!container) return;
-
-    const offset = this.scrollOffset();
-    const y = container.scrollTop + element.getBoundingClientRect().top - container.getBoundingClientRect().top - offset - 13;
-    smoothScrollTo(container, y, 400);
   }
 
   confirmDelete(): void {

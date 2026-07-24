@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 /**
  * Remplacement maison de `p-chip` (Phase 3 de la sortie de PrimeNG, voir
@@ -13,6 +13,7 @@ import { Component, input, output } from '@angular/core';
   standalone: true,
   templateUrl: './chip.component.html',
   styleUrl: './chip.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChipComponent {
   readonly icon = input<string>('');

@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /**
  * Remplacement maison de `p-skeleton` (Phase 3 de la sortie de PrimeNG, voir
@@ -17,6 +17,7 @@ import { Component, computed, input } from '@angular/core';
     '[style.borderRadius]': 'borderRadius()',
     '[class.app-skeleton--circle]': "shape() === 'circle'",
   },
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SkeletonComponent {
   readonly width = input('100%');

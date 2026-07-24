@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
 import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
@@ -17,6 +17,7 @@ const MAX_PHOTOS = 6;
   imports: [CommonModule, PanelComponent, ProgressSpinnerComponent],
   templateUrl: './activity-gallery.component.html',
   styleUrl: './activity-gallery.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivityGalleryComponent {
   private readonly placeService = inject(GooglePlaceService);

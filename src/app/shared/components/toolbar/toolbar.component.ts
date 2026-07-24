@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
  * Remplacement maison de `p-toolbar` (Phase 3 de la sortie de PrimeNG, voir
@@ -11,5 +11,6 @@ import { Component } from '@angular/core';
   standalone: true,
   templateUrl: './toolbar.component.html',
   styleUrl: './toolbar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ToolbarComponent {}

@@ -10,15 +10,37 @@ import { FirebaseTripRepository } from '@app/core/infra/firebase/services/fireba
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { TripDataSource } from '@app/core/infra/firebase/services/trip-data-source';
+import { FileService } from '@app/core/services/file.service';
+import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { UserProfileService } from '@app/core/services/user-profile.service';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
   imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent],
+  // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
+  // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
+  // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
+  // Ne pas y ajouter les services de persistence Firebase (Activity/Day/
+  // DayActivityInstance/Notes/Trip/DayPersistence) : ils restent root car
+  // TripStore, lui-même root par design (pool d'activités partagé entre
+  // plusieurs trips), les injecte directement.
   providers: [
     FirebaseTripRepository,
-      TripFacade,
-    { provide: TripRepository, useExisting: FirebaseTripRepository }
+    TripFacade,
+    { provide: TripRepository, useExisting: FirebaseTripRepository },
+    TripDataSource,
+    FileService,
+    ActivityDispatchService,
+    TripChromeService,
+    GoogleMapPanelService,
+    GooglePhotoService,
+    GooglePlaceService,
+    UserProfileService,
   ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',

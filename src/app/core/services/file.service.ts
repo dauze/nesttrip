@@ -9,7 +9,7 @@ export interface UploadedFile {
   path: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class FileService {
   private readonly storage = getStorage(inject(FirebaseService).app);
 
