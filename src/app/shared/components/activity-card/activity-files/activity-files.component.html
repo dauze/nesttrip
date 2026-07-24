@@ -21,14 +21,17 @@
         <span class="file-name" [title]="file.name">{{ file.name }}</span>
       </app-chip>
     }
-    <p-fileUpload
-      mode="basic"
-      chooseLabel="Ajouter"
-      chooseIcon="pi pi-upload"
-      [multiple]="true"
-      [auto]="true"
-      (onSelect)="onFileSelect($event)"
-      [chooseButtonProps]="{ severity: 'secondary', rounded: true }"
-      styleClass="p-0" />
+    <input
+      #fileInput
+      type="file"
+      multiple
+      hidden
+      (change)="onFileSelect($event)" />
+    <app-button
+      label="Ajouter"
+      icon="pi pi-upload"
+      severity="secondary"
+      [rounded]="true"
+      (click)="fileInput.click()" />
   </div>
 </div>

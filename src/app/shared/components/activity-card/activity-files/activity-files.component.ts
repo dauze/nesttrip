@@ -1,7 +1,7 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChipComponent } from '@app/shared/components/chip/chip.component';
-import { FileUploadModule } from 'primeng/fileupload';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
 import { tap } from 'rxjs/operators';
 
@@ -12,7 +12,7 @@ import { Activity, ActivityFile } from '../activity.model';
 @Component({
   selector: 'app-activity-files',
   standalone: true,
-  imports: [CommonModule, ChipComponent, FileUploadModule, ProgressSpinnerComponent],
+  imports: [CommonModule, ChipComponent, ButtonComponent, ProgressSpinnerComponent],
   templateUrl: './activity-files.component.html',
   styleUrl: './activity-files.component.scss',
 })
@@ -31,10 +31,17 @@ export class ActivityFilesComponent {
    * toujours `activity().activityId`, jamais `activity().id` (qui est un
    * instanceId en contexte jour).
    */
-  onFileSelect(event: { files: File[] }): void {
+  onFileSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    // Remise à zéro immédiate : sans ça, resélectionner le(s) même(s)
+    // fichier(s) juste après ne redéclencherait pas `change` (le navigateur
+    // considère la valeur de l'input inchangée).
+    input.value = '';
+
     const activity = this.activity();
 
-    for (const file of event.files) {
+    for (const file of files) {
       const path = `trips/${this.tripId()}/${activity.activityId}/${file.name}`;
       this.uploadingFiles.update((s) => new Set(s).add(file.name));
 

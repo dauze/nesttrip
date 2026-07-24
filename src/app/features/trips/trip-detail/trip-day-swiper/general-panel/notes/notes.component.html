@@ -40,7 +40,7 @@
       >
         @for (point of item.elements; track point.id) {
           @if(item.type !== NotesType.TODO || !point.checked){
-          <div class="flex align-items-center gap-2 w-full pl-3 pr-2"
+          <div class="flex align-items-center gap-2 w-full pl-3 pr-3"
           cdkDrag>
             <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem swiper-no-swiping drag-handle-hitbox">
               <i class="pi pi-ellipsis-v"></i>
@@ -100,7 +100,7 @@
             </span>
             @for (point of item.elements; track point.id) {
               @if (point.checked) {
-                <div class="flex align-items-center gap-2 w-full opacity-70 pl-2">
+                <div class="flex align-items-center gap-2 w-full opacity-70 pl-2 pr-3">
                   <span class="w-1rem"></span>
                   <app-checkbox
                     [checked]="point.checked"

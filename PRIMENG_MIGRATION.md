@@ -82,8 +82,8 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
 | 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
 | 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | ✅ Fait (7a-7f) |
-| 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
-| 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
+| 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | ✅ Fait |
+| 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | ✅ Fait (aucune clé à porter en dur, voir note) |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
 | 11 | PrimeFlex → fichier CSS utilitaire maison | Faible | À faire |
 | 12 | Régression manuelle complète (desktop/mobile, dialogs, drag-and-drop inter-jours) + `ng lint`/`ng test` | — | À faire |
@@ -118,7 +118,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | Select | activity-form, timeline | 7d ✅ |
 | AutoComplete | new-trip, activity-header | 7e ✅ |
 | DatePicker | new-trip, trip-header, activity-form | 7f ✅ |
-| FileUpload | activity-files | 8 |
+| FileUpload | activity-files | 8 ✅ |
 
 ## Journal des phases faites
 
@@ -1032,9 +1032,148 @@ desktop, centrage mobile, dark mode — aucune erreur console.
   actuel affiche un anneau rond même sans être sélectionné, cohérent avec la
   sélection elle-même.
 
+### Phase 8 — FileUpload
+
+Un seul consommateur (`ActivityFilesComponent`), déjà en mode `basic`
+(bouton unique, pas de zone de drop à gérer — voir le tableau des phases) :
+`<p-fileUpload>` remplacé par un `<input type="file" multiple hidden>` natif
+déclenché par un `app-button` (`label="Ajouter"`, `icon="pi pi-upload"`,
+`severity="secondary"`, `[rounded]="true"` — mêmes réglages visuels que
+`chooseButtonProps` sur l'ancien composant), via `(click)="fileInput.click()"`
+sur une référence de template (`#fileInput`) au lieu d'un vrai bouton
+"choisir" fourni par PrimeNG.
+
+- **`onFileSelect(event: Event)`** reçoit maintenant l'événement `change`
+  natif du navigateur (pas `{ files: File[] }` que fournissait PrimeNG) :
+  `(event.target as HTMLInputElement).files` converti en tableau via
+  `Array.from`. Le reste de la logique (upload par fichier, `Set` de noms en
+  cours, mise à jour optimiste de la `PoolActivity`) est inchangé au
+  caractère près.
+- **`input.value = ''` juste après lecture** : sans ça, resélectionner
+  EXACTEMENT le(s) même(s) fichier(s) juste après un premier envoi ne
+  redéclencherait pas `change` — le navigateur considère la valeur de
+  l'input inchangée d'une sélection à l'autre si le fichier est identique.
+  PrimeNG gérait ça en interne (son propre input caché était déjà remis à
+  zéro après chaque sélection) ; à refaire soi-même une fois l'input
+  redevenu natif.
+- Nettoyage connexe dans `styles.scss` : `.p-fileupload-choose-button`
+  (override de padding, plus d'objet) et `.p-chip` (`--p-chip-padding-*`,
+  déjà mort depuis la Phase 3 — `ChipComponent` a son propre padding en dur,
+  jamais lié à ces variables — repéré et nettoyé au passage puisque
+  directement adjacent).
+
+Vérifié par `ng build`/`ng lint` (aucune régression, chunk initial 605 Ko →
+571 Ko hors budget confirmant la disparition de `primeng/fileupload` du
+bundle), plus aucun `<p-fileUpload>`/import `primeng/fileupload` dans le
+projet. Testé en navigateur (route de dev jetable, `ActivityFilesComponent`
+monté avec un `FileService`/`TripFacade` stubbés pour éviter tout effet de
+bord réel sur Firebase Storage/Firestore) : bouton "Ajouter" déclenche bien
+l'input caché, sélection de fichier traitée sans erreur console, chips
+existants (icônes, suppression) inchangés à côté du nouveau bouton.
+
+### Phase 9 — Suppression `primeng`/`@primeuix/themes`/`primelocale`
+
+Plus rapide que prévu : aucune des ~10 clés de traduction FR anticipées dans
+le plan initial n'avait besoin d'être portée en dur, puisqu'aucun composant
+`primeng` ne consomme plus `translation: fr` (dernier lecteur théorique —
+`ConfirmDialogService`, Phase 7c — a déjà ses propres libellés "Oui"/"Non"
+en dur depuis cette phase-là).
+
+- `app.config.ts` : `providePrimeNG({ theme: { preset: theme }, translation:
+  fr })`, le `definePreset(Aura, { semantic: { primary: {...} } })` associé
+  et les 3 imports (`primeng/config`, `@primeuix/themes`,
+  `@primeuix/themes/aura`, `primelocale/fr.json`) retirés en bloc. Aucun
+  changement visuel : la palette `primary` personnalisée qu'ils
+  définissaient est la même que celle déjà dupliquée dans
+  `styles/tokens.scss` depuis la Phase 0 (`--nt-primary-*`), qui reste la
+  seule source consommée par les composants maison.
+- `npm uninstall primeng @primeuix/themes primelocale` — `primeflex` et
+  `primeicons` restent (Phases 10/11, pas encore faites).
+
+Vérifié par `ng build`/`ng lint` (aucune régression) : le chunk initial
+passe de 1,60 Mo à 1,43 Mo (le morceau `primeng` du bundle principal a
+disparu, `providePrimeNG` n'étant plus tree-shakable une fois retiré du
+graphe de dépendances). Testé en navigateur (page de login, pas besoin
+d'auth Firebase) : rendu identique, couleur primary inchangée, aucune erreur
+console.
+
+#### Correctifs post-Phase 9 (remontés par l'utilisateur, hors navigateur testé en Phase 9)
+
+Le test en navigateur de la Phase 9 ne portait que sur la page de login,
+qui ne sollicite ni le toolbar, ni un chip, ni les textarea non
+transparentes — insuffisant pour révéler les régressions ci-dessous,
+remontées ensuite depuis l'appli réelle. Cause commune aux 4 : `providePrimeNG`
+posait lui-même, à l'exécution, plusieurs resets CSS globaux implicites dont
+aucune phase précédente n'avait eu besoin de reproduire tant que PrimeNG
+tournait encore à côté — leur absence n'est devenue visible qu'une fois
+`providePrimeNG` réellement supprimé.
+
+- **Fond/texte globaux disparus** (`body` sans couleur ni fond explicites,
+  donc noir sur blanc par défaut du navigateur même en dark mode — visible
+  sur le titre "NestTrip" du toolbar, illisible en sombre) : PrimeNG posait
+  `color`/`background` sur `body` via son propre reset. Ajoutés explicitement
+  dans `styles.scss` (`color: var(--nt-text-color); background:
+  var(--nt-content-background);`).
+- **`color-scheme` manquant** (le noir "généré par le thème sombre de Chrome"
+  sur mobile — overscroll, scrollbars, contrôles natifs — ne s'affichait
+  plus) : PrimeNG posait `color-scheme` lui-même selon `darkModeSelector`.
+  Ajouté `color-scheme: light dark;` sur `:root` (`tokens.scss`) — suit
+  `prefers-color-scheme` nativement, cohérent avec l'absence de toggle
+  manuel déjà actée en Phase 1.
+- **`box-sizing: border-box` manquant** (textarea non transparentes qui
+  débordaient de l'écran : `width:100%` + padding/bordure, en
+  `box-sizing: content-box` par défaut du navigateur, dépasse son
+  conteneur du montant du padding/bordure) : PrimeNG posait ce reset
+  universellement. Ajouté `*, *::before, *::after { box-sizing: border-box;
+  }` dans `styles.scss`.
+- **Chip du FileUpload sans fond, en clair COMME en sombre** : la classe
+  `.surface-100` (primeflex, encore installé — Phase 11 pas faite) évalue
+  `background-color: light-dark(var(--p-surface-100), var(--p-surface-700))`
+  — ces variables `--p-*` étaient jusqu'ici définies à l'exécution par
+  `providePrimeNG`, jamais par notre propre `tokens.scss` (qui n'expose que
+  `--nt-*`). Supprimer `providePrimeNG` les a rendues totalement
+  indéfinies (pas juste mal colorées) dans TOUTE l'appli, pas seulement ce
+  chip — n'importe quelle classe primeflex encore utilisée référençant
+  `--p-*` était potentiellement cassée en silence. Audité par un script
+  one-off comparant les classes réellement utilisées dans les templates aux
+  règles de `primeflex.css` qui référencent `--p-*` (voir liste complète
+  dans le commentaire du shim) : `surface-0/50/100/200/700/800/900`
+  (palette PLATE, primeflex choisit lui-même clair/sombre via deux NOMBRES
+  différents de la même échelle statique — contrairement à `--nt-surface-*`
+  qui change de VALEUR par mode), `content-border-radius`, `red-500`/
+  `yellow-500`, et `text-color`/`text-color-secondary`/`primary-color` (ces
+  3 derniers de simples alias vers nos `--nt-*` déjà auto-adaptatifs,
+  puisque primeflex ne les fait pas passer par `light-dark()`). Shim ajouté
+  dans `tokens.scss`, explicitement commenté "à supprimer avec le reste de
+  PrimeFlex en Phase 11".
+
+Testé en navigateur (route de dev jetable reproduisant toolbar/chip/
+textarea non transparente/ligne de note avec bouton de suppression/
+fieldset, en `colorScheme: 'light'` ET `'dark'`) : les 4 corrections
+vérifiées simultanément (fond/texte du body, `color-scheme` calculé,
+fond du chip, couleur du titre toolbar, absence de débordement de la
+textarea), aucune erreur console dans les deux modes.
+
+Deux bugs UX indépendants, sans lien avec PrimeNG, remontés dans le même
+lot et corrigés au passage :
+- **`FieldsetComponent`** (`fieldset.component.scss`) : `justify-content:
+  space-between` sur `.app-fieldset__header` plaquait la flèche
+  ouvrir/fermer à l'opposé du texte projeté plutôt que juste à côté —
+  retiré (le `gap` existant suffit à les séparer proprement une fois flex
+  revenu à son alignement par défaut).
+- **Ligne de point de note** (`notes.component.html`) : le bouton de
+  suppression ("X") touchait le bord de la carte, `pr-2` (0.5rem) jugé
+  insuffisant — passé à `pr-3` (1rem) sur les deux variantes de la ligne
+  (active et dans le fieldset "terminés", qui n'avait même pas de padding
+  droit du tout).
+
 ## Après la migration
 
-- Désinstaller `primeng`, `@primeuix/themes`, `primelocale`, `primeflex`,
-  `primeicons` de `package.json`.
-- Retirer les entrées `styles` correspondantes dans `angular.json`.
-- Retirer `providePrimeNG` et la config `theme`/`translation` de `app.config.ts`.
+- ~~Désinstaller `primeng`, `@primeuix/themes`, `primelocale`~~ ✅ fait
+  (Phase 9) ; `primeflex`/`primeicons` restent à désinstaller (Phases 10/11).
+- Retirer les entrées `styles` correspondantes dans `angular.json` pour
+  `primeflex`/`primeicons` une fois les Phases 10/11 faites (rien à faire
+  pour `primeng`, qui n'y était pas référencé — thème appliqué par
+  `providePrimeNG` en code, pas par une feuille de style).
+- ~~Retirer `providePrimeNG` et la config `theme`/`translation` de
+  `app.config.ts`~~ ✅ fait (Phase 9).

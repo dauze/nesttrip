@@ -7,7 +7,9 @@
 .app-fieldset__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  // PAS de justify-content: space-between : la flèche doit rester collée au
+  // texte projeté (juste après, séparée par le `gap`), pas plaquée à
+  // l'opposé de la ligne.
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
 }

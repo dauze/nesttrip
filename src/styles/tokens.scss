@@ -16,6 +16,16 @@
  * ------------------------------------------------------------------- */
 
 :root {
+  // Indique au navigateur que la page gère elle-même les deux modes (suit
+  // prefers-color-scheme) : PrimeNG posait ça automatiquement via son thème
+  // (providePrimeNG), supprimé en Phase 9. Sans cette ligne, le rendu natif
+  // du navigateur (scrollbars, contrôles de formulaire, fond d'overscroll
+  // mobile) reste bloqué en clair même en dark mode — et `light-dark()`,
+  // utilisé massivement par primeflex.css (voir shim juste plus bas),
+  // choisirait toujours sa branche claire faute de savoir que la page
+  // supporte aussi le sombre.
+  color-scheme: light dark;
+
   // Palette primary (definePreset dans app.config.ts)
   --nt-primary-50: #ECF6F5;
   --nt-primary-100: #D0EAE7;
@@ -126,6 +136,45 @@
   // (un simple gris n'y suffit pas visuellement) mais un blanc translucide.
   --nt-skeleton-bg: var(--nt-surface-200);
   --nt-skeleton-shimmer: rgba(255, 255, 255, 0.4);
+
+  // -----------------------------------------------------------------------
+  // Shim de compatibilité `--p-*` pour PrimeFlex (encore installé, Phase 11
+  // pas encore faite) : ses classes utilitaires encore utilisées dans le
+  // projet (`surface-*`, `text-color(-secondary)`, `text-primary`,
+  // `border-round`...) référencent des variables `--p-*` que PrimeNG
+  // définissait lui-même à l'exécution (`providePrimeNG`) — supprimées en
+  // Phase 9, ce qui les rendait invisibles (valeur `initial`, propriété
+  // ignorée) plutôt que juste "mal colorées". Set réduit au strict
+  // nécessaire (audité via un script one-off comparant les classes
+  // réellement utilisées dans les templates aux règles de primeflex.css qui
+  // référencent `--p-*`) — à supprimer entièrement avec le reste de
+  // PrimeFlex en Phase 11.
+  //
+  // `--p-surface-*` : palette PLATE (pas de redéfinition par mode, contrairement
+  // à `--nt-surface-*` juste au-dessus) — primeflex fait lui-même le choix
+  // clair/sombre via `light-dark(var(--p-surface-100), var(--p-surface-700))`
+  // (deux NOMBRES différents de la même échelle statique, pas la même
+  // variable réévaluée), donc ces valeurs doivent rester les mêmes qu'on
+  // soit en clair ou en sombre.
+  --p-surface-0: #ffffff;
+  --p-surface-50: #f8fafc;
+  --p-surface-100: #f1f5f9;
+  --p-surface-200: #e2e8f0;
+  --p-surface-700: #334155;
+  --p-surface-800: #1e293b;
+  --p-surface-900: #0f172a;
+  --p-content-border-radius: var(--nt-content-border-radius);
+  --p-red-500: var(--nt-red-500);
+  --p-yellow-500: var(--nt-yellow-500);
+
+  // Ceux-ci, à l'inverse, doivent suivre le mode (pas de light-dark() côté
+  // primeflex pour ces 3 classes) : simple alias vers nos jetons `--nt-*`
+  // déjà auto-adaptatifs (redéfinis dans le bloc @media plus bas) — une
+  // référence `var()` se ré-évalue à chaque usage dans le contexte courant,
+  // pas besoin de les redéfinir une deuxième fois dans ce bloc.
+  --p-text-color: var(--nt-text-color);
+  --p-text-muted-color: var(--nt-text-muted-color);
+  --p-primary-color: var(--nt-primary-color);
 }
 
 @media (prefers-color-scheme: dark) {

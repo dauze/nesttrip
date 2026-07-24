@@ -9,6 +9,18 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
+// PrimeNG posait ce reset lui-même dans son propre CSS de base (supprimé en
+// Phase 9 avec `providePrimeNG`) : sans lui, tout élément avec `width:100%`
+// ET un padding/bordure (ex. `.app-input-text`/`.app-textarea`,
+// form-fields.scss) déborde de son conteneur du montant de ce padding/
+// bordure, en `box-sizing: content-box` (comportement par défaut du
+// navigateur) — symptôme observé : textarea qui dépassent de l'écran.
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   --p-font-family: 'Plus Jakarta Sans', sans-serif;
   font-family: var(--p-font-family), serif;
@@ -45,9 +57,15 @@
   }
 }
 
+// `color`/`background` globaux : PrimeNG les posait lui-même sur `body` via
+// son propre reset CSS (supprimé en Phase 9 avec `providePrimeNG`) — sans
+// ça, tout texte qui ne fixe pas explicitement sa couleur hérite du noir par
+// défaut du navigateur, y compris en dark mode (ex: le titre "NestTrip" du
+// toolbar).
 body {
   padding-bottom: 50px;
   margin-top:0.3rem;
+  color: var(--nt-text-color);
 }
 
 /* ---------------------------------------------------------------------
@@ -234,15 +252,6 @@ swiper-slide,
 .waitlist {
   --booking-status-color: var(--nt-yellow-500);
 }
-.p-fileupload-choose-button {
-  --p-button-padding-y: 0.1rem;
-  --p-button-padding-x: 0.6rem;
-}
-.p-chip {
-  --p-chip-padding-y: 0.2rem;
-  --p-chip-padding-x: 0.6rem;
-}
-
 /* ---------------------------------------------------------------------
  * Transitions de navigation "push" (accueil <-> écran enfant), pilotées
  * par la View Transitions API du navigateur (voir app.config.ts /
