@@ -1,0 +1,36 @@
+/* ---------------------------------------------------------------------
+ * Habillage plein écran du tiroir mobile `app-title-edit-dialog`, ouvert
+ * via `DialogService` (donc `@angular/cdk/dialog`, panneau ajouté dans
+ * `.cdk-overlay-container`, en dehors de l'arbre de vue du composant hôte —
+ * cette classe doit donc rester globale, même topologie que
+ * `.app-dialog-panel`/`.app-select-overlay--mobile`).
+ *
+ * `.app-dialog-panel` (dialog.scss) centre normalement un panneau à taille
+ * de contenu borné (28rem max) — ce tiroir doit au contraire occuper TOUTE
+ * la page (voir ActivityHeaderComponent.openTitleEditDialog), d'où la
+ * surcharge ici plutôt qu'une variante de dialog.scss : sélecteur à 3
+ * classes pour gagner par spécificité sur `.cdk-overlay-pane.app-dialog-panel`
+ * quel que soit l'ordre de chargement (même piège documenté dans dialog.scss).
+ * ------------------------------------------------------------------- */
+
+.cdk-overlay-pane.app-dialog-panel.app-title-edit-dialog-panel {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: 100vw;
+  // `100dvh` (pas `100vh`) : sur mobile, la unité dynamique se réduit avec
+  // l'apparition du clavier virtuel (support Safari/Chrome récents) — la
+  // liste de suggestions (`flex:1 1 auto; min-height:0` dans le composant)
+  // reste ainsi toujours visible entre le champ et le clavier, jamais cachée
+  // derrière lui.
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+
+  transition: transform 200ms ease;
+  transform: translateY(0);
+
+  @starting-style {
+    transform: translateY(100%);
+  }
+}

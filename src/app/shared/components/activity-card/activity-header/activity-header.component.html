@@ -13,30 +13,50 @@
       }
   </div>
   
-  <!-- Ajout de keydown pour stopper la propagation au clavier et valider l'a11y -->
-  <div class="activity-header__meta flex flex-column flex-1 min-w-0 gap-1"
-     (click)="$event.stopPropagation()"
-     (keydown)="$event.stopPropagation()"
-     tabindex="-1">
-       
-    <app-autocomplete
-      [suggestions]="places()"
-      [formControl]="titleControl"
-      (blurred)="onTitleBlur()"
-      (searched)="onSearch($event)"
-      (optionSelected)="onSelect($event)"
-      [displayWith]="displayName"
-      placeholder="Nom de l'activité"
-      class="w-full transparent-inputtext"
-      [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
-      inputClass="font-semibold p-0 text-base">
-      <ng-template #item let-place>
-          <div class="flex flex-column min-w-0 flex-1">
-            <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
-            <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
-          </div>
-      </ng-template>
-    </app-autocomplete>
+  <!--
+    Mobile : le clic n'est PLUS stoppé ici (contrairement au desktop
+    ci-dessous) — tout le header, y compris cette zone, doit pouvoir
+    déplier/replier le panneau au clic (voir ROADMAP.md, "Crayon pour
+    modifier le titre..."). Seul le crayon (bouton dédié) intercepte son
+    propre clic pour ouvrir le tiroir d'édition à la place.
+  -->
+  <div class="activity-header__meta flex flex-column flex-1 min-w-0 gap-1">
+    @if (viewport.isMobile()) {
+      <div class="activity-header__title-mobile flex align-items-center gap-2 min-w-0">
+        <span class="activity-header__title-text font-semibold text-base white-space-nowrap overflow-hidden text-overflow-ellipsis">
+          {{ activity().title || "Nom de l'activité" }}
+        </span>
+        <button
+          type="button"
+          class="activity-header__pencil flex-shrink-0"
+          aria-label="Modifier le titre"
+          (click)="openTitleEditDialog($event)">
+          <i class="pi pi-pencil"></i>
+        </button>
+      </div>
+    } @else {
+      <!-- Ajout de keydown pour stopper la propagation au clavier et valider l'a11y -->
+      <div (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" tabindex="-1">
+        <app-autocomplete
+          [suggestions]="places()"
+          [formControl]="titleControl"
+          (blurred)="onTitleBlur()"
+          (searched)="onSearch($event)"
+          (optionSelected)="onSelect($event)"
+          [displayWith]="displayName"
+          placeholder="Nom de l'activité"
+          class="w-full transparent-inputtext"
+          [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
+          inputClass="font-semibold p-0 text-base">
+          <ng-template #item let-place>
+              <div class="flex flex-column min-w-0 flex-1">
+                <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
+                <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
+              </div>
+          </ng-template>
+        </app-autocomplete>
+      </div>
+    }
 
     <div class="flex align-items-center gap-2 flex-wrap">
       @if (dayId()) {

@@ -40,3 +40,34 @@ img {
 .activity-header__meta-icon {
   font-size: 0.65rem;
 }
+
+// Mobile uniquement (voir template) : titre statique + crayon, à la place de
+// l'`app-autocomplete` toujours éditable en direct utilisée sur desktop.
+.activity-header__title-mobile {
+  min-height: 1.75rem;
+}
+
+.activity-header__title-text {
+  min-width: 0;
+}
+
+.activity-header__pencil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+    color: var(--nt-text-color);
+  }
+}

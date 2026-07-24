@@ -114,6 +114,9 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Et sortir le p-dialog pour le mettre dasn un composant à part, transverse comme ça sa taille n'est pas limité au composant
 - Ouvrir le calendrier en dialog si écran taille smartphone
 - Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
+- Zones de drag and drop plus larges que les logos (réduire les mis-clics)
+- p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
+
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
@@ -169,8 +172,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
-- Zones de drag and drop plus larges que les logos (réduire les mis-clics)
-- p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
+
 - Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
 - Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal

@@ -1,0 +1,87 @@
+// Le host est le flex item direct de `.cdk-overlay-pane.app-title-edit-dialog-panel`
+// (voir src/styles/title-edit-dialog.scss, plein écran) — il doit s'étirer sur
+// toute cette hauteur pour que `__list` (flex:1 1 auto plus bas) puisse
+// occuper l'espace restant sous la ligne saisie/OK.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.title-edit-dialog {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.title-edit-dialog__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding: max(0.5rem, env(safe-area-inset-top)) 0.5rem 0.5rem 0.5rem;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.title-edit-dialog__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  // 16px (pas moins) : en dessous, Safari iOS zoome automatiquement la page au
+  // focus du champ, ce qu'on ne veut surtout pas dans un tiroir déjà plein écran.
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-sm);
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+
+  &:focus {
+    outline: none;
+    border-color: var(--nt-primary-color);
+  }
+}
+
+.title-edit-dialog__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.title-edit-dialog__option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+}
+
+.title-edit-dialog__option-name {
+  font-weight: 500;
+  color: var(--nt-text-color);
+  white-space: normal;
+}
+
+.title-edit-dialog__option-address {
+  font-size: 0.8rem;
+  color: var(--nt-text-muted-color);
+  white-space: normal;
+}
+
+.title-edit-dialog__empty {
+  padding: 1rem 0.75rem;
+  color: var(--nt-text-muted-color);
+  font-size: 0.875rem;
+  text-align: center;
+}

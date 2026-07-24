@@ -1,0 +1,37 @@
+<div class="title-edit-dialog">
+  <div class="title-edit-dialog__row">
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      (click)="cancel()" />
+
+    <input
+      #inputEl
+      type="text"
+      class="title-edit-dialog__input"
+      [value]="inputValue()"
+      placeholder="Nom de l'activité"
+      (input)="onInput($any($event.target).value)"
+      (keydown.enter)="validate()" />
+
+    <app-button label="OK" class="flex-shrink-0" (click)="validate()" />
+  </div>
+
+  <div class="title-edit-dialog__list">
+    @if (places().length > 0) {
+      @for (place of places(); track place.placeId) {
+        <button type="button" class="title-edit-dialog__option" (click)="selectPlace(place)">
+          <span class="title-edit-dialog__option-name">{{ displayName(place) }}</span>
+          <span class="title-edit-dialog__option-address">{{ place.address }}</span>
+        </button>
+      }
+    } @else if (searching()) {
+      <div class="title-edit-dialog__empty">Chargement...</div>
+    } @else if (inputValue().trim().length > 0) {
+      <div class="title-edit-dialog__empty">Aucun résultat trouvé</div>
+    }
+  </div>
+</div>

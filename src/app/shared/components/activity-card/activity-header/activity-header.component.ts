@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de ReactiveForms
 import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
@@ -12,6 +12,9 @@ import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
 import { TagComponent } from '@app/shared/components/tag/tag.component';
+import { ViewportService } from '@app/core/services/viewport.service';
+import { DialogService } from '@app/shared/services/dialog.service';
+import { TitleEditDialogComponent, TitleEditDialogData, TitleEditDialogResult } from './title-edit-dialog/title-edit-dialog.component';
 
 @Component({
   selector: 'app-activity-header',
@@ -24,6 +27,9 @@ import { TagComponent } from '@app/shared/components/tag/tag.component';
 export class ActivityHeaderComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly photoCache = inject(GooglePhotoService);
+  protected readonly viewport = inject(ViewportService);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
 
   readonly activity = input.required<Activity>();
   readonly dayId = input.required<Date | undefined>();
@@ -103,6 +109,51 @@ export class ActivityHeaderComponent {
     const trimmed = next.trim();
     if (this.activity().title === trimmed) return;
     this.titleEdited.emit(trimmed);
+  }
+
+  /**
+   * Mobile uniquement (voir template) : ouvre le tiroir plein écran d'édition
+   * du titre à la place de l'autocomplete inline utilisée sur desktop.
+   * `stopPropagation` : le crayon vit dans `.activity-header__meta`, qui ne
+   * stoppe plus lui-même la propagation en mode mobile (voir template) pour
+   * que le reste du header (y compris le titre) déplie/replie le panneau au
+   * clic, comme n'importe quelle autre zone du header — seul le crayon a
+   * besoin d'intercepter le clic pour ouvrir le tiroir plutôt que basculer le
+   * panneau.
+   *
+   * `viewContainerRef` explicite : sans lui, `Dialog.open` (CDK) instancie le
+   * composant avec l'injecteur racine plutôt que celui de cette vue —
+   * `GooglePlaceService` (`@Injectable()` SANS `providedIn`, fourni au niveau
+   * de `TripsComponent` pour partager son cache entre toutes les cartes d'un
+   * trip) resterait alors introuvable dans `TitleEditDialogComponent`
+   * (NG0201). Voir la même chaîne d'injecteur documentée dans
+   * `@angular/cdk/dialog` (`config.viewContainerRef?.injector`).
+   */
+  openTitleEditDialog(event: MouseEvent): void {
+    event.stopPropagation();
+
+    const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
+      TitleEditDialogComponent,
+      {
+        data: { initialTitle: this.activity().title },
+        panelClass: 'app-title-edit-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+      },
+    );
+
+    dialogRef.closed.subscribe((result) => {
+      if (!result) return;
+
+      if (result.type === 'place') {
+        this.onSelect(result.place);
+        return;
+      }
+
+      const trimmed = result.text.trim();
+      this.titleControl.setValue(trimmed);
+      if (this.activity().title === trimmed) return;
+      this.titleEdited.emit(trimmed);
+    });
   }
 
   getPhotoUrl$(ref: string, maxWidth = 100) {
