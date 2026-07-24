@@ -1,0 +1,62 @@
+/* ---------------------------------------------------------------------
+ * Utilitaires de COULEUR maison, sur le modèle des classes PrimeFlex
+ * qu'elles remplacent (`text-color-secondary`, `text-primary`, `surface-*`...).
+ * PrimeFlex reste utilisé librement pour tout le reste (flex/grid/gap/col-/
+ * p-/m-/w-full...) : seules les classes qui posaient une COULEUR sont
+ * remplacées ici, pour ne dépendre que des jetons `--nt-*` (adaptatifs
+ * clair/sombre) plutôt que de la palette brute `--p-surface-*` de
+ * PrimeFlex — voir le shim commenté dans tokens.scss : `--p-surface-*` est
+ * une palette PLATE (slate, ne s'inverse pas par mode comme `--nt-surface-*`
+ * qui elle est "zinc"), d'où un rendu bleuté incohérent en dark mode sur
+ * tout ce qui utilisait encore `surface-0/50/100`.
+ * ------------------------------------------------------------------- */
+
+.nt-text-color {
+  color: var(--nt-text-color);
+}
+
+.nt-text-muted {
+  color: var(--nt-text-muted-color);
+}
+
+.nt-text-primary {
+  color: var(--nt-primary-color);
+}
+
+// Variantes `hover:` (mêmes usages que les anciennes `hover:text-primary`/
+// `hover:surface-100` de PrimeFlex) : PrimeFlex ne génère ces variantes que
+// pour un sous-ensemble fixe de classes utilitaires, qui ne couvrait déjà
+// pas `hover:surface-100` (jamais fonctionnel) mais couvrait bien
+// `hover:text-primary` — remplacé ici pour ne pas perdre l'effet.
+.hover\:nt-text-primary:hover {
+  color: var(--nt-primary-color);
+}
+
+.nt-text-danger {
+  color: var(--nt-red-500);
+}
+
+.nt-text-warning {
+  color: var(--nt-yellow-500);
+}
+
+// Fond "contenu" opaque (cartes, panneaux, bulles flottantes...) — équivalent
+// de l'ancien `surface-0`, mais adaptatif via --nt-content-background
+// (blanc en clair, zinc-900 en sombre) au lieu du slate-900 brut de PrimeFlex.
+.nt-bg-content {
+  background-color: var(--nt-content-background);
+}
+
+// Fond légèrement teinté (placeholders, chips, tuiles d'icône...) —
+// équivalent de l'ancien `surface-50`/`surface-100`.
+.nt-bg-subtle {
+  background-color: var(--nt-content-hover-background);
+}
+
+// `hover:nt-bg-subtle` (accueil-trip, carte de voyage cliquable) : l'ancien
+// `hover:surface-100` n'était déjà pas un utilitaire PrimeFlex généré (aucun
+// effet avant non plus) — ajouté ici pour de bon, cohérent avec l'intention
+// visible du template (feedback au survol d'une carte cliquable).
+.hover\:nt-bg-subtle:hover {
+  background-color: var(--nt-content-hover-background);
+}

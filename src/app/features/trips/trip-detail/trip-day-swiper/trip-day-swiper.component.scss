@@ -1,4 +1,6 @@
-:host { display: block; }
+// `display:block` du host : voir la règle globale dans styles/reset.scss
+// (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
+//
 // position:fixed, plein écran, STATIQUE — jamais transformé/redimensionné.
 // Un conteneur JS-driven (dont la position suivrait le scroll pour "libérer"
 // l'espace du header) introduit un aller-retour lecture-scroll -> calcul ->

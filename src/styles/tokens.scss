@@ -15,6 +15,49 @@
  * la section "Dark mode" de PRIMENG_MIGRATION.md avant d'en ajouter un.
  * ------------------------------------------------------------------- */
 
+// Enregistrement typé (CSS Properties and Values API) de --nt-blur-backdrop :
+// sans lui, un `backdrop-filter: blur(var(--nt-blur-backdrop))` s'est révélé
+// mal peint à la toute première ouverture d'un dialog (fond flou grisâtre
+// incorrect jusqu'au moindre repaint, ex. un simple mouvement de souris) —
+// un moteur de rendu qui ne connaît pas le TYPE d'une custom property lui
+// applique une invalidation paresseuse à l'affichage initial. Déclarer
+// `syntax: '<length>'` dit explicitement au navigateur qu'il s'agit d'une
+// longueur interpolable, ce qui lui fait peindre la bonne valeur dès la
+// première frame plutôt que d'attendre un repaint forcé.
+@property --nt-blur-backdrop {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0.375rem;
+}
+
+// Même correctif que --nt-blur-backdrop ci-dessus, pour la même famille de
+// bug : `--nt-primary-color` → `--nt-btn-color` → `--nt-btn-fg` → `color`
+// (ButtonComponent, `.app-button { transition: ... color ... }`) est une
+// chaîne à 3 niveaux de custom properties non typées. Constaté concrètement
+// sur le bouton "OK" du time-picker (capture d'écran à l'ouverture du
+// dialog) : au tout premier paint, `color` résolvait à une valeur grisâtre
+// avant de "glisser" visuellement vers le teal primary ~150ms plus tard —
+// la transition CSS de `.app-button` anime la correction au lieu qu'elle
+// soit instantanée. Enregistrer le TYPE (`<color>`) répare la même classe de
+// bug pour toute la chaîne.
+@property --nt-primary-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #2A7871;
+}
+
+@property --nt-btn-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #2A7871;
+}
+
+@property --nt-btn-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #2A7871;
+}
+
 :root {
   // Indique au navigateur que la page gère elle-même les deux modes (suit
   // prefers-color-scheme) : PrimeNG posait ça automatiquement via son thème
@@ -74,9 +117,9 @@
   --nt-overlay-background: var(--nt-surface-0);
   --nt-overlay-border-color: var(--nt-surface-200);
   --nt-overlay-modal-border-radius: var(--nt-radius-xl);
-  --nt-overlay-modal-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --nt-overlay-modal-shadow: 0 1.25rem 1.5625rem -0.3125rem rgba(0, 0, 0, 0.1), 0 0.5rem 0.625rem -0.375rem rgba(0, 0, 0, 0.1);
   --nt-overlay-popover-border-radius: var(--nt-radius-md);
-  --nt-overlay-popover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --nt-overlay-popover-shadow: 0 0.25rem 0.375rem -0.0625rem rgba(0, 0, 0, 0.1), 0 0.125rem 0.25rem -0.125rem rgba(0, 0, 0, 0.1);
   --nt-mask-background: rgba(0, 0, 0, 0.4);
 
   // Champs de formulaire
@@ -94,21 +137,67 @@
   --nt-form-field-padding-x: 0.75rem;
   --nt-form-field-padding-y: 0.5rem;
 
-  // Rayons de bordure
+  // Rayons de bordure — en rem (jamais en px, cohérent avec le reste du
+  // thème : un rayon doit suivre l'échelle typographique de l'utilisateur,
+  // pas rester figé en pixels physiques).
   --nt-radius-none: 0;
-  --nt-radius-xs: 2px;
-  --nt-radius-sm: 4px;
-  --nt-radius-md: 6px;
-  --nt-radius-lg: 8px;
-  --nt-radius-xl: 12px;
+  --nt-radius-xs: 0.125rem;
+  --nt-radius-sm: 0.25rem;
+  --nt-radius-md: 0.375rem;
+  --nt-radius-lg: 0.5rem;
+  --nt-radius-xl: 0.75rem;
+
+  // Largeurs de bordure — échelle unique pour tous les `border: Npx solid`
+  // en dur trouvés dans les composants (panel, menu, fieldset, toolbar,
+  // select-button, checkbox, autocomplete, avatar, date-picker, divider,
+  // dialog-frame, trip-tabs-nav...). "hairline" = équivalent visuel d'1px à
+  // la taille de police par défaut (16px racine), mais exprimé en rem comme
+  // le reste du thème.
+  --nt-border-width-hairline: 0.0625rem;
+  --nt-border-width-thick: 0.125rem;
+
+  // Flou de fond (backdrop-filter) — une seule valeur pour tous les
+  // masques/tiroirs (dialog, select mobile, date-picker mobile,
+  // dispatch-overlay), qui utilisaient jusqu'ici 3 valeurs différentes
+  // (4px/6px) sans raison fonctionnelle de diverger.
+  --nt-blur-backdrop: 0.375rem;
+
+  // Mouvement — courbe d'accélération dupliquée telle quelle dans
+  // styles.scss (transitions de navigation, dispatch-overlay) et les
+  // composants d'overlay : un seul jeton de référence.
+  --nt-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
   // Focus ring / transitions / états
-  --nt-focus-ring-width: 1px;
+  --nt-focus-ring-width: 0.0625rem;
   --nt-focus-ring-style: solid;
   --nt-focus-ring-color: var(--nt-primary-color);
-  --nt-focus-ring-offset: 2px;
+  --nt-focus-ring-offset: 0.125rem;
   --nt-transition-duration: 0.2s;
   --nt-disabled-opacity: 0.6;
+
+  // Échelle de z-index de l'appli, du plus bas au plus haut (déplacée
+  // depuis styles.scss : c'est un jeton de thème comme les autres). Tout ce
+  // qui doit flotter au dessus du contenu normal (non scopé à un stacking
+  // context local, ex: .sticky-map dans day-panel) référence UNE de ces
+  // variables plutôt qu'un nombre en dur — objectif : garder la relation
+  // d'ordre lisible d'un coup d'œil, sans les valeurs à 4 chiffres qui
+  // trainaient avant (1090, 1100, 1200, 1300, 9000...), qui ne voulaient
+  // rien dire de plus que "un peu plus que l'autre".
+  // - header/toolbar : chrome fixe de l'appli (voir .app-trip-header-fixed
+  //   / .app-toolbar) — le toolbar doit rester au dessus du header.
+  // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay).
+  // - overlay-content : le contenu flottant lui-même, au dessus de son
+  //   propre backdrop (dispatch-ball) — les overlays @angular/cdk/overlay
+  //   (dialog, menu, select, autocomplete, date-picker) vivent tous dans
+  //   .cdk-overlay-container, dont le z-index (1000) dépasse déjà tout ça.
+  // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
+  //   volontairement tout en haut — voir sa justification dans
+  //   trip-detail.component.scss.
+  --z-app-header: 10;
+  --z-app-toolbar: 20;
+  --z-overlay-backdrop: 30;
+  --z-overlay-content: 40;
+  --z-drag-portal: 100;
 
   // Couleurs de statut (utilisées par .to_book/.booked/.not_needed/.waitlist
   // dans styles.scss)

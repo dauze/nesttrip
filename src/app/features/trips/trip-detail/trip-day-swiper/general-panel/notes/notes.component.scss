@@ -1,4 +1,5 @@
-:host { display: block; }
+// `display:block` du host : voir la règle globale dans styles/reset.scss
+// (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
 
 // Padding + marge négative : agrandit la zone tactile réelle des poignées
 // de drag and drop sans déplacer visuellement les icônes ni pousser les
@@ -7,3 +8,9 @@
   padding: 0.5rem;
   margin: -0.5rem 0;
 }
+
+// Le bouton de suppression d'un point de note (visibility/pointer-events,
+// pas display) est piloté directement en binding de style inline dans le
+// template — voir notes.component.html : sa largeur reste réservée en
+// permanence dans le flex, le textarea à côté ne change jamais de taille en
+// gagnant/perdant le focus.

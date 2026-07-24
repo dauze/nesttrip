@@ -59,7 +59,7 @@
               [value]="point.text"
               class="flex-1 overflow-hidden min-w-0 transparent-textarea"
               [class.line-through]="item.type === NotesType.TODO && point.checked"
-              [class.text-color-secondary]="item.type === NotesType.TODO && point.checked"
+              [class.nt-text-muted]="item.type === NotesType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
               (keydown.enter)="onEnterRow(item, $index, $any($event))"
               (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
@@ -78,7 +78,8 @@
               severity="secondary"
               size="small"
               class="swiper-no-swiping"
-              [style.display]="activePointId() === point.id ? 'flex' : 'none'"
+              [style.visibility]="activePointId() === point.id ? 'visible' : 'hidden'"
+              [style.pointer-events]="activePointId() === point.id ? 'auto' : 'none'"
               (mousedown)="$event.preventDefault();removePoint(item, $index); "
             />
           </div>
@@ -95,7 +96,7 @@
         </div>
         @if (item.type === NotesType.TODO && item.elements.some(p => p.checked)) {
           <app-fieldset [toggleable]="true" [collapsed]="true" class="completed-fieldset border-none p-2">
-            <span fieldsetHeader class="text-sm text-color-secondary">
+            <span fieldsetHeader class="text-sm nt-text-muted">
               {{ item.elements.filter(p => p.checked).length }} éléments terminés
             </span>
             @for (point of item.elements; track point.id) {
@@ -112,7 +113,7 @@
                     [value]="point.text"
                     class="flex-1 overflow-hidden min-w-0  transparent-textarea"
                     [class.line-through]="item.type === NotesType.TODO && point.checked"
-                    [class.text-color-secondary]="item.type === NotesType.TODO && point.checked"
+                    [class.nt-text-muted]="item.type === NotesType.TODO && point.checked"
                     (input)="onTextChange(item, $index, $any($event.target).value)"
                     (keydown.enter)="onEnterRow(item, $index, $any($event))"
                     (keydown.backspace)="onBackspaceRow(item, $index, $any($event))"
@@ -131,7 +132,8 @@
                     severity="secondary"
                     size="small"
                     class="swiper-no-swiping"
-                    [style.display]="activePointId() === point.id ? 'flex' : 'none'"
+                    [style.visibility]="activePointId() === point.id ? 'visible' : 'hidden'"
+                    [style.pointer-events]="activePointId() === point.id ? 'auto' : 'none'"
                     (mousedown)="$event.preventDefault();removePoint(item, $index);"
                   />
                 </div>

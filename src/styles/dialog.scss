@@ -11,7 +11,7 @@
 
 .app-dialog-backdrop {
   background: var(--nt-mask-background);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(var(--nt-blur-backdrop));
 }
 
 // `.cdk-overlay-pane.app-dialog-panel` (pas juste `.app-dialog-panel`) :

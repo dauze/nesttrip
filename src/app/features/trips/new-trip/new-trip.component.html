@@ -30,7 +30,7 @@
               </ng-template>
             </app-autocomplete>
           @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
-            <small class="text-red-500">La destination est requise.</small>
+            <small class="nt-text-danger">La destination est requise.</small>
           }
         </div>
 
@@ -44,7 +44,7 @@
             placeholder="Ex : Road trip Islande"
           />
           @if (form.controls.title.touched && form.controls.title.hasError('required')) {
-            <small class="text-red-500">Le nom est requis.</small>
+            <small class="nt-text-danger">Le nom est requis.</small>
           }
         </div>
 
@@ -61,7 +61,7 @@
           />
 
           @if (form.controls.dates.touched && form.controls.dates.hasError('required')) {
-            <small class="text-red-500">Les dates sont requises.</small>
+            <small class="nt-text-danger">Les dates sont requises.</small>
           }
         </div>
 

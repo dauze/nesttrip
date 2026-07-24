@@ -9,7 +9,7 @@
 
 .app-select-backdrop--mobile {
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--nt-blur-backdrop));
 }
 
 // --- Panneau desktop : liste ancrée sous le champ, style popover classique ---
@@ -18,7 +18,7 @@
   min-width: 10rem;
   max-width: 20rem;
   background: var(--nt-content-background);
-  border: 1px solid var(--nt-content-border-color);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   border-radius: var(--nt-overlay-popover-border-radius);
   box-shadow: var(--nt-overlay-popover-shadow);
   overflow: hidden;

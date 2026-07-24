@@ -5,7 +5,7 @@
       <!-- TYPE -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
-          <label for="activity-type" class="text-color-secondary text-sm flex align-items-center gap-1">
+          <label for="activity-type" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-tag text-sm"></i>Type
           </label>
           <app-select id="activity-type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
@@ -15,7 +15,7 @@
       <!-- RESA -->
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
         <div class="flex flex-column gap-1 w-full min-w-0">
-          <label for="booking-status" class="text-color-secondary text-sm flex align-items-center gap-1">
+          <label for="booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-bookmark text-sm"></i>Résa
           </label>
           <app-select id="booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
@@ -27,7 +27,7 @@
       <!-- DEBUT -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
-          <label for="start-time" class="text-color-secondary text-sm flex align-items-center gap-1">
+          <label for="start-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar text-sm"></i>Début
           </label>
           <app-time-picker-dialog id="start-time" formControlName="startTime" />
@@ -37,7 +37,7 @@
       <!-- FIN -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 min-w-0">
-          <label for="end-time" class="text-color-secondary text-sm flex align-items-center gap-1">
+          <label for="end-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
           <app-time-picker-dialog id="end-time" formControlName="endTime" />
@@ -49,7 +49,7 @@
       <!-- DUREE -->
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 min-w-0">
-          <label for="duration-time" class="text-color-secondary text-sm flex align-items-center gap-1">
+          <label for="duration-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-clock text-sm"></i>Durée
           </label>
           <app-time-picker-dialog id="duration-time" [formControl]="durationTimeControl" />
@@ -59,7 +59,7 @@
       <!-- PRIX -->
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
         <div class="flex flex-column gap-1 w-full min-w-0">
-          <label for="price-amount" class="text-color-secondary text-sm flex align-items-center gap-1">
+          <label for="price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-euro text-sm"></i>Prix
           </label>
           <div class="flex align-items-center gap-1 w-full min-w-0">
@@ -81,7 +81,7 @@
         <app-divider class="m-1" />
         <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
           <div class="flex flex-column gap-1 w-full min-w-0">
-            <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
+            <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'nt-text-muted'">
               <i class="pi pi-calendar text-xs"></i>Deadline
             </label>
             <app-date-picker inputId="booking-deadline" formControlName="deadline" [icon]="false" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
@@ -95,7 +95,7 @@
   
   <!-- NOTES -->
   <div class="flex flex-column gap-2 mb-2">
-    <label for="form-notes" class="text-color-secondary text-sm flex align-items-center gap-1">
+    <label for="form-notes" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes
     </label>
     <textarea id="form-notes" appTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" class="w-full"></textarea>

@@ -25,7 +25,7 @@
   justify-content: center;
   gap: 0.5rem;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
-  border: 1px solid transparent;
+  border: var(--nt-border-width-hairline) solid transparent;
   border-radius: var(--nt-form-field-border-radius);
   font-family: inherit;
   font-size: 0.95rem;
@@ -35,7 +35,20 @@
   cursor: pointer;
   background: var(--nt-btn-color);
   color: var(--nt-btn-contrast);
-  transition: background-color var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+  // Aucune transition sur `color`/`background-color`/`border-color` ici (plus
+  // haut jusqu'à récemment il y en avait) : dans un composant instancié
+  // dynamiquement par `DialogService`/`Dialog.open()` (CDK), Angular semble
+  // appliquer les classes de base (`.app-button`, fond plein + bordure
+  // transparente) puis les classes de variante (`--text`/`--outlined`/
+  // sévérité) en deux passes distinctes — un repaint intermédiaire s'insère
+  // entre les deux. Avec une transition déclarée, ce repaint intermédiaire
+  // (par ex. fond plein primary + bordure invisible) s'anime visiblement
+  // vers l'état correct sur ~250ms au lieu d'être instantané : confirmé
+  // concrètement sur "OK" (`color`) puis "Annuler" (`background-color`/
+  // `border-color`) à l'ouverture du time-picker. Aucune règle `:hover`/
+  // `:active` de ce fichier n'anime `color`/`border-color` (seul le fond
+  // change au survol) : cette transition ne servait donc qu'à ce flash de
+  // montage, jamais à une vraie interaction.
 
   i {
     font-size: 1rem;

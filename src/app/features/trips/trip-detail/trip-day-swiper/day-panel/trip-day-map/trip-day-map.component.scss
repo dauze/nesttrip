@@ -1,5 +1,6 @@
-:host { display: block; } 
+// `display:block` du host : voir la règle globale dans styles/reset.scss
+// (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
 .map-container {
-  border-radius: 3px;
+  border-radius: 0.1875rem;
   overflow: hidden;
 }

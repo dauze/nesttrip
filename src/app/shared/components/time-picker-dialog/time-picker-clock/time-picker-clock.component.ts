@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -34,10 +34,11 @@ export interface TimePickerClockData {
     templateUrl: './time-picker-clock.component.html',
     styleUrl: './time-picker-clock.component.scss',
 })
-export class TimePickerClockComponent {
+export class TimePickerClockComponent implements AfterViewInit {
 
     private readonly dialogRef = inject(DialogRef<Date | undefined>);
     private readonly data = inject<TimePickerClockData>(DIALOG_DATA);
+    private readonly cdr = inject(ChangeDetectorRef);
 
     @ViewChild('clockFace')
     clockFace!: ElementRef<HTMLDivElement>;
@@ -49,6 +50,20 @@ export class TimePickerClockComponent {
 
     selectionMode: 'hour' | 'minute' = 'hour';
 
+    // Taille réelle du cadran (`.clock-face`, 16.5rem en CSS) : lue une seule
+    // fois dans `ngAfterViewInit` (pas dans les getters positionnels
+    // ci-dessous). Avant ce correctif, `getClockSize()` retombait sur un
+    // FALLBACK figé (280) tant que `@ViewChild` n'était pas encore résolu —
+    // donc pour TOUT le premier rendu (chiffres du cadran, aiguille,
+    // sélecteur), puisque ces getters sont évalués dans le template avant
+    // `ngAfterViewInit`. 280px ne correspond pas à 16.5rem (264px à 16px
+    // racine, 247.5px sur mobile où `reset.scss` passe le root à 15px) :
+    // d'où les chiffres visiblement mal positionnés jusqu'au premier
+    // changement détecté par Angular (n'importe quel événement, y compris un
+    // simple survol souris, qui réévalue alors les getters avec la vraie
+    // taille mesurée).
+    private readonly clockSize = signal(280);
+
     constructor() {
         const initial = this.data.initialDate;
         if (initial instanceof Date) {
@@ -59,6 +74,20 @@ export class TimePickerClockComponent {
             this.tempHour = String(now.getHours()).padStart(2, '0');
             this.tempMinute = String(now.getMinutes()).padStart(2, '0');
         }
+    }
+
+    // Correction synchrone, DANS LA MÊME passe de détection de changements
+    // que celle qui a déclenché ce hook (`ChangeDetectorRef.detectChanges()`
+    // ici, pas un `afterNextRender`/microtâche séparé) : une tentative
+    // précédente avec `afterNextRender` introduisait un second cycle de CD
+    // réellement asynchrone, qui perturbait l'autofocus CDK du dialog
+    // (bouton "OK" perdant sa couleur primary, croix de fermeture affichée
+    // comme pré-sélectionnée, scintillement des boutons à l'ouverture).
+    // `ngAfterViewInit` + `detectChanges()` reste dans le flux synchrone
+    // déjà en cours, sans nouvelle tâche planifiée.
+    ngAfterViewInit(): void {
+        this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+        this.cdr.detectChanges();
     }
 
     close(): void {
@@ -414,11 +443,7 @@ export class TimePickerClockComponent {
 
     private getClockSize(): number {
 
-        if (!this.clockFace) {
-            return 280;
-        }
-
-        return this.clockFace.nativeElement.clientWidth;
+        return this.clockSize();
     }
 
     private getClockCenter(): number {

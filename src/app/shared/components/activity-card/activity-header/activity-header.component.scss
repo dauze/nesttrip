@@ -19,3 +19,24 @@ img {
   -webkit-user-drag: none;
   user-drag: none;
 }
+
+// Taille fixe de la vignette — était un `style="width:3rem;height:3rem"`
+// inline dans le template. Remonté ici pour que la surcharge globale
+// `.activity-header__thumb--fill` (styles/dispatch-overlay.scss, posée sur
+// le CLONE de cet élément dans la bulle de décrochage) puisse gagner par
+// spécificité normale plutôt que par `!important` : un style inline ne peut
+// jamais être battu autrement.
+.activity-header__thumb {
+  width: 3rem;
+  height: 3rem;
+}
+
+.activity-header__thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.activity-header__meta-icon {
+  font-size: 0.65rem;
+}

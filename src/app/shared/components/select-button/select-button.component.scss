@@ -3,7 +3,7 @@
   width: 100%;
   border-radius: var(--nt-form-field-border-radius);
   overflow: hidden;
-  border: 1px solid var(--nt-form-field-border-color);
+  border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
 }
 
 .app-select-button__item {
@@ -22,7 +22,7 @@
   transition: background-color var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
 
   &:not(:last-child) {
-    border-right: 1px solid var(--nt-form-field-border-color);
+    border-right: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
   }
 
   &:hover:not(.app-select-button__item--active) {

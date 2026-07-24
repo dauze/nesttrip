@@ -20,8 +20,15 @@
 // bas de la liste (quelques dizaines de px de scroll en plus) — comportement
 // identique au flux document natif d'origine (un header qui défile normalement
 // "gèle" lui aussi cet espace, il ne le libère jamais).
-:host {
-  display: block;
+// Anciennement `:host { ... }` : composant de FEATURE, pas une primitive
+// shared — le host n'est plus stylé directement (voir la note équivalente
+// dans trip-day-swiper.component.scss/general-panel.component.scss), la
+// classe `.day-panel-root` est posée sur l'élément racine déjà présent dans
+// le template. `--chrome-top-offset`/`--chrome-tabs-nav-height` restent
+// posés plus haut (trip-day-swiper.component.html) : une custom property
+// hérite normalement à travers les descendants, quel que soit l'élément qui
+// la lit.
+.day-panel-root {
   padding-top: var(--chrome-top-offset, 0px);
   padding-bottom: var(--chrome-tabs-nav-height, 0px);
 }
@@ -33,9 +40,11 @@
   background: Canvas;
   margin-top: -0.5rem;
   padding-top: 0.5rem;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--nt-radius-md) var(--nt-radius-md);
 }
 
-:host {
-  scroll-margin-top: var(--sticky-height, 0px);
-}
+// L'ancien second bloc `:host { scroll-margin-top: var(--sticky-height, 0px); }`
+// a été supprimé : `--sticky-height` n'est posée nulle part dans le code
+// (aucun `setProperty`/`[style.--sticky-height]`), ce bloc résolvait donc
+// toujours au fallback `0px` — CSS mort, vestige d'une itération antérieure
+// au système de réservation d'espace "volontairement statique" ci-dessus.

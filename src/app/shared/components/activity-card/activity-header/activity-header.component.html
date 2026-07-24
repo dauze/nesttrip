@@ -1,16 +1,15 @@
 <div class="activity-header__row flex align-items-center gap-2 w-full min-w-0">
-  <span class="cursor-move text-color-secondary flex-shrink-0 drag-handle swiper-no-swiping">
+  <span class="cursor-move nt-text-muted flex-shrink-0 drag-handle swiper-no-swiping">
     <i class="pi pi-bars"></i>
   </span>
 
-  <div class="activity-header__thumb flex-shrink-0 border-round overflow-hidden surface-100 flex align-items-center justify-content-center"
-      style="width:3rem;height:3rem">
+  <div class="activity-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
       @if (firstPhotoRef(); as ref) {
         @if (getPhotoUrl$(ref, 120) | async; as url) {
-          <img [src]="url" [alt]="activity().title" draggable="false" style="width:100%;height:100%;object-fit:cover" />
+          <img [src]="url" [alt]="activity().title" draggable="false" class="activity-header__thumb-img" />
         }
       } @else {
-        <i [class]="'pi text-xl text-color-secondary ' + activityTypeMeta[activity().type]?.icon"></i>
+        <i [class]="'pi text-xl nt-text-muted ' + activityTypeMeta[activity().type]?.icon"></i>
       }
   </div>
   
@@ -34,7 +33,7 @@
       <ng-template #item let-place>
           <div class="flex flex-column min-w-0 flex-1">
             <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
-            <span class="text-color-secondary text-xs white-space-normal line-height-2">{{ place.address }}</span>
+            <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
           </div>
       </ng-template>
     </app-autocomplete>
@@ -42,14 +41,14 @@
     <div class="flex align-items-center gap-2 flex-wrap">
       @if (dayId()) {
         @if (activity().startTime ) {
-        <span class="text-color-secondary text-xs flex align-items-center gap-1">
-          <i class="pi pi-clock" style="font-size:0.65rem"></i>
+        <span class="nt-text-muted text-xs flex align-items-center gap-1">
+          <i class="pi pi-clock activity-header__meta-icon"></i>
           {{ activity().startTime | date:'HH:mm' }}
         </span>
         }
         @if (activity().price.amount) {
-          <span class="text-color-secondary text-xs flex align-items-center gap-1">
-            <i class="pi pi-euro" style="font-size:0.65rem"></i>
+          <span class="nt-text-muted text-xs flex align-items-center gap-1">
+            <i class="pi pi-euro activity-header__meta-icon"></i>
             {{ activity().price.amount }} {{ activity().price.currency }}
           </span>
         }

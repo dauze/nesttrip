@@ -1,6 +1,6 @@
 :host {
   display: block;
-  border: 1px solid var(--nt-content-border-color);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   border-radius: var(--nt-content-border-radius);
   background: var(--nt-content-background);
   color: var(--nt-text-color);
@@ -45,8 +45,8 @@
 .app-panel__chevron {
   width: 0.55rem;
   height: 0.55rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  border-right: var(--nt-border-width-thick) solid currentColor;
+  border-bottom: var(--nt-border-width-thick) solid currentColor;
   transition: transform var(--nt-transition-duration) ease;
   transform: rotate(45deg);
   margin-top: -0.2rem;

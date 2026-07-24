@@ -6,7 +6,7 @@
         <div class="flex-1 flex flex-column overflow-hidden">
           <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].displayName || entry[1].email }}</span>
           @if (entry[1].displayName) {
-            <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].email }}</span>
+            <span class="text-sm nt-text-muted white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].email }}</span>
           }
         </div>
         <app-button
@@ -60,7 +60,7 @@
             <div class="flex-1 flex flex-column overflow-hidden">
               <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.displayName || companion.email }}</span>
               @if (companion.displayName) {
-                <span class="text-sm text-color-secondary white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.email }}</span>
+                <span class="text-sm nt-text-muted white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.email }}</span>
               }
             </div>
             <app-button

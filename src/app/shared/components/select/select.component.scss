@@ -32,7 +32,7 @@
   gap: 0.5rem;
   width: 100%;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
-  border: 1px solid var(--nt-form-field-border-color);
+  border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
   border-radius: var(--nt-form-field-border-radius);
   background: var(--nt-form-field-background);
   color: var(--nt-form-field-color);

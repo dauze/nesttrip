@@ -4,7 +4,7 @@
   [class.dispatch-overlay--expanded]="sheetExpanded()"
   [class.dispatch-overlay--bar-visible]="dispatchService.activeDayDrag() !== null">
 
-  <div #sheet class="dispatch-overlay__sheet surface-0"
+  <div #sheet class="dispatch-overlay__sheet nt-bg-content"
     [style.--dispatch-collapsed-h.px]="collapsedHeight()"
     [style.--dispatch-expand-duration.ms]="expandDurationMs()">
 
@@ -17,7 +17,7 @@
     <div #grid class="dispatch-overlay__scroll" (scroll)="onGridScroll()">
       @for (group of monthGroups(); track group.label) {
         <div class="dispatch-overlay__month">
-          <div class="dispatch-overlay__month-label surface-0 font-semibold text-sm">{{ group.label }}</div>
+          <div class="dispatch-overlay__month-label nt-bg-content font-semibold text-sm">{{ group.label }}</div>
           <div class="flex flex-wrap gap-2 mb-2">
             @for (day of group.days; track day.id.getTime(); let di = $index) {
              <app-button
@@ -48,7 +48,7 @@
 
 <div
   #ball
-  class="dispatch-ball surface-0"
+  class="dispatch-ball nt-bg-content"
   [class.dispatch-ball--active]="dispatchService.isVisible()"
   [class.dispatch-ball--formed]="formed()"
   [style.transform]="formed() ? ballTransform() : null"

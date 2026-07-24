@@ -10,7 +10,7 @@
 
 .app-date-picker-backdrop--mobile {
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--nt-blur-backdrop));
 }
 
 .app-date-picker-panel {
@@ -18,7 +18,7 @@
   max-width: calc(100vw - 2rem);
   padding: 0.75rem;
   background: var(--nt-content-background);
-  border: 1px solid var(--nt-content-border-color);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   border-radius: var(--nt-overlay-popover-border-radius);
   box-shadow: var(--nt-overlay-popover-shadow);
 }
@@ -134,7 +134,7 @@
 
   &.app-date-picker-panel__day--today {
     border-radius: 50%;
-    box-shadow: inset 0 0 0 1px var(--nt-primary-color);
+    box-shadow: inset 0 0 0 var(--nt-border-width-hairline) var(--nt-primary-color);
   }
 
   // Le remplissage "en plage" reste bord à bord (pas de rayon) : c'est ce qui
@@ -209,7 +209,7 @@
   }
 
   &.app-date-picker-panel__cell--today {
-    box-shadow: inset 0 0 0 1px var(--nt-primary-color);
+    box-shadow: inset 0 0 0 var(--nt-border-width-hairline) var(--nt-primary-color);
   }
 
   &.app-date-picker-panel__cell--selected {

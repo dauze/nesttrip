@@ -33,7 +33,7 @@
 // visuellement chaque avatar du suivant, voir avatar-group.component.ts.
 :host-context(app-avatar-group) {
   margin-left: -0.75rem;
-  border: 2px solid var(--nt-content-background);
+  border: var(--nt-border-width-thick) solid var(--nt-content-background);
 
   &:first-child {
     margin-left: 0;

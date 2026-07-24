@@ -175,7 +175,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
 - Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal
 - rajouter un indicateur quand s'est sauvegardé et quand la sauvegarde s'est mal passé, très discret, une petite bar verte au dessus de la bar d'état par exemple. et si ça marche pas, faire un truc rouge avec de vrai consigne mais je sais pas encore quoi 
-
+- Menu : mode sombre / clair / système
 
 ### Bugs / fixes
 
@@ -186,20 +186,19 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Dans la modification de l'heure, si l'utilisateur positionne une heure puis une minute, alors il faut faire ok
 - le minim width n'est plus appliqué et on peut de nouveau tasser jusqu'à avoir des chevauchement, il faut remettre un min width sur le plus haut niveau : le min-width: 24rem fonctionne toujours sur l'écran d'accueil, de login, mais plus sur "app-content" depuis les modifications du swiper
 - Dans les données de google pour afficher si fermé ou non, il en faut pas prendre l'heure actuelle mais plutôt l'heure annoncé par l'heure de début. Si l'heure n'est pas renseignée, l'afficher uniquement si il est fermé le jour entier sélectionné, sinon ne pas l'afficher.
+- La liste des compagnons de route n'est pas renseigné après rechargement
 
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)
 - Secret de déploiement pour la release
-- Menu : mode sombre / clair / système
+
 - Faire un gros travail de code review pour uniformiser les pratiques (exemple les oninit alors qu'on est en angular 21), supprimer le code mort, déplacer dans des services des comportement isolé sur certain fichiers trop gros, séparer les trop gros fichier intelligement, eviter les view child plutôt privilégier les services pour partager des données (ce n'est pas tout le temps possible)
 - Eviter de faire des input-output quand ce n'est pas des dub component et privilégier les services, sauf si ca génère de la complexité
-- Simplifier les flou et les uniformiser en mettant via une seule valeur
-- simplifier le style.scss et dispatcher en plusierus sous fichier et les incorporer via des @use
+
 - Mieux gérer la portée de chaque services : enlever un maximum root et les déclarer au bon endroits
 - déplacer des fonctions purement utilitaires dans des utils et alléger les composants trop gros
 - Eviter les sujets de plus de 500 lignes 
 - éviter les settimeout 
-- supprimer le scss de primeng + supprimer les !important du scss
-- eviter les ::ngdeep et :host qui sont une mauvais pratique scss
+
 

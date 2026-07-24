@@ -47,7 +47,7 @@
       <div class="col-12 md:col-6 lg:col-4">
         <app-card
           [ngClass]="{
-            'cursor-pointer hover:surface-100': !editMode || user?.uid === trip.ownerId,
+            'cursor-pointer hover:nt-bg-subtle': !editMode || user?.uid === trip.ownerId,
             'cursor-default opacity-80': editMode && user?.uid !== trip.ownerId
           }"
           class="w-full h-full transition-colors transition-duration-200"
@@ -69,13 +69,13 @@
             <!-- Title with conditional disabled color -->
             <span 
               class="font-medium text-lg flex-grow-1 ml-2"
-              [ngClass]="{ 'text-color-secondary opacity-60': editMode && user?.uid !== trip.ownerId }"
+              [ngClass]="{ 'nt-text-muted opacity-60': editMode && user?.uid !== trip.ownerId }"
             >
               {{ trip.title }}
             </span>
 
             @if (!editMode) {
-              <i class="pi pi-arrow-right text-color-secondary"></i>
+              <i class="pi pi-arrow-right nt-text-muted"></i>
             }
           </div>
         </app-card>

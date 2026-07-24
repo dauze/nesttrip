@@ -1,8 +1,9 @@
 // Réserve l'espace toolbar + header voyage + barre des jours (fixed) EN
 // DEHORS du scrollport — réservation volontairement STATIQUE, voir la doc
-// complète dans day-panel.component.scss.
-:host {
-  display: block;
+// complète dans day-panel.component.scss. Anciennement `:host` : composant
+// de FEATURE, la classe est posée sur l'élément racine du template
+// (`display:block` du host lui-même géré globalement, styles/reset.scss).
+.general-panel-root {
   padding-top: var(--chrome-top-offset, 0px);
   padding-bottom: var(--chrome-tabs-nav-height, 0px);
 }

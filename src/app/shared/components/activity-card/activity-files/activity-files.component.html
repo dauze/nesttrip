@@ -1,10 +1,10 @@
 <div class="flex flex-column gap-2">
-  <span class="text-color-secondary text-sm flex align-items-center gap-1">
+  <span class="nt-text-muted text-sm flex align-items-center gap-1">
     <i class="pi pi-paperclip text-xs"></i>Fichiers
   </span>
 
   @if (uploadingFiles().size > 0) {
-    <div class="flex align-items-center gap-2 text-color-secondary text-sm">
+    <div class="flex align-items-center gap-2 nt-text-muted text-sm">
       <app-progress-spinner [strokeWidth]="3" [style]="{ width: '1.25rem', height: '1.25rem' }" />
       <span>{{ uploadingFiles().size }} fichier(s) en cours d'envoi…</span>
     </div>
@@ -17,7 +17,7 @@
         [removable]="true"
         (click)="openFile(file)"
         (remove)="removeFile(i)"
-        class="surface-100 text-sm cursor-pointer">
+        class="nt-bg-subtle text-sm cursor-pointer">
         <span class="file-name" [title]="file.name">{{ file.name }}</span>
       </app-chip>
     }

@@ -1,32 +1,34 @@
-<div #tabsListRef class="app-tabs tabs-pop">
-  <div class="app-tabs__list" role="tablist">
-    @for (tab of tabs(); track tab.id; let i = $index) {
-      <button
-        type="button"
-        role="tab"
-        [attr.aria-selected]="tab.id === activeId()"
-        [attr.data-tab-id]="tab.id"
-        class="app-tab"
-        [class.is-active]="tab.id === activeId()"
-        [class.app-tab--day]="!!tab.dayNumber"
-        [class.app-tab--general]="!tab.dayNumber"
-        (click)="onTabClick(tab.id, i)">
-        @if (tab.dayNumber) {
-          <span class="day-tab">
-            <span class="day-tab__weekday text-color-secondary">
-              <span class="day-tab__short">{{ tab.weekday }}</span>
-              <span class="day-tab__full">{{ tab.weekdayFull }}</span>
+<div class="trip-tabs-nav-root">
+  <div #tabsListRef class="app-tabs tabs-pop">
+    <div class="app-tabs__list" role="tablist">
+      @for (tab of tabs(); track tab.id; let i = $index) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab.id === activeId()"
+          [attr.data-tab-id]="tab.id"
+          class="app-tab"
+          [class.is-active]="tab.id === activeId()"
+          [class.app-tab--day]="!!tab.dayNumber"
+          [class.app-tab--general]="!tab.dayNumber"
+          (click)="onTabClick(tab.id, i)">
+          @if (tab.dayNumber) {
+            <span class="day-tab">
+              <span class="day-tab__weekday nt-text-muted">
+                <span class="day-tab__short">{{ tab.weekday }}</span>
+                <span class="day-tab__full">{{ tab.weekdayFull }}</span>
+              </span>
+              <span class="day-tab__number">{{ tab.dayNumber }}</span>
+              <span class="day-tab__month nt-text-muted">
+                <span class="day-tab__short">{{ tab.month }}</span>
+                <span class="day-tab__full">{{ tab.monthFull }}</span>
+              </span>
             </span>
-            <span class="day-tab__number">{{ tab.dayNumber }}</span>
-            <span class="day-tab__month text-color-secondary">
-              <span class="day-tab__short">{{ tab.month }}</span>
-              <span class="day-tab__full">{{ tab.monthFull }}</span>
-            </span>
-          </span>
-        } @else {
-          <span class="general-tab">{{ tab.label }}</span>
-        }
-      </button>
-    }
+          } @else {
+            <span class="general-tab">{{ tab.label }}</span>
+          }
+        </button>
+      }
+    </div>
   </div>
 </div>

@@ -1,0 +1,90 @@
+/* ---------------------------------------------------------------------
+ * Styles globaux liés au CLONAGE DOM fait par `ActivityDayDispatchOverlayComponent`
+ * (voir PRIMENG_MIGRATION.md, "Piège identifié" + trip-tabs-nav Phase 6) :
+ * `cloneNavBarInto`/`cloneOriginHeaderInto` clonent respectivement la vraie
+ * barre de jours (`TripTabsNavComponent`) et le vrai `<app-activity-header>`
+ * de la carte décrochée. Ces clones portent l'attribut de scope Angular DE
+ * LEUR COMPOSANT D'ORIGINE (pas celui de l'overlay), donc ces règles
+ * doivent rester globales pour continuer à s'appliquer une fois posées via
+ * classList.toggle()/insérées dans le DOM du clone.
+ * ------------------------------------------------------------------- */
+
+@use 'tokens';
+
+// Réplique de la barre de jours : chaque onglet peut être poussé "hors
+// piste" (l'onglet d'origine décroché quitte visuellement la barre).
+//
+// Sélecteur auto-répété (x3) plutôt que `!important` : cette règle globale
+// doit gagner contre `.app-tab { flex: 1 1 0; padding: 1rem 1.125rem; }`
+// (trip-tabs-nav.component.scss), qui compile en
+// `.app-tab[_ngcontent-xxx] { ... }` — spécificité (1 classe + 1 attribut =
+// 2). Une classe seule ici vaut 1 ; il en faut STRICTEMENT plus que 2 pour
+// gagner quel que soit l'ordre de chargement (à spécificité égale, c'est
+// l'ordre des feuilles qui déciderait, fragile). Répéter la même classe 3
+// fois est un sélecteur valide en CSS qui compte pour 3 dans le calcul de
+// spécificité, sans dépendre de l'ordre ni d'`!important`.
+.dispatch-overlay__replica-tab--out.dispatch-overlay__replica-tab--out.dispatch-overlay__replica-tab--out {
+  flex: 0 0 0;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0;
+  overflow: hidden;
+  transform: translateX(-120vw);
+  opacity: 0;
+  transition:
+    transform 650ms var(--nt-ease-standard),
+    opacity 400ms ease,
+    flex-basis 650ms var(--nt-ease-standard),
+    max-width 650ms var(--nt-ease-standard),
+    padding 650ms ease,
+    margin 650ms ease;
+}
+
+.dispatch-overlay__replica-tab--flipped {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+/* ---------------------------------------------------------------------
+ * Contenu de la bulle de décrochage (voir cloneOriginHeaderInto) : un clone
+ * DOM du vrai <app-activity-header> de la carte. `.drag-handle` est le
+ * sélecteur déjà utilisé ailleurs pour cibler la poignée de l'en-tête (voir
+ * ActivityCardComponent.updateDragState) ; `.activity-header__thumb`/
+ * `__meta` sont posés dans le template de ActivityHeaderComponent
+ * spécifiquement comme accroches de style stables.
+ * ------------------------------------------------------------------- */
+// Pas de transition CSS ici : le rétrécissement/la réapparition de la
+// poignée et du texte sont pilotés image par image en JS, dans la MÊME
+// boucle (rAF) ou le MÊME appel WAAPI que celui qui anime #ball lui-même
+// (voir collapseBallContent/expandBallContent) — une transition CSS séparée,
+// avec sa propre durée, s'est révélée impossible à garder synchronisée avec
+// ça. Juste de quoi les clipper proprement pendant que leur largeur inline
+// varie.
+.dispatch-ball__content .drag-handle,
+.dispatch-ball__content .activity-header__meta {
+  overflow: hidden;
+}
+
+.activity-header__thumb {
+  transition: border-radius 300ms ease;
+
+  img {
+    display: block;
+  }
+}
+
+// Sélecteur combiné (3 classes) plutôt que `!important` : le clone porte À
+// LA FOIS `.activity-header__thumb` (largeur/hauteur fixes posées dans
+// activity-header.component.scss, `.activity-header__thumb[_ngcontent-xxx]`
+// = spécificité 2) ET `.activity-header__thumb--fill` (togglée en JS,
+// ActivityDayDispatchOverlayComponent) une fois la bulle pleinement dépliée.
+// `.dispatch-ball__content .activity-header__thumb.activity-header__thumb--fill`
+// = spécificité 3, gagne sans dépendre de l'ordre de chargement.
+.dispatch-ball__content .activity-header__thumb.activity-header__thumb--fill {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+}

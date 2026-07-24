@@ -76,13 +76,13 @@
     <ng-container dialogFooter>
         <app-button
             label="Annuler"
-            [text]="true"
+            [outlined]="true"
+            severity="secondary"
             (click)="close()"
         />
 
         <app-button
             label="OK"
-            [text]="true"
             (click)="validate()"
         />
     </ng-container>

@@ -6,7 +6,7 @@
       <h1 class="text-2xl font-bold text-900 m-0 mb-2">
         {{ isRegister() ? 'Créer un compte' : 'Connexion' }}
       </h1>
-      <p class="text-color-secondary m-0">
+      <p class="nt-text-muted m-0">
         {{ isRegister() ? "Rejoignez-nous dès aujourd'hui" : 'Bienvenue' }}
       </p>
     </div>
@@ -22,7 +22,7 @@
       </app-button>
 
       <app-divider>
-        <span class="text-sm text-color-secondary font-normal">ou</span>
+        <span class="text-sm nt-text-muted font-normal">ou</span>
       </app-divider>
 
       <!-- Prénom + Nom uniquement à l'inscription -->
@@ -76,7 +76,7 @@
           class="w-full">
         </app-password>
         @if (form.controls.password.touched && form.controls.password.invalid) {
-          <small class="text-red-500">
+          <small class="nt-text-danger">
             @if (form.controls.password.errors?.['required']) {
               Mot de passe requis
             }
@@ -101,7 +101,7 @@
         [loading]="loading()">
       </app-button>
 
-      <p class="text-center text-color-secondary m-0 mt-2">
+      <p class="text-center nt-text-muted m-0 mt-2">
         {{ isRegister() ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
         <app-button
           [label]="isRegister() ? 'Se connecter' : 'S\'inscrire'"

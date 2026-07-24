@@ -9,8 +9,8 @@
 .dispatch-overlay {
   z-index: var(--z-overlay-backdrop);
   pointer-events: none;
-  backdrop-filter: blur(0px);
-  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
   transition: background 300ms ease, backdrop-filter 300ms ease;
   -webkit-touch-callout: none;
   user-select: none;
@@ -18,8 +18,8 @@
 
   &--active {
     background: rgba(0, 0, 0, 0.17);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(var(--nt-blur-backdrop));
+    -webkit-backdrop-filter: blur(var(--nt-blur-backdrop));
   }
 }
 
@@ -59,7 +59,7 @@
 
   .dispatch-overlay--expanded & {
     max-height: 50vh;
-    border-radius: 28px 28px 0 0;
+    border-radius: 1.75rem 1.75rem 0 0;
   }
 }
 
@@ -148,8 +148,8 @@
 
 .dispatch-overlay__day-count {
   position: absolute;
-  top: 2px;
-  right: 4px;
+  top: 0.125rem;
+  right: 0.25rem;
   color: var(--p-primary-color);
 }
 
@@ -163,14 +163,14 @@
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0.375rem 1.125rem rgba(0, 0, 0, 0.3);
   border-style: solid;
   // Couleurs/épaisseurs de départ posées en JS (voir `playFormAnimation`),
   // identiques au repos à celles de l'activity-header (fin liseré gris 3
   // côtés, bord gauche épais coloré) : rien à fixer ici, `border-width: 0`
   // ne sert qu'à rester invisible tant qu'aucun drag n'est en cours.
   border-width: 0;
-  border-radius: 12px;
+  border-radius: var(--nt-radius-xl);
   will-change: transform, width, height, border-radius, border-width;
   user-select: none;
   -webkit-user-select: none;

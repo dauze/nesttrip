@@ -6,7 +6,7 @@
   gap: 0.5rem;
   padding: 0.65rem 0.9rem;
   border-radius: var(--nt-content-border-radius);
-  border: 1px solid color-mix(in srgb, var(--nt-msg-color) 35%, transparent);
+  border: var(--nt-border-width-hairline) solid color-mix(in srgb, var(--nt-msg-color) 35%, transparent);
   // Mixé vers `transparent`, pas vers --nt-surface-0 (toujours blanc, y
   // compris en dark mode) : sinon le fond restait clair quel que soit le
   // thème, au lieu de se fondre dans la page.

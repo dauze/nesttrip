@@ -1,0 +1,89 @@
+/* ---------------------------------------------------------------------
+ * Petites classes utilitaires globales maison (pas des primitives de
+ * composant, pas des primitives PrimeFlex) : densité de formulaire, champs
+ * "transparents" (sans bordure/fond propre), couleur de statut de
+ * réservation.
+ * ------------------------------------------------------------------- */
+
+@use 'tokens';
+
+.pi-ellipsis-v {
+  display: block;
+  width: 0.375rem;
+}
+
+// Densité compacte d'un formulaire dans une carte déjà bordée (activity-form,
+// champ prix). Sélecteur `.compact-form.compact-form` (répété) plutôt que
+// `!important` : doit gagner contre `.app-select__trigger` posé par
+// `select.component.scss`, qui compile en `.app-select__trigger[_ngcontent-xxx]`
+// (spécificité 2 = 1 classe + 1 attribut) — une seule répétition de
+// `.compact-form` porterait la spécificité à 2 (égalité, dépendrait de
+// l'ordre de chargement) ; la doubler la porte à 3, qui gagne dans tous les
+// cas.
+.compact-form.compact-form {
+  .app-select__trigger,
+  .app-input-text {
+    padding: 0.25rem;
+    min-width: 0;
+    width: auto;
+  }
+
+  .app-select__chevron {
+    display: none;
+  }
+}
+
+.transparent-textarea {
+  --p-textarea-background: transparent;
+  --p-textarea-border-color: transparent;
+  --p-textarea-shadow: none;
+  --p-textarea-hover-border-color: transparent;
+  --p-textarea-focus-border-color: transparent;
+  --p-textarea-disabled-background: transparent;
+  // --nt-form-field-* : équivalent maison, voir src/styles/form-fields.scss
+  // (AppTextareaDirective/InputNumberComponent/PasswordComponent lisent ces
+  // variables, pas les --p-textarea-* ci-dessus, qui ne restent utiles que
+  // tant que le composant PrimeNG correspondant n'est pas encore migré).
+  --nt-form-field-background: transparent;
+  --nt-form-field-border-color: transparent;
+  --nt-form-field-hover-border-color: transparent;
+  --nt-form-field-focus-border-color: transparent;
+}
+
+.transparent-inputtext {
+  --p-inputtext-border-color: transparent;
+  --p-inputtext-hover-border-color: transparent;
+  --p-inputtext-focus-border-color: transparent;
+  --p-inputtext-shadow: none;
+  --p-inputtext-background: transparent;
+  --p-inputtext-disabled-background: transparent;
+  --p-inputtext-disabled-color: transparent;
+  --p-inputtext-disabled-border-color: transparent;
+  // --nt-form-field-* : voir la note dans .transparent-textarea ci-dessus.
+  --nt-form-field-background: transparent;
+  --nt-form-field-border-color: transparent;
+  --nt-form-field-hover-border-color: transparent;
+  --nt-form-field-focus-border-color: transparent;
+}
+
+// `.transparent-select` (visuel `app-select` sans bordure/fond) vit
+// désormais dans select.component.scss (`:host(.transparent-select)`),
+// pas ici. `.transparent-datepicker`/`.transparent-autocomplete` supprimées
+// avec PrimeNG (Phases 7e/7f) : `app-date-picker`/`app-autocomplete`
+// utilisent déjà `.transparent-inputtext` comme les autres champs.
+
+.to_book {
+  --booking-status-color: var(--nt-red-500);
+}
+
+.booked {
+  --booking-status-color: var(--nt-green-500);
+}
+
+.not_needed {
+  --booking-status-color: var(--nt-blue-500);
+}
+
+.waitlist {
+  --booking-status-color: var(--nt-yellow-500);
+}

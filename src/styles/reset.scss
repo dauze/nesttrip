@@ -1,0 +1,81 @@
+/* ---------------------------------------------------------------------
+ * Reset / fondations globales — police, box-sizing, couleurs de base du
+ * document. PrimeNG posait ces resets lui-même dans son propre CSS de base
+ * (supprimé en Phase 9 avec `providePrimeNG`, voir PRIMENG_MIGRATION.md) :
+ * sans eux, le rendu natif du navigateur reprend le dessus (noir sur blanc
+ * même en dark mode, content-box qui fait déborder les champs...).
+ * ------------------------------------------------------------------- */
+
+@use 'tokens';
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --p-font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--p-font-family), serif;
+  font-size: 16px;
+}
+
+@media screen and (max-width: 768px) {
+  :root {
+    font-size: 15px;
+  }
+}
+
+body {
+  padding-bottom: 50px;
+  margin-top: 0.3rem;
+  color: var(--nt-text-color);
+}
+
+/* ---------------------------------------------------------------------
+ * trip-detail (voir TripDetailComponent.ngOnInit/ngOnDestroy) gère son
+ * propre scroll slide par slide (voir trip-day-swiper.component.scss) :
+ * garde-fou contre tout débordement résiduel qui ferait apparaître un
+ * scrollbar body EN PLUS de celui du slide actif. Scopé à cette classe pour
+ * ne pas casser le scroll body classique des autres écrans (accueil-trip,
+ * new-trip, login).
+ * ------------------------------------------------------------------- */
+html.trip-detail-active,
+html.trip-detail-active body {
+  height: 100%;
+  overflow: hidden;
+}
+
+// `display:block` pour les éléments custom Angular des composants de
+// FEATURE (par opposition aux primitives `shared/components/**`, qui
+// restent stylées via `:host` dans leur propre feuille — voir
+// PRIMENG_MIGRATION.md/CLAUDE.md) : un élément custom non reconnu du
+// navigateur est `display:inline` par défaut, ce qui casserait leur mise en
+// page (largeur/hauteur, padding vertical réel) dans leur conteneur
+// (swiper-slide, flex...). Centralisé ici plutôt que répété en `:host` dans
+// chacun de ces composants.
+app-trip-day-swiper,
+app-trip-tabs-nav,
+app-day-panel,
+app-general-panel,
+app-trip-day-map,
+app-timeline,
+app-trip-activities,
+app-notes {
+  display: block;
+}
+
+// L'ancienne règle ici était `swiper-container, swiper-slide, .swiper-wrapper
+// { overflow-x: 0 visible !important; }` : `overflow-x` n'accepte qu'UNE
+// seule valeur, `0 visible` est invalide — donc silencieusement ignorée par
+// le navigateur (no-op total, jamais appliquée). Supprimée plutôt que
+// "corrigée" : un `overflow: visible !important` fonctionnellement actif
+// sur `swiper-slide` écrase (via `!important`, qui gagne quelle que soit la
+// spécificité/le scope) le `swiper-slide { overflow-y: auto; ... }` de
+// trip-day-swiper.component.scss — celui qui fait de CHAQUE slide son
+// propre conteneur de scroll (voir son commentaire détaillé), dont dépend
+// le hide/reveal du chrome au scroll (TripChromeService). Testé : "corriger"
+// la valeur cassait ce scroll. La retirer entièrement restaure le
+// comportement d'origine (un no-op) sans rien risquer.

@@ -1,6 +1,6 @@
 :host {
   display: block;
-  border: 1px solid var(--nt-content-border-color);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   border-radius: var(--nt-radius-md);
 }
 

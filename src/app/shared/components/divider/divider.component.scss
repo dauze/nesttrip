@@ -21,7 +21,7 @@
   &::after {
     content: '';
     flex: 1 1 auto;
-    border-bottom: 1px solid var(--nt-content-border-color);
+    border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   }
 
   &:not(:empty)::before {

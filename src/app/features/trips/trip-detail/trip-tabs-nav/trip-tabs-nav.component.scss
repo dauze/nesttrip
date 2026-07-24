@@ -1,9 +1,14 @@
-:host {
-  display: block;
+// Anciennement `:host` (composant de FEATURE, `display:block` du host géré
+// globalement — voir styles/reset.scss). Posé sur un NOUVEAU wrapper dédié
+// (`.trip-tabs-nav-root`, englobant `#tabsListRef`) plutôt que directement
+// sur `#tabsListRef` : ce dernier est exactement l'élément mesuré par le
+// ResizeObserver du composant (voir constructeur, répercuté en
+// padding-bottom du contenu via TripChromeService) — un padding ajouté ICI
+// doit rester HORS de cette mesure, pour ne pas gonfler artificiellement la
+// hauteur de barre réservée ailleurs.
+.trip-tabs-nav-root {
   // Évite que la barre (fixed bottom-0) ne se retrouve sous la barre de
-  // gestes/multitâche des mobiles : la hauteur ajoutée ici est mesurée par
-  // le ResizeObserver du composant et automatiquement répercutée en
-  // padding-bottom du contenu via TripChromeService (voir constructeur).
+  // gestes/multitâche des mobiles.
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -11,7 +16,7 @@
   display: flex;
   overflow-x: auto;
   background: var(--nt-content-background);
-  border-bottom: 1px solid var(--nt-content-border-color);
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
 
 // Les onglets se répartissent toute la largeur disponible quand il y en a
@@ -31,7 +36,7 @@
   border: none;
   // Indicateur du haut (pas du bas, choix déjà fait dans ce projet avant la
   // migration) : transparent au repos, coloré en primary une fois actif.
-  border-top: 2px solid transparent;
+  border-top: var(--nt-border-width-thick) solid transparent;
   background: transparent;
   color: var(--nt-text-muted-color);
   font-weight: 600;
