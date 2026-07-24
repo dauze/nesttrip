@@ -2,21 +2,18 @@ import { Component, effect, inject, input, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
-import { DatePickerModule } from 'primeng/datepicker';
+import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { Trip } from '../../trip.model';
-import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
-import { ViewportService } from '@core/services/viewport.service';
 
 @Component({
   selector: 'app-trip-header',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerModule, OverlayAutoCloseDirective],
+  imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerComponent],
   templateUrl: './trip-header.component.html',
   styleUrl: './trip-header.component.scss',
 })
 export class TripHeaderComponent {
   private readonly fb = inject(FormBuilder);
-  protected readonly viewport = inject(ViewportService);
 
   readonly trip = input<Trip | null>(null);
   readonly title = input<string>('');

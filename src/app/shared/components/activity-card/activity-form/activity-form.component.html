@@ -84,7 +84,7 @@
             <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'text-color-secondary'">
               <i class="pi pi-calendar text-xs"></i>Deadline
             </label>
-            <p-datepicker inputId="booking-deadline" [readonlyInput]="true" formControlName="deadline" dateFormat="dd/mm/yy" [showIcon]="false" appendTo="body" [touchUI]="viewport.isMobile()" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
+            <app-date-picker inputId="booking-deadline" formControlName="deadline" [icon]="false" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
           </div>
         </div>
       }

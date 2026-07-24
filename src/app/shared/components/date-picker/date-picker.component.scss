@@ -1,0 +1,72 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+// Champ sans bordure/fond propre (activity-form : deadline à côté du prix,
+// trip-header : dates dans le header du voyage) — même pattern "host-as-box"
+// que Tag/Message/Avatar (Phase 3) / :host(.transparent-select) (Phase 7d).
+:host(.transparent-inputtext) .app-date-picker__trigger {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    border-color: transparent;
+  }
+}
+
+.app-date-picker__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+  border: 1px solid var(--nt-form-field-border-color);
+  border-radius: var(--nt-form-field-border-radius);
+  background: var(--nt-form-field-background);
+  color: var(--nt-form-field-color);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--nt-transition-duration) ease, background-color var(--nt-transition-duration) ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--nt-form-field-hover-border-color);
+  }
+
+  &.app-date-picker__trigger--open {
+    border-color: var(--nt-form-field-focus-border-color);
+  }
+
+  &:disabled {
+    color: var(--nt-form-field-disabled-color);
+    background: var(--nt-form-field-disabled-background);
+    cursor: not-allowed;
+  }
+}
+
+.app-date-picker__icon {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  color: var(--nt-form-field-icon-color);
+}
+
+.app-date-picker__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-date-picker__label--placeholder {
+  color: var(--nt-form-field-placeholder-color);
+}
+
+// Le panneau (.app-date-picker-panel et tout ce qu'il contient) est attaché
+// par @angular/cdk/overlay dans .cdk-overlay-container, HORS de l'arbre de
+// vue de ce composant (portail) : ses styles vivent dans
+// src/styles/date-picker.scss (global), pas ici — même raison que
+// select.scss/autocomplete.scss (voir leur doc, piège identifié en Phase 7d).

@@ -1,0 +1,103 @@
+<button
+  type="button"
+  class="app-date-picker__trigger"
+  [id]="inputId()"
+  [class.app-date-picker__trigger--open]="isOpen()"
+  [disabled]="isDisabled()"
+  (click)="toggle()">
+  @if (icon()) {
+    <i class="pi pi-calendar app-date-picker__icon"></i>
+  }
+  <span class="app-date-picker__label" [class.app-date-picker__label--placeholder]="!displayText()">
+    {{ displayText() || placeholder() }}
+  </span>
+</button>
+
+<ng-template #panel>
+  <div class="app-date-picker-panel">
+    <div class="app-date-picker-panel__header">
+      <button type="button" class="app-date-picker-panel__nav" (click)="prevPage()" aria-label="Précédent">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+
+      @if (viewMode() === 'days') {
+        <div class="app-date-picker-panel__title-group">
+          <button type="button" class="app-date-picker-panel__title" (click)="showMonths()">{{ monthOnlyLabel() }}</button>
+          <button type="button" class="app-date-picker-panel__title" (click)="showYears()">{{ yearOnlyLabel() }}</button>
+        </div>
+      } @else {
+        <button
+          type="button"
+          class="app-date-picker-panel__title"
+          [disabled]="viewMode() === 'years'"
+          (click)="showYears()">
+          {{ headerTitle() }}
+        </button>
+      }
+
+      <button type="button" class="app-date-picker-panel__nav" (click)="nextPage()" aria-label="Suivant">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+    </div>
+
+    @switch (viewMode()) {
+      @case ('days') {
+        <div class="app-date-picker-panel__weekdays">
+          @for (day of weekDayLabels; track day) {
+            <span>{{ day }}</span>
+          }
+        </div>
+
+        <div class="app-date-picker-panel__grid" (mouseleave)="onGridMouseLeave()">
+          @for (week of weeks(); track $index) {
+            <div class="app-date-picker-panel__week">
+              @for (day of week; track day.getTime()) {
+                <button
+                  type="button"
+                  class="app-date-picker-panel__day"
+                  [class.app-date-picker-panel__day--other-month]="!isCurrentMonth(day)"
+                  [class.app-date-picker-panel__day--today]="isToday(day)"
+                  [class.app-date-picker-panel__day--selected]="isSelected(day)"
+                  [class.app-date-picker-panel__day--range-start]="isRangeStart(day)"
+                  [class.app-date-picker-panel__day--range-end]="isRangeEnd(day)"
+                  [class.app-date-picker-panel__day--in-range]="isInRange(day)"
+                  (mouseenter)="onDayHover(day)"
+                  (click)="selectDay(day)">
+                  {{ day.getDate() }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+      @case ('months') {
+        <div class="app-date-picker-panel__cells">
+          @for (month of monthIndexes; track month) {
+            <button
+              type="button"
+              class="app-date-picker-panel__cell"
+              [class.app-date-picker-panel__cell--selected]="isViewedMonth(month)"
+              [class.app-date-picker-panel__cell--today]="isCurrentMonthIndex(month)"
+              (click)="selectMonth(month)">
+              {{ monthLabel(month) }}
+            </button>
+          }
+        </div>
+      }
+      @case ('years') {
+        <div class="app-date-picker-panel__cells">
+          @for (year of years(); track year) {
+            <button
+              type="button"
+              class="app-date-picker-panel__cell"
+              [class.app-date-picker-panel__cell--selected]="isViewedYear(year)"
+              [class.app-date-picker-panel__cell--today]="isCurrentYear(year)"
+              (click)="selectYear(year)">
+              {{ year }}
+            </button>
+          }
+        </div>
+      }
+    }
+  </div>
+</ng-template>

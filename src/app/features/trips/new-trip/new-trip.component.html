@@ -4,7 +4,6 @@
       <span class="text-2xl font-semibold">Nouveau voyage</span>
     </div>
 
-    <p-fluid>
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
 
         <!-- Ville -->
@@ -53,16 +52,11 @@
         <div class="flex flex-column gap-2">
           <label for="dates" class="font-medium">Dates du voyage</label>
 
-          <p-datepicker
+          <app-date-picker
             inputId="dates"
             formControlName="dates"
-            selectionMode="range"
-            dateFormat="dd/mm/y"
-            [showIcon]="true"
-            [readonlyInput]="true"
+            [range]="true"
             placeholder="Sélectionner une période"
-            [touchUI]="viewport.isMobile()"
-            [appendTo]="viewport.isMobile() ? 'body' : undefined"
             class="w-max"
           />
 
@@ -90,7 +84,6 @@
         </div>
 
       </form>
-    </p-fluid>
 
   </app-card>
 </div>

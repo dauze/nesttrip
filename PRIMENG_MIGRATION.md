@@ -81,7 +81,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 4 | Champs simples : InputText, Password, Textarea, InputNumber, Checkbox, SelectButton | Faible | ✅ Fait (suppression de `Fluid` reportée à la Phase 7, voir note) |
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
 | 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
-| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a-7e faits, reste 7f) |
+| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | ✅ Fait (7a-7f) |
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
@@ -109,7 +109,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | InputNumber | activity-form | 4 |
 | Checkbox | accueil-trip, notes | 4 |
 | SelectButton | general-panel | 4 |
-| Fluid | new-trip | 4 (suppression) |
+| Fluid | new-trip | 4 (suppression reportée) → 7f ✅ |
 | Panel | activity-card, activity-google-info, activity-gallery, trip-activities, notes, timeline, day-panel, trip-day-map | 5 |
 | Tabs / Tab / TabList | trip-tabs-nav (+ clone dans activity-day-dispatch-overlay) | 6 |
 | Menu / MenuItem | trips (roue crantée) | 7b ✅ |
@@ -117,7 +117,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7c ✅ |
 | Select | activity-form, timeline | 7d ✅ |
 | AutoComplete | new-trip, activity-header | 7e ✅ |
-| DatePicker | new-trip, trip-header, activity-form | 7f |
+| DatePicker | new-trip, trip-header, activity-form | 7f ✅ |
 | FileUpload | activity-files | 8 |
 
 ## Journal des phases faites
@@ -899,6 +899,138 @@ l'ampleur déjà importante de cette phase ; à ajouter si le besoin remonte.
   `this` dans son corps.
 
 **Pas de test de rendu réel dans un navigateur** au-delà de ce correctif.
+
+### Phase 7f — DatePicker
+
+Dernière sous-phase de la Phase 7 : trois usages (new-trip : dates de voyage
+en plage ; trip-header : même plage, réédition ; activity-form : deadline de
+réservation en date simple). `DatePickerComponent`
+(`src/app/shared/components/date-picker/`) construit sur
+`@angular/cdk/overlay` comme `Select`/`AutoComplete`/`Menu` (même raison : top
+layer). Première (et seule) nouvelle dépendance de toute la migration :
+`date-fns` (calcul de grille de mois/semaines/comparaisons de dates), comme
+prévu dès le début dans les "Décisions retenues" — tout le rendu/
+l'interaction du calendrier restent maison, la lib ne fait que le calcul.
+
+- **Un seul composant pour les deux modes** (`[range]` booléen, défaut
+  `false`) plutôt que deux composants séparés : la seule différence entre
+  "deadline" (simple) et "dates de voyage" (plage) est la forme de la valeur
+  CVA (`Date | null` vs `Date[] | null` à 2 éléments, même forme
+  `[dateDebut, dateFin]` qu'avant) et la logique de clic sur un jour — le
+  rendu du calendrier (grille, navigation mois, styles) est identique dans
+  les deux cas.
+- **Mode plage, logique de clic** : 1er clic pose le début (`rangeEnd` remis
+  à `null`) ; si la plage précédente était déjà complète, un nouveau clic
+  repart toujours d'une plage vide plutôt que d'étendre l'ancienne (repris du
+  comportement PrimeNG). 2e clic complète la plage dans l'ordre
+  chronologique (peu importe l'ordre des clics, via `isBefore`) et ferme le
+  panneau. `onChange`/l'output `selected` ne sont déclenchés qu'une fois la
+  plage complète — jamais avec un seul bout — exactement le contrat que
+  lisait déjà l'ancien `onDatesSelected()` de `TripHeaderComponent`
+  (`if (!dates[0] || !dates[1]) return`), donc aucun changement côté
+  appelant au-delà du renommage `(onSelect)` → `(selected)`.
+- **Aperçu au survol en mode plage** : `hoveredDay` signal, mis à jour au
+  `mouseenter` de chaque jour, lu par `isRangeEnd`/`isInRange` tant que
+  `rangeEnd` n'est pas encore posé — reproduit le surlignage "plage en cours
+  de sélection" que PrimeNG offre nativement, pour ne pas perdre ce repère
+  visuel en passant au composant maison.
+- **Desktop vs mobile**, même stratégie que `Select`/`AutoComplete` (Phases
+  7d/7e) : `positionStrategy` choisi à l'OUVERTURE selon
+  `ViewportService.isMobile()`. Contrairement au tiroir plein écran ancré en
+  bas de `Select`, le mobile ici est **centré à l'écran**
+  (`global().centerHorizontally().centerVertically()`) — reproduit le
+  comportement `[touchUI]` de l'ancien `p-datepicker` (voir l'historique de
+  `styles.scss`, bloc `@media (max-width:768px)` avec
+  `transform: translate(-50%,-50%)` sur `.p-datepicker-panel`) : un
+  calendrier a besoin de sa hauteur naturelle, pas de s'étirer en bas
+  d'écran comme une liste d'options.
+- **Panneau dans une feuille globale dès le départ**
+  (`src/styles/date-picker.scss`) : leçon de la Phase 7d appliquée d'emblée
+  (le panneau est attaché par CDK dans `.cdk-overlay-container`, hors de
+  l'arbre de vue du composant — un style scopé au composant ne peut pas le
+  cibler de façon fiable, voir le correctif documenté en Phase 7d).
+- **Trigger en `<button>`, pas `<input readonly>`** : comme `Select`, pas
+  comme `AutoComplete` (dont la valeur est un texte libre) — les trois
+  usages avaient déjà `[readonlyInput]="true"` côté PrimeNG (aucune saisie
+  clavier), un bouton évite nativement toute ouverture de clavier virtuel
+  sur mobile, sans code de blocage supplémentaire à écrire (cf. l'item déjà
+  coché du ROADMAP "Clavier masqué sur les datepickers").
+- **`Fluid` supprimé de `new-trip.component.html`** (`<p-fluid>` + import
+  `FluidModule`), reporté depuis la Phase 4 : il ne servait qu'à étirer
+  `p-autoComplete`/`p-datepicker` à 100% de largeur en CSS ; `app-autocomplete`
+  et `app-date-picker` sont déjà `width:100%` par défaut (`:host`), le
+  wrapper est donc devenu un no-op pur.
+- **`OverlayAutoCloseService`/`OverlayAutoCloseDirective` supprimés en
+  entier** (`src/app/core/services/`, `src/app/shared/directives/`) :
+  `p-datepicker` en était le dernier consommateur (`p-select` en était sorti
+  dès la Phase 7d) — `app-date-picker` gère sa propre fermeture nativement
+  via le backdrop/Échap CDK, comme tous les autres overlays maison de la
+  Phase 7. Le mécanisme de coordination cross-overlay que ce service
+  résolvait (deux `p-select`/`p-datepicker` PrimeNG indépendants qui ne se
+  fermaient pas l'un l'autre) n'a plus d'objet une fois qu'un seul système
+  d'overlay (CDK) gère tout.
+- Nettoyage connexe dans `styles.scss` : tout le bloc mobile
+  `.p-datepicker-mask`/`.p-datepicker-panel` (repositionnement centré,
+  anti-ghost-click), le forçage de zIndex sur ces mêmes sélecteurs, le bloc
+  `p-motion[name="p-anchored-overlay"]:has(> .p-datepicker-panel)`, et
+  `.transparent-datepicker` (remplacée par `.transparent-inputtext`, déjà
+  utilisée par tous les autres champs migrés) — plus aucun `p-datepicker`
+  dans le projet pour les cibler.
+
+Vérifié par `ng build`/`ng lint` (aucune régression, aucune nouvelle erreur —
+les 6 erreurs de lint restantes préexistaient et concernent des fichiers non
+touchés par cette phase), plus aucun `<p-datepicker>`/`<p-fluid>`/import
+`primeng/datepicker`/`primeng/fluid` dans le projet. Testé en navigateur via
+une route de dev jetable (auth Firebase requise sur les vraies routes
+`/trips/*`, inaccessible en session non interactive) montée avec
+`Playwright`/Chromium headless, supprimée une fois la vérification faite :
+sélection de plage (survol, clôture au 2e clic), mode simple, ancrage
+desktop, centrage mobile, dark mode — aucune erreur console.
+
+#### Correctifs post-Phase 7f (trouvés en testant dans le navigateur)
+
+- **Hauteur du panneau qui sautait d'un mois à l'autre** : la grille des
+  jours calculait ses semaines "naturellement"
+  (`startOfWeek(monthStart)` → `endOfWeek(endOfMonth(monthStart))`), ce qui
+  donne 4, 5 ou 6 lignes selon que le mois commence/finit pile sur une
+  limite de semaine (février qui tient en 4 lignes complètes, contre 6 pour
+  un mois de 31 jours qui déborde des deux côtés). Résultat : la hauteur du
+  panneau changeait visiblement en changeant de mois via précédent/suivant.
+  Corrigé en calculant TOUJOURS 42 jours consécutifs depuis `gridStart`
+  (`eachDayOfInterval({ start: gridStart, end: addDays(gridStart, 41) })`),
+  jamais moins — 6 semaines fixes quel que soit le mois affiché.
+- **Mois manquant : navigation directe année/mois** : le titre du panneau
+  n'était au départ qu'un unique bouton, zoomant vers la grille des mois
+  puis celle des années en cliquant deux fois de suite dessus (chaînage
+  unique). Repensé en `viewMode` (`'days' | 'months' | 'years'`) avec, en
+  vue jours, le mois et l'année comme **deux boutons indépendants** menant
+  chacun à un niveau de zoom différent : cliquer sur le MOIS ouvre
+  directement la grille des 12 mois (choisir un mois revient directement à
+  la grille des jours, sans détour par les années) ; cliquer sur l'ANNÉE
+  ouvre directement la grille de 12 années (choisir une année enchaîne vers
+  la grille des mois de ce nouveau millésime, qui revient elle-même aux
+  jours une fois un mois choisi). Le titre de la vue mois (l'année seule)
+  reste cliquable vers la vue années, pour un zoom progressif classique en
+  plus des deux raccourcis directs. Grilles mois/années en 2 colonnes × 6
+  lignes (au lieu du 3×4/4×3 "naturel" pour 12 éléments) pour que basculer
+  entre les 3 vues du même panneau ne fasse pas non plus sauter sa taille.
+- **Sélection ronde** : mode simple (un jour) en cercle complet
+  (`border-radius: 50%`) plutôt que le léger rayon (`--nt-radius-sm`, 4px)
+  utilisé partout ailleurs dans l'appli. Mode plage : seul le bord EXTÉRIEUR
+  de chaque extrémité est arrondi en demi-cercle
+  (`50% 0 0 50%`/`0 50% 50% 0` pour `range-start`/`range-end`), le bord
+  intérieur (qui touche le remplissage `--in-range`, resté à `border-radius:
+  0`) reste droit — ça forme une seule barre continue à bouts ronds plutôt
+  que 2 pastilles séparées par un espace visuel. Cas particulier : une plage
+  d'un seul jour (`range-start` ET `range-end` sur la même case) aurait
+  cumulé les 2 règles en un rond arrondi seulement de 2 coins sur 4 — rond
+  complet explicite via le sélecteur combiné
+  `.range-start.range-end { border-radius: 50%; }`, qui gagne sur les 2
+  règles simples par spécificité CSS (2 classes vs 1). Le rond "aujourd'hui"
+  (`box-shadow: inset`) suit désormais aussi `border-radius: 50%` — un
+  `inset` respecte le rayon de SON PROPRE élément, donc le jour du jour
+  actuel affiche un anneau rond même sans être sélectionné, cohérent avec la
+  sélection elle-même.
 
 ## Après la migration
 

@@ -5,6 +5,7 @@
 @use 'styles/tooltip';
 @use 'styles/select';
 @use 'styles/autocomplete';
+@use 'styles/date-picker';
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
@@ -23,10 +24,11 @@
   // rien dire de plus que "un peu plus que l'autre".
   // - header/toolbar : chrome fixe de l'appli (voir .app-trip-header-fixed
   //   / .app-toolbar) — le toolbar doit rester au dessus du header.
-  // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay,
-  //   masque de p-datepicker en touchUI).
+  // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay).
   // - overlay-content : le contenu flottant lui-même, au dessus de son
-  //   propre backdrop (p-datepicker-panel, dispatch-ball).
+  //   propre backdrop (dispatch-ball) — les overlays @angular/cdk/overlay
+  //   (dialog, menu, select, autocomplete, date-picker) vivent tous dans
+  //   .cdk-overlay-container, dont le z-index (1000) dépasse déjà tout ça.
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
@@ -40,76 +42,6 @@
 @media screen and (max-width: 768px) {
   :root {
     font-size: 15px;
-  }
-}
-
-/* ---------------------------------------------------------------------
- * p-datepicker en petit écran : le positionnement "ancré" à côté du champ
- * (bien sur desktop) devient illisible sur mobile — centré à l'écran, avec
- * masque flouté à la place. `[touchUI]`/`[appendTo]` (liés en template à
- * ViewportService.isMobile()) font déjà faire à PrimeNG l'essentiel (masque
- * `.p-datepicker-mask`, reparenting sur <body>) ; on ne fait ici que
- * recentrer le panneau et flouter son masque, `!important` nécessaire pour
- * l'emporter sur le `position/top` posés en style inline par PrimeNG. Le
- * zIndex, lui, est forcé plus haut avec `.p-datepicker-panel` (voir plus
- * bas) car le problème n'est pas spécifique au mobile.
- * (Le tiroir mobile équivalent pour `p-select` vivait ici aussi — parti
- * avec lui en Phase 7d, remplacé par `app-select` et son propre
- * `select.component.scss`/`styles/select.scss`, voir PRIMENG_MIGRATION.md.)
- * ------------------------------------------------------------------- */
-@media screen and (max-width: 768px) {
-  // Le masque touchUI de PrimeNG attache SON PROPRE listener `click` qui
-  // ferme le calendrier (voir enableModality dans primeng/datepicker) — posé
-  // sur un <div> tout juste créé, en plein sous le doigt qui vient d'ouvrir
-  // le calendrier. Sur tactile, le tap qui ouvre peut générer un `click`
-  // synthétique différé (juste après le pointerdown/pointerup d'origine) ;
-  // si le masque existe déjà à ce moment-là, CE click atterrit dessus et
-  // referme aussitôt ce qu'on vient d'ouvrir ("ghost click" classique des
-  // modales sur mobile). `pointer-events` ignoré pendant les ~350ms qui
-  // suivent la création du masque, le temps que ce click fantôme passe.
-  .p-datepicker-mask {
-    backdrop-filter: blur(6px);
-    pointer-events: auto;
-    transition: pointer-events 0s 350ms;
-
-    @starting-style {
-      pointer-events: none;
-    }
-  }
-
-  // Le panneau est d'abord monté par PrimeNG dans le DOM à sa position
-  // d'origine — encore enfant du champ,
-  // PAS encore reparenté sur <body> — une fraction de frame avant que leur
-  // propre JS ne fasse le reparenting/positionnement (voir appendOverlay/
-  // alignOverlay dans primeng/datepicker : le montage est lazy, piloté par
-  // un afterRenderEffect qui attend une frame avant d'agir). Pour
-  // TripHeaderComponent, ce parent d'origine (.app-trip-header-fixed) a un
-  // transform actif (scroll), ce qui en fait un containing block pour notre
-  // position:fixed : tant qu'on n'est pas reparenté, le panneau se centre
-  // dans SA boîte (petite, en haut de l'écran), pas dans le viewport — d'où
-  // le flash "petit popup en haut" avant le vrai centrage. `visibility`
-  // (pas `opacity`/`animation`) exprès : ne rentre pas en collision avec
-  // `.p-anchored-overlay-enter-active` posée par PrimeNG (même élément,
-  // même propriété shorthand `animation` si on l'utilisait) — `transition`
-  // est une propriété CSS totalement différente, aucun conflit de cascade.
-  .p-datepicker-panel:not(.p-datepicker-panel-inline) {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(92vw, 360px) !important;
-    min-width: 0 !important;
-    max-width: 92vw !important;
-    max-height: 85vh;
-    overflow-y: auto;
-    visibility: visible;
-    transition: visibility 0s 50ms;
-
-    @starting-style {
-      visibility: hidden;
-    }
   }
 }
 
@@ -267,38 +199,19 @@ html.trip-detail-active body {
 // `.transparent-select` (visuel `app-select` sans bordure/fond) vit
 // désormais dans select.component.scss (`:host(.transparent-select)`),
 // pas ici : plus de `--p-select-*` à cibler depuis la Phase 7d.
-
-.transparent-datepicker{
- --p-inputtext-border-color: transparent;
-  --p-inputtext-hover-border-color:transparent;
-  --p-inputtext-shadow: none;
-  --p-inputtext-background: transparent;
-}
+// `.transparent-datepicker` supprimée : plus aucun `<p-datepicker>` depuis la
+// Phase 7f — `app-date-picker` utilise déjà `.transparent-inputtext`
+// (--nt-form-field-*) comme les autres champs.
 // `.transparent-autocomplete` (ciblait `--p-autocomplete-*`) supprimée : plus
 // aucun `<p-autoComplete>` depuis la Phase 7e — `app-autocomplete` utilise
 // déjà `.transparent-inputtext` (--nt-form-field-*) comme les autres champs.
 
-// Le popup roue crantée est passé en Phase 7b sur app-menu/@angular/cdk/overlay,
-// app-select en Phase 7d (z-index 1000 par défaut de .cdk-overlay-container,
-// largement au-dessus de --z-app-toolbar : plus besoin d'override ici pour
-// ces deux-là). Reste : p-datepicker en appendTo="body" (TripHeaderComponent
-// en particulier, dont le champ dates flotte au dessus de
-// .app-trip-header-fixed une fois reparenté sur <body>) — son zIndex PrimeNG
-// ('overlay'/'modal') peut tomber sous ce chrome fixe, dont le z-index
-// dépasse celui posé dynamiquement par PrimeNG, d'où le forçage ici en
-// dernier recours, encore nécessaire tant qu'il n'est pas migré (Phase 7f).
-.p-datepicker-panel:not(.p-datepicker-panel-inline) {
-  z-index: var(--z-overlay-content) !important;
-}
-
-// Masque du p-datepicker en touchUI (voir plus bas) : DOIT rester sous le
-// panneau ci-dessus (sinon le flou du masque s'applique aussi au calendrier,
-// posé derrière lui dans l'ordre de peinture) mais au dessus du chrome fixe
-// de l'appli, donc une valeur explicite plutôt que de laisser le zIndex
-// 'modal' calculé par PrimeNG (qui ignore totalement --z-overlay-content).
-.p-datepicker-mask {
-  z-index: var(--z-overlay-backdrop) !important;
-}
+// Le popup roue crantée (Phase 7b), app-select (Phase 7d), app-autocomplete
+// (Phase 7e) et app-date-picker (Phase 7f) sont tous sur
+// @angular/cdk/overlay, dont le z-index (1000 sur .cdk-overlay-container) est
+// largement au-dessus de --z-app-toolbar : plus besoin de forçage de zIndex
+// ici pour aucun d'eux (contrairement à leurs équivalents PrimeNG d'origine,
+// dont le zIndex dynamique pouvait tomber sous le chrome fixe de l'appli).
 
 swiper-container,
 swiper-slide,
@@ -401,22 +314,4 @@ html.nav-back::view-transition-new(root) {
 
 .cdk-drag-placeholder {
   visibility: hidden;
-}
-
-@media (max-width:768px) {
-
-  p-motion[name="p-anchored-overlay"]:has(> .p-datepicker-panel) {
-    position: fixed !important;
-    inset: 0 !important;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  p-motion[name="p-anchored-overlay"]:has(> .p-datepicker-panel)
-    > .p-datepicker-panel {
-    position: static !important;
-    transform: none !important;
-  }
 }

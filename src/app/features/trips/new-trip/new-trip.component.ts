@@ -2,10 +2,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
-import { DatePickerModule } from 'primeng/datepicker';
+import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { CardComponent } from '@app/shared/components/card/card.component';
-import { FluidModule } from 'primeng/fluid';
 import { Trip, Day } from '../trip.model';
 import { Notes } from '../trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { AuthService } from '@app/core/services/auth.service';
@@ -13,15 +12,13 @@ import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { TripFacade } from '../trip-facade.service';
-import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
-import { ViewportService } from '@core/services/viewport.service';
 
 @Component({
   selector: 'app-new-trip',
   standalone: true,
   imports: [
-    ReactiveFormsModule, InputTextDirective, DatePickerModule, ButtonComponent,
-    CardComponent, FluidModule, AutoCompleteComponent, OverlayAutoCloseDirective
+    ReactiveFormsModule, InputTextDirective, DatePickerComponent, ButtonComponent,
+    CardComponent, AutoCompleteComponent
   ],
   templateUrl: 'new-trip.component.html',
 })
@@ -31,7 +28,6 @@ export class NewTripComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly authService = inject(AuthService);
   private readonly googlePlaceService = inject(GooglePlaceService);
-  protected readonly viewport = inject(ViewportService);
 
   private readonly rawPlaces = this.googlePlaceService.places;
 

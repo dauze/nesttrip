@@ -11,18 +11,14 @@
   </div>
   <form [formGroup]="dateForm">
     <div class="flex flex-column gap-2">
-      <p-datepicker
+      <app-date-picker
         inputId="dates"
-        class="w-max transparent-datepicker"
+        class="w-max transparent-inputtext"
         formControlName="dates"
-        selectionMode="range"
-        dateFormat="dd/mm/y"
-        [readonlyInput]="true"
-        [showIcon]="false"
+        [range]="true"
+        [icon]="false"
         placeholder="Sélectionner une période"
-        [touchUI]="viewport.isMobile()"
-        [appendTo]="viewport.isMobile() ? 'body' : undefined"
-        (onSelect)="onDatesSelected()"
+        (selected)="onDatesSelected()"
       />
     </div>
   </form>

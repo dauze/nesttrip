@@ -1,0 +1,220 @@
+/* ---------------------------------------------------------------------
+ * Panneau + fond flouté mobile de `app-date-picker` (Phase 7f de la sortie
+ * de PrimeNG, voir PRIMENG_MIGRATION.md) : `DatePickerComponent` ouvre son
+ * panneau via `@angular/cdk/overlay`, dont les éléments (backdrop, pane)
+ * sont ajoutés dans `.cdk-overlay-container`, en dehors de l'arbre de vue du
+ * composant hôte — ces classes doivent donc rester globales, même topologie
+ * que `.app-select-panel`/`.app-autocomplete-panel` (select.scss/
+ * autocomplete.scss).
+ * ------------------------------------------------------------------- */
+
+.app-date-picker-backdrop--mobile {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.app-date-picker-panel {
+  width: 18rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem;
+  background: var(--nt-content-background);
+  border: 1px solid var(--nt-content-border-color);
+  border-radius: var(--nt-overlay-popover-border-radius);
+  box-shadow: var(--nt-overlay-popover-shadow);
+}
+
+.app-date-picker-overlay--mobile .app-date-picker-panel {
+  border-radius: var(--nt-overlay-modal-border-radius);
+  box-shadow: var(--nt-overlay-modal-shadow);
+}
+
+.app-date-picker-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+// Vue jours : mois et année sont 2 boutons indépendants (voir la doc de
+// DatePickerComponent) plutôt qu'un titre unique — chacun mène à un niveau
+// de zoom différent (mois → grille des mois direct, année → grille des
+// années direct).
+.app-date-picker-panel__title-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.app-date-picker-panel__title {
+  border: none;
+  background: transparent;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--nt-radius-sm);
+  font: inherit;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--nt-text-color);
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease;
+
+  &:hover:not(:disabled) {
+    background: var(--nt-content-hover-background);
+  }
+
+  // Vue années : dernier niveau de zoom, pas de zoom supplémentaire possible
+  // (même limite que la plupart des sélecteurs de date : Google Calendar,
+  // PrimeNG... s'arrêtent aussi à la décennie).
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.app-date-picker-panel__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+    color: var(--nt-text-hover-muted-color);
+  }
+}
+
+.app-date-picker-panel__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.25rem;
+
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--nt-text-muted-color);
+  }
+}
+
+.app-date-picker-panel__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.app-date-picker-panel__day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-color);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+
+  &.app-date-picker-panel__day--other-month {
+    color: var(--nt-text-muted-color);
+    opacity: 0.5;
+  }
+
+  &.app-date-picker-panel__day--today {
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px var(--nt-primary-color);
+  }
+
+  // Le remplissage "en plage" reste bord à bord (pas de rayon) : c'est ce qui
+  // fait la barre continue entre les deux extrémités arrondies ci-dessous.
+  &.app-date-picker-panel__day--in-range {
+    border-radius: 0;
+    background: color-mix(in srgb, var(--nt-primary-color) 12%, transparent);
+  }
+
+  &.app-date-picker-panel__day--selected,
+  &.app-date-picker-panel__day--range-start,
+  &.app-date-picker-panel__day--range-end {
+    background: var(--nt-primary-color);
+    color: var(--nt-primary-contrast-color);
+    font-weight: 600;
+  }
+
+  // Mode simple (pas de plage) : sélection ronde, pas juste un léger rayon.
+  &.app-date-picker-panel__day--selected {
+    border-radius: 50%;
+  }
+
+  // Mode plage : seul le bord EXTÉRIEUR de chaque extrémité est arrondi (en
+  // demi-cercle) — le bord intérieur (qui touche le remplissage `--in-range`)
+  // reste droit, pour former une seule barre continue plutôt que 2 pastilles
+  // séparées par un espace.
+  &.app-date-picker-panel__day--range-start {
+    border-radius: 50% 0 0 50%;
+  }
+
+  &.app-date-picker-panel__day--range-end {
+    border-radius: 0 50% 50% 0;
+  }
+
+  // Plage d'un seul jour (début == fin) : les deux règles ci-dessus
+  // s'annuleraient partiellement (chaque coin n'est arrondi que d'un côté) —
+  // rond complet explicite pour ce cas.
+  &.app-date-picker-panel__day--range-start.app-date-picker-panel__day--range-end {
+    border-radius: 50%;
+  }
+}
+
+// --- Grilles mois/année (navigation par zoom, voir onTitleClick) ---
+//
+// 2 colonnes x 6 lignes (12 cellules) plutôt que la disposition "naturelle"
+// 3x4/4x3 : la hauteur totale (6 lignes) reste proche de celle de la grille
+// des jours ci-dessus (également 6 lignes), pour qu'alterner entre les 3
+// vues du même panneau ne fasse pas sauter sa taille plus qu'il ne faut.
+.app-date-picker-panel__cells {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem;
+}
+
+.app-date-picker-panel__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.35rem;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-color);
+  font: inherit;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+
+  &.app-date-picker-panel__cell--today {
+    box-shadow: inset 0 0 0 1px var(--nt-primary-color);
+  }
+
+  &.app-date-picker-panel__cell--selected {
+    background: var(--nt-primary-color);
+    color: var(--nt-primary-contrast-color);
+    font-weight: 600;
+  }
+}

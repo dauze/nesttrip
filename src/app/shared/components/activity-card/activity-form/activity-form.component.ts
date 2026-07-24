@@ -6,7 +6,7 @@ import { debounceTime, tap } from 'rxjs/operators';
 
 import { SelectComponent } from '@app/shared/components/select/select.component';
 import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
-import { DatePickerModule } from 'primeng/datepicker';
+import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 
@@ -15,8 +15,6 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
-import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
-import { ViewportService } from '@core/services/viewport.service';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 
 @Component({
@@ -24,8 +22,8 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
-    SelectComponent, InputNumberComponent, DatePickerModule, DividerComponent, TextareaDirective,
-    OverlayAutoCloseDirective, TimePickerDialogComponent
+    SelectComponent, InputNumberComponent, DatePickerComponent, DividerComponent, TextareaDirective,
+    TimePickerDialogComponent
   ],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.scss',
@@ -33,7 +31,6 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
 export class ActivityFormComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly fb = inject(FormBuilder);
-  protected readonly viewport = inject(ViewportService);
 
   readonly tripId = input.required<string>();
   /** Toujours renseigné : ce composant n'est monté qu'en contexte jour (jamais dans le pool général). */
@@ -73,7 +70,7 @@ export class ActivityFormComponent {
     return BOOKING_STATUS_META[status];
   });
   
-  // Remplacement du contrôle texte par un contrôle Date pour le p-datepicker
+  // Contrôle Date dédié pour app-time-picker-dialog (durée), converti en minutes vers form.controls.duration.
   readonly durationTimeControl = this.fb.control<Date | null>(null);
 
   readonly showDeadline = computed(() => {
@@ -156,7 +153,7 @@ export class ActivityFormComponent {
   }
 
   private setupTimeDurationSync(): void {
-    // Gestion du changement de la durée via p-datepicker
+    // Gestion du changement de la durée via app-time-picker-dialog
     this.durationTimeControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((date) => {
       if (this.isProgrammaticUpdate || !date) return;
       
@@ -255,7 +252,7 @@ export class ActivityFormComponent {
   }
 
   /**
-   * Synchronise le composant de saisie p-datepicker de la durée depuis les minutes du formulaire
+   * Synchronise le composant de saisie de la durée (app-time-picker-dialog) depuis les minutes du formulaire
    */
   private syncDurationTimeControlFromForm(): void {
     const totalMinutes = this.form.controls.duration.value ?? 0;
