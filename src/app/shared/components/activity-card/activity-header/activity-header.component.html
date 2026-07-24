@@ -20,28 +20,24 @@
      (keydown)="$event.stopPropagation()"
      tabindex="-1">
        
-    <p-autoComplete
+    <app-autocomplete
       [suggestions]="places()"
       [formControl]="titleControl"
-      (onBlur)="onTitleBlur()"
-      (completeMethod)="onSearch($event)"
-      (onSelect)="onSelect($event)"
-      field="name"
-      [dropdown]="false"
-      [autoHighlight]="true"
+      (blurred)="onTitleBlur()"
+      (searched)="onSearch($event)"
+      (optionSelected)="onSelect($event)"
+      [displayWith]="displayName"
       placeholder="Nom de l'activité"
       class="w-full transparent-inputtext"
-      appendTo="body"
-      panelStyleClass="autocomplete-panel-fix"
       [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
-      [inputStyleClass]="'w-full font-semibold p-0 text-base'">
+      inputClass="font-semibold p-0 text-base">
       <ng-template #item let-place>
           <div class="flex flex-column min-w-0 flex-1">
             <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
             <span class="text-color-secondary text-xs white-space-normal line-height-2">{{ place.address }}</span>
           </div>
       </ng-template>
-    </p-autoComplete>
+    </app-autocomplete>
 
     <div class="flex align-items-center gap-2 flex-wrap">
       @if (dayId()) {

@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de ReactiveForms
-import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { Activity } from '../activity.model';
@@ -16,7 +16,7 @@ import { TagComponent } from '@app/shared/components/tag/tag.component';
 @Component({
   selector: 'app-activity-header',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AutoComplete,  TagComponent, DayLabelsListPipe,],
+  imports: [CommonModule, ReactiveFormsModule, AutoCompleteComponent, TagComponent, DayLabelsListPipe,],
   templateUrl: './activity-header.component.html',
   styleUrl: './activity-header.component.scss',
 })
@@ -62,12 +62,11 @@ export class ActivityHeaderComponent {
      runOnceReady(this.activity, (a) => this.titleControl.setValue(a.title, { emitEvent: false }));
   }
 
-  onSearch(event: AutoCompleteCompleteEvent): void {
-    this.searchTerm.set(event.query ?? '');
+  onSearch(query: string): void {
+    this.searchTerm.set(query ?? '');
   }
 
-  onSelect(event: AutoCompleteSelectEvent): void {
-    const raw = event.value as PlaceSummary;
+  onSelect(raw: PlaceSummary): void {
     if (!raw?.placeId) return;
 
     const place: PlaceSummary = { ...raw, name: this.extractPlaceName(raw.name) };
@@ -87,9 +86,14 @@ export class ActivityHeaderComponent {
     return '';
   }
 
-  displayName(place: { name: unknown }): string {
+  // Fonction fléchée (pas une méthode ordinaire) : passée par référence à
+  // `[displayWith]` (voir le template), donc appelée plus tard depuis
+  // AutoCompleteComponent SANS son `this` d'origine — une méthode normale
+  // perdrait ce contexte et planterait sur `this.extractPlaceName`, une
+  // fonction fléchée le capture lexicalement une fois pour toutes.
+  displayName = (place: { name: unknown }): string => {
     return this.extractPlaceName(place?.name);
-  }
+  };
 
   onTitleBlur(): void {
     const next = this.titleControl.value;

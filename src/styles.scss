@@ -3,6 +3,8 @@
 @use 'styles/dialog';
 @use 'styles/form-fields';
 @use 'styles/tooltip';
+@use 'styles/select';
+@use 'styles/autocomplete';
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
@@ -22,9 +24,9 @@
   // - header/toolbar : chrome fixe de l'appli (voir .app-trip-header-fixed
   //   / .app-toolbar) — le toolbar doit rester au dessus du header.
   // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay,
-  //   masque de p-datepicker en touchUI, backdrop mobile de p-select).
+  //   masque de p-datepicker en touchUI).
   // - overlay-content : le contenu flottant lui-même, au dessus de son
-  //   propre backdrop (p-datepicker-panel, p-select-overlay, dispatch-ball).
+  //   propre backdrop (p-datepicker-panel, dispatch-ball).
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
@@ -42,35 +44,18 @@
 }
 
 /* ---------------------------------------------------------------------
- * Overlays PrimeNG (p-datepicker / p-select) en petit écran : le
- * positionnement "ancré" à côté du champ (bien sur desktop) devient illisible
- * sur mobile. On bascule vers deux présentations plus adaptées au tactile :
- * - p-datepicker : centré à l'écran, avec masque flouté. `[touchUI]`/`[appendTo]`
- *   (liés en template à ViewportService.isMobile()) font déjà faire à PrimeNG
- *   l'essentiel (masque `.p-datepicker-mask`, reparenting sur <body>) ; on ne
- *   fait ici que recentrer le panneau et flouter son masque, `!important`
- *   nécessaire pour l'emporter sur le `position/top` posés en style inline
- *   par PrimeNG. Le zIndex, lui, est forcé plus haut avec `.p-datepicker-panel`
- *   (voir plus bas) car le problème n'est pas spécifique au mobile.
- * - p-select : transformé en drawer qui remonte du bas, avec sa propre liste
- *   scrollable. `p-select` délègue son overlay au composant partagé
- *   `<p-overlay>` de PrimeNG : c'est SON élément racine (classe `.p-overlay`)
- *   qui est reparenté comme enfant direct de <body> quand `appendTo="body"`
- *   — pas `.p-select-overlay`, qui n'est qu'un descendant deux niveaux plus
- *   bas (`.p-overlay` > `<p-motion>` > `.p-overlay-content` >
- *   `.p-select-overlay`, voir le template de Select/Overlay dans
- *   primeng/select et primeng/overlay). On positionne donc ce wrapper racine
- *   en `fixed`/bas d'écran (`!important` nécessaire pour l'emporter sur le
- *   `top`/`left`/`min-width` posés en style inline par `alignOverlay()`), et
- *   on fait juste traverser ce `fixed` en `display:flex` sur les deux
- *   niveaux intermédiaires pour que `.p-select-list-container` (voir plus
- *   bas) reste la seule zone scrollable. Aucun masque natif ici
- *   (contrairement au datepicker), donc le fond flouté est un pseudo-élément
- *   sur <body> piloté par :has() — actif uniquement tant qu'un
- *   `.p-select-overlay` existe dans le DOM, sans JS. Le clic sur ce fond
- *   n'est ni le host ni le panneau du p-select : il est donc déjà traité
- *   comme un clic extérieur par OverlayAutoCloseService, qui ferme le select
- *   (annulation), sans logique supplémentaire à écrire ici.
+ * p-datepicker en petit écran : le positionnement "ancré" à côté du champ
+ * (bien sur desktop) devient illisible sur mobile — centré à l'écran, avec
+ * masque flouté à la place. `[touchUI]`/`[appendTo]` (liés en template à
+ * ViewportService.isMobile()) font déjà faire à PrimeNG l'essentiel (masque
+ * `.p-datepicker-mask`, reparenting sur <body>) ; on ne fait ici que
+ * recentrer le panneau et flouter son masque, `!important` nécessaire pour
+ * l'emporter sur le `position/top` posés en style inline par PrimeNG. Le
+ * zIndex, lui, est forcé plus haut avec `.p-datepicker-panel` (voir plus
+ * bas) car le problème n'est pas spécifique au mobile.
+ * (Le tiroir mobile équivalent pour `p-select` vivait ici aussi — parti
+ * avec lui en Phase 7d, remplacé par `app-select` et son propre
+ * `select.component.scss`/`styles/select.scss`, voir PRIMENG_MIGRATION.md.)
  * ------------------------------------------------------------------- */
 @media screen and (max-width: 768px) {
   // Le masque touchUI de PrimeNG attache SON PROPRE listener `click` qui
@@ -92,8 +77,8 @@
     }
   }
 
-  // Le panneau (comme .p-select-overlay plus bas) est d'abord monté par
-  // PrimeNG dans le DOM à sa position d'origine — encore enfant du champ,
+  // Le panneau est d'abord monté par PrimeNG dans le DOM à sa position
+  // d'origine — encore enfant du champ,
   // PAS encore reparenté sur <body> — une fraction de frame avant que leur
   // propre JS ne fasse le reparenting/positionnement (voir appendOverlay/
   // alignOverlay dans primeng/datepicker : le montage est lazy, piloté par
@@ -126,76 +111,6 @@
       visibility: hidden;
     }
   }
-
-  // Vrai enfant de <body> une fois reparenté (voir commentaire plus haut) :
-  // c'est CE wrapper (transparent, sans fond ni bordure propre) qu'on fixe
-  // en bas d'écran, pas `.p-select-overlay` qui n'est qu'un descendant.
-  .p-overlay:has(.p-select-overlay) {
-    position: fixed !important;
-    top: auto !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: 70vh;
-    margin: 0 !important;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    visibility: visible;
-    transition: visibility 0s 50ms;
-
-    @starting-style {
-      visibility: hidden;
-    }
-
-    // Les deux niveaux intermédiaires (voir commentaire plus haut) ne
-    // doivent faire que transmettre la hauteur disponible en flex, sans
-    // ajouter de box qui casserait le calcul de `.p-select-list-container`.
-    > p-motion {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      min-height: 0;
-    }
-  }
-
-  .p-overlay-content:has(> .p-select-overlay) {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  // Panneau visible (fond, bordure) du drawer : plus de positionnement ici,
-  // seulement l'habillage visuel et le flex qui laisse la liste s'étirer.
-  .p-select-overlay {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border-radius: 0.5rem 0.5rem 0 0 !important;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-  }
-
-  .p-select-list-container {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto !important;
-  }
-
-  body:has(> .p-overlay .p-select-overlay)::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(6px);
-    z-index: var(--z-overlay-backdrop);
-  }
 }
 
 body {
@@ -223,14 +138,14 @@ html.trip-detail-active body {
 }
 
 .compact-form {
-  .p-select-label,
+  .app-select__trigger,
   .app-input-text {
     padding: 0.25rem !important;
     min-width: 0;
     width: auto;
   }
 
-  .p-select-dropdown {
+  .app-select__chevron {
     display: none;
   }
 }
@@ -349,16 +264,9 @@ html.trip-detail-active body {
   --nt-form-field-focus-border-color: transparent;
 }
 
-.transparent-select {
-  --p-select-border-color: transparent;
-  --p-select-hover-border-color: transparent;
-  --p-select-focus-border-color: transparent;
-  --p-select-shadow: none;
-  --p-select-background: transparent;
-  --p-select-disabled-background: transparent;
-  --p-select-disabled-color: transparent;
-  --p-select-disabled-border-color: transparent;
-}
+// `.transparent-select` (visuel `app-select` sans bordure/fond) vit
+// désormais dans select.component.scss (`:host(.transparent-select)`),
+// pas ici : plus de `--p-select-*` à cibler depuis la Phase 7d.
 
 .transparent-datepicker{
  --p-inputtext-border-color: transparent;
@@ -366,25 +274,20 @@ html.trip-detail-active body {
   --p-inputtext-shadow: none;
   --p-inputtext-background: transparent;
 }
-.transparent-autocomplete{
-  --p-autocomplete-border-color: transparent;
-  --p-autocomplete-hover-border-color:transparent;
-  --p-autocomplete-shadow: none;
-  --p-autocomplete-background: transparent;
-}
+// `.transparent-autocomplete` (ciblait `--p-autocomplete-*`) supprimée : plus
+// aucun `<p-autoComplete>` depuis la Phase 7e — `app-autocomplete` utilise
+// déjà `.transparent-inputtext` (--nt-form-field-*) comme les autres champs.
 
-// Le popup roue crantée est passé en Phase 7b sur app-menu/@angular/cdk/overlay
-// (z-index 1000 par défaut de .cdk-overlay-container, largement au-dessus de
-// --z-app-toolbar : plus besoin d'override ici). Reste : p-datepicker/p-select
-// en appendTo="body" (TripHeaderComponent en particulier, dont le champ dates
-// flotte au dessus de .app-trip-header-fixed une fois reparenté sur <body>) —
-// leur zIndex PrimeNG ('overlay'/'modal') peut tomber sous ce chrome fixe,
-// dont le z-index dépasse celui posé dynamiquement par PrimeNG, d'où le
-// forçage ici en dernier recours, encore nécessaire tant qu'ils ne sont pas
-// migrés (Phase 7d/7f).
-.p-datepicker-panel:not(.p-datepicker-panel-inline),
-.p-select-overlay,
-.p-overlay:has(.p-select-overlay) {
+// Le popup roue crantée est passé en Phase 7b sur app-menu/@angular/cdk/overlay,
+// app-select en Phase 7d (z-index 1000 par défaut de .cdk-overlay-container,
+// largement au-dessus de --z-app-toolbar : plus besoin d'override ici pour
+// ces deux-là). Reste : p-datepicker en appendTo="body" (TripHeaderComponent
+// en particulier, dont le champ dates flotte au dessus de
+// .app-trip-header-fixed une fois reparenté sur <body>) — son zIndex PrimeNG
+// ('overlay'/'modal') peut tomber sous ce chrome fixe, dont le z-index
+// dépasse celui posé dynamiquement par PrimeNG, d'où le forçage ici en
+// dernier recours, encore nécessaire tant qu'il n'est pas migré (Phase 7f).
+.p-datepicker-panel:not(.p-datepicker-panel-inline) {
   z-index: var(--z-overlay-content) !important;
 }
 
@@ -404,19 +307,19 @@ swiper-slide,
 }
 
 .to_book {
-  --booking-status-color: var(--p-red-500);
+  --booking-status-color: var(--nt-red-500);
 }
 
 .booked {
-  --booking-status-color: var(--p-green-500);
+  --booking-status-color: var(--nt-green-500);
 }
 
 .not_needed {
-  --booking-status-color: var(--p-blue-500);
+  --booking-status-color: var(--nt-blue-500);
 }
 
 .waitlist {
-  --booking-status-color: var(--p-yellow-500);
+  --booking-status-color: var(--nt-yellow-500);
 }
 .p-fileupload-choose-button {
   --p-button-padding-y: 0.1rem;

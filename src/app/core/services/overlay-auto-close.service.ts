@@ -1,27 +1,29 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, NgZone, inject } from '@angular/core';
 
-/** Contrat implémenté par la directive attachée à chaque p-select / p-datepicker. */
+/** Contrat implémenté par la directive attachée à chaque p-datepicker (voir sa doc — couvrait aussi p-select avant la Phase 7d). */
 export interface AutoCloseOverlay {
   isOpen(): boolean;
   hostElement(): HTMLElement;
-  /** Sélecteur CSS du panneau flottant de ce type de composant (ex: '.p-select-overlay'). */
+  /** Sélecteur CSS du panneau flottant de ce type de composant (ex: '.p-datepicker-panel'). */
   readonly panelSelector: string;
   close(): void;
 }
 
 /**
- * Coordonne la fermeture des overlays PrimeNG (p-select, p-datepicker, ...) à
+ * Coordonne la fermeture des overlays PrimeNG (p-datepicker — couvrait aussi
+ * p-select avant sa migration en Phase 7d, voir PRIMENG_MIGRATION.md) à
  * travers toute l'application.
  *
  * Pourquoi ne pas se contenter du comportement natif de PrimeNG ? Chaque
  * composant ferme son propre panneau sur un clic extérieur détecté via un
  * listener posé sur `document`, mais ces listeners tournent indépendamment
- * les uns des autres. Résultat : cliquer sur le déclencheur d'un p-select
- * pendant qu'un p-datepicker est ouvert peut faire stopPropagation() sur le
- * `click` avant qu'il n'atteigne le listener du datepicker, qui reste alors
- * ouvert en même temps que le select — exactement le bug remonté. Un swipe
- * ne déclenche par ailleurs aucun `click`, donc aucun des deux ne se ferme.
+ * les uns des autres. Résultat (bug d'origine, à l'époque où p-select
+ * coexistait avec p-datepicker) : cliquer sur le déclencheur d'un p-select
+ * pendant qu'un p-datepicker est ouvert pouvait faire stopPropagation() sur
+ * le `click` avant qu'il n'atteigne le listener du datepicker, qui restait
+ * alors ouvert en même temps que le select. Un swipe ne déclenche par
+ * ailleurs aucun `click`, donc aucun des deux ne se fermait.
  *
  * Ce service prend le contrôle explicite : un seul listener `pointerdown` en
  * phase de capture (donc exécuté avant tout stopPropagation() interne) ferme

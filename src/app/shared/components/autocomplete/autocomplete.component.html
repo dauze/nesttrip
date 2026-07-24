@@ -1,0 +1,34 @@
+<input
+  #input
+  type="text"
+  [class]="'app-autocomplete__input ' + inputClass()"
+  [value]="value()"
+  [placeholder]="placeholder()"
+  [disabled]="isDisabled()"
+  (input)="onInput($any($event.target).value)"
+  (blur)="onBlurInput()"
+  (keydown)="onKeydown($event)" />
+
+<ng-template #panel>
+  <div class="app-autocomplete-panel">
+    @if (suggestions().length > 0) {
+      <div class="app-autocomplete-panel__list">
+        @for (option of suggestions(); track $index) {
+          <button
+            type="button"
+            class="app-autocomplete-panel__option"
+            (mousedown)="$event.preventDefault()"
+            (click)="selectOption(option)">
+            @if (itemTemplate(); as tpl) {
+              <ng-container *ngTemplateOutlet="tpl; context: { $implicit: option }" />
+            } @else {
+              {{ displayWith()(option) }}
+            }
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="app-autocomplete-panel__empty">{{ emptyMessage() }}</div>
+    }
+  </div>
+</ng-template>

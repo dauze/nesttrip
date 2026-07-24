@@ -1,8 +1,6 @@
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { Component, EventEmitter, input, Output } from '@angular/core';
 
-import { SelectModule } from 'primeng/select';
-import { FormsModule } from '@angular/forms';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
@@ -11,7 +9,7 @@ import { DatePipe } from '@angular/common';
 @Component({
   selector: 'app-timeline',
   standalone: true,
-  imports: [SelectModule, FormsModule, PanelComponent, DatePipe, DividerComponent],
+  imports: [PanelComponent, DatePipe, DividerComponent],
   templateUrl: 'timeline.component.html',
   styleUrl: 'timeline.component.scss',
 })

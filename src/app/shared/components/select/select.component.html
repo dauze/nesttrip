@@ -1,0 +1,27 @@
+<button
+  type="button"
+  class="app-select__trigger"
+  [class.app-select__trigger--open]="isOpen()"
+  [disabled]="isDisabled()"
+  (click)="toggle()">
+  <span class="app-select__label" [class.app-select__label--placeholder]="!selectedLabel()">
+    {{ selectedLabel() || placeholder() }}
+  </span>
+  <i class="pi pi-chevron-down app-select__chevron"></i>
+</button>
+
+<ng-template #panel>
+  <div class="app-select-panel">
+    <div class="app-select-panel__list">
+      @for (option of options(); track option.label) {
+        <button
+          type="button"
+          class="app-select-panel__option"
+          [class.app-select-panel__option--selected]="option.value === value()"
+          (click)="selectOption(option)">
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </div>
+</ng-template>

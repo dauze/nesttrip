@@ -656,7 +656,7 @@ export class ActivityDayDispatchOverlayComponent {
   // GooglePhotoService ici. Un seul point délicat : `cloneNode` ne recopie
   // PAS la valeur "vivante" d'un `<input>` (celle posée par Angular via la
   // propriété IDL `.value`, pas l'attribut HTML) — le champ de titre
-  // (`p-autoComplete`) cloné se retrouverait donc vide ou obsolète si on ne
+  // (`app-autocomplete`) cloné se retrouverait donc vide ou obsolète si on ne
   // le réécrivait pas explicitement avec le titre connu (`dragged().title`).
   private cloneOriginHeaderInto(container: HTMLElement): void {
     container.replaceChildren();

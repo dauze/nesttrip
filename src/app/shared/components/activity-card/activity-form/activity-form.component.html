@@ -8,7 +8,7 @@
           <label for="activity-type" class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-tag text-sm"></i>Type
           </label>
-          <p-select inputId="activity-type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" appendTo="body" />
+          <app-select id="activity-type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -18,7 +18,7 @@
           <label for="booking-status" class="text-color-secondary text-sm flex align-items-center gap-1">
             <i class="pi pi-bookmark text-sm"></i>Résa
           </label>
-          <p-select inputId="booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" optionLabel="label" optionValue="value" appendTo="body" class="w-full min-w-0 transparent-select" />
+          <app-select id="booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -68,10 +68,9 @@
               formControlName="amount"
               class="flex-1 min-w-0 transparent-inputtext"
               inputClass="w-full min-w-0 text-sm" />
-            <p-select
+            <app-select
               [options]="currencyOptions"
               formControlName="currency"
-              appendTo="body"
               class="flex-none transparent-select" />
           </div>
         </div>

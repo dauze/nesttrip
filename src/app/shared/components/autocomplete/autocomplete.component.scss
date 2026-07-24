@@ -1,0 +1,35 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.app-autocomplete__input {
+  width: 100%;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+  border: 1px solid var(--nt-form-field-border-color);
+  border-radius: var(--nt-form-field-border-radius);
+  background: var(--nt-form-field-background);
+  color: var(--nt-form-field-color);
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color var(--nt-transition-duration) ease, background-color var(--nt-transition-duration) ease;
+
+  &::placeholder {
+    color: var(--nt-form-field-placeholder-color);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--nt-form-field-hover-border-color);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--nt-form-field-focus-border-color);
+  }
+
+  &:disabled {
+    color: var(--nt-form-field-disabled-color);
+    background: var(--nt-form-field-disabled-background);
+    cursor: not-allowed;
+  }
+}

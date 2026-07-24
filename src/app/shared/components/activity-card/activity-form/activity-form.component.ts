@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
 
-import { SelectModule } from 'primeng/select';
+import { SelectComponent } from '@app/shared/components/select/select.component';
 import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
@@ -24,7 +24,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
-    SelectModule, InputNumberComponent, DatePickerModule, DividerComponent, TextareaDirective,
+    SelectComponent, InputNumberComponent, DatePickerModule, DividerComponent, TextareaDirective,
     OverlayAutoCloseDirective, TimePickerDialogComponent
   ],
   templateUrl: './activity-form.component.html',

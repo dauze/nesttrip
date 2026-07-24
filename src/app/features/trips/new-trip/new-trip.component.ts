@@ -10,7 +10,7 @@ import { Trip, Day } from '../trip.model';
 import { Notes } from '../trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { AuthService } from '@app/core/services/auth.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { AutoComplete, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
+import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { TripFacade } from '../trip-facade.service';
 import { OverlayAutoCloseDirective } from '@app/shared/directives/overlay-auto-close.directive';
@@ -21,7 +21,7 @@ import { ViewportService } from '@core/services/viewport.service';
   standalone: true,
   imports: [
     ReactiveFormsModule, InputTextDirective, DatePickerModule, ButtonComponent,
-    CardComponent, FluidModule, AutoComplete, OverlayAutoCloseDirective
+    CardComponent, FluidModule, AutoCompleteComponent, OverlayAutoCloseDirective
   ],
   templateUrl: 'new-trip.component.html',
 })
@@ -65,16 +65,19 @@ export class NewTripComponent {
       return list;
   });
 
-  onSelect(event: AutoCompleteSelectEvent): void {
-    const place = event.value as PlaceSummary;
+  onSelect(place: PlaceSummary): void {
     this.form.patchValue({
       ville: place.name,
       placeId: place.placeId,
     });
   }
 
-  onSearch(event: AutoCompleteCompleteEvent): void {
-    this.googlePlaceService.setSearchTerm(event.query ?? '');
+  onSearch(query: string): void {
+    this.googlePlaceService.setSearchTerm(query ?? '');
+  }
+
+  protected displayPlaceName(place: PlaceSummary): string {
+    return place.name;
   }
 
   onSubmit(): void {

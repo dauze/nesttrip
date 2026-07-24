@@ -81,7 +81,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 4 | Champs simples : InputText, Password, Textarea, InputNumber, Checkbox, SelectButton | Faible | ✅ Fait (suppression de `Fluid` reportée à la Phase 7, voir note) |
 | 5 | `Panel` maison (collapsible très réutilisé : activity-card, notes, activity-google-info, activity-gallery, trip-day-map) | Moyen | ✅ Fait |
 | 6 | `Tabs` maison + mise à jour de `cloneNavBarInto` dans `ActivityDayDispatchOverlayComponent` (voir piège ci-dessus) | Moyen | ✅ Fait |
-| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a, 7b, 7c faits) |
+| 7 | Overlays complexes sur la primitive `Dialog` de la Phase 2 (+ `@angular/cdk/menu`/`listbox` pour Select/Menu) : Menu, Tooltip, `ConfirmDialog` + `ConfirmationService` maison, Select, AutoComplete (recherche Google Places), DatePicker (lib headless + UI maison). Risque élevé vu le nombre de familles bundlées : découpée en sous-phases testées indépendamment (7a Tooltip, 7b Menu, 7c ConfirmDialog+Dialog, 7d Select, 7e AutoComplete, 7f DatePicker), même workflow build/lint/test visuel qu'une phase à part entière | Élevé | 🚧 En cours (7a-7e faits, reste 7f) |
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | À faire |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | À faire |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
@@ -115,8 +115,8 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | Menu / MenuItem | trips (roue crantée) | 7b ✅ |
 | Tooltip | accueil-trip, collaborators-dialog, trip-collaborators | 7a ✅ |
 | Dialog / ConfirmDialog / ConfirmationService | time-picker-dialog, collaborators-dialog, accueil-trip, trip-detail, activity-card, notes | 7c ✅ |
-| Select | activity-form, timeline | 7d |
-| AutoComplete | new-trip, activity-header | 7e |
+| Select | activity-form, timeline | 7d ✅ |
+| AutoComplete | new-trip, activity-header | 7e ✅ |
 | DatePicker | new-trip, trip-header, activity-form | 7f |
 | FileUpload | activity-files | 8 |
 
@@ -708,6 +708,197 @@ manuel attentif sur les 3 flux avant de continuer.
   (qui gère déjà `usePopover`) plutôt que par un `<div>` `position:fixed`
   fait main — le z-index seul ne suffit structurellement plus dès qu'un
   panneau CDK est dans la course.
+
+### Phase 7d — Select
+
+Trois usages (activity-form : type, statut de réservation, devise) — le
+quatrième consommateur repéré dans l'audit initial (`timeline`) importait
+`SelectModule` sans jamais utiliser `<p-select>` dans son template : import
+mort retiré au passage, aucun composant réel à migrer là.
+
+`SelectComponent` (`src/app/shared/components/select/`) construit sur
+`@angular/cdk/overlay`, exactement comme `MenuComponent` (Phase 7b) et pour
+la même raison (rejoint le "top layer" via `popover`, actif par défaut sur
+les overlays CDK — voir la découverte documentée juste au-dessus). API
+volontairement simplifiée par rapport à `p-select` : un seul format
+d'options `{label, value}[]` (aucun des 3 usages ne personnalisait
+`optionLabel`/`optionValue`), donc pas besoin de les rendre configurables.
+
+- **Desktop vs mobile** : l'ancien `p-select` devenait un tiroir plein écran
+  ancré en bas sur mobile via ~120 lignes de CSS ciblant les internes de
+  PrimeNG (`.p-overlay:has(.p-select-overlay)`, `.p-overlay-content:has(>
+  .p-select-overlay)`..., voir l'historique de `styles.scss`). Remplacé par
+  un choix de `positionStrategy` CDK fait à l'OUVERTURE selon
+  `ViewportService.isMobile()` (même breakpoint 768px que l'ancien
+  `[touchUI]`, évalué au même instant précis — pas une media query CSS
+  live) : `flexibleConnectedTo` ancré sous le champ en desktop,
+  `global().centerHorizontally().bottom('0')` + `width:'100%'` en mobile.
+  Le contenu (liste d'options) est un unique `<ng-template>`/`TemplatePortal`
+  partagé par les deux variantes ; seul le `panelClass`
+  (`app-select-overlay--desktop`/`--mobile`) change l'habillage visuel via
+  CSS.
+- **Fermeture** : `hasBackdrop:true` + `backdropClick()`/`keydownEvents()`
+  (Échap) gérés par CDK directement, comme `MenuComponent` — contrairement à
+  `p-select`, `SelectComponent` n'a donc plus besoin de s'enregistrer auprès
+  d'`OverlayAutoCloseService` (mécanisme construit à l'origine pour
+  coordonner la fermeture de plusieurs overlays PrimeNG indépendants qui ne
+  se voyaient pas entre eux — non nécessaire ici, CDK gère déjà un seul
+  overlay backdrop-aware à la fois proprement). `OverlayAutoCloseDirective`
+  simplifiée en conséquence : ne couvre plus que `p-datepicker` (sélecteur
+  réduit de `'p-select, p-datepicker'` à `'p-datepicker'`, branche `Select`
+  retirée), jusqu'à la Phase 7f.
+- **Fond flouté mobile** : `backdropClass: 'app-select-backdrop--mobile'`
+  (nouveau, `src/styles/select.scss`, global — même topologie que
+  `.app-dialog-backdrop` : le backdrop CDK est ajouté dans
+  `.cdk-overlay-container`, hors de l'arbre de vue du composant) remplace
+  l'ancien pseudo-élément `body:has(> .p-overlay .p-select-overlay)::after`.
+- **`.compact-form`** (activity-form, densité des 3 selects dans une carte
+  déjà bordée) : `.p-select-label`/`.p-select-dropdown` remplacés par
+  `.app-select__trigger`/`.app-select__chevron` dans `styles.scss`. La
+  variante sans bordure (`.transparent-select`, gardait le même nom de
+  classe dans les templates) est réécrite en `:host(.transparent-select)`
+  DANS `select.component.scss` plutôt que via des `--p-select-*` globales
+  dans `styles.scss` — n'existe plus comme jeu de custom properties à
+  cibler côté PrimeNG.
+- **Couleur du statut de réservation** (`[ngClass]="'booking ' +
+  bookingMeta().className"`, teinte le champ selon à-réserver/réservé/...) :
+  `:host ::ng-deep .booking .p-select-label` dans
+  `activity-form.component.scss` remplacé par `:host(.booking)
+  .app-select__label` DANS `select.component.scss` — plus besoin de
+  `::ng-deep` du tout, `:host(.classe)` cible directement le host depuis le
+  style scopé du composant qui la reçoit (même pattern que Tag/Message/
+  Avatar en Phase 3). `--p-red-500`/`--p-green-500`/`--p-blue-500`/
+  `--p-yellow-500` (couleurs des 4 statuts, `.to_book`/`.booked`/
+  `.not_needed`/`.waitlist` dans `styles.scss`) migrés vers
+  `--nt-red-500`/`--nt-green-500`/`--nt-blue-500`/`--nt-yellow-500` au
+  passage.
+- Nettoyage connexe : le forçage de zIndex sur `.p-select-overlay`/
+  `.p-overlay:has(.p-select-overlay)` dans `styles.scss` (nécessaire pour
+  PrimeNG, dont le zIndex dynamique pouvait tomber sous le chrome fixe de
+  l'appli) supprimé — plus d'objet, `app-select` hérite du z-index CDK
+  (1000) déjà au-dessus de ce chrome.
+
+Vérifié par `ng build`/`ng lint` (aucune régression), plus aucun
+`<p-select>`/import `primeng/select` dans le projet (seul le chunk lazy de
+`trip-detail-component` a nettement rétréci : 947 Ko → 760 Ko). **Pas de
+test de rendu réel dans un navigateur** — le tiroir mobile en particulier
+(recréé from scratch, pas juste porté) mérite un passage attentif sur les 3
+selects, desktop ET mobile, avant de continuer.
+
+#### Correctif post-Phase 7d (trouvé en testant dans le navigateur)
+
+- **Panneau déroulant sans fond ni bordure** : `.app-select-overlay--{desktop,
+  mobile} .app-select-panel` (et les règles associées : `.app-select-panel__list`,
+  `.app-select-panel__option`) vivaient dans `select.component.scss`, la
+  feuille de style SCOPÉE du composant. Or `.app-select-panel` (le contenu du
+  panneau) est attaché par `@angular/cdk/overlay` dans
+  `.cdk-overlay-container`, **hors de l'arbre de vue du composant** (portail) —
+  exactement la même topologie que `.app-dialog-panel`/`.app-tooltip`, qui
+  vivent déjà dans des feuilles GLOBALES (`dialog.scss`, `tooltip.scss`) pour
+  cette raison précise, mais oubliée pour `app-select`. Combiner
+  `.app-select-overlay--desktop`/`--mobile` (classe ajoutée par CDK via
+  `panelClass`, donc SANS l'attribut d'encapsulation `_ngcontent-*` de ce
+  composant) avec `.app-select-panel` (élément du composant, WITH cet
+  attribut) dans une même règle scopée ne matche pas de façon fiable — d'où
+  le panneau rendu sans aucun style. Toutes les règles concernant
+  `.app-select-panel*`/`.app-select-overlay--*` déplacées vers
+  `src/styles/select.scss` (déjà global, y vivait déjà le fond flouté
+  mobile) ; ne reste dans `select.component.scss` que ce qui appartient
+  réellement à la vue du composant (`.app-select__trigger`/`__label`/
+  `__chevron`, `:host(.transparent-select)`, `:host(.booking)`).
+- **Tiroir mobile : pas plein écran, texte non centré, pas de scroll/hauteur
+  maximum, sélection courante invisible** (4 correctifs groupés, tous
+  `src/styles/select.scss`) :
+  - Largeur : `.cdk-overlay-pane` reçoit bien `width:100%` (posé par CDK via
+    `OverlayConfig.width`), mais `.app-select-panel` à l'intérieur — un flex
+    item de ce pane, sizing par défaut = largeur de son contenu — ne s'étire
+    pas tout seul pour la remplir. `width:100%` ajouté explicitement dessus.
+  - Centrage : `justify-content:center; text-align:center;` ajouté sur
+    `.app-select-overlay--mobile .app-select-panel__option`.
+  - Scroll/hauteur : `max-height`/`overflow-y:auto` posés uniquement sur
+    `.app-select-panel__list` dépendaient d'une hauteur de panneau non
+    bornée par défaut. Repris le même schéma flex que l'ancien CSS PrimeNG
+    (`.p-overlay:has(.p-select-overlay)` + `> p-motion`) : `max-height:85vh`
+    + `display:flex;flex-direction:column` sur `.app-select-panel`
+    lui-même, `flex:1 1 auto;min-height:0` sur `.app-select-panel__list`.
+  - Sélection courante : `.app-select-panel__option--selected` ne changeait
+    que la couleur du texte — peu visible, surtout centré (moins de poids
+    visuel qu'aligné à gauche à côté d'une puce). Fond teinté ajouté
+    (`color-mix` avec `--nt-primary-color`), commun aux deux variantes.
+
+### Phase 7e — AutoComplete
+
+Deux usages (activity-header : titre d'activité + recherche Google Places ;
+new-trip : ville/pays du voyage). `AutoCompleteComponent`
+(`src/app/shared/components/autocomplete/`) construit sur
+`@angular/cdk/overlay` comme `SelectComponent`/`MenuComponent` (mêmes
+raisons : top layer), avec la leçon de la Phase 7d appliquée dès le départ
+— le style du panneau (`.app-autocomplete-panel*`) vit directement dans
+`src/styles/autocomplete.scss` (global), jamais dans une feuille scopée au
+composant.
+
+Différence de fond avec `Select` : la valeur est un texte **libre** (CVA sur
+une chaîne saisie, pas une valeur choisie dans une liste fermée) — pas de
+bouton déclencheur, le panneau s'ouvre à la frappe et se ferme au flou du
+champ (`hasBackdrop: false`, pas besoin de bloquer le reste de la page pour
+un champ de recherche texte ; contrairement à `Select`/`Menu`, pas de
+fermeture CDK backdrop/Échap ici — Échap géré manuellement au clavier).
+`(mousedown)="$event.preventDefault()"` sur chaque option : sans ça, cliquer
+une suggestion fait D'ABORD perdre le focus au champ (donc fermer le
+panneau) AVANT que le `click` n'ait la moindre chance de se déclencher —
+piège classique de tout autocomplete input+liste, contourné en empêchant le
+comportement de focus par défaut du `mousedown`.
+
+- **Contenu des options personnalisable, sans rien changer côté appelant** :
+  les deux usages ont chacun leur propre `<ng-template #item let-place>`
+  (adresse en plus du nom pour activity-header, nom seul en grand pour
+  new-trip). `contentChild<TemplateRef<...>>('item')` retrouve cette
+  référence de template locale exactement comme le faisait `p-autoComplete`
+  en interne — templates des deux consommateurs inchangés au caractère près.
+- **`field="name"` → `[displayWith]`** : plutôt qu'un nom de propriété
+  (supposant implicitement que l'option est un objet plat), un input
+  `displayWith: (item: T) => string` — activity-header lui passe sa méthode
+  `displayName` existante (qui gérait déjà la normalisation défensive du nom
+  Google Places), new-trip une nouvelle petite méthode `displayPlaceName`.
+- **Sorties renommées `searched`/`blurred`** (pas `search`/`blur`) :
+  `@angular-eslint/no-output-native` interdit de nommer un output comme un
+  événement DOM natif — piège sur lequel je suis moi-même tombé en écrivant
+  le composant (`search` rattrapé par le lint, `blur` évité dès le départ
+  pour la même raison, documentée dans le composant).
+- **`inputClass`** (même pattern que `InputNumberComponent.inputClass`,
+  Phase 4) : activity-header en avait besoin pour le style particulier du
+  titre (`font-semibold p-0 text-base`), perdu sinon puisque
+  `app-autocomplete` ne connaît pas `[inputStyleClass]`.
+- Nettoyage connexe : `.transparent-autocomplete` (ciblait
+  `--p-autocomplete-*`) supprimée de `styles.scss`, devenue sans objet
+  (`app-autocomplete` utilise déjà `.transparent-inputtext`/
+  `--nt-form-field-*`, comme les autres champs) ; `panelStyleClass=
+  "autocomplete-panel-fix"` retiré au passage (ciblait une classe déjà morte,
+  jamais stylée dans le projet).
+
+Vérifié par `ng build`/`ng lint` (aucune régression), plus aucun
+`<p-autoComplete>`/import `primeng/autocomplete` dans le projet. **Pas de
+navigation clavier dans les suggestions** (flèches haut/bas + Entrée,
+gérées nativement par PrimeNG) — non reproduite, jugée hors scope vu
+l'ampleur déjà importante de cette phase ; à ajouter si le besoin remonte.
+
+#### Correctif post-Phase 7e (trouvé en testant dans le navigateur)
+
+- **`TypeError` au clic sur une suggestion (activity-header)** :
+  `displayName(place)` (utilisée à la fois dans le template ET passée par
+  RÉFÉRENCE à `[displayWith]`) était une méthode ordinaire appelant
+  `this.extractPlaceName(...)`. Passée en tant que VALEUR (pas appelée) à
+  `[displayWith]`, elle perd son `this` d'origine dès qu'`AutoCompleteComponent`
+  l'invoque plus tard elle-même (`this.displayWith()(option)`) — `this`
+  redevient `undefined` en interne, `this.extractPlaceName` casse. Corrigé
+  en `displayName` fonction fléchée (propriété de classe, pas méthode de
+  prototype) : capture `this` lexicalement une fois pour toutes, reste
+  valide peu importe comment/où elle est appelée par la suite. Piège
+  classique de tout callback passé par référence depuis un template Angular
+  — `displayPlaceName` (new-trip) y échappait par chance, ne touchant jamais
+  `this` dans son corps.
+
+**Pas de test de rendu réel dans un navigateur** au-delà de ce correctif.
 
 ## Après la migration
 
