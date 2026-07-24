@@ -112,7 +112,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - au niveau du slide de la carte, il faudrait calculer la hauteur à prendre en fonction de la distance à parcourir : plus il y a de distance, plus il faut reculer. Moins il y en a, moins il faut reculer
 - Pouvoir supprimer des collaborateurs (via un clique sur les pastilles affiché:  ouvre la popup d'ajout des collob modifié qui permet la gestion des collab associés à ce trip, l'ajout d'un nouveau collab, la selection d'un companion de route à ajouter en clique rapide depuis une liste, la suppression d'un collab de route via une croix. Il faut donc stocker la liste des companions de route sur l'utilisateur, ou ? nouvelle bdd user ? => dans firestore ? Ca pourra servire pour le stockage des reglages du user.  faut faire attention à la gestion des user, seul l'owner peut supprimer des membres, et  il ne peut pas se supprimer lui même et doit supprimer le voyage, information à donner si son nom est grisé. Parti du dialog existant au clique sur "add collaborator". On pourrait supprimer le bouton "add colaborator" car le cluque sur la pastille remplacerai ça ? 
 - Et sortir le p-dialog pour le mettre dasn un composant à part, transverse comme ça sa taille n'est pas limité au composant
-
+- Ouvrir le calendrier en dialog si écran taille smartphone
+- Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
@@ -122,13 +123,12 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ### UI Desktop
 - Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut
 - Vue calendrier ?
-- Ouvrir le calendrier en dialog si écran taille smartphone
+
 
 ### Carte
 - Gérer le cas Asie : alternative à Google Maps (non prioritaire)
 - Afficher la carte seulement si pas d'activité ou activités incomplètes
 - Carte pliée par défaut dans "Général" (aperçu + "voir plus" → bon jour)
-- Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 - Rajouter la Position actuelle de l'utilisateur sur la carte
 - Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin.
 - Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange
@@ -148,8 +148,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA)
 
-### Collaborateurs
-- Email quand ajouté à un trip  (non prioritaire)
+### Collaborateurs(non prioritaire)
+- Email quand ajouté à un trip  
 ### Administratif
 - Onglet dédié : vols, hébergements, trains, location de voiture : composant à définir 
 - Dates début/fin pour hébergements, catégorisation "en cours" / "future" / "passée" (grisée en bas si date renseignée, sinon non catégorisé)
@@ -166,7 +166,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée et le curseur positionné sur le choix de l'activité
-- Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
+
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
@@ -186,8 +186,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Dans la modification de l'heure, si l'utilisateur positionne une heure puis une minute, alors il faut faire ok
 - le minim width n'est plus appliqué et on peut de nouveau tasser jusqu'à avoir des chevauchement, il faut remettre un min width sur le plus haut niveau : le min-width: 24rem fonctionne toujours sur l'écran d'accueil, de login, mais plus sur "app-content" depuis les modifications du swiper
 - Dans les données de google pour afficher si fermé ou non, il en faut pas prendre l'heure actuelle mais plutôt l'heure annoncé par l'heure de début. Si l'heure n'est pas renseignée, l'afficher uniquement si il est fermé le jour entier sélectionné, sinon ne pas l'afficher.
-- La liste des compagnons de route n'est pas renseigné après rechargement
-
+- Problème theme : skeleton bleu en dark mode, chip des pieces en thème dark sont en couleur claire, le contour de app overlay n'est pas la bonne couleur ni en dark ni en light
+- Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)

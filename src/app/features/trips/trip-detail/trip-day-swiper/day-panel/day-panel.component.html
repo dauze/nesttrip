@@ -1,6 +1,6 @@
 <div class="day-panel-root flex flex-column gap-2 mb-2">
   @if (activities().length > 0) {
-    <app-timeline [activities]="activities()" (activitySelected)="focusActivity($event)"/>
+    <app-timeline [activities]="activities()" (activitySelected)="scrollSync.focusActivity($event)"/>
     <div #stickyMap class="sticky-map">
       @if (!activeMapComponent()) {
         <app-panel [toggleable]="true" [collapsed]="collapsed()">
@@ -22,7 +22,7 @@
     <div class="flex flex-column gap-2">
       <div #activityList class="flex flex-column gap-2">
         @for (activity of activities(); track activity.id) {
-            <app-activity-card [inDayList]="true" (dragHandleDown)="onDragHandleDown($event)" [initCollapsed]="false"
+            <app-activity-card [inDayList]="true" (dragHandleDown)="reorderService.onDragHandleDown($event)" [initCollapsed]="false"
       [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
       </div>
