@@ -38,6 +38,7 @@ export class NotesComponent {
     this.tripFacade.reorderItems(this.tripId(), items.map(a => a.id));
   }
 
+  /** Point d'entrée pour le bouton "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
   addItem(): void {
    const newItem: Item = {
       id: crypto.randomUUID(),
@@ -47,9 +48,14 @@ export class NotesComponent {
     };
     this.tripFacade.createItem(this.tripId(), newItem);
     requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(
+      const el = document.querySelector<HTMLElement>(
         `input[data-title-id="${newItem.id}"], textarea[data-title-id="${newItem.id}"]`
-      )?.focus();
+      );
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // `preventScroll` : sinon le scroll natif déclenché par `focus()` (souvent
+      // instantané) écrase/interrompt le `scrollIntoView` smooth lancé juste
+      // au-dessus, donnant l'impression que le scroll animé ne se produit pas.
+      el?.focus({ preventScroll: true });
     });
   }
 

@@ -1,0 +1,14 @@
+<button
+  type="button"
+  class="fab"
+  [class.fab--expanded]="expanded()"
+  [attr.aria-label]="ariaLabel() || label()"
+  (click)="handleClick()">
+  <span class="fab-label">{{ label() }}</span>
+  <span class="fab-icon">
+    <i [class]="icon()"></i>
+    @if (badge()) {
+      <i class="pi pi-plus fab-icon-badge"></i>
+    }
+  </span>
+</button>

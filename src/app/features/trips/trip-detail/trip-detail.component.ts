@@ -11,8 +11,10 @@ import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.compon
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
+import { FloatingAddButtonComponent } from '@app/shared/components/floating-add-button/floating-add-button.component';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { TripCreationTargetService } from './trip-creation-target.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 
@@ -26,9 +28,14 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
     TripTabsNavComponent,
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
+    FloatingAddButtonComponent,
   ],
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
+  // TripCreationTargetService : partagé entre le swiper de jours (qui
+  // enregistre chaque panel actif) et le "+" flottant unique (voir plus bas),
+  // tous deux descendants de ce composant dans l'arbre de vues.
+  providers: [TripCreationTargetService],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
@@ -37,6 +44,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
+  protected readonly fabTarget = inject(TripCreationTargetService);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
@@ -66,6 +74,33 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     { id: 'notes', label: 'Général' },
     ...this.sortedDays().map(d => this.formatDayTab(d.id)),
   ]);
+
+  /**
+   * "+" flottant UNIQUE (voir TripCreationTargetService) : sur l'onglet
+   * "Général", son icône/libellé suivent le sous-onglet actif de
+   * `GeneralPanelComponent` (activités vs notes) ; sur un jour, toujours une
+   * activité. Le badge "+" reste affiché dans les deux cas — l'icône seule
+   * (map-marker/clipboard) ne suffirait pas à se lire comme "ajouter".
+   */
+  protected readonly fabIcon = computed(() =>
+    this.activeDay() === 'notes' && this.fabTarget.general()?.activeSubTab() === 'notes'
+      ? 'pi pi-clipboard'
+      : 'pi pi-map-marker'
+  );
+
+  protected readonly fabAriaLabel = computed(() =>
+    this.activeDay() === 'notes' && this.fabTarget.general()?.activeSubTab() === 'notes'
+      ? 'Ajouter une note'
+      : 'Ajouter une activité'
+  );
+
+  protected onFabActivate(): void {
+    if (this.activeDay() === 'notes') {
+      this.fabTarget.general()?.trigger();
+    } else {
+      this.fabTarget.triggerDay(this.activeDay());
+    }
+  }
 
   constructor() {
     afterNextRender(() => {

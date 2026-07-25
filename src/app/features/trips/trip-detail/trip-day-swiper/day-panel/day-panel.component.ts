@@ -15,7 +15,6 @@ import {
 import { TimelineComponent } from './timeline/timeline.component';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
@@ -29,12 +28,13 @@ import { DayScrollSyncService } from './day-scroll-sync.service';
 import { DayReorderService } from './day-reorder.service';
 import { DayActivityCreationService } from './day-activity-creation.service';
 import { NewActivityDraftComponent } from './new-activity-draft/new-activity-draft.component';
+import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
   imports: [
-    TimelineComponent, ActivityCardComponent, PanelComponent, ButtonComponent, MessageComponent, SkeletonComponent,
+    TimelineComponent, ActivityCardComponent, PanelComponent, MessageComponent, SkeletonComponent,
     NewActivityDraftComponent,
   ],
   styleUrl: 'day-panel.component.scss',
@@ -50,6 +50,7 @@ export class DayPanelComponent {
   private readonly mapHost = inject(TripDayMapHostService);
   private readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly dispatchService = inject(ActivityDispatchService);
+  private readonly fabTarget = inject(TripCreationTargetService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
@@ -165,6 +166,16 @@ export class DayPanelComponent {
       getTripId: () => this.tripId(),
       getDayId: () => this.dayId(),
       getViewContainerRef: () => this.viewContainerRef,
+    });
+
+    // effect() (pas un appel direct dans le constructeur) : `dayId` est un
+    // input required, pas garanti résolu avant la première détection de
+    // changements. Jusqu'à 3 instances de DayPanelComponent peuvent coexister
+    // (préchargement des jours voisins, voir TripDaySwiperComponent.preloadAround)
+    // — seul le "+" flottant, qui connaît le jour COURANT, appellera jamais ce trigger.
+    effect((onCleanup) => {
+      const unregisterFab = this.fabTarget.registerDay(this.dayId().toISOString(), () => this.creationService.startCreation());
+      onCleanup(unregisterFab);
     });
 
     // Le nettoyage (listeners globaux, observers, boucles rAF, geste de

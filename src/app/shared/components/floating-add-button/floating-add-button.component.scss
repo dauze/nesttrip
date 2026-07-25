@@ -1,0 +1,97 @@
+// Vrai `position: fixed` : ce composant n'est monté qu'une fois, par
+// TripDetailComponent, EN DEHORS du swiper de jours (voir la doc de la
+// classe) — donc jamais sous un ancêtre transformé, `fixed` reste bien
+// relatif au viewport entier, quel que soit le contenu (court ou long) du
+// panel actif. `--fab-bottom-offset` (posé en host binding, voir le .ts)
+// réserve la hauteur de la barre des jours fixe en bas d'écran.
+:host {
+  display: block;
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--fab-bottom-offset, 0px) + 1rem);
+  z-index: 12;
+}
+
+.fab {
+  display: inline-flex;
+  align-items: center;
+  height: 3rem;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: 2rem;
+  background: var(--nt-primary-color);
+  color: var(--nt-primary-contrast-color);
+  box-shadow: 0 0.25rem 0.75rem rgba(18, 18, 23, 0.25);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover,
+  &:active {
+    background: var(--nt-primary-hover-color);
+  }
+}
+
+// Le libellé est TOUJOURS dans le DOM (avant l'icône) mais visuellement
+// réduit à rien (`max-width:0` + `opacity:0`) : au dépli, il grandit vers la
+// GAUCHE puisque l'icône (dernier élément flex) reste, elle, ancrée à droite
+// par `.fab { right: 0.75rem }` — c'est ce qui donne l'effet "élargi vers la
+// gauche" demandé plutôt qu'un agrandissement centré.
+.fab-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 320ms ease,
+    margin-right 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fab-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  font-size: 1.25rem;
+}
+
+// Petit badge "+" superposé : seul signe qui reste constant quel que soit le
+// contexte (`icon()` change, ex. pi-map-marker vs pi-clipboard, voir
+// GeneralPanelComponent) — rappelle qu'on est bien sur un bouton "ajouter".
+.fab-icon-badge {
+  position: absolute;
+  right: -0.4rem;
+  bottom: -0.35rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  border-radius: 50%;
+  background: var(--nt-primary-contrast-color);
+  color: var(--nt-primary-color);
+  box-shadow: 0 0 0 0.125rem var(--nt-primary-color);
+}
+
+// Dépli au survol réel uniquement (desktop souris) : `hover:hover` exclut les
+// écrans tactiles, où `:hover` peut sinon rester "collé" après un tap.
+@media (hover: hover) and (pointer: fine) {
+  .fab:hover .fab-label {
+    max-width: 10rem;
+    opacity: 1;
+    margin-right: 0.5rem;
+  }
+}
+
+// Dépli temporaire déclenché par tap (tactile, pas de hover) — voir
+// `FloatingAddButtonComponent.pulseExpand`. Même règle visuelle que le hover
+// desktop, mais pilotée par une classe posée en JS plutôt que `:hover`.
+.fab.fab--expanded .fab-label {
+  max-width: 10rem;
+  opacity: 1;
+  margin-right: 0.5rem;
+}

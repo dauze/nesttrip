@@ -28,6 +28,16 @@
         [activeId]="activeDay()"
         (activeIdChange)="onSwiperActiveIdChange($event)"
         (ready)="onSwiperReady()" />
+
+      <!-- Hors du swiper de jours (voir FloatingAddButtonComponent) : un
+           ancêtre `swiper-slide` applique un transform permanent, ce qui
+           casserait le `position:fixed` de ce bouton. -->
+      <app-floating-add-button
+        [icon]="fabIcon()"
+        [badge]="true"
+        [ariaLabel]="fabAriaLabel()"
+        [bottomOffset]="chromeService.tabsNavHeight()"
+        (activate)="onFabActivate()" />
     </div>
   }
 

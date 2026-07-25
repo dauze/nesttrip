@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, viewChildren } from '@angular/core';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { PoolActivity } from '@app/shared/components/activity-card/activity.model';
@@ -20,7 +19,7 @@ interface CityGroup {
 @Component({
   selector: 'app-trip-activities',
   standalone: true,
-  imports: [PanelComponent, ButtonComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent],
+  imports: [PanelComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +42,11 @@ export class TripActivitiesComponent {
       getTripId: () => this.tripId(),
       getViewContainerRef: () => this.viewContainerRef,
     });
+  }
+
+  /** Point d'entrée pour le bouton "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
+  triggerCreate(): void {
+    this.creationService.startCreation();
   }
 
   readonly cityGroups = computed<CityGroup[]>(() => {
