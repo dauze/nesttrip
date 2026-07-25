@@ -25,8 +25,13 @@
             <app-activity-card [inDayList]="true" (dragHandleDown)="reorderService.onDragHandleDown($event)" [initCollapsed]="false"
       [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
         }
+        @if (creationService.draftActive()) {
+          <app-new-activity-draft
+            (confirmed)="creationService.confirmDraft($event)"
+            (cancelled)="creationService.cancelDraft()" />
+        }
       </div>
-      @if (activities().length === 0) {
+      @if (activities().length === 0 && !creationService.draftActive()) {
           <app-message
             severity="info"
             icon="pi pi-info-circle"
@@ -35,7 +40,7 @@
           />
         }
       <div class="flex justify-content-center w-full">
-        <app-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (click)="addActivity()" />
+        <app-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (click)="creationService.startCreation()" />
       </div>
     </div>
   </app-panel>

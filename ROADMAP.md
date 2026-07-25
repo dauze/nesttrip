@@ -116,6 +116,9 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
 - p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
+- Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
+- Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
+
 
 ## 🔧 À faire
 
@@ -165,22 +168,21 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Suppression : passer en "rester appuyé" plutôt qu'icône corbeille toujours visible : on pourrait mettre des checkbox qui apparaissent pour supprimer en masse par exemple. le clique long est une idée ux améliorable car il y a pleins de trucs sur mon header
 - mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés 
 - Couleur différente sur texte modifiable : à voir car faudrait l'appliquer sur les dates, les listes, et touts element modifiable, pas juste les input. Pour les couleurs, un truc proche de la couleur de base
-- Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
 - Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée et le curseur positionné sur le choix de l'activité
-
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
-
-- Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position
 - Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal
 - rajouter un indicateur quand s'est sauvegardé et quand la sauvegarde s'est mal passé, très discret, une petite bar verte au dessus de la bar d'état par exemple. et si ça marche pas, faire un truc rouge avec de vrai consigne mais je sais pas encore quoi 
 - Menu : mode sombre / clair / système
+- Modifier le système de saisie des horaire sur ordi pour faire 2 zones de saisie number : pas d'ouverture du composant
+- Modifier le composant timepicker pour permettre la saisie sur clavier comme sur le composant google !
+- Modifier la taille des zones pour pas qu'elles prennent tout l'écran 
+
 
 ### Bugs / fixes
-
 - Depuis le pool, sélection d'une activité sous le calendrier : position mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
 - Si j'ai qu'un seul trip, je ne peux plus faire retour sur la première page, donc je ne peux pas créer de trip. C'est à la connexion qu'il faut aller sur le trip, pas tout le temps 
 - mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle
@@ -190,6 +192,9 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Dans les données de google pour afficher si fermé ou non, il en faut pas prendre l'heure actuelle mais plutôt l'heure annoncé par l'heure de début. Si l'heure n'est pas renseignée, l'afficher uniquement si il est fermé le jour entier sélectionné, sinon ne pas l'afficher.
 - Problème theme : skeleton bleu en dark mode, chip des pieces en thème dark sont en couleur claire, le contour de app overlay n'est pas la bonne couleur ni en dark ni en light
 - Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
+- La zone de saisie pour le prix n'est pas bonne 
+- le choix d'une activité ne met pas à jour l'image ! 
+
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)

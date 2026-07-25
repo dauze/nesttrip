@@ -73,6 +73,7 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
 
   protected readonly itemTemplate = contentChild<TemplateRef<{ $implicit: T }>>('item');
   private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panel');
+  private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('input');
 
   protected readonly value = signal('');
   protected readonly isOpen = signal(false);
@@ -150,5 +151,10 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
     this.overlayRef.dispose();
     this.overlayRef = undefined;
     this.isOpen.set(false);
+  }
+
+  /** Focus programmatique (ex. brouillon de création desktop, voir NewActivityDraftComponent). */
+  focus(): void {
+    this.inputRef()?.nativeElement.focus();
   }
 }

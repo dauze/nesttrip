@@ -8,7 +8,7 @@
           <label for="activity-type" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-tag text-sm"></i>Type
           </label>
-          <app-select id="activity-type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
+          <app-select #typeSelect id="activity-type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -18,7 +18,7 @@
           <label for="booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-bookmark text-sm"></i>Résa
           </label>
-          <app-select id="booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+          <app-select #bookingSelect id="booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -30,7 +30,7 @@
           <label for="start-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar text-sm"></i>Début
           </label>
-          <app-time-picker-dialog id="start-time" formControlName="startTime" />
+          <app-time-picker-dialog #startTimePicker id="start-time" formControlName="startTime" />
         </div>
       </div>
       
@@ -40,7 +40,7 @@
           <label for="end-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
-          <app-time-picker-dialog id="end-time" formControlName="endTime" />
+          <app-time-picker-dialog #endTimePicker id="end-time" formControlName="endTime" />
         </div>
       </div>
       
@@ -64,6 +64,7 @@
           </label>
           <div class="flex align-items-center gap-1 w-full min-w-0">
             <app-input-number
+              #priceInput
               inputId="price-amount"
               formControlName="amount"
               class="flex-1 min-w-0 transparent-inputtext"

@@ -87,7 +87,9 @@ export class TitleEditDialogComponent implements AfterViewInit {
   }
 
   protected validate(): void {
-    this.dialogRef.close({ type: 'raw', text: this.inputValue().trim() });
+    const text = this.inputValue().trim();
+    if (!text) return;
+    this.dialogRef.close({ type: 'raw', text });
   }
 
   protected cancel(): void {

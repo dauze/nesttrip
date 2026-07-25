@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, effect } from '@angular/core';
+import { Component, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -31,6 +31,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
 export class ActivityFormComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly tripId = input.required<string>();
   /** Toujours renseigné : ce composant n'est monté qu'en contexte jour (jamais dans le pool général). */
@@ -56,6 +57,13 @@ export class ActivityFormComponent {
       currency: this.fb.nonNullable.control<string>('EUR'),
     }),
   });
+
+  // Refs template pour le chaînage de saisie guidée mobile (Type → Résa → Début → Fin → Prix), voir startGuidedEntry().
+  private readonly typeSelect = viewChild.required<SelectComponent<ActivityType>>('typeSelect');
+  private readonly bookingSelect = viewChild.required<SelectComponent<BookingStatus>>('bookingSelect');
+  private readonly startTimePickerRef = viewChild.required<TimePickerDialogComponent>('startTimePicker');
+  private readonly endTimePickerRef = viewChild.required<TimePickerDialogComponent>('endTimePicker');
+  private readonly priceInput = viewChild.required<InputNumberComponent>('priceInput');
 
   private readonly formChanges = toSignal(this.form.valueChanges, { initialValue: null });
 
@@ -288,5 +296,45 @@ export class ActivityFormComponent {
       return;
     }
     this.syncDurationTimeControlFromForm();
+  }
+
+  /**
+   * Mobile uniquement, déclenché juste après la création d'une activité (voir
+   * DayActivityCreationService) : ouvre successivement Type → Résa → Début →
+   * Fin, puis focalise Prix. Dès qu'une étape est fermée SANS validation
+   * (backdrop/Échap sur un `app-select`, annulation d'un `app-time-picker-dialog`),
+   * le chaînage s'arrête net — le reste s'édite manuellement, comme avant
+   * cette fonctionnalité.
+   */
+  startGuidedEntry(): void {
+    this.typeSelect().openPanel();
+    this.subscribeOnce(this.typeSelect().closed, ({ selected }) => {
+      if (!selected) return;
+
+      this.bookingSelect().openPanel();
+      this.subscribeOnce(this.bookingSelect().closed, ({ selected }) => {
+        if (!selected) return;
+
+        this.startTimePickerRef().openDialog();
+        this.subscribeOnce(this.startTimePickerRef().closed, (start) => {
+          if (!start) return;
+
+          this.endTimePickerRef().openDialog();
+          this.subscribeOnce(this.endTimePickerRef().closed, (end) => {
+            if (!end) return;
+            this.priceInput().focus();
+          });
+        });
+      });
+    });
+  }
+
+  /** S'abonne à un `output()` pour une seule émission puis se désabonne — sécurisé contre la destruction du composant en plein chaînage (voir startGuidedEntry). */
+  private subscribeOnce<T>(emitter: OutputEmitterRef<T>, callback: (value: T) => void): void {
+    const subscription = emitter.subscribe((value) => {
+      subscription.unsubscribe();
+      callback(value);
+    });
+    this.destroyRef.onDestroy(() => subscription.unsubscribe());
   }
 }

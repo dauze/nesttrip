@@ -1,4 +1,4 @@
-import { Component, forwardRef, input } from '@angular/core';
+import { Component, ElementRef, forwardRef, input, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 /**
@@ -23,6 +23,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 export class InputNumberComponent implements ControlValueAccessor {
   readonly inputId = input<string>('');
   readonly inputClass = input<string>('');
+
+  private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('inputEl');
 
   protected value: number | null = null;
   protected disabled = false;
@@ -49,5 +51,10 @@ export class InputNumberComponent implements ControlValueAccessor {
   protected onInput(raw: string): void {
     this.value = raw === '' ? null : Number(raw);
     this.onChange?.(this.value);
+  }
+
+  /** Focus programmatique (ex. dernière étape du chaînage de saisie guidée). */
+  focus(): void {
+    this.inputRef()?.nativeElement.focus();
   }
 }

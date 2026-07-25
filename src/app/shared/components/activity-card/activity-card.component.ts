@@ -128,6 +128,13 @@ export class ActivityCardComponent {
     this.requestedPlaceId.set(placeId);
   }
 
+  private readonly formComponent = viewChild(ActivityFormComponent);
+
+  /** Mobile uniquement, post-création (voir DayActivityCreationService) : démarre le chaînage Type→Résa→Début→Fin→Prix. No-op hors contexte jour (pool général, où `app-activity-form` n'est jamais monté). */
+  startGuidedEntry(): void {
+    this.formComponent()?.startGuidedEntry();
+  }
+
   // --- Sélection d'un lieu depuis l'autocomplete + récupération des photos ---
   //
   // Historique du bug : l'ancienne implémentation faisait un `.subscribe()` manuel

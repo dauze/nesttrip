@@ -1,7 +1,8 @@
 import {
     Component,
     forwardRef,
-    inject
+    inject,
+    output
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
@@ -55,6 +56,9 @@ export class TimePickerDialogComponent
 
     onTouch?: () => void;
 
+    /** Émis à la fermeture du dialog, `undefined` si annulé sans choix — utilisé par le chaînage de saisie guidée (voir ActivityFormComponent.startGuidedEntry). */
+    readonly closed = output<Date | undefined>();
+
     writeValue(
         value: Date | null
     ): void {
@@ -86,12 +90,16 @@ export class TimePickerDialogComponent
         });
 
         dialogRef.closed.subscribe((selected) => {
-            if (!selected) return;
+            if (!selected) {
+                this.closed.emit(undefined);
+                return;
+            }
             this.currentDate = selected;
             this.displayText =
                 `${String(selected.getHours()).padStart(2, '0')}:${String(selected.getMinutes()).padStart(2, '0')}`;
             this.onChange?.(this.currentDate);
             this.onTouch?.();
+            this.closed.emit(selected);
         });
     }
 }

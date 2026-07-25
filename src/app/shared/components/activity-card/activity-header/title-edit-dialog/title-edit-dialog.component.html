@@ -17,7 +17,7 @@
       (input)="onInput($any($event.target).value)"
       (keydown.enter)="validate()" />
 
-    <app-button label="OK" class="flex-shrink-0" (click)="validate()" />
+    <app-button label="OK" class="flex-shrink-0" [disabled]="inputValue().trim().length === 0" (click)="validate()" />
   </div>
 
   <div class="title-edit-dialog__list">

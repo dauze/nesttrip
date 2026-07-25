@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  padding: 0.5rem;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-content-border-radius);
+  background: var(--nt-content-background);
+}
+
+.new-activity-draft__thumb {
+  width: 3rem;
+  height: 3rem;
+}

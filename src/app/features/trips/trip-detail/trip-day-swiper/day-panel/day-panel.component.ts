@@ -9,15 +9,14 @@ import {
   input,
   Signal,
   viewChild,
-  viewChildren
+  viewChildren,
+  ViewContainerRef
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
-import { ActivityType } from '@core/enums/activites-type.enum';
-import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -28,25 +27,32 @@ import { ActivityDispatchService } from '@app/core/services/activity-dispatch.se
 import { getScrollContainer } from '@app/shared/utils/scroll-container';
 import { DayScrollSyncService } from './day-scroll-sync.service';
 import { DayReorderService } from './day-reorder.service';
+import { DayActivityCreationService } from './day-activity-creation.service';
+import { NewActivityDraftComponent } from './new-activity-draft/new-activity-draft.component';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
-  imports: [TimelineComponent, ActivityCardComponent, PanelComponent, ButtonComponent, MessageComponent, SkeletonComponent],
+  imports: [
+    TimelineComponent, ActivityCardComponent, PanelComponent, ButtonComponent, MessageComponent, SkeletonComponent,
+    NewActivityDraftComponent,
+  ],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
   // Une instance par jour affiché (pas root) : voir la doc de DayScrollSyncService/DayReorderService.
-  providers: [DayScrollSyncService, DayReorderService],
+  providers: [DayScrollSyncService, DayReorderService, DayActivityCreationService],
 })
 export class DayPanelComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly elRef = inject(ElementRef<HTMLElement>);
+  private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly mapHost = inject(TripDayMapHostService);
   private readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
+  protected readonly creationService = inject(DayActivityCreationService);
 
   readonly collapsed = this.googleMapPanelService.isCollapsed;
 
@@ -154,6 +160,13 @@ export class DayPanelComponent {
       notifyRenderFlush: () => this.cdr.detectChanges(),
     });
 
+    this.creationService.connect({
+      getCards: () => this.activityCards(),
+      getTripId: () => this.tripId(),
+      getDayId: () => this.dayId(),
+      getViewContainerRef: () => this.viewContainerRef,
+    });
+
     // Le nettoyage (listeners globaux, observers, boucles rAF, geste de
     // reorder éventuellement en cours) est automatique : DayScrollSyncService
     // et DayReorderService étant fournis par CE composant (voir `providers`),
@@ -166,31 +179,6 @@ export class DayPanelComponent {
   /** Conteneur de scroll isolé de ce jour : le `swiper-slide` ancêtre (voir shared/utils/scroll-container.ts). */
   private getSlideEl(): HTMLElement | null {
     return getScrollContainer(this.elRef.nativeElement);
-  }
-
-  addActivity() {
-    const poolId = crypto.randomUUID();
-    this.tripFacade.createActivity(
-      this.tripId(),
-      this.dayId(),
-      {
-        id: poolId,
-        title: '',
-        placeId: '',
-        files: [],
-        photoRefs: [],
-      },
-      {
-        id: crypto.randomUUID(),
-        activityId: poolId,
-        type: ActivityType.ACTIVITE,
-        duration: 0,
-        price: { amount: 0, currency: 'EUR' },
-        booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
-        notes: '',
-      },
-    );
-    queueMicrotask(() => this.scrollSync.wakeLoop());
   }
 
   onActivitiesPanelToggled() {

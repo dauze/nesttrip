@@ -1,4 +1,4 @@
-import { Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -52,6 +52,9 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
   readonly options = input<SelectOption<T>[]>([]);
   readonly placeholder = input('Sélectionner');
 
+  /** Émis à la fermeture du panneau, `selected` distingue un choix (`selectOption`) d'un simple backdrop/Échap — utilisé par le chaînage de saisie guidée (voir ActivityFormComponent.startGuidedEntry). */
+  readonly closed = output<{ selected: boolean }>();
+
   private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panel');
 
   protected readonly value = signal<T | null>(null);
@@ -90,6 +93,12 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
       this.close();
       return;
     }
+    this.openPanel();
+  }
+
+  /** Ouverture programmatique du panneau (ex. chaînage de saisie guidée) — même logique que le clic sur le champ. */
+  openPanel(): void {
+    if (this.isDisabled() || this.overlayRef) return;
     this.open();
   }
 
@@ -124,17 +133,18 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
     this.isOpen.set(true);
   }
 
-  private close(): void {
+  private close(selected = false): void {
     if (!this.overlayRef) return;
     this.overlayRef.dispose();
     this.overlayRef = undefined;
     this.isOpen.set(false);
     this.onTouched?.();
+    this.closed.emit({ selected });
   }
 
   protected selectOption(option: SelectOption<T>): void {
     this.value.set(option.value);
     this.onChange?.(option.value);
-    this.close();
+    this.close(true);
   }
 }
