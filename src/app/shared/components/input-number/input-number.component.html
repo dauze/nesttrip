@@ -1,6 +1,9 @@
 <input
   #inputEl
   type="number"
+  step="0.01"
+  min="0"
+  inputmode="decimal"
   [id]="inputId()"
   [class]="'app-input-text ' + inputClass()"
   [value]="value ?? ''"

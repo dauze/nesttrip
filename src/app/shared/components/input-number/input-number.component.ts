@@ -12,6 +12,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   selector: 'app-input-number',
   standalone: true,
   templateUrl: './input-number.component.html',
+  styleUrl: './input-number.component.scss',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

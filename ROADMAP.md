@@ -179,7 +179,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Menu : mode sombre / clair / système
 - Modifier le système de saisie des horaire sur ordi pour faire 2 zones de saisie number : pas d'ouverture du composant
 - Modifier le composant timepicker pour permettre la saisie sur clavier comme sur le composant google !
-- Modifier la taille des zones pour pas qu'elles prennent tout l'écran 
+- Modifier la taille des zones pour pas qu'elles prennent tout l'écran
+- reseigner en input le titre dans le datepicker pour mettre le titre variable avec "selectionner heure de début" et "sélectionner heure de fin" idem sur les listes ?
 
 
 ### Bugs / fixes
@@ -193,7 +194,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Problème theme : skeleton bleu en dark mode, chip des pieces en thème dark sont en couleur claire, le contour de app overlay n'est pas la bonne couleur ni en dark ni en light
 - Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 - La zone de saisie pour le prix n'est pas bonne 
-- le choix d'une activité ne met pas à jour l'image ! 
+- L'ajout des activité dans le pool ne chaine pas sur la saisie du titre 
 
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
