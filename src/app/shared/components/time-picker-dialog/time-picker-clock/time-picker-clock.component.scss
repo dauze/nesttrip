@@ -114,6 +114,57 @@
     z-index: 2;
 }
 
+.keyboard-fields {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 2rem 0;
+}
+
+.time-picker-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+}
+
+.time-picker-footer__mode {
+    display: flex;
+}
+
+.time-picker-footer__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2.25rem;
+    height: 2.25rem;
+
+    padding: 0;
+
+    border: none;
+    border-radius: var(--nt-radius-sm);
+
+    background: transparent;
+    color: var(--nt-text-muted-color);
+
+    cursor: pointer;
+
+    transition: background-color var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+    &:hover {
+        background: var(--nt-content-hover-background);
+        color: var(--nt-text-color);
+    }
+}
+
 .clock-selector {
     position: absolute;
 

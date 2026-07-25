@@ -1,0 +1,31 @@
+<div class="time-fields" [class.time-fields--flat]="variant() === 'flat'">
+    <input
+        #hourInput
+        type="text"
+        inputmode="numeric"
+        maxlength="2"
+        class="time-box"
+        autocomplete="off"
+        aria-label="Heures"
+        [value]="hourText"
+        (input)="onHourInput(hourInput.value)"
+        (focus)="onHourFocus()"
+        (blur)="onHourBlur()"
+    />
+
+    <span class="time-separator">:</span>
+
+    <input
+        #minuteInput
+        type="text"
+        inputmode="numeric"
+        maxlength="2"
+        class="time-box"
+        autocomplete="off"
+        aria-label="Minutes"
+        [value]="minuteText"
+        (input)="onMinuteInput(minuteInput.value)"
+        (focus)="onMinuteFocus()"
+        (blur)="onMinuteBlur()"
+    />
+</div>

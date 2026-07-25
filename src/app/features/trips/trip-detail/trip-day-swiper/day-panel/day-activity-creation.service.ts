@@ -140,9 +140,14 @@ export class DayActivityCreationService {
 
       if (place) card.onPlaceSelected(place);
 
-      this.scrollSync.focusActivity(instanceId);
-
-      if (options.guided) card.startGuidedEntry();
+      // `startGuidedEntry` n'ouvre le panneau "Type" qu'APRÈS la fin du
+      // scroll (`onComplete`, pas juste après son lancement) : ce panneau
+      // s'ancre (CDK) à la position du champ au moment de l'ouverture et ne
+      // suit pas le scroll programmatique en cours — l'ouvrir plus tôt le
+      // désancre visuellement dès que le scroll continue.
+      this.scrollSync.focusActivity(instanceId, () => {
+        if (options.guided) card.startGuidedEntry();
+      });
     }, { injector: this.injector });
   }
 }

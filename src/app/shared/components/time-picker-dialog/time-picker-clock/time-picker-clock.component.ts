@@ -1,8 +1,9 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild, effect, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
+import { TimeFieldsComponent } from '@app/shared/components/time-picker-dialog/time-fields/time-fields.component';
 
 interface ClockItem {
     label: string;
@@ -12,8 +13,14 @@ interface ClockItem {
     inner?: boolean;
 }
 
+/** 'duration' : une durée n'est pas une heure sur un cadran 24h, la saisie clavier est donc affichée directement sans bascule possible vers le cadran. */
+export type TimePickerMode = 'time' | 'duration';
+
 export interface TimePickerClockData {
     initialDate: Date | null;
+    mode: TimePickerMode;
+    /** Titre du dialog — si vide, retombe sur un libellé générique selon `mode` (voir `TimePickerClockComponent.header`). */
+    label: string;
 }
 
 /**
@@ -30,7 +37,7 @@ export interface TimePickerClockData {
 @Component({
     selector: 'app-time-picker-clock',
     standalone: true,
-    imports: [CommonModule, ButtonComponent, DialogFrameComponent],
+    imports: [CommonModule, ButtonComponent, DialogFrameComponent, TimeFieldsComponent],
     templateUrl: './time-picker-clock.component.html',
     styleUrl: './time-picker-clock.component.scss',
 })
@@ -43,7 +50,20 @@ export class TimePickerClockComponent implements AfterViewInit {
     @ViewChild('clockFace')
     clockFace!: ElementRef<HTMLDivElement>;
 
+    private readonly timeFields = viewChild<TimeFieldsComponent>('timeFields');
+
+    /** 'duration' : pas de cadran, saisie clavier uniquement (voir TimePickerMode). */
+    readonly isDurationMode = this.data.mode === 'duration';
+
+    /** Libellé fourni par l'appelant (`TimePickerDialogComponent.label`), sinon générique selon le mode. */
+    readonly header = this.data.label || (this.isDurationMode ? 'Sélectionner une durée' : 'Sélectionner une heure');
+
+    /** Durée : toujours clavier. Heure : cadran par défaut, bascule possible via le bouton clavier. */
+    viewMode = signal<'clock' | 'keyboard'>(this.isDurationMode ? 'keyboard' : 'clock');
+
     isDragging = false;
+
+    private hasValidated = false;
 
     tempHour: string;
     tempMinute: string;
@@ -74,6 +94,12 @@ export class TimePickerClockComponent implements AfterViewInit {
             this.tempHour = String(now.getHours()).padStart(2, '0');
             this.tempMinute = String(now.getMinutes()).padStart(2, '0');
         }
+
+        effect(() => {
+            if (this.viewMode() === 'keyboard') {
+                this.timeFields()?.focusHour();
+            }
+        });
     }
 
     // Correction synchrone, DANS LA MÊME passe de détection de changements
@@ -86,8 +112,13 @@ export class TimePickerClockComponent implements AfterViewInit {
     // `ngAfterViewInit` + `detectChanges()` reste dans le flux synchrone
     // déjà en cours, sans nouvelle tâche planifiée.
     ngAfterViewInit(): void {
-        this.clockSize.set(this.clockFace.nativeElement.clientWidth);
-        this.cdr.detectChanges();
+        // En mode durée (`isDurationMode`), le cadran n'est jamais monté au
+        // démarrage (`viewMode` vaut 'keyboard' d'entrée) : `clockFace` reste
+        // alors `undefined`.
+        if (this.clockFace) {
+            this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+            this.cdr.detectChanges();
+        }
     }
 
     close(): void {
@@ -95,6 +126,16 @@ export class TimePickerClockComponent implements AfterViewInit {
     }
 
     validate(): void {
+
+        // Idempotent : sur mobile, un tap discret sur une minute déclenche déjà
+        // la validation via `stopDrag` (pointerup) — l'événement `click` de
+        // secours (nécessaire à l'activation clavier Entrée/Espace, qui ne
+        // déclenche aucun événement pointeur) rappellerait sinon `validate()`
+        // une 2e fois sur un dialog déjà en train de se fermer.
+        if (this.hasValidated) {
+            return;
+        }
+        this.hasValidated = true;
 
         const updatedDate =
             this.data.initialDate
@@ -111,6 +152,36 @@ export class TimePickerClockComponent implements AfterViewInit {
         this.dialogRef.close(updatedDate);
     }
 
+    /** Bascule vers la saisie clavier (bouton clavier, coin bas gauche) — indisponible en mode durée, déjà affiché d'entrée. */
+    switchToKeyboard(): void {
+        this.viewMode.set('keyboard');
+    }
+
+    /** Retour au cadran (bouton horloge, coin bas gauche, uniquement visible en mode clavier hors durée). */
+    switchToClock(): void {
+        this.viewMode.set('clock');
+        // Même logique synchrone que `ngAfterViewInit` (voir commentaire sur
+        // `clockSize`) : `clockFace` ne se résout qu'après ce `detectChanges`
+        // puisque le cadran vient tout juste de réapparaître dans le DOM.
+        this.cdr.detectChanges();
+        if (this.clockFace) {
+            this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+        }
+    }
+
+    onKeyboardHourChange(value: string): void {
+        this.tempHour = value || '0';
+    }
+
+    onKeyboardMinuteChange(value: string): void {
+        this.tempMinute = value || '0';
+    }
+
+    /**
+     * Ne se déclenche réellement que pour une activation clavier (Entrée/
+     * Espace sur un bouton focalisé) : voir le commentaire de `stopDrag` pour
+     * pourquoi le `click` souris/tactile n'atteint jamais ce handler.
+     */
     selectValue(
         value: string
     ): void {
@@ -128,6 +199,10 @@ export class TimePickerClockComponent implements AfterViewInit {
 
             this.tempMinute =
                 value.padStart(2, '0');
+
+            if (!this.isDragging) {
+                this.validate();
+            }
         }
     }
 
@@ -161,9 +236,37 @@ export class TimePickerClockComponent implements AfterViewInit {
         );
     }
 
-    stopDrag(): void {
+    /**
+     * `commit` distingue un relâchement normal (pointerup, valide la
+     * sélection en cours) d'une sortie de zone/annulation par le système
+     * (pointercancel/pointerleave) qui ne doit rien déclencher.
+     *
+     * `.clock-face` appelle `setPointerCapture` sur elle-même dès le
+     * `pointerdown` (voir `startDrag`), y compris quand celui-ci démarre sur
+     * un `<button class="clock-number">` enfant : la spec Pointer Events
+     * retargete alors aussi bien le `pointerup` que le `click` synthétisé
+     * vers l'élément capturant (`.clock-face`), jamais vers le bouton — le
+     * `(click)="selectValue(...)"` posé sur chaque bouton ne se déclenche
+     * donc JAMAIS pour une interaction souris/tactile (seule l'activation
+     * clavier Entrée/Espace, qui ne passe par aucun événement pointeur, le
+     * déclenche réellement). C'est ici, sur le `pointerup` de `.clock-face`
+     * qui reçoit fidèlement chaque relâchement, qu'il faut donc avancer
+     * hour → minute et valider minute → OK.
+     */
+    stopDrag(commit: boolean): void {
 
+        const wasDragging = this.isDragging;
         this.isDragging = false;
+
+        if (!commit || !wasDragging) {
+            return;
+        }
+
+        if (this.selectionMode === 'hour') {
+            this.selectionMode = 'minute';
+        } else {
+            this.validate();
+        }
     }
 
     private updateSelectionFromPointer(

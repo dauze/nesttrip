@@ -1,0 +1,66 @@
+.time-fields {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.time-box {
+    width: 3rem;
+    height: 2.5rem;
+
+    border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+    border-radius: 0.5rem;
+
+    text-align: center;
+
+    font-size: 1.25rem;
+    font-family: inherit;
+
+    background: var(--nt-content-background);
+    color: var(--nt-text-color);
+
+    &:focus {
+        outline: none;
+        border-color: var(--nt-primary-color);
+    }
+}
+
+.time-separator {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--nt-text-color);
+}
+
+// Variant 'flat' : intégré dans un formulaire existant (activity-form,
+// desktop) au milieu de champs déjà sans bordure propre (voir
+// `.transparent-inputtext`/`app-select__trigger` sur les autres champs du
+// même formulaire) — pas de case délimitée, juste le texte, pour ne pas
+// détonner visuellement au milieu des autres valeurs.
+.time-fields--flat {
+    gap: 0.1rem;
+
+    .time-box {
+        width: 1.4em;
+        height: auto;
+
+        padding: 0;
+
+        border: none;
+        border-radius: var(--nt-radius-sm);
+
+        font-size: inherit;
+        font-weight: inherit;
+
+        background: transparent;
+
+        &:focus {
+            background: var(--nt-content-hover-background);
+        }
+    }
+
+    .time-separator {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+}

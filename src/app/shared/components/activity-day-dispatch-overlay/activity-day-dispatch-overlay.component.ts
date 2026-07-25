@@ -53,8 +53,8 @@ const THUMB_BORDER_RADIUS_PX = 12;
 const THUMB_BORDER_LEFT_PX = 6.4; // 0.4rem
 /** Épaisseur du fin liseré gris (haut/droite/bas) au repos, identique à celle de l'activity-header (bordure p-panel par défaut). */
 const THUMB_BORDER_THIN_PX = 1;
-/** Variable CSS du liseré gris de l'activity-header (voir `.booking` dans activity-card.component.scss). */
-const THUMB_BORDER_GRAY = 'var(--p-content-border-color)';
+/** Variable CSS du liseré gris de l'activity-header (même bordure que `app-panel`, voir panel.component.scss). */
+const THUMB_BORDER_GRAY = 'var(--nt-content-border-color)';
 const BALL_BORDER_WIDTH_PX = 3;
 
 function lerp(from: number, to: number, t: number): number {

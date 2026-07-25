@@ -229,8 +229,19 @@ export class DayScrollSyncService implements OnDestroy {
     this.config.getMapComponent()?.followScroll(fromPoint, toPoint, t);
   }
 
-  /** Scroll jusqu'à l'activité `activityId` (clic timeline ou marqueur carte), en tenant compte du bandeau sticky qui la masquerait sinon. */
-  focusActivity(activityId: string): void {
+  /**
+   * Scroll jusqu'à l'activité `activityId` (clic timeline ou marqueur carte),
+   * en tenant compte du bandeau sticky qui la masquerait sinon. `onComplete`
+   * (ex. chaînage de saisie guidée, voir DayActivityCreationService) n'est
+   * appelé qu'UNE FOIS L'ANIMATION TERMINÉE : `app-select`/`app-time-picker-dialog`
+   * s'ancrent (CDK `flexibleConnectedTo`) à la position de leur champ au
+   * moment de l'ouverture et ne suivent PAS le scroll programmatique de
+   * `smoothScrollTo` (`slideEl` n'est pas enregistré `cdkScrollable`) — les
+   * ouvrir pendant que le scroll est encore en vol les ancre à une position
+   * qui devient fausse dès que le scroll continue, cassant visuellement le
+   * chaînage.
+   */
+  focusActivity(activityId: string, onComplete?: () => void): void {
     const freshOffsets = this.config.getFreshOffsets();
 
     const target = freshOffsets.find(
@@ -238,6 +249,7 @@ export class DayScrollSyncService implements OnDestroy {
     );
 
     if (!target) {
+      onComplete?.();
       return;
     }
 
@@ -249,12 +261,13 @@ export class DayScrollSyncService implements OnDestroy {
 
     const targetScroll = target.top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
 
-    this.smoothScrollTo(targetScroll, 700);
+    this.smoothScrollTo(targetScroll, 700, onComplete);
   }
 
-  private smoothScrollTo(targetY: number, duration = 600): void {
+  private smoothScrollTo(targetY: number, duration = 600, onComplete?: () => void): void {
     const slideEl = this.config.getSlideEl();
     if (!this.config.isActive() || !slideEl) {
+      onComplete?.();
       return;
     }
 
@@ -281,6 +294,7 @@ export class DayScrollSyncService implements OnDestroy {
       } else {
         this.isAutoScrolling = false;
         this.wakeLoop();
+        onComplete?.();
       }
     };
 

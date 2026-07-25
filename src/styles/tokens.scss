@@ -249,9 +249,17 @@
   --p-surface-50: #f8fafc;
   --p-surface-100: #f1f5f9;
   --p-surface-200: #e2e8f0;
-  --p-surface-700: #334155;
-  --p-surface-800: #1e293b;
-  --p-surface-900: #0f172a;
+  // 700/800/900/950 : ce sont les couleurs à utiliser côté DARK de
+  // light-dark() (voir primeflex.css — .surface-card, .surface-border...),
+  // donc alignées sur l'échelle zinc de --nt-surface-700/800/900/950 en dark
+  // mode (tokens.scss ci-dessus), pas sur la palette slate du light mode :
+  // sinon les fonds/bordures posés via ces classes utilitaires (ex.
+  // surface-card+surface-border du skeleton trip-detail) ressortent
+  // bleutés (slate) au lieu du gris neutre du reste du thème sombre.
+  --p-surface-700: #3f3f46;
+  --p-surface-800: #27272a;
+  --p-surface-900: #18181b;
+  --p-surface-950: #09090b;
   --p-content-border-radius: var(--nt-content-border-radius);
   --p-red-500: var(--nt-red-500);
   --p-yellow-500: var(--nt-yellow-500);
