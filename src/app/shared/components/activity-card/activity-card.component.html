@@ -14,10 +14,11 @@
           class="flex-1 min-w-0"
           [activity]="activity"
           [dayId] = "dayId()"
-          [assignedDays] = "assignedDays()"
+          [assignedPlacements] = "assignedPlacements()"
           [isPlacedNowhere]="isPlacedNowhere()"
           (placeSelected)="onPlaceSelected($event)"
-          (titleEdited)="onTitleChanged($event)" />
+          (titleEdited)="onTitleChanged($event)"
+          (placementClicked)="onPlacementClicked($event)" />
         <app-button
           icon="pi pi-trash"
           [rounded]="true"

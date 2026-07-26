@@ -272,36 +272,37 @@ export class TripStore {
     return this.allPoolActivitiesByTrip.get(tripId)!;
   }
 
-  private readonly activityDayIdsByTrip = new Map<string, Signal<Map<string, Date[]>>>();
+  private readonly activityPlacementsByTrip = new Map<string, Signal<Map<string, { dayId: Date; instanceId: string }[]>>>();
 
   /**
-   * Pour un trip donné : map poolActivityId -> liste des jours où elle est
-   * placée (une activité de pool peut être placée sur plusieurs jours en
-   * même temps, chacun via sa propre instance). Sert à savoir si une
-   * activité de pool est "placée quelque part" (présence + longueur > 0) et,
-   * si oui, sur quels jours.
+   * Pour un trip donné : map poolActivityId -> liste des placements (jour +
+   * instance) où elle est présente (une activité de pool peut être placée
+   * sur plusieurs jours en même temps, chacun via sa propre instance). Sert
+   * à savoir si une activité de pool est "placée quelque part" (présence +
+   * longueur > 0), sur quels jours, et via quelle instance (nécessaire pour
+   * naviguer vers le bon jour et scroller jusqu'à la bonne carte).
    */
-  getActivityDayIds(tripId: string): Signal<Map<string, Date[]>> {
-    if (!this.activityDayIdsByTrip.has(tripId)) {
-      this.activityDayIdsByTrip.set(
+  getActivityPlacements(tripId: string): Signal<Map<string, { dayId: Date; instanceId: string }[]>> {
+    if (!this.activityPlacementsByTrip.has(tripId)) {
+      this.activityPlacementsByTrip.set(
         tripId,
         computed(() => {
           const dayKeys = this._tripDays()[tripId] ?? [];
           const dayActivityIds = this._dayActivityIds();
           const instances = this._dayActivityInstances();
-          const map = new Map<string, Date[]>();
+          const map = new Map<string, { dayId: Date; instanceId: string }[]>();
           for (const dayKey of dayKeys) {
             for (const instanceId of dayActivityIds[dayKey] ?? []) {
               const poolId = instances[instanceId]?.activityId;
               if (!poolId) continue;
-              map.set(poolId, [...(map.get(poolId) ?? []), new Date(dayKey)]);
+              map.set(poolId, [...(map.get(poolId) ?? []), { dayId: new Date(dayKey), instanceId }]);
             }
           }
           return map;
         }),
       );
     }
-    return this.activityDayIdsByTrip.get(tripId)!;
+    return this.activityPlacementsByTrip.get(tripId)!;
   }
 
   // ── Commandes — Trip ────────────────────────────────────────────────

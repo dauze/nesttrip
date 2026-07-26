@@ -42,6 +42,12 @@ img {
   font-size: 0.65rem;
 }
 
+// Chaque puce de date est cliquable individuellement (navigue vers le jour +
+// scroll vers l'activité, voir ActivityCardComponent.onPlacementClicked).
+.activity-header__day-tag {
+  cursor: pointer;
+}
+
 // Mobile uniquement (voir template) : titre statique + crayon, à la place de
 // l'`app-autocomplete` toujours éditable en direct utilisée sur desktop.
 .activity-header__title-mobile {

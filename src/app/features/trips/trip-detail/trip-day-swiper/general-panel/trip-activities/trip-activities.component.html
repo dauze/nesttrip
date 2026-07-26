@@ -1,30 +1,118 @@
 <app-card>
 <div class="flex flex-column gap-2">
-  @for (group of cityGroups(); track group.city) {
-    <app-panel [toggleable]="true" [collapsed]="false">
-      <div panelHeader class="flex align-items-center gap-2">
-        <i class="pi pi-map-marker"></i>
-        <span>{{ group.city }}</span>
-        <span class="nt-text-muted text-sm">({{ group.activities.length }})</span>
-      </div>
 
-      <div class="flex flex-column gap-2">
-        @for (activity of group.activities; track activity.id) {
-          <app-activity-card
-            [activityId]="activity.id"
-            [tripId]="tripId()"
-            [initCollapsed]="true"
-          />
-        }
-      </div>
-    </app-panel>
+  <div class="trip-activities__toolbar flex align-items-center gap-2 flex-wrap">
+    <app-select-button
+      variant="subtle"
+      [options]="sortOptions"
+      [value]="sortMode()"
+      (valueChange)="onSortModeChange($event)"
+    />
+    <div class="trip-activities__search flex-1">
+      <i class="pi pi-search trip-activities__search-icon nt-text-muted"></i>
+      <input
+        appInputText
+        type="text"
+        [value]="searchTerm()"
+        (input)="onSearchInput($event)"
+        placeholder="Rechercher une activité"
+        class="w-full trip-activities__search-input" />
+      @if (searchTerm()) {
+        <app-button
+          icon="pi pi-times"
+          [rounded]="true"
+          [text]="true"
+          size="small"
+          severity="secondary"
+          class="trip-activities__search-clear"
+          (click)="clearSearch()"
+        />
+      }
+    </div>
+  </div>
+
+  @if (sortMode() === 'city') {
+    @for (group of cityGroups(); track group.city) {
+      <app-panel [toggleable]="true" [collapsed]="false">
+        <div panelHeader class="flex align-items-center gap-2">
+          <i class="pi pi-map-marker"></i>
+          <span>{{ group.city }}</span>
+          <span class="nt-text-muted text-sm">({{ group.rows.length }})</span>
+        </div>
+
+        <div class="flex flex-column gap-2">
+          @for (row of group.rows; track row.representative.id) {
+            <app-activity-card
+              [activityId]="row.representative.id"
+              [tripId]="tripId()"
+              [initCollapsed]="true"
+              [assignedPlacementsOverride]="row.mergedIds.length > 1 ? mergedPlacementsFor(row) : undefined"
+            />
+          }
+        </div>
+      </app-panel>
+    }
+  } @else {
+    @if (unassignedActivities().length > 0) {
+      <app-panel [toggleable]="true" [collapsed]="false">
+        <div panelHeader class="flex align-items-center gap-2">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>À assigner</span>
+          <span class="nt-text-muted text-sm">({{ unassignedActivities().length }})</span>
+        </div>
+
+        <div class="flex flex-column gap-2">
+          @for (activity of unassignedActivities(); track activity.id) {
+            <app-activity-card
+              [activityId]="activity.id"
+              [tripId]="tripId()"
+              [initCollapsed]="true"
+            />
+          }
+        </div>
+      </app-panel>
+    }
+
+    @for (group of chronoDayGroups(); track group.day.id) {
+      <app-panel [toggleable]="true" [collapsed]="false">
+        <div
+          panelHeader
+          class="trip-activities__day-header flex align-items-center gap-2"
+          role="button"
+          tabindex="0"
+          (click)="onDayHeaderClick(group.day)"
+          (keydown.enter)="onDayHeaderClick(group.day)">
+          <i class="pi pi-calendar"></i>
+          <span class="trip-activities__day-label">{{ group.day.id | date:'EEEE d MMMM' }}</span>
+          <span class="nt-text-muted text-sm">({{ group.activities.length }})</span>
+        </div>
+
+        <div class="flex flex-column gap-2">
+          @for (activity of group.activities; track activity.id) {
+            <app-activity-card
+              [activityId]="activity.id"
+              [tripId]="tripId()"
+              [dayId]="group.day.id"
+              [initCollapsed]="true"
+            />
+          }
+        </div>
+      </app-panel>
+    }
   }
 
-  @if (cityGroups().length === 0 && !creationService.draftActive()) {
+  @if (hasNoActivityAtAll() && !creationService.draftActive()) {
     <app-message
       severity="info"
       icon="pi pi-info-circle"
       text="Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +."
+      class="w-full flex justify-content-center"
+    />
+  } @else if (matchCount() === 0 && searchTerm().trim()) {
+    <app-message
+      severity="info"
+      icon="pi pi-search"
+      text="Aucun résultat pour cette recherche."
       class="w-full flex justify-content-center"
     />
   }

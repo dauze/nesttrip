@@ -81,11 +81,17 @@
         @if (isPlacedNowhere()) {
           <app-tag severity="warn" value="À assigner" class="flex-shrink-0" />
         } @else {
-          <app-tag
-            severity="success"
-            [value]="assignedDays() | dayLabelsList:2"
-            class="flex-shrink-0"
-          />
+          @for (placement of assignedPlacements(); track placement.instanceId) {
+            <app-tag
+              severity="success"
+              [value]="(placement.dayId | date:'dd/MM') ?? ''"
+              class="flex-shrink-0 activity-header__day-tag"
+              role="button"
+              tabindex="0"
+              (click)="onPlacementClick($event, placement)"
+              (keydown.enter)="onPlacementClick($event, placement)"
+            />
+          }
         }
       }
     </div>

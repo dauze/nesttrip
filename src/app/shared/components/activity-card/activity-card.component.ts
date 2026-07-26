@@ -16,6 +16,7 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
 import { ActivityFilesComponent } from './activity-files/activity-files.component';
@@ -56,6 +57,7 @@ export class ActivityCardComponent {
   // isBeingDragged ci-dessous) ; `null` si ce composant est un jour utilisé
   // hors de ce contexte.
   private readonly swiperLockService = inject(SwiperLockService, { optional: true });
+  private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
@@ -67,6 +69,14 @@ export class ActivityCardComponent {
   readonly activityId = input.required<string>();
   /** true uniquement pour les cartes rendues dans la liste réordonnable d'un jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans `startDispatchGesture`. */
   readonly inDayList = input(false);
+  /**
+   * Fourni uniquement par TripActivitiesComponent pour une carte "représentante"
+   * d'un groupe de doublons de même placeId (vue Ville) : combine les
+   * placements de TOUTES les PoolActivity du groupe, pas seulement ceux de
+   * `activityId()`. `undefined` = comportement par défaut (placements de
+   * cette seule activité de pool).
+   */
+  readonly assignedPlacementsOverride = input<{ dayId: Date; instanceId: string }[] | undefined>(undefined);
 
   /** En contexte jour, `activityId` est un instanceId ; en contexte pool (vue générale), un poolId. */
   readonly activity = computed(() =>
@@ -75,15 +85,15 @@ export class ActivityCardComponent {
       : this.tripFacade.getPoolActivityView(this.activityId())()
   );
 
-  private readonly tripActivityDayIds = computed(() => this.tripFacade.getActivityDayIds(this.tripId())());
+  private readonly tripActivityPlacements = computed(() => this.tripFacade.getActivityPlacements(this.tripId())());
+  /** Placements (jour + instance) de cette activité, triés — uniquement pertinent en contexte pool (vue générale). */
+  readonly assignedPlacements = computed(() => {
+    const override = this.assignedPlacementsOverride();
+    const raw = override ?? this.tripActivityPlacements().get(this.activity().activityId) ?? [];
+    return [...raw].sort((a, b) => a.dayId.getTime() - b.dayId.getTime());
+  });
   /** true uniquement en contexte pool, quand cette activité n'est placée sur AUCUN jour. */
-  readonly isPlacedNowhere = computed(() =>
-    !this.dayId() && (this.tripActivityDayIds().get(this.activity().activityId)?.length ?? 0) === 0
-  );
-  /** Jours où cette activité est placée, triés — uniquement pertinent en contexte pool (vue générale). */
-  readonly assignedDays = computed(() =>
-    [...(this.tripActivityDayIds().get(this.activity().activityId) ?? [])].sort((a, b) => a.getTime() - b.getTime())
-  );
+  readonly isPlacedNowhere = computed(() => !this.dayId() && this.assignedPlacements().length === 0);
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -257,6 +267,10 @@ export class ActivityCardComponent {
   onPlaceSelected(place: PlaceSummary): void {
     if (!place.placeId) return;
     this.selectedPlace.set(place);
+  }
+
+  onPlacementClicked(placement: { dayId: Date; instanceId: string }): void {
+    this.dayActivityFocusService.requestFocus(placement.dayId.toISOString(), placement.instanceId);
   }
 
   onTitleChanged(newTitle: string): void {

@@ -29,6 +29,7 @@ import { DayReorderService } from './day-reorder.service';
 import { DayActivityCreationService } from './day-activity-creation.service';
 import { NewActivityDraftComponent } from './new-activity-draft/new-activity-draft.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -51,6 +52,7 @@ export class DayPanelComponent {
   private readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly dispatchService = inject(ActivityDispatchService);
   private readonly fabTarget = inject(TripCreationTargetService);
+  private readonly focusService = inject(DayActivityFocusService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
@@ -176,6 +178,22 @@ export class DayPanelComponent {
     effect((onCleanup) => {
       const unregisterFab = this.fabTarget.registerDay(this.dayId().toISOString(), () => this.creationService.startCreation());
       onCleanup(unregisterFab);
+    });
+
+    // Consommation d'une demande de navigation croisée (voir
+    // DayActivityFocusService, émise depuis l'onglet Général au clic sur une
+    // date). `pending()` ET `active()` sont lus AVANT le `if` (pas de
+    // court-circuit) : sinon Angular perdrait la dépendance sur `pending`
+    // quand `active()` ne change pas d'une exécution à l'autre (cas où on
+    // clique sur une date d'un jour déjà actif — il faut quand même
+    // re-scroller).
+    effect(() => {
+      const pending = this.focusService.pending();
+      const isActive = this.active();
+      if (!pending || !isActive || pending.dayId !== this.dayId().toISOString()) return;
+
+      this.focusService.clear(pending.token);
+      if (pending.instanceId) this.scrollSync.focusActivityWhenReady(pending.instanceId);
     });
 
     // Le nettoyage (listeners globaux, observers, boucles rAF, geste de

@@ -11,7 +11,6 @@ import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
-import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
 import { TagComponent } from '@app/shared/components/tag/tag.component';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { DialogService } from '@app/shared/services/dialog.service';
@@ -20,7 +19,7 @@ import { TitleEditDialogComponent, TitleEditDialogData, TitleEditDialogResult } 
 @Component({
   selector: 'app-activity-header',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AutoCompleteComponent, TagComponent, DayLabelsListPipe,],
+  imports: [CommonModule, ReactiveFormsModule, AutoCompleteComponent, TagComponent],
   templateUrl: './activity-header.component.html',
   styleUrl: './activity-header.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,10 +35,11 @@ export class ActivityHeaderComponent {
   readonly activity = input.required<Activity>();
   readonly dayId = input.required<Date | undefined>();
   readonly isPlacedNowhere = input.required<boolean>();
-  readonly assignedDays = input.required<Date[]>();
-  
+  readonly assignedPlacements = input.required<{ dayId: Date; instanceId: string }[]>();
+
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
+  readonly placementClicked = output<{ dayId: Date; instanceId: string }>();
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
@@ -156,6 +156,16 @@ export class ActivityHeaderComponent {
       if (this.activity().title === trimmed) return;
       this.titleEdited.emit(trimmed);
     });
+  }
+
+  /**
+   * `stopPropagation` : même besoin que `openPhotoViewer`/`openTitleEditDialog`
+   * ci-dessus — sans ça, le clic remonterait au header et déplierait/replierait
+   * le panneau de la carte au lieu de naviguer vers le jour ciblé.
+   */
+  onPlacementClick(event: Event, placement: { dayId: Date; instanceId: string }): void {
+    event.stopPropagation();
+    this.placementClicked.emit(placement);
   }
 
   getPhotoUrl$(ref: string, maxWidth = 100) {

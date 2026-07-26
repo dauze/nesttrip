@@ -1,2 +1,43 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
 // (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
+
+// Icône loupe + bouton "effacer" superposés à l'intérieur de l'input (pas des
+// éléments séparés à côté) : l'input garde son padding-left/right dédié pour
+// ne jamais passer sous eux, et les deux sont centrés verticalement via
+// `top: 50%; translateY(-50%)`, robuste à la hauteur réelle de l'input.
+.trip-activities__search {
+  position: relative;
+  min-width: 12rem;
+}
+
+.trip-activities__search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.trip-activities__search-input {
+  padding-left: 2.25rem !important;
+  padding-right: 2.25rem !important;
+}
+
+.trip-activities__search-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.15rem;
+  transform: translateY(-50%);
+}
+
+// En-tête de bloc jour (vue Chronologique) : cliquable pour basculer
+// directement sur ce jour (voir TripActivitiesComponent.onDayHeaderClick) —
+// le bouton de bascule du panel (ajouté par PanelComponent) reste séparé,
+// donc pas de conflit avec le repli/dépli du bloc.
+.trip-activities__day-header {
+  cursor: pointer;
+}
+
+.trip-activities__day-label {
+  text-transform: capitalize;
+}

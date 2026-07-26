@@ -1,8 +1,11 @@
 :host {
   display: flex;
+  overflow: hidden;
+}
+
+:host(.app-select-button--solid) {
   width: 100%;
   border-radius: var(--nt-form-field-border-radius);
-  overflow: hidden;
   border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
 }
 
@@ -33,4 +36,35 @@
 .app-select-button__item--active {
   background: var(--nt-primary-color);
   color: var(--nt-primary-contrast-color);
+}
+
+// Pilule compacte, largeur auto : pour une bascule secondaire affichée sous
+// un `'solid'` déjà présent (ex. tri Ville/Chronologique sous Activités/Notes),
+// pour ne pas visuellement dupliquer une même barre pleine largeur deux fois.
+:host(.app-select-button--subtle) {
+  display: inline-flex;
+  width: auto;
+  border-radius: 999px;
+  background: var(--nt-secondary-bg);
+  padding: 0.2rem;
+  gap: 0.15rem;
+}
+
+:host(.app-select-button--subtle) .app-select-button__item {
+  flex: 0 0 auto;
+  border-right: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--nt-text-muted-color);
+}
+
+:host(.app-select-button--subtle) .app-select-button__item:hover:not(.app-select-button__item--active) {
+  background: var(--nt-content-hover-background);
+}
+
+:host(.app-select-button--subtle) .app-select-button__item--active {
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+  box-shadow: var(--nt-overlay-popover-shadow);
 }

@@ -1,25 +1,52 @@
-import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, signal, viewChildren } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { PoolActivity } from '@app/shared/components/activity-card/activity.model';
+import { Day } from '@app/features/trips/trip.model';
+import { Activity, PoolActivity } from '@app/shared/components/activity-card/activity.model';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { extractCityFromAddress } from '@app/shared/utils/extract-city';
 import { CardComponent } from '@app/shared/components/card/card.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { InputTextDirective } from '@app/shared/directives/input-text.directive';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { TripActivitiesCreationService } from './trip-activities-creation.service';
 import { NewActivityDraftComponent } from '../../day-panel/new-activity-draft/new-activity-draft.component';
 
 const UNCATEGORIZED_LABEL = 'À catégoriser';
 
+type SortMode = 'city' | 'chrono';
+
+/** Une ligne de la vue "Ville" : une ou plusieurs `PoolActivity` partageant le même `placeId` (doublons créés séparément sur des jours différents), affichées comme une seule carte "représentante". */
+interface CityRow {
+  representative: PoolActivity;
+  mergedIds: string[];
+}
+
 interface CityGroup {
   city: string;
-  activities: PoolActivity[];
+  rows: CityRow[];
+}
+
+interface ChronoDayGroup {
+  day: Day;
+  activities: Activity[];
+}
+
+function matchesSearch(title: string, address: string | undefined, term: string): boolean {
+  if (!term) return true;
+  return title.toLowerCase().includes(term) || (address ?? '').toLowerCase().includes(term);
 }
 
 @Component({
   selector: 'app-trip-activities',
   standalone: true,
-  imports: [PanelComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent],
+  imports: [
+    PanelComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent,
+    SelectButtonComponent, InputTextDirective, DatePipe, ButtonComponent,
+  ],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +54,7 @@ interface CityGroup {
 })
 export class TripActivitiesComponent {
   private readonly tripFacade = inject(TripFacade);
+  private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   protected readonly creationService = inject(TripActivitiesCreationService);
 
@@ -34,7 +62,27 @@ export class TripActivitiesComponent {
 
   readonly tripId = input.required<string>();
 
+  readonly sortMode = signal<SortMode>('city');
+  readonly searchTerm = signal('');
+
+  readonly sortOptions: SelectButtonOption<SortMode>[] = [
+    { label: 'Ville', value: 'city', icon: 'pi pi-map-marker' },
+    { label: 'Chronologique', value: 'chrono', icon: 'pi pi-calendar' },
+  ];
+
+  private readonly normalizedSearch = computed(() => this.searchTerm().trim().toLowerCase());
+
   private readonly allActivities = computed(() => this.tripFacade.getAllPoolActivities(this.tripId())());
+  /** Map poolActivityId -> placements (jour + instance), utilisée pour dériver assignation, doublons fusionnés et navigation. */
+  private readonly placements = computed(() => this.tripFacade.getActivityPlacements(this.tripId())());
+
+  private readonly filteredActivities = computed(() => {
+    const term = this.normalizedSearch();
+    if (!term) return this.allActivities();
+    return this.allActivities().filter(a => matchesSearch(a.title, a.address, term));
+  });
+
+  readonly hasNoActivityAtAll = computed(() => this.allActivities().length === 0);
 
   constructor() {
     this.creationService.connect({
@@ -49,10 +97,31 @@ export class TripActivitiesComponent {
     this.creationService.startCreation();
   }
 
+  onSortModeChange(mode: SortMode | undefined): void {
+    if (mode) this.sortMode.set(mode);
+  }
+
+  onSearchInput(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
+
+  /** Nombre total d'activités visibles compte tenu du mode de tri courant — sert uniquement au message "aucun résultat". */
+  readonly matchCount = computed(() =>
+    this.sortMode() === 'city'
+      ? this.filteredActivities().length
+      : this.unassignedActivities().length + this.chronoDayGroups().reduce((sum, g) => sum + g.activities.length, 0)
+  );
+
+  // ── Vue "Ville" ──────────────────────────────────────────────────────────
+
   readonly cityGroups = computed<CityGroup[]>(() => {
     const groups = new Map<string, PoolActivity[]>();
 
-    for (const activity of this.allActivities()) {
+    for (const activity of this.filteredActivities()) {
       const city = activity.placeId ? extractCityFromAddress(activity.address) : null;
       const key = city ?? UNCATEGORIZED_LABEL;
       groups.set(key, [...(groups.get(key) ?? []), activity]);
@@ -66,6 +135,58 @@ export class TripActivitiesComponent {
       entries.push([UNCATEGORIZED_LABEL, uncategorized]);
     }
 
-    return entries.map(([city, activities]) => ({ city, activities }));
+    return entries.map(([city, activities]) => ({ city, rows: this.buildRows(activities) }));
   });
+
+  /** Regroupe les activités partageant le même `placeId` (doublons créés séparément) en une seule row "représentante". */
+  private buildRows(activities: PoolActivity[]): CityRow[] {
+    const rows: CityRow[] = [];
+    const rowByPlaceId = new Map<string, CityRow>();
+
+    for (const activity of activities) {
+      const placeId = activity.placeId;
+      const existing = placeId ? rowByPlaceId.get(placeId) : undefined;
+      if (existing) {
+        existing.mergedIds.push(activity.id);
+        continue;
+      }
+
+      const row: CityRow = { representative: activity, mergedIds: [activity.id] };
+      rows.push(row);
+      if (placeId) rowByPlaceId.set(placeId, row);
+    }
+
+    return rows;
+  }
+
+  /** Placements combinés de TOUTES les `PoolActivity` fusionnées dans cette row — passé en override à la carte représentante. */
+  mergedPlacementsFor(row: CityRow): { dayId: Date; instanceId: string }[] {
+    const placements = this.placements();
+    return row.mergedIds.flatMap(id => placements.get(id) ?? []);
+  }
+
+  // ── Vue "Chronologique" ──────────────────────────────────────────────────
+
+  private readonly sortedDays = computed(() =>
+    this.tripFacade.activeTrip()?.days?.slice().sort((a, b) => a.id.getTime() - b.id.getTime()) ?? []
+  );
+
+  /** Activités de pool non placées sur aucun jour — jamais fusionnées par placeId ici, contrairement à la vue Ville. */
+  readonly unassignedActivities = computed(() =>
+    this.filteredActivities().filter(a => (this.placements().get(a.id)?.length ?? 0) === 0)
+  );
+
+  readonly chronoDayGroups = computed<ChronoDayGroup[]>(() => {
+    const term = this.normalizedSearch();
+    const groups = this.sortedDays().map(day => ({
+      day,
+      activities: this.tripFacade.getDayActivities(day.id)().filter(a => matchesSearch(a.title, a.address, term)),
+    }));
+    // Sans recherche active : on garde tous les jours (même vides) pour une vraie vue d'ensemble du voyage.
+    return term ? groups.filter(g => g.activities.length > 0) : groups;
+  });
+
+  onDayHeaderClick(day: Day): void {
+    this.dayActivityFocusService.requestFocus(day.id.toISOString());
+  }
 }

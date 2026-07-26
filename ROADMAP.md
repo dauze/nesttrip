@@ -25,7 +25,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
 - Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
-- Tri par ville, chronologiquee, a assigner et assigné (non assignées en haut) dans l'onglet activités,
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - Durée : autre méthode de saisie, gestion des durées > 24h si on a plusieurs jour plusieurs jours ! et il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
@@ -51,7 +50,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Suppression : passer en "rester appuyé" plutôt qu'icône corbeille toujours visible : on pourrait mettre des checkbox qui apparaissent pour supprimer en masse par exemple. le clique long est une idée ux améliorable car il y a pleins de trucs sur mon header
 - mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés 
 - Couleur différente sur texte modifiable : à voir car faudrait l'appliquer sur les dates, les listes, et touts element modifiable, pas juste les input. Pour les couleurs, un truc proche de la couleur de base
-- Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours. Nécessite de calculer la hauteur exacte du slide (soustraire les hauteurs de tous les autres éléments) pour positionner correctement cette barre sticky.
 - Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
@@ -62,9 +60,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Modifier le composant timepicker pour permettre la saisie sur clavier comme sur le composant google !
 - Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input )
 - reseigner en input le titre dans le datepicker pour mettre le titre variable avec "selectionner heure de début" et "sélectionner heure de fin" idem sur les listes ?
-- Faire quelque chose pour les activités positionnée sur plusierus journer, le top serait de les afficher qu'une seule fois qui elles sont le même placeid dans le fitre de lieu, mais les afficher plusieurs fois si on met le filtre par jour
 - clique sur n'importe ou du header pour le collapse true/ false et pas que sur le bouton, sauf la zone de drag and drop et l'image
-
+- Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner avec l'infos qui est dans la bar de recherche 
 
 ### Bugs / fixes
 - Depuis le pool, problème de drag and drop maison :  sélection d'une activité sous le calendrier : position mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
@@ -82,9 +79,9 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Sur ordinateur, afficher plusieurs jour si écran large ? 
 - Saisir date : ne pas valider si le choix est l'heure, aller sur les minutes via une animation ! 
 - Saisir duré : faire le focus sur l'heure 
-- Rajouter barre de recherche dans Activités 
 - <gmp-pin>: The `element` property is deprecated. Please use the PinElement directly.
 - <gmp-advanced-marker>: Please use addEventListener('gmp-click', ...) instead of addEventListener('click', ...).
+- la couleur duy drag and drop n'est plus respecté
 
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
@@ -215,4 +212,5 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal
 - Afficher la carte seulement si pas d'activité ou activités incomplètes
 - Problème theme : skeleton bleu en dark mode, chip des pieces en thème dark sont en couleur claire, le contour de app overlay n'est pas la bonne couleur ni en dark ni en light
-
+- Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
+- Onglet Activités : tri par ville (avec fusion des doublons de même placeId, dates combinées) ou chronologique (jour par jour, "à assigner" en haut, jamais fusionné), barre de recherche, clic sur une date pour sauter au jour + scroller vers l'activité

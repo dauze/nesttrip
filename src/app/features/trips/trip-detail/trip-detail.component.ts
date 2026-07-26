@@ -15,6 +15,7 @@ import { FloatingAddButtonComponent } from '@app/shared/components/floating-add-
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
+import { DayActivityFocusService } from './day-activity-focus.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 
@@ -35,7 +36,7 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   // TripCreationTargetService : partagé entre le swiper de jours (qui
   // enregistre chaque panel actif) et le "+" flottant unique (voir plus bas),
   // tous deux descendants de ce composant dans l'arbre de vues.
-  providers: [TripCreationTargetService],
+  providers: [TripCreationTargetService, DayActivityFocusService],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
@@ -45,6 +46,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
   protected readonly fabTarget = inject(TripCreationTargetService);
+  private readonly dayFocusService = inject(DayActivityFocusService);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
@@ -168,6 +170,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       this.readyFallbackTimer = setTimeout(() => {
         this.contentReady.set(true);
       }, 4000);
+    });
+
+    // Demande de navigation croisée (voir DayActivityFocusService) : un clic
+    // sur une date depuis l'onglet Général (pool d'activités) bascule ici sur
+    // le jour ciblé, exactement comme onTabSelected/onSwiperActiveIdChange.
+    // Si le jour ciblé est déjà actif, rien à faire ici : c'est
+    // DayPanelComponent qui consomme la requête (et scroll) une fois actif.
+    effect(() => {
+      const pending = this.dayFocusService.pending();
+      if (!pending || this.activeDay() === pending.dayId) return;
+
+      this.activeDay.set(pending.dayId);
+      const index = this.tabs().findIndex(t => t.id === pending.dayId);
+      if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
+      this.updateFragment(pending.dayId);
     });
   }
 

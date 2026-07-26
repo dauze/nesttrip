@@ -241,6 +241,23 @@ export class DayScrollSyncService implements OnDestroy {
    * qui devient fausse dès que le scroll continue, cassant visuellement le
    * chaînage.
    */
+  /**
+   * Variante de `focusActivity` utilisée pour une navigation croisée depuis
+   * un autre onglet (voir DayActivityFocusService) : le jour vient parfois
+   * d'être monté à l'instant (préchargement par `TripDaySwiperComponent`,
+   * voir `preloadAround`), donc `activityCards` (viewChildren) peut ne pas
+   * encore refléter les cartes du tout premier rendu. On réessaie sur
+   * quelques frames avant d'abandonner silencieusement.
+   */
+  focusActivityWhenReady(activityId: string, attemptsLeft = 15): void {
+    const found = this.config.getFreshOffsets().some(item => item.card.activity()?.id === activityId);
+    if (found || attemptsLeft <= 0) {
+      this.focusActivity(activityId);
+      return;
+    }
+    requestAnimationFrame(() => this.focusActivityWhenReady(activityId, attemptsLeft - 1));
+  }
+
   focusActivity(activityId: string, onComplete?: () => void): void {
     const freshOffsets = this.config.getFreshOffsets();
 

@@ -156,8 +156,8 @@ export class TripFacade {
   getPoolActivityView = this.store.getPoolActivityView.bind(this.store);
   /** Toutes les activités de pool d'un trip (placées sur un/plusieurs jours, ou aucun). */
   getAllPoolActivities = this.store.getAllPoolActivities.bind(this.store);
-  /** Map poolActivityId -> liste des jours où elle est placée. */
-  getActivityDayIds = this.store.getActivityDayIds.bind(this.store);
+  /** Map poolActivityId -> liste des placements (jour + instance) où elle est présente. */
+  getActivityPlacements = this.store.getActivityPlacements.bind(this.store);
   getNotesItems = this.store.getNotesItems.bind(this.store);
   // 1. Exposer le sélecteur et la commande
   getTripMembers = this.store.getTripMembers.bind(this.store);
