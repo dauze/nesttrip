@@ -34,7 +34,8 @@
               "node_modules/@angular/cdk/overlay-prebuilt.css",
               "src/styles.scss",
               "node_modules/primeflex/primeflex.css",
-              "node_modules/primeicons/primeicons.css"
+              "node_modules/primeicons/primeicons.css",
+              "node_modules/photoswipe/dist/photoswipe.css"
             ]
           },
           "configurations": {

@@ -16,6 +16,7 @@ import { ActivityDispatchService } from '@app/core/services/activity-dispatch.se
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 
 @Component({
@@ -40,6 +41,7 @@ import { UserProfileService } from '@app/core/services/user-profile.service';
     GoogleMapPanelService,
     GooglePhotoService,
     GooglePlaceService,
+    PhotoViewerService,
     UserProfileService,
   ],
   templateUrl: 'trips.component.html',

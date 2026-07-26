@@ -23,6 +23,7 @@
     "@angular/router": "^21.2.0",
     "date-fns": "^4.4.0",
     "firebase": "^12.13.0",
+    "photoswipe": "^5.4.4",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "rxjs": "~7.8.0",

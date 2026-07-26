@@ -9,6 +9,7 @@ import { ACTIVITY_TYPE_META } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 import { DayLabelsListPipe } from '@app/shared/pipes/day-labels-list.pipe';
 import { TagComponent } from '@app/shared/components/tag/tag.component';
@@ -27,6 +28,7 @@ import { TitleEditDialogComponent, TitleEditDialogData, TitleEditDialogResult } 
 export class ActivityHeaderComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly photoCache = inject(GooglePhotoService);
+  private readonly photoViewerService = inject(PhotoViewerService);
   protected readonly viewport = inject(ViewportService);
   private readonly dialogService = inject(DialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
@@ -158,5 +160,23 @@ export class ActivityHeaderComponent {
 
   getPhotoUrl$(ref: string, maxWidth = 100) {
     return this.photoCache.getPhotoUrl$(ref, maxWidth);
+  }
+
+  /**
+   * Ouvre le visionneur plein écran depuis la miniature cliquée. `stopPropagation`
+   * : sans ça le clic remonterait au header et déplierait/replierait le panneau
+   * de la carte (même raison que `openTitleEditDialog` ci-dessus).
+   */
+  openPhotoViewer(event: Event): void {
+    event.stopPropagation();
+
+    const placeId = this.activity().placeId;
+    if (!placeId) return;
+
+    this.photoViewerService.open({
+      placeId,
+      altText: this.activity().title,
+      triggerEl: event.currentTarget as HTMLElement,
+    });
   }
 }

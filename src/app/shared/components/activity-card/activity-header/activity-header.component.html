@@ -6,7 +6,11 @@
   <div class="activity-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
       @if (firstPhotoRef(); as ref) {
         @if (getPhotoUrl$(ref, 120) | async; as url) {
-          <img [src]="url" [alt]="activity().title" draggable="false" class="activity-header__thumb-img" />
+          <img [src]="url" [alt]="activity().title" draggable="false"
+               class="activity-header__thumb-img"
+               role="button" tabindex="0"
+               (click)="openPhotoViewer($event)"
+               (keydown.enter)="openPhotoViewer($event)" />
         }
       } @else {
         <i [class]="'pi text-xl nt-text-muted ' + activityTypeMeta[activity().type]?.icon"></i>

@@ -12,7 +12,7 @@
   </div>
 
   <app-panel
-    header="Plus d'infos (Photos, Horaires, avis...)"
+    header="Plus d'infos (horaires, avis...)"
     [toggleable]="true"
     [collapsed]="true"
     class="shadow-1"
@@ -57,8 +57,6 @@
               </a>
               </div>
             }
-
-          <app-activity-gallery [placeId]="activity().placeId ?? ''" [altText]="activity().title" />
 
           @if (data.openingHours) {
             <app-panel header="Horaires d'ouverture" [toggleable]="true" [collapsed]="true" class="mt-1">

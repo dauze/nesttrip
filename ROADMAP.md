@@ -76,9 +76,15 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 - l'ouverture du calendrier sur le drg and drop dan la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
 - le bouton flottant est trop pret du bord ! et ralentir un peut son annimation d'ouverture
-
 - style zones saisie sur ordi + taille durée qui n'est pas bon quand on est pas en mode horloge (trop haut) + durée tu as fais du spécifique ? Il faudrait pas et réutiliser le même composant. min-height: 16.5rem; à enlever quand pas horloge 
-
+- Une fois le drag annd drop fait, remettre le scroll sur l'activité drop
+- Je peux pas actualiser depuis l'écran ou il y a le swiper
+- Sur ordinateur, afficher plusieurs jour si écran large ? 
+- Saisir date : ne pas valider si le choix est l'heure, aller sur les minutes via une animation ! 
+- Saisir duré : faire le focus sur l'heure 
+- Rajouter barre de recherche dans Activités 
+- <gmp-pin>: The `element` property is deprecated. Please use the PinElement directly.
+- <gmp-advanced-marker>: Please use addEventListener('gmp-click', ...) instead of addEventListener('click', ...).
 
 ### Qualité / process
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.

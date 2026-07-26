@@ -6,14 +6,13 @@ import { DividerComponent } from '@app/shared/components/divider/divider.compone
 
 import { Activity } from '../activity.model';
 import { LoadingState, PlaceDetails } from '@app/core/models/place.dto';
-import { ActivityGalleryComponent } from './activity-gallery/activity-gallery.component';
 
 const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
 @Component({
   selector: 'app-activity-google-info',
   standalone: true,
-  imports: [CommonModule, TagComponent, PanelComponent, DividerComponent, ActivityGalleryComponent],
+  imports: [CommonModule, TagComponent, PanelComponent, DividerComponent],
   templateUrl: './activity-google-info.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

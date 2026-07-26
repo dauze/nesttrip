@@ -65,6 +65,20 @@ export class TimePickerClockComponent implements AfterViewInit {
 
     private hasValidated = false;
 
+    /**
+     * Un seul geste (pointerdown → pointerup, ou activation clavier) ne doit
+     * produire qu'UNE seule action (avancer hour→minute, ou valider). Sur la
+     * plupart des navigateurs/appareils, `pointerup` (via `stopDrag`) ET le
+     * `click` de compatibilité qui suit (via `selectValue`) se déclenchent
+     * tous les deux pour un même tap sur un `<button class="clock-number">` —
+     * sans ce verrou, `stopDrag` fait déjà avancer `selectionMode` vers
+     * 'minute', puis `selectValue` (déclenché ensuite par le `click`)
+     * réinterprète la valeur d'heure tapée comme une minute et valide
+     * aussitôt : le dialog se refermait au lieu de passer à la sélection des
+     * minutes. Réinitialisé à chaque nouveau geste dans `startDrag`.
+     */
+    private gestureHandled = false;
+
     tempHour: string;
     tempMinute: string;
 
@@ -178,13 +192,19 @@ export class TimePickerClockComponent implements AfterViewInit {
     }
 
     /**
-     * Ne se déclenche réellement que pour une activation clavier (Entrée/
-     * Espace sur un bouton focalisé) : voir le commentaire de `stopDrag` pour
-     * pourquoi le `click` souris/tactile n'atteint jamais ce handler.
+     * Sur souris/tactile, `stopDrag` (pointerup) a déjà traité le geste avant
+     * que ce `click` de compatibilité ne se déclenche (voir `gestureHandled`) :
+     * ce handler ne produit alors plus aucun effet. Il ne reste réellement
+     * actif que pour l'activation clavier (Entrée/Espace sur un bouton
+     * focalisé), qui ne passe par aucun événement pointeur.
      */
     selectValue(
         value: string
     ): void {
+
+        if (this.gestureHandled) {
+            return;
+        }
 
         if (this.selectionMode === 'hour') {
 
@@ -192,6 +212,7 @@ export class TimePickerClockComponent implements AfterViewInit {
                 value.padStart(2, '0');
 
             if (!this.isDragging) {
+                this.gestureHandled = true;
                 this.selectionMode = 'minute';
             }
 
@@ -201,6 +222,7 @@ export class TimePickerClockComponent implements AfterViewInit {
                 value.padStart(2, '0');
 
             if (!this.isDragging) {
+                this.gestureHandled = true;
                 this.validate();
             }
         }
@@ -211,6 +233,7 @@ export class TimePickerClockComponent implements AfterViewInit {
     ): void {
 
         this.isDragging = true;
+        this.gestureHandled = false;
 
         (
             event.currentTarget as HTMLElement
@@ -243,24 +266,25 @@ export class TimePickerClockComponent implements AfterViewInit {
      *
      * `.clock-face` appelle `setPointerCapture` sur elle-même dès le
      * `pointerdown` (voir `startDrag`), y compris quand celui-ci démarre sur
-     * un `<button class="clock-number">` enfant : la spec Pointer Events
-     * retargete alors aussi bien le `pointerup` que le `click` synthétisé
-     * vers l'élément capturant (`.clock-face`), jamais vers le bouton — le
-     * `(click)="selectValue(...)"` posé sur chaque bouton ne se déclenche
-     * donc JAMAIS pour une interaction souris/tactile (seule l'activation
-     * clavier Entrée/Espace, qui ne passe par aucun événement pointeur, le
-     * déclenche réellement). C'est ici, sur le `pointerup` de `.clock-face`
-     * qui reçoit fidèlement chaque relâchement, qu'il faut donc avancer
-     * hour → minute et valider minute → OK.
+     * un `<button class="clock-number">` enfant. Selon le navigateur, ça peut
+     * retargeter le `click` de compatibilité qui suit vers l'élément
+     * capturant (`.clock-face`, pas le bouton) — mais ce n'est pas garanti
+     * partout : sur certains navigateurs/appareils, le `click` atteint bien
+     * le bouton normalement en plus de ce `pointerup`. D'où le verrou
+     * `gestureHandled` : c'est CE handler (pointerup, toujours fiable) qui
+     * avance hour → minute et valide minute → OK, et il empêche `selectValue`
+     * (click) de rejouer la même action une 2e fois avec un `selectionMode`
+     * déjà modifié entre-temps.
      */
     stopDrag(commit: boolean): void {
 
         const wasDragging = this.isDragging;
         this.isDragging = false;
 
-        if (!commit || !wasDragging) {
+        if (!commit || !wasDragging || this.gestureHandled) {
             return;
         }
+        this.gestureHandled = true;
 
         if (this.selectionMode === 'hour') {
             this.selectionMode = 'minute';

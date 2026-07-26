@@ -108,6 +108,15 @@ export class TimePickerDialogComponent
     openDialog(): void {
         const dialogRef = this.dialogService.open<Date | undefined, TimePickerClockData>(TimePickerClockComponent, {
             data: { initialDate: this.currentDate, mode: this.mode(), label: this.label() },
+            // Mode durée : le dialog s'ouvre directement en vue clavier (pas de
+            // cadran). Le focus initial du champ heure passe par ce sélecteur
+            // CDK plutôt que par un `effect()` côté TimePickerClockComponent :
+            // l'autofocus interne du dialog (`DialogService` -> 'first-tabbable'
+            // par défaut) s'exécute au moment même de l'ouverture et gagnerait
+            // sinon la course contre un focus posé après coup (voir le
+            // commentaire sur `ngAfterViewInit`/`clockSize` dans
+            // TimePickerClockComponent pour un souci de timing similaire).
+            ...(this.mode() === 'duration' ? { autoFocus: 'input[aria-label="Heures"]' } : {}),
         });
 
         dialogRef.closed.subscribe((selected) => {
