@@ -36,9 +36,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Email quand ajouté à un trip 
 
 ### Administratif
-- Onglet dédié : vols, hébergements, trains, location de voiture : composant à définir 
-- Dates début/fin pour hébergements, catégorisation "en cours" / "future" / "passée" (grisée en bas si date renseignée, sinon non catégorisé)
-- a voir si il faut l'ajouter à la visu par jour ? 
+- Catégorisation "en cours" / "future" / "passée" des réservations (grisée une fois passée) dans le sous-menu Réservations (non fait, voir Reservation.md)
 
 ### Devise
 - Sélection de la devise par voyage (valeur par défaut)
@@ -113,6 +111,7 @@ Sur ordinateur, il faut afficher les cases à cocher, un bouton "tout sélection
 - Réduction définition photos sur mobile
 - Titre d'activité modifiable
 - Déplacement d'activités entre jours via calendrier stylé (drag and drop qui se réduit + calendrier si pas de mouvement)
+- Réservations transverses (hôtel/vol/location/autre) : sous-menu dédié (CRUD complet), bannière contextuelle read-only dans les jours (check-in/check-out, départ/arrivée, prise en charge/restitution), statut de vol temps réel via AeroDataBox avec rafraîchissement automatique intelligent (voir Reservation.md — nécessite de provisionner le secret `AERODATABOX_API_KEY` avant déploiement, pas encore testé sur de vrais vols)
 - Autocomplete ville + nom de voyage ("Voyage à…")
 - Suppression du mode lecture
 - Clavier masqué quand le sélecteur est ouvert
