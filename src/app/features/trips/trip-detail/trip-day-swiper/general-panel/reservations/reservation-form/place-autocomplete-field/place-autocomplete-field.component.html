@@ -1,0 +1,24 @@
+<div class="flex flex-column gap-1 w-full min-w-0">
+  @if (label()) {
+    <span class="nt-text-muted text-sm flex align-items-center gap-1">
+      <i class="pi pi-map-marker text-sm"></i>{{ label() }}
+    </span>
+  }
+  <app-autocomplete
+    [suggestions]="places()"
+    [formControl]="displayControl"
+    (searched)="onSearch($event)"
+    (optionSelected)="onSelect($event)"
+    [displayWith]="displayName"
+    [placeholder]="placeholder()"
+    [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
+    class="w-full transparent-inputtext"
+    inputClass="w-full text-sm">
+    <ng-template #item let-place>
+      <div class="flex flex-column min-w-0 flex-1">
+        <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
+        <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
+      </div>
+    </ng-template>
+  </app-autocomplete>
+</div>

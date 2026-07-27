@@ -1,0 +1,20 @@
+<div [formGroup]="form()" class="flex flex-column gap-2">
+  <div class="flex flex-column gap-1 w-full min-w-0">
+    <label for="car-rental-company" class="nt-text-muted text-sm flex align-items-center gap-1">
+      <i class="pi pi-tag text-sm"></i>Loueur
+    </label>
+    <input id="car-rental-company" appInputText type="text" formControlName="company" placeholder="Hertz, Europcar..." class="w-full" />
+  </div>
+
+  <app-place-autocomplete-field
+    label="Lieu de prise en charge"
+    placeholder="Rechercher un lieu..."
+    [initialPlace]="initialPickupPlace()"
+    (placeSelected)="pickupPlaceSelected.emit($event)" />
+
+  <app-place-autocomplete-field
+    label="Lieu de restitution"
+    placeholder="Rechercher un lieu..."
+    [initialPlace]="initialDropoffPlace()"
+    (placeSelected)="dropoffPlaceSelected.emit($event)" />
+</div>

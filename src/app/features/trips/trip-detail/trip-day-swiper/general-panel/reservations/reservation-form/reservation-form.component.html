@@ -1,0 +1,135 @@
+<app-dialog-frame [header]="isEditing ? 'Modifier la réservation' : 'Nouvelle réservation'" (closeRequested)="cancel()">
+  <form [formGroup]="commonForm" class="reservation-form flex flex-column gap-3">
+    <div class="flex flex-column gap-1">
+      <label for="reservation-type" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <i class="pi pi-list text-sm"></i>Type
+      </label>
+      <app-select
+        id="reservation-type"
+        [options]="typeOptions"
+        formControlName="type"
+        class="w-full transparent-select" />
+    </div>
+
+    <div class="flex flex-column gap-1">
+      <label for="reservation-title" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <i class="pi pi-pencil text-sm"></i>Titre
+      </label>
+      <input id="reservation-title" appInputText type="text" formControlName="title" placeholder="Nom de la réservation" class="w-full" />
+    </div>
+
+    @switch (selectedType()) {
+      @case ('hotel') {
+        <app-hotel-fields [initialPlace]="initialPlaces.place" (placeSelected)="onPlaceSelected('place', $event)" />
+      }
+      @case ('flight') {
+        <app-flight-fields
+          [form]="detailsForm()"
+          [initialDepartureAirport]="initialPlaces.departureAirport"
+          [initialArrivalAirport]="initialPlaces.arrivalAirport"
+          (departureAirportSelected)="onPlaceSelected('departureAirport', $event)"
+          (arrivalAirportSelected)="onPlaceSelected('arrivalAirport', $event)" />
+      }
+      @case ('carRental') {
+        <app-car-rental-fields
+          [form]="detailsForm()"
+          [initialPickupPlace]="initialPlaces.pickupPlace"
+          [initialDropoffPlace]="initialPlaces.dropoffPlace"
+          (pickupPlaceSelected)="onPlaceSelected('pickupPlace', $event)"
+          (dropoffPlaceSelected)="onPlaceSelected('dropoffPlace', $event)" />
+      }
+      @case ('other') {
+        <app-generic-fields [initialPlace]="initialPlaces.place" (placeSelected)="onPlaceSelected('place', $event)" />
+      }
+    }
+    @if (!canSave()) {
+      <span class="text-orange-500 text-xs">Sélectionnez un lieu dans la liste pour pouvoir enregistrer.</span>
+    }
+
+    <app-divider class="m-0" />
+
+    <div class="grid m-0">
+      <div class="col-6 p-0 pr-1 min-w-0">
+        <div class="flex flex-column gap-1">
+          <label for="reservation-start-date" class="nt-text-muted text-sm flex align-items-center gap-1">
+            <i class="pi pi-calendar text-sm"></i>{{ dateLabels().startLabel }}
+          </label>
+          <div class="flex gap-1">
+            <app-date-picker inputId="reservation-start-date" formControlName="startDate" class="flex-1 min-w-0 transparent-inputtext" />
+            <app-time-picker-dialog formControlName="startTime" class="flex-none" />
+          </div>
+        </div>
+      </div>
+      <div class="col-6 p-0 pl-1 min-w-0">
+        <div class="flex flex-column gap-1">
+          <label for="reservation-end-date" class="nt-text-muted text-sm flex align-items-center gap-1">
+            <i class="pi pi-calendar-times text-sm"></i>{{ dateLabels().endLabel }}
+          </label>
+          <div class="flex gap-1">
+            <app-date-picker inputId="reservation-end-date" formControlName="endDate" class="flex-1 min-w-0 transparent-inputtext" />
+            <app-time-picker-dialog formControlName="endTime" class="flex-none" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-column gap-1">
+      <label for="reservation-reference" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <i class="pi pi-hashtag text-sm"></i>N° de référence
+      </label>
+      <input id="reservation-reference" appInputText type="text" formControlName="referenceNumber" placeholder="Facultatif" class="w-full" />
+    </div>
+
+    <div class="flex flex-column gap-1" formGroupName="price">
+      <label for="reservation-price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <i class="pi pi-euro text-sm"></i>Prix
+      </label>
+      <div class="flex align-items-center gap-1 w-full min-w-0">
+        <app-input-number inputId="reservation-price-amount" formControlName="amount" class="flex-1 min-w-0 transparent-inputtext" inputClass="w-full text-sm" />
+        <app-select [options]="currencyOptions" formControlName="currency" class="flex-none w-max transparent-select" />
+      </div>
+    </div>
+
+    <app-divider class="m-0" />
+
+    <div class="flex flex-column gap-2" formArrayName="links">
+      <span class="nt-text-muted text-sm flex align-items-center gap-1">
+        <i class="pi pi-link text-sm"></i>Liens
+      </span>
+      @for (link of linksArray.controls; track $index; let i = $index) {
+        <div class="flex align-items-center gap-1" [formGroupName]="i">
+          <input appInputText type="text" formControlName="label" placeholder="Label" class="flex-1 min-w-0" />
+          <input appInputText type="text" formControlName="url" placeholder="https://..." class="flex-1 min-w-0" />
+          <app-button icon="pi pi-trash" severity="secondary" [text]="true" [rounded]="true" (click)="removeLink(i)" />
+        </div>
+      }
+      <app-button label="Ajouter un lien" icon="pi pi-plus" severity="secondary" [text]="true" (click)="addLink()" />
+    </div>
+
+    <app-divider class="m-0" />
+
+    <div class="flex flex-column gap-2">
+      <label for="reservation-notes" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <i class="pi pi-align-left text-xs"></i>Notes
+      </label>
+      <textarea id="reservation-notes" appTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" class="w-full"></textarea>
+    </div>
+
+    @if (isEditing && data.reservation) {
+      <app-divider class="m-0" />
+      <app-reservation-files [tripId]="tripId" [reservation]="data.reservation" />
+    }
+  </form>
+
+  <div dialogFooter class="flex align-items-center justify-content-between gap-2 w-full">
+    @if (isEditing) {
+      <app-button label="Supprimer" icon="pi pi-trash" severity="danger" [text]="true" (click)="delete()" />
+    } @else {
+      <span></span>
+    }
+    <div class="flex gap-2">
+      <app-button label="Annuler" severity="secondary" [text]="true" (click)="cancel()" />
+      <app-button label="Enregistrer" icon="pi pi-check" [disabled]="!canSave()" (click)="save()" />
+    </div>
+  </div>
+</app-dialog-frame>

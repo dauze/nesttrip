@@ -1,0 +1,32 @@
+<div [formGroup]="form()" class="flex flex-column gap-2">
+  <div class="grid m-0">
+    <div class="col-6 p-0 pr-1 min-w-0">
+      <div class="flex flex-column gap-1 w-full min-w-0">
+        <label for="flight-airline" class="nt-text-muted text-sm flex align-items-center gap-1">
+          <i class="pi pi-tag text-sm"></i>Compagnie
+        </label>
+        <input id="flight-airline" appInputText type="text" formControlName="airline" placeholder="Air France" class="w-full" />
+      </div>
+    </div>
+    <div class="col-6 p-0 pl-1 min-w-0">
+      <div class="flex flex-column gap-1 w-full min-w-0">
+        <label for="flight-number" class="nt-text-muted text-sm flex align-items-center gap-1">
+          <i class="pi pi-hashtag text-sm"></i>N° de vol
+        </label>
+        <input id="flight-number" appInputText type="text" formControlName="flightNumber" placeholder="AF1234" class="w-full" />
+      </div>
+    </div>
+  </div>
+
+  <app-place-autocomplete-field
+    label="Aéroport de départ"
+    placeholder="Rechercher un aéroport..."
+    [initialPlace]="initialDepartureAirport()"
+    (placeSelected)="departureAirportSelected.emit($event)" />
+
+  <app-place-autocomplete-field
+    label="Aéroport d'arrivée"
+    placeholder="Rechercher un aéroport..."
+    [initialPlace]="initialArrivalAirport()"
+    (placeSelected)="arrivalAirportSelected.emit($event)" />
+</div>

@@ -1,0 +1,9 @@
+:host { display: block; }
+
+.reservations-list__item {
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
+  }
+}

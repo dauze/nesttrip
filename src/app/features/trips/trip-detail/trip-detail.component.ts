@@ -80,21 +80,28 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   /**
    * "+" flottant UNIQUE (voir TripCreationTargetService) : sur l'onglet
    * "Général", son icône/libellé suivent le sous-onglet actif de
-   * `GeneralPanelComponent` (activités vs notes) ; sur un jour, toujours une
-   * activité. Le badge "+" reste affiché dans les deux cas — l'icône seule
-   * (map-marker/clipboard) ne suffirait pas à se lire comme "ajouter".
+   * `GeneralPanelComponent` (activités vs réservations vs notes) ; sur un
+   * jour, toujours une activité. Le badge "+" reste affiché dans les trois
+   * cas — l'icône seule (map-marker/bookmark/clipboard) ne suffirait pas à
+   * se lire comme "ajouter".
    */
-  protected readonly fabIcon = computed(() =>
-    this.activeDay() === 'notes' && this.fabTarget.general()?.activeSubTab() === 'notes'
-      ? 'pi pi-clipboard'
-      : 'pi pi-map-marker'
-  );
+  protected readonly fabIcon = computed(() => {
+    if (this.activeDay() !== 'notes') return 'pi pi-map-marker';
+    switch (this.fabTarget.general()?.activeSubTab()) {
+      case 'notes': return 'pi pi-clipboard';
+      case 'reservations': return 'pi pi-bookmark';
+      default: return 'pi pi-map-marker';
+    }
+  });
 
-  protected readonly fabAriaLabel = computed(() =>
-    this.activeDay() === 'notes' && this.fabTarget.general()?.activeSubTab() === 'notes'
-      ? 'Ajouter une note'
-      : 'Ajouter une activité'
-  );
+  protected readonly fabAriaLabel = computed(() => {
+    if (this.activeDay() !== 'notes') return 'Ajouter une activité';
+    switch (this.fabTarget.general()?.activeSubTab()) {
+      case 'notes': return 'Ajouter une note';
+      case 'reservations': return 'Ajouter une réservation';
+      default: return 'Ajouter une activité';
+    }
+  });
 
   protected onFabActivate(): void {
     if (this.activeDay() === 'notes') {

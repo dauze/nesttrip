@@ -3,14 +3,15 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { NotesComponent } from './notes/notes.component';
 import { TripActivitiesComponent } from './trip-activities/trip-activities.component';
+import { ReservationsListComponent } from './reservations/reservations-list.component';
 import { Notes } from './notes/notes.model';
 
-type GeneralSubTab = 'notes' | 'activities';
+type GeneralSubTab = 'notes' | 'activities' | 'reservations';
 
 @Component({
   selector: 'app-general-panel',
   standalone: true,
-  imports: [NotesComponent, TripActivitiesComponent, SelectButtonComponent],
+  imports: [NotesComponent, TripActivitiesComponent, ReservationsListComponent, SelectButtonComponent],
   templateUrl: './general-panel.component.html',
   styleUrl: './general-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,11 +27,13 @@ export class GeneralPanelComponent {
 
   readonly subTabOptions: SelectButtonOption<GeneralSubTab>[] = [
     { label: 'Activités', value: 'activities', icon: 'pi pi-map-marker' },
+    { label: 'Réservations', value: 'reservations', icon: 'pi pi-bookmark' },
     { label: 'Notes', value: 'notes', icon: 'pi pi-clipboard' }
   ];
 
   private readonly activitiesRef = viewChild(TripActivitiesComponent);
   private readonly notesRef = viewChild(NotesComponent);
+  private readonly reservationsRef = viewChild(ReservationsListComponent);
 
   constructor() {
     // Singleton (un seul onglet "Général") : enregistré une fois pour toute
@@ -49,12 +52,17 @@ export class GeneralPanelComponent {
     }
   }
 
-  /** Point d'entrée unique du "+" flottant : redirige vers la création d'activité ou de note selon le sous-onglet actif. */
+  /** Point d'entrée unique du "+" flottant : redirige vers la création d'activité, de réservation ou de note selon le sous-onglet actif. */
   private onFabActivate(): void {
-    if (this.activeSubTab() === 'notes') {
-      this.notesRef()?.addItem();
-    } else {
-      this.activitiesRef()?.triggerCreate();
+    switch (this.activeSubTab()) {
+      case 'notes':
+        this.notesRef()?.addItem();
+        break;
+      case 'reservations':
+        this.reservationsRef()?.triggerCreate();
+        break;
+      default:
+        this.activitiesRef()?.triggerCreate();
     }
   }
 }
