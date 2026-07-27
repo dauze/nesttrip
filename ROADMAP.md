@@ -66,6 +66,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - faire en sorte que le tab de login ai une largeur maximum car ça fait trop étiré sur vue PC
+- paramétrer la récup des infos du trafic d'avion
 
 ### Bugs / fixes
 
