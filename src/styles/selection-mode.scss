@@ -12,21 +12,35 @@
   // hérité que du PARENT du wrapper (jamais arrondi), pas de l'enfant
   // visuellement arrondi. Poser directement la valeur réelle est la seule
   // façon fiable de faire épouser le rayon exact quel que soit l'élément hôte.
-  // `box-shadow` (pas `border`/`outline`) épouse ensuite ce rayon exactement,
-  // contrairement à `outline` dont le support du border-radius reste inégal
-  // selon les navigateurs.
   border-radius: var(--nt-content-border-radius);
-  transition: box-shadow 150ms ease;
+  transition: box-shadow 150ms ease, background-color 150ms ease;
 }
 
 .nt-selectable.nt-selected {
-  box-shadow: 0 0 0 3px var(--nt-red-500);
+  // Trois couches, TOUTES en `inset` (jamais un box-shadow qui déborde vers
+  // l'extérieur) : `PanelComponent`/`app-panel` a son propre `overflow: hidden`
+  // (voir panel.component.scss) et la 1ère carte d'une liste touche souvent le
+  // bord haut de son conteneur scrollable — un anneau qui déborde s'y fait
+  // rogner (symptôme observé : "le trait du haut est plus fin sur la 1ère
+  // activité"). En restant strictement à l'intérieur de la boîte, l'anneau ne
+  // peut plus jamais être rogné par un ancêtre, quel que soit l'élément hôte.
+  // 1. Liseré net (2px, plus fin que l'ancien 3px "épaulé").
+  // 2. Halo flouté vers l'intérieur, pour la profondeur ("un peu de flou").
+  // 3. Léger lavis de fond (teinte très diluée), pour l'"opacity" demandée.
+  box-shadow:
+    inset 0 0 0 2px var(--nt-red-500),
+    inset 0 0 0.75rem 0 color-mix(in srgb, var(--nt-red-500) 25%, transparent);
+  background-color: color-mix(in srgb, var(--nt-red-500) 6%, transparent);
 }
 
 // Checkbox PC toujours visible (voir SelectableDirective.onCheckboxClick) :
 // absente sur mobile, où la sélection passe uniquement par long-press + tap.
-// Même breakpoint que ViewportService (768px).
-.nt-select-checkbox {
+// Même breakpoint que ViewportService (768px). Sélecteur doublé (spécificité
+// 2, même convention que `.compact-form.compact-form` dans utilities.scss) :
+// doit gagner à coup sûr contre `:host { display: inline-flex }` de
+// CheckboxComponent (spécificité 1) sans dépendre de l'ordre de chargement
+// entre la feuille globale et le style scopé du composant, injecté au runtime.
+.nt-select-checkbox.nt-select-checkbox {
   @media (max-width: 768px) {
     display: none;
   }

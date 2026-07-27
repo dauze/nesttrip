@@ -200,11 +200,13 @@
   --z-drag-portal: 100;
 
   // Couleurs de statut (utilisées par .to_book/.booked/.not_needed/.waitlist
-  // dans styles.scss)
-  --nt-red-500: #ef4444;
-  --nt-green-500: #22c55e;
-  --nt-blue-500: #3b82f6;
-  --nt-yellow-500: #eab308;
+  // dans styles.scss, et par le liseré du mode sélection, voir
+  // selection-mode.scss) — plus saturées/vives que les défauts Tailwind
+  // d'origine (ex. #eab308, assez terne/olive en usage réel).
+  --nt-red-500: #f5222d;
+  --nt-green-500: #12b76e;
+  --nt-blue-500: #1570ef;
+  --nt-yellow-500: #f79009;
 
   // "Secondary"/neutre (Button, Tag...) — PAS un simple alias vers
   // --nt-surface-100/200/300 : ces primitives gardent la même convention de
@@ -318,10 +320,13 @@
     --nt-form-field-placeholder-color: var(--nt-surface-400);
     --nt-form-field-icon-color: var(--nt-surface-400);
 
-    --nt-red-500: #f87171;
-    --nt-green-500: #4ade80;
-    --nt-blue-500: #60a5fa;
-    --nt-yellow-500: #facc15;
+    // Teintes plus claires que la version light (lisibilité sur fond sombre),
+    // mais gardent la même intensité/saturation relative — voir la version
+    // light plus haut pour le raisonnement.
+    --nt-red-500: #ff6166;
+    --nt-green-500: #32d583;
+    --nt-blue-500: #53b1fd;
+    --nt-yellow-500: #fdb022;
 
     --nt-secondary-bg: var(--nt-surface-800);
     --nt-secondary-hover-bg: var(--nt-surface-700);
