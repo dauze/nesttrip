@@ -22,8 +22,10 @@ import { ActivityHeaderComponent } from './activity-header/activity-header.compo
 import { ActivityFilesComponent } from './activity-files/activity-files.component';
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
+import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { SelectableDirective } from '@app/shared/directives/selectable.directive';
+import { LongPressDirective } from '@app/shared/directives/long-press.directive';
+import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 
 /**
  * Délai de "hold" à respecter, poignée enfoncée sans bouger, avant de
@@ -40,9 +42,10 @@ const PANEL_COLLAPSE_DELAY_MS = 300;
   selector: 'app-activity-card',
   standalone: true,
   imports: [
-    CommonModule, PanelComponent, DividerComponent, ButtonComponent,
+    CommonModule, PanelComponent, DividerComponent, CheckboxComponent,
     ActivityHeaderComponent, ActivityFormComponent,
     ActivityFilesComponent, ActivityGoogleInfoComponent,
+    SelectableDirective, LongPressDirective,
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -50,7 +53,6 @@ const PANEL_COLLAPSE_DELAY_MS = 300;
 export class ActivityCardComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly googlePlaceService = inject(GooglePlaceService);
-  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly dispatchService = inject(ActivityDispatchService);
   // Optionnel : fourni par TripDaySwiperComponent (ancêtre commun aux vues
   // jour ET pool général, qui vit elle aussi dans un swiper-slide — voir
@@ -94,6 +96,14 @@ export class ActivityCardComponent {
   });
   /** true uniquement en contexte pool, quand cette activité n'est placée sur AUCUN jour. */
   readonly isPlacedNowhere = computed(() => !this.dayId() && this.assignedPlacements().length === 0);
+
+  /** En contexte jour, une instance ; en contexte pool, l'activité de pool elle-même — même branchement que l'ancien `confirmDelete`. */
+  readonly selectableRef = computed<SelectableItemRef>(() => {
+    const dayId = this.dayId();
+    return dayId
+      ? { kind: 'dayActivityInstance', id: this.activityId(), dayId }
+      : { kind: 'poolActivity', id: this.activityId() };
+  });
 
   readonly bookingMeta = computed(() => {
     const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
@@ -286,18 +296,6 @@ export class ActivityCardComponent {
       latitude: 0,
       longitude: 0,
       photoRefs: [],
-    });
-  }
-
-  confirmDelete(): void {
-    const dayId = this.dayId();
-    this.confirmDialogService.confirm({
-      message: dayId
-        ? 'Supprimer cette activité de ce jour ?'
-        : 'Supprimer cette activité et tous ses placements sur les jours ?',
-      accept: () => dayId
-        ? this.tripFacade.removeDayActivityInstance(this.tripId(), this.activityId(), dayId)
-        : this.tripFacade.removePoolActivity(this.tripId(), this.activityId()),
     });
   }
 

@@ -4,12 +4,19 @@
        [class.card-lifted]="isBeingDragged()"
        [class.card-pending]="isPendingLift()">
     <app-panel
+        [appSelectable]="selectableRef()" #sel="appSelectable"
+        appLongPress (longPress)="sel.onLongPress()"
         [ngClass]="'trip booking ' + bookingMeta().className"
         [toggleable]="true"
         [instant]="panelInstant()"
         [(collapsed)]="collapsed">
 
       <div panelHeader class="flex align-items-center w-full">
+        <app-checkbox
+          class="nt-select-checkbox flex-shrink-0"
+          [checked]="sel.isSelected()"
+          (click)="sel.onCheckboxClick($event)"
+        />
         <app-activity-header
           class="flex-1 min-w-0"
           [activity]="activity"
@@ -19,14 +26,6 @@
           (placeSelected)="onPlaceSelected($event)"
           (titleEdited)="onTitleChanged($event)"
           (placementClicked)="onPlacementClicked($event)" />
-        <app-button
-          icon="pi pi-trash"
-          [rounded]="true"
-          [text]="true"
-          severity="secondary"
-          class="ml-2 flex-shrink-0"
-          (click)="confirmDelete(); $event.stopPropagation()"
-        />
       </div>
 
       @if (dayId(); as day) {

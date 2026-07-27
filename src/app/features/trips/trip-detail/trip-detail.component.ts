@@ -12,11 +12,14 @@ import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
 import { FloatingAddButtonComponent } from '@app/shared/components/floating-add-button/floating-add-button.component';
+import { SelectionActionBarComponent } from '@app/shared/components/selection-action-bar/selection-action-bar.component';
+import { SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
 import { ReservationFocusService } from './reservation-focus.service';
+import { TripItemDeletionService } from './trip-item-deletion.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 
@@ -31,13 +34,22 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
     FloatingAddButtonComponent,
+    SelectionActionBarComponent,
   ],
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
   // TripCreationTargetService : partagé entre le swiper de jours (qui
   // enregistre chaque panel actif) et le "+" flottant unique (voir plus bas),
   // tous deux descendants de ce composant dans l'arbre de vues.
-  providers: [TripCreationTargetService, DayActivityFocusService, ReservationFocusService],
+  // SelectionModeService/TripItemDeletionService : même topologie, mais pour
+  // le mode sélection multiple transverse (voir SelectableDirective) —
+  // partagés par le panneau Général (activités/réservations/notes) ET tous
+  // les DayPanelComponent du swiper, pour une sélection persistante d'un
+  // onglet à l'autre.
+  providers: [
+    TripCreationTargetService, DayActivityFocusService, ReservationFocusService,
+    SelectionModeService, TripItemDeletionService,
+  ],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
@@ -49,6 +61,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);
   private readonly reservationFocusService = inject(ReservationFocusService);
+  protected readonly selectionService = inject(SelectionModeService);
+  private readonly itemDeletionService = inject(TripItemDeletionService);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
@@ -111,6 +125,15 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     } else {
       this.fabTarget.triggerDay(this.activeDay());
     }
+  }
+
+  protected onSelectionCancel(): void {
+    this.selectionService.cancel();
+  }
+
+  protected onSelectionDelete(): void {
+    const tripId = this.facade.activeTrip()?.id;
+    if (tripId) this.itemDeletionService.confirmDeleteSelected(tripId);
   }
 
   constructor() {

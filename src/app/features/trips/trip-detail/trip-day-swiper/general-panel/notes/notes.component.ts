@@ -5,8 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { FieldsetComponent } from '@app/shared/components/fieldset/fieldset.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { SelectableDirective } from '@app/shared/directives/selectable.directive';
+import { LongPressDirective } from '@app/shared/directives/long-press.directive';
+import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
-import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import {Notes, Item, Point} from './notes.model';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -16,19 +18,26 @@ import { CardComponent } from '@app/shared/components/card/card.component';
 @Component({
   selector: 'app-notes',
   standalone: true,
-  imports: [PanelComponent, TextareaDirective, FormsModule, CheckboxComponent, ButtonComponent, DragDropModule, FieldsetComponent, MessageComponent, CardComponent],
+  imports: [
+    PanelComponent, TextareaDirective, FormsModule, CheckboxComponent, ButtonComponent,
+    DragDropModule, FieldsetComponent, MessageComponent, CardComponent,
+    SelectableDirective, LongPressDirective,
+  ],
   templateUrl: './notes.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NotesComponent {
   private readonly tripFacade = inject(TripFacade);
-  private readonly confirmDialogService = inject(ConfirmDialogService);
 
   readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
   readonly NotesType = NotesType;
   readonly items = computed(() => this.tripFacade.getNotesItems(this.tripId())());
   readonly activePointId = signal<string | null>(null);
+
+  selectableRef(itemId: string): SelectableItemRef {
+    return { kind: 'noteItem', id: itemId };
+  }
 
   // ─── Events ─────────────────────────────────────────────────────────────────
   onDrop(event: CdkDragDrop<Item[]>): void {
@@ -67,13 +76,6 @@ export class NotesComponent {
 
   removePoint(item: Item, index: number): void {
     this.updateElements(item, item.elements.filter((_, i) => i !== index));
-  }
-
-  confirmDelete(item: Item): void {
-    this.confirmDialogService.confirm({
-      message: 'Supprimer cet élément ?',
-      accept: () => this.tripFacade.removeItem(this.tripId(), item.id)
-    });
   }
 
   toggleType(item: Item): void {

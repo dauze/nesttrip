@@ -1,8 +1,15 @@
 <app-card>
 <div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
   @for (item of items(); track item.id) {
-    <app-panel [toggleable]="true" cdkDrag>
+    <app-panel [toggleable]="true" cdkDrag
+               [appSelectable]="selectableRef(item.id)" #sel="appSelectable"
+               appLongPress (longPress)="sel.onLongPress()">
       <div panelHeader class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
+        <app-checkbox
+          class="nt-select-checkbox flex-shrink-0"
+          [checked]="sel.isSelected()"
+          (click)="sel.onCheckboxClick($event)"
+        />
         <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
         <textarea
           appTextarea
@@ -14,14 +21,6 @@
           (keydown.arrowdown)="focusRow(item.id, 0, 0)"
         ></textarea>
         <div class="flex gap-1 flex-shrink-0">
-          <app-button
-            icon="pi pi-trash"
-            [rounded]="true"
-            [text]="true"
-            severity="secondary"
-            [outlined]="true"
-            (click)="confirmDelete(item)"
-          />
           <app-button
             [icon]="item.type === NotesType.TODO ? 'pi pi-list' : 'pi pi-check-square'"
             [rounded]="true"
