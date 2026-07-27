@@ -84,7 +84,7 @@ export class PlaceAutocompleteFieldComponent {
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
-        data: { initialTitle: this.displayControl.value },
+        data: { initialTitle: this.displayControl.value, placeholder: this.placeholder() },
         panelClass: 'app-title-edit-dialog-panel',
         viewContainerRef: this.viewContainerRef,
       },

@@ -1,4 +1,5 @@
 import { PlaceSummary } from './place.dto';
+import { Booking } from '@app/shared/components/activity-card/activity.model';
 
 export type ReservationType = 'hotel' | 'flight' | 'carRental' | 'other';
 
@@ -36,6 +37,8 @@ export interface ReservationBase {
   files: ReservationFile[];
   links: ReservationLink[];
   price?: ReservationPrice;
+  /** Statut "Résa" (à réserver/réservé/sans réservation/liste d'attente), même type que pour une activité. */
+  booking: Booking;
 }
 
 /**

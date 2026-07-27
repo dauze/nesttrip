@@ -44,9 +44,17 @@ export const CURRENCY_OPTIONS = [
   { label: 'د.إ AED', value: 'AED' },
 ];
 
-export const ACTIVITY_TYPE_OPTIONS = Object.entries(ACTIVITY_TYPE_META).map(
-  ([value, { label }]) => ({ label, value: value as ActivityType })
-);
+/**
+ * Hébergement/Transport exclus des choix proposés à la création/édition
+ * (désormais couverts par les réservations transverses — hôtel/vol/location,
+ * voir Reservation.md) : l'enum et `ACTIVITY_TYPE_META` gardent ces valeurs
+ * intactes pour ne pas casser les activités déjà existantes de ce type.
+ */
+const HIDDEN_ACTIVITY_TYPES: ActivityType[] = [ActivityType.HEBERGEMENT, ActivityType.TRANSPORT];
+
+export const ACTIVITY_TYPE_OPTIONS = Object.entries(ACTIVITY_TYPE_META)
+  .filter(([value]) => !HIDDEN_ACTIVITY_TYPES.includes(value as ActivityType))
+  .map(([value, { label }]) => ({ label, value: value as ActivityType }));
 
 export const BOOKING_STATUS_OPTIONS = Object.entries(BOOKING_STATUS_META).map(
   ([value, { label }]) => ({ label, value: value as BookingStatus })

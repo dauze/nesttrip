@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, Injector, ViewContainerRef, afterNextRender, computed, effect, inject, input, viewChildren } from '@angular/core';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { Reservation } from '@core/models/reservation.dto';
 import { ReservationFocusService } from '@app/features/trips/trip-detail/reservation-focus.service';
 import { ReservationCardComponent } from './reservation-card/reservation-card.component';
 import { ReservationsCreationService } from './reservations-creation.service';
@@ -19,7 +21,7 @@ import { NewReservationDraftComponent } from './new-reservation-draft/new-reserv
 @Component({
   selector: 'app-reservations-list',
   standalone: true,
-  imports: [PanelComponent, MessageComponent, ReservationCardComponent, NewReservationDraftComponent],
+  imports: [PanelComponent, MessageComponent, DragDropModule, ReservationCardComponent, NewReservationDraftComponent],
   templateUrl: './reservations-list.component.html',
   styleUrl: './reservations-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,7 +38,7 @@ export class ReservationsListComponent {
 
   readonly tripId = input.required<string>();
 
-  readonly reservations = computed(() => this.tripFacade.allReservationsSorted(this.tripId()));
+  readonly reservations = computed(() => this.tripFacade.reservationsInOrder(this.tripId()));
 
   constructor() {
     this.creationService.connect({
@@ -67,5 +69,13 @@ export class ReservationsListComponent {
   /** Point d'entrée unique du "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
   triggerCreate(): void {
     this.creationService.startCreation();
+  }
+
+  /** Drag-and-drop de réorganisation (poignée dédiée, voir le template) — même pattern que `NotesComponent.onDrop`. */
+  onDrop(event: CdkDragDrop<Reservation[]>): void {
+    if (event.previousIndex === event.currentIndex) return;
+    const items = [...this.reservations()];
+    moveItemInArray(items, event.previousIndex, event.currentIndex);
+    this.tripFacade.reorderReservations(this.tripId(), items.map((r) => r.id));
   }
 }

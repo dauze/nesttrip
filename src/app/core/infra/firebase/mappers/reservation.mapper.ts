@@ -1,5 +1,7 @@
+import { BookingStatus } from '@core/enums/booking.status';
 import { FlightStatus, Reservation } from '@core/models/reservation.dto';
 import { FlightStatusFirebase, ReservationFirebase } from '../models/reservation.dto';
+import { bookingFromFb, bookingToFb } from './activity.mapper';
 
 function flightStatusFromFb(s: FlightStatusFirebase): FlightStatus {
   return {
@@ -28,6 +30,7 @@ export function reservationFromFb(r: ReservationFirebase): Reservation {
     files: r.files ?? [],
     links: r.links ?? [],
     price: r.price,
+    booking: r.booking ? bookingFromFb(r.booking) : { status: BookingStatus.NOT_NEEDED },
   };
 
   switch (r.type) {
@@ -67,6 +70,7 @@ export function reservationToFb(r: Reservation): ReservationFirebase {
     notes: r.notes ?? '',
     files: r.files ?? [],
     links: r.links ?? [],
+    booking: bookingToFb(r.booking),
     ...(r.referenceNumber ? { referenceNumber: r.referenceNumber } : {}),
     ...(r.price ? { price: r.price } : {}),
   };

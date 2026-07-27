@@ -9,33 +9,29 @@
   font-size: 0.65rem;
 }
 
-// Mobile uniquement (voir template) : titre statique + crayon, à la place de
-// l'`app-autocomplete` toujours éditable en direct utilisée sur desktop.
-.reservation-header__title-mobile {
-  min-height: 1.75rem;
-}
-
-.reservation-header__title-text {
+// Se fond dans le texte du header au repos (aucune bordure/fond visible) —
+// ne redevient visuellement un vrai champ qu'au focus, pour ne pas afficher
+// une "zone" de saisie en permanence là où le titre d'une activité affiche
+// un simple texte.
+.reservation-header__title-input {
+  width: 100%;
   min-width: 0;
-}
-
-.reservation-header__pencil {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
   border: none;
-  border-radius: var(--nt-radius-sm);
   background: transparent;
-  color: var(--nt-text-muted-color);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+  color: inherit;
+  font: inherit;
+  padding: 0.125rem 0.25rem;
+  margin: -0.125rem -0.25rem;
+  border-radius: var(--nt-radius-sm, 0.25rem);
+  transition: background var(--nt-transition-duration, 0.15s) ease;
 
-  &:hover {
-    background: var(--nt-content-hover-background);
-    color: var(--nt-text-color);
+  &::placeholder {
+    color: var(--nt-text-muted-color);
+    font-weight: 400;
+  }
+
+  &:focus {
+    outline: none;
+    background: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
   }
 }

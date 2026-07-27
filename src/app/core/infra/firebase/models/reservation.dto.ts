@@ -1,5 +1,5 @@
 import { PlaceSummary } from '@core/models/place.dto';
-import { FileFirebase, PriceFirebase } from './activity.dto';
+import { BookingFirebase, FileFirebase, PriceFirebase } from './activity.dto';
 
 export type ReservationType = 'hotel' | 'flight' | 'carRental' | 'other';
 
@@ -26,6 +26,7 @@ export interface ReservationBaseFirebase {
   files?: FileFirebase[];
   links?: ReservationLinkFirebase[];
   price?: PriceFirebase;
+  booking?: BookingFirebase;
 }
 
 export interface HotelReservationFirebase extends ReservationBaseFirebase {

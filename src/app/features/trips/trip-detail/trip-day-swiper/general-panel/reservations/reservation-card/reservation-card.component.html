@@ -1,7 +1,8 @@
 @if (reservation(); as reservation) {
   <div #cardContainer>
-    <app-panel [toggleable]="true" [(collapsed)]="collapsed">
+    <app-panel [ngClass]="'booking ' + bookingMeta().className" [toggleable]="true" [(collapsed)]="collapsed">
       <div panelHeader class="flex align-items-center w-full">
+        <ng-content select="[dragHandle]" />
         <app-reservation-header class="flex-1 min-w-0" [reservation]="reservation" (titleEdited)="onTitleChanged($event)" />
         <app-button
           icon="pi pi-trash"

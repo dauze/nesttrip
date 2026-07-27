@@ -7,6 +7,8 @@ import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 
 export interface TitleEditDialogData {
   initialTitle: string;
+  /** Texte du champ quand vide — défaut conservé pour les appelants historiques (activité). */
+  placeholder?: string;
 }
 
 /** `raw` : texte libre validé via OK (aucune donnée Google). `place` : suggestion Google choisie dans la liste. */
@@ -44,6 +46,7 @@ export class TitleEditDialogComponent implements AfterViewInit {
   private readonly inputRef = viewChild.required<ElementRef<HTMLInputElement>>('inputEl');
 
   protected readonly inputValue = signal(this.data.initialTitle ?? '');
+  protected readonly placeholder = this.data.placeholder ?? "Nom de l'activité";
 
   private readonly searchTerm = signal(this.data.initialTitle ?? '');
   private readonly searchState = toSignal(

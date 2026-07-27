@@ -16,6 +16,8 @@ export interface Trip {
   dayActivityInstances: DayActivityInstance[];
   /** Réservations transverses (hôtel/vol/location/autre), indépendantes des jours. */
   reservations: Reservation[];
+  /** Ordre manuel (drag-and-drop) des ids de `reservations`. */
+  reservationOrder: string[];
   notes: Notes;
   placeId?: string;
 }

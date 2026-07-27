@@ -7,6 +7,7 @@ import {
 } from '@app/shared/components/activity-card/activity-header/title-edit-dialog/title-edit-dialog.component';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ViewportService } from '@core/services/viewport.service';
+import { BookingStatus } from '@core/enums/booking.status';
 import { Reservation } from '@core/models/reservation.dto';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 
@@ -69,7 +70,7 @@ export class ReservationsCreationService {
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
-        data: { initialTitle: '' },
+        data: { initialTitle: '', placeholder: 'Nom de la réservation' },
         panelClass: 'app-title-edit-dialog-panel',
         viewContainerRef: this.config.getViewContainerRef(),
       },
@@ -102,6 +103,7 @@ export class ReservationsCreationService {
       endDateTime: now,
       files: [],
       links: [],
+      booking: { status: BookingStatus.NOT_NEEDED },
     };
 
     this.tripFacade.createReservation(this.config.getTripId(), reservation);

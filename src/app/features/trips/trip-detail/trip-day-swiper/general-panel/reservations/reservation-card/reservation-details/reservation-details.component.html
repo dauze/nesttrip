@@ -1,14 +1,27 @@
 <form [formGroup]="form" class="reservation-details flex flex-column gap-2">
-  <div class="flex flex-column gap-1">
-    <label for="reservation-type" class="nt-text-muted text-sm flex align-items-center gap-1">
-      <i class="pi pi-list text-sm"></i>Type
-    </label>
-    <app-select id="reservation-type" [options]="typeOptions" formControlName="type" class="w-full transparent-select" />
+  <div class="grid m-0">
+    <div class="col-6 p-0 pr-1 min-w-0">
+      <div class="flex flex-column gap-1 w-full min-w-0">
+        <label for="reservation-type" class="nt-text-muted text-sm flex align-items-center gap-1">
+          <i class="pi pi-list text-sm"></i>Type
+        </label>
+        <app-select id="reservation-type" [options]="typeOptions" formControlName="type" class="w-full transparent-select" />
+      </div>
+    </div>
+    <div class="col-6 p-0 pl-1 min-w-0" formGroupName="booking">
+      <div class="flex flex-column gap-1 w-full min-w-0">
+        <label for="reservation-booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
+          <i class="pi pi-bookmark text-sm"></i>Résa
+        </label>
+        <app-select id="reservation-booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+      </div>
+    </div>
   </div>
 
   @switch (selectedType()) {
     @case ('hotel') {
       <app-hotel-fields [initialPlace]="currentPlaces().place" (placeSelected)="onPlaceSelected('place', $event)" />
+      <app-reservation-place-info [place]="currentPlaces().place" />
     }
     @case ('flight') {
       <div class="grid m-0">
@@ -34,6 +47,8 @@
         [initialArrivalAirport]="currentPlaces().arrivalAirport"
         (departureAirportSelected)="onPlaceSelected('departureAirport', $event)"
         (arrivalAirportSelected)="onPlaceSelected('arrivalAirport', $event)" />
+      <app-reservation-place-info [place]="currentPlaces().departureAirport" />
+      <app-reservation-place-info [place]="currentPlaces().arrivalAirport" />
       @if (reservation(); as r) {
         @if (r.type === 'flight' && r.flightNumber) {
           <app-flight-status-badge [tripId]="tripId()" [reservation]="r" />
@@ -52,9 +67,12 @@
         [initialDropoffPlace]="currentPlaces().dropoffPlace"
         (pickupPlaceSelected)="onPlaceSelected('pickupPlace', $event)"
         (dropoffPlaceSelected)="onPlaceSelected('dropoffPlace', $event)" />
+      <app-reservation-place-info [place]="currentPlaces().pickupPlace" />
+      <app-reservation-place-info [place]="currentPlaces().dropoffPlace" />
     }
     @case ('other') {
       <app-generic-fields [initialPlace]="currentPlaces().place" (placeSelected)="onPlaceSelected('place', $event)" />
+      <app-reservation-place-info [place]="currentPlaces().place" />
     }
   }
 
@@ -94,6 +112,15 @@
       <app-select [options]="currencyOptions" formControlName="currency" class="flex-none w-max transparent-select" />
     </div>
   </div>
+
+  @if (showDeadline()) {
+    <div class="flex flex-column gap-1 w-full min-w-0" formGroupName="booking">
+      <label for="reservation-booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'nt-text-muted'">
+        <i class="pi pi-calendar text-xs"></i>Deadline
+      </label>
+      <app-date-picker inputId="reservation-booking-deadline" formControlName="deadline" [icon]="false" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
+    </div>
+  }
 
   <app-divider class="m-1" />
 

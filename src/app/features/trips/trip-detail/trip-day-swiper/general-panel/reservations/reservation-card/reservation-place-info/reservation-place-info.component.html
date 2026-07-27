@@ -1,0 +1,94 @@
+@if (isVisible()) {
+  <app-divider class="m-1" />
+
+  <div class="flex flex-column gap-2 mb-1">
+    <span class="font-semibold text-sm nt-text-muted">Google</span>
+    @if (mapsUrl(); as url) {
+      <a [href]="url" target="_blank" class="flex align-items-center gap-2 no-underline nt-text-color line-height-3 hover:nt-text-primary transition-colors text-sm font-medium">
+        <i class="pi pi-map-marker nt-text-primary text-base"></i>
+        <span>{{ place()?.address || 'Voir sur Google Maps' }}</span>
+      </a>
+    }
+  </div>
+
+  <app-panel
+    header="Plus d'infos (horaires, avis...)"
+    [toggleable]="true"
+    [collapsed]="true"
+    class="shadow-1"
+    (beforeToggle)="onPanelToggle($event)">
+
+    <div class="flex flex-column gap-2">
+      @if (detailsLoading()) {
+        <div class="flex align-items-center gap-2 nt-text-muted py-2">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Récupération des informations en cours...</span>
+        </div>
+      }
+
+      @if (details(); as data) {
+        @if (data.rating > 0) {
+          <div class="flex align-items-center gap-2">
+            <span class="nt-text-warning font-bold">{{ starsFor(data.rating) }}</span>
+            <span class="font-semibold">{{ data.rating | number:'1.1-1' }}</span>
+            @if (data.reviewCount) {
+              <span class="nt-text-muted text-xs">({{ data.reviewCount }} avis)</span>
+            }
+          </div>
+        }
+        @if (isOpenNow() !== null) {
+          <app-tag [value]="isOpenNow() ? 'Ouvert' : 'Fermé'" [severity]="isOpenNow() ? 'success' : 'danger'" class="text-xs font-semibold px-2" />
+        }
+
+        @if (data.phone; as phone) {
+          <div class="flex flex-column gap-2 native-links">
+            <a [href]="'tel:' + phone" class="flex align-items-center gap-2 no-underline nt-text-muted hover:nt-text-primary transition-colors">
+              <i class="pi pi-phone nt-text-primary"></i>
+              <span>{{ phone }}</span>
+            </a>
+          </div>
+        }
+        @if (data.website; as website) {
+          <div class="flex flex-column gap-2 native-links">
+            <a [href]="website" target="_blank" class="flex align-items-center gap-2 no-underline nt-text-muted hover:nt-text-primary transition-colors w-full min-w-0">
+              <i class="pi pi-external-link nt-text-primary flex-shrink-0"></i>
+              <span class="flex-1 min-w-0 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ website }}</span>
+            </a>
+          </div>
+        }
+
+        @if (data.openingHours) {
+          <app-panel header="Horaires d'ouverture" [toggleable]="true" [collapsed]="true" class="mt-1">
+            <ul class="list-none p-0 m-0 flex flex-column gap-1">
+              @for (line of data.openingHours; track $index) {
+                <li class="py-1 text-xs flex justify-content-between border-bottom-1 surface-border last:border-none"
+                    [ngClass]="line.toLowerCase().startsWith(todayDayName()) ? 'font-semibold nt-text-primary' : 'nt-text-muted'">
+                  {{ line }}
+                </li>
+              }
+            </ul>
+          </app-panel>
+        }
+
+        @if (data.reviewCount && data.reviews) {
+          <app-panel header="Avis récents" [toggleable]="true" [collapsed]="true" class="mt-1">
+            <div class="flex flex-column gap-2">
+              @for (review of data.reviews; track review.author) {
+                <div class="nt-bg-subtle border-round p-2 flex flex-column gap-1">
+                  <div class="flex align-items-center justify-content-between">
+                    <span class="font-medium text-xs">{{ review.author }}</span>
+                    <span class="nt-text-warning text-xs">{{ starsFor(review.rating) }}</span>
+                  </div>
+                  <p class="text-xs nt-text-muted m-0 line-height-3"
+                     style="-webkit-line-clamp: 3; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden">
+                    {{ review.comment }}
+                  </p>
+                </div>
+              }
+            </div>
+          </app-panel>
+        }
+      }
+    </div>
+  </app-panel>
+}

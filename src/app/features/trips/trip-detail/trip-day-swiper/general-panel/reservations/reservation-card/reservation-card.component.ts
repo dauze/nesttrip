@@ -1,9 +1,12 @@
 import { Component, ElementRef, computed, inject, input, linkedSignal, viewChild } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { BookingStatus } from '@core/enums/booking.status';
+import { BOOKING_STATUS_META } from '@app/shared/components/activity-card/activity.constants';
 import { ReservationHeaderComponent } from './reservation-header/reservation-header.component';
 import { ReservationDetailsComponent } from './reservation-details/reservation-details.component';
 import { ReservationFilesComponent } from '../reservation-files/reservation-files.component';
@@ -18,7 +21,7 @@ import { ReservationFilesComponent } from '../reservation-files/reservation-file
   selector: 'app-reservation-card',
   standalone: true,
   imports: [
-    PanelComponent, DividerComponent, ButtonComponent,
+    NgClass, PanelComponent, DividerComponent, ButtonComponent,
     ReservationHeaderComponent, ReservationDetailsComponent, ReservationFilesComponent,
   ],
   templateUrl: './reservation-card.component.html',
@@ -37,6 +40,8 @@ export class ReservationCardComponent {
   readonly reservation = computed(() => this.tripFacade.getReservation(this.reservationId())());
 
   readonly collapsed = linkedSignal(() => this.initCollapsed());
+
+  readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.reservation()?.booking?.status ?? BookingStatus.NOT_NEEDED]);
 
   get element(): HTMLElement {
     return this.cardContainer().nativeElement;

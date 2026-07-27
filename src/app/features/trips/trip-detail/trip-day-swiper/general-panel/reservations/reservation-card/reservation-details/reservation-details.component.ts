@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
@@ -13,6 +14,8 @@ import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { PlaceSummary } from '@core/models/place.dto';
+import { BookingStatus } from '@core/enums/booking.status';
+import { BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { Reservation, ReservationType } from '@core/models/reservation.dto';
 import { RESERVATION_TYPE_META, RESERVATION_TYPE_OPTIONS, CURRENCY_OPTIONS } from '../../reservation.constants';
 import { HotelFieldsComponent } from '../../reservation-form/hotel-fields/hotel-fields.component';
@@ -20,6 +23,7 @@ import { FlightFieldsComponent } from '../../reservation-form/flight-fields/flig
 import { CarRentalFieldsComponent } from '../../reservation-form/car-rental-fields/car-rental-fields.component';
 import { GenericFieldsComponent } from '../../reservation-form/generic-fields/generic-fields.component';
 import { FlightStatusBadgeComponent } from '../../flight-status-badge/flight-status-badge.component';
+import { ReservationPlaceInfoComponent } from '../reservation-place-info/reservation-place-info.component';
 
 interface SelectedPlaces {
   place?: PlaceSummary;
@@ -55,10 +59,10 @@ function initialPlacesFrom(reservation: Reservation): SelectedPlaces {
   selector: 'app-reservation-details',
   standalone: true,
   imports: [
-    ReactiveFormsModule, SelectComponent, InputNumberComponent, DatePickerComponent, TimePickerDialogComponent,
+    NgClass, ReactiveFormsModule, SelectComponent, InputNumberComponent, DatePickerComponent, TimePickerDialogComponent,
     DividerComponent, InputTextDirective, TextareaDirective,
     HotelFieldsComponent, FlightFieldsComponent, CarRentalFieldsComponent, GenericFieldsComponent,
-    FlightStatusBadgeComponent,
+    FlightStatusBadgeComponent, ReservationPlaceInfoComponent,
   ],
   templateUrl: './reservation-details.component.html',
   styleUrl: './reservation-details.component.scss',
@@ -72,6 +76,7 @@ export class ReservationDetailsComponent {
 
   readonly typeOptions = RESERVATION_TYPE_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
+  readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
 
   readonly form = this.fb.group({
     type: this.fb.nonNullable.control<ReservationType>('other'),
@@ -83,6 +88,10 @@ export class ReservationDetailsComponent {
     price: this.fb.group({
       amount: this.fb.nonNullable.control<number>(0),
       currency: this.fb.nonNullable.control<string>('EUR'),
+    }),
+    booking: this.fb.group({
+      status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
+      deadline: this.fb.control<Date | null>(null),
     }),
     airline: this.fb.nonNullable.control<string>(''),
     flightNumber: this.fb.nonNullable.control<string>(''),
@@ -102,6 +111,19 @@ export class ReservationDetailsComponent {
   readonly selectedType = computed(() => this.formValue().type);
   readonly dateLabels = computed(() => RESERVATION_TYPE_META[this.selectedType()]);
   readonly currentPlaces = computed(() => this.selectedPlaces());
+
+  readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED]);
+
+  readonly showDeadline = computed(() => {
+    const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
+    return [BookingStatus.TO_BOOK, BookingStatus.WAITLIST].includes(status);
+  });
+
+  readonly isDeadlineSoon = computed(() => {
+    const deadline = this.formValue().booking?.deadline;
+    if (!deadline) return false;
+    return new Date(deadline).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000;
+  });
 
   /** Même garde-fou anti-course que `ActivityFormComponent.hasUnflushedLocalEdit` — voir sa doc. */
   private hasUnflushedLocalEdit = false;
@@ -123,6 +145,7 @@ export class ReservationDetailsComponent {
         endTime: r.endDateTime,
         notes: r.notes ?? '',
         price: r.price ?? { amount: 0, currency: 'EUR' },
+        booking: r.booking,
         airline: r.type === 'flight' ? (r.airline ?? '') : '',
         flightNumber: r.type === 'flight' ? (r.flightNumber ?? '') : '',
         company: r.type === 'carRental' ? (r.company ?? '') : '',
@@ -162,6 +185,7 @@ export class ReservationDetailsComponent {
       notes: value.notes,
       files: reservation.files ?? [],
       links: reservation.links ?? [],
+      booking: { ...value.booking, deadline: value.booking.deadline ?? undefined },
       ...(reservation.referenceNumber ? { referenceNumber: reservation.referenceNumber } : {}),
       ...(value.price.amount ? { price: value.price } : {}),
     };

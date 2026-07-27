@@ -25,6 +25,8 @@ export interface TripFirebase {
   dayActivityInstances: Record<string, DayActivityInstanceFirebase>;
   /** Réservations transverses (hôtel/vol/location/autre), indépendantes du map `days`. */
   reservations: Record<string, ReservationFirebase>;
+  /** Ordre manuel (drag-and-drop) des réservations — un `Record` Firestore ne garantit aucun ordre de clés, cet ordre doit donc être persisté à part. */
+  reservationOrder?: string[];
   notes: Notes;
   placeId?: string;
 }
