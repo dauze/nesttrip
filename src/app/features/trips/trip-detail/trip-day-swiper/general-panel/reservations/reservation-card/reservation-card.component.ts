@@ -2,8 +2,10 @@ import { Component, ElementRef, computed, inject, input, linkedSignal, viewChild
 import { NgClass } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
+import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { SelectableDirective } from '@app/shared/directives/selectable.directive';
+import { LongPressDirective } from '@app/shared/directives/long-press.directive';
+import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
 import { BOOKING_STATUS_META } from '@app/shared/components/activity-card/activity.constants';
@@ -21,15 +23,15 @@ import { ReservationFilesComponent } from '../reservation-files/reservation-file
   selector: 'app-reservation-card',
   standalone: true,
   imports: [
-    NgClass, PanelComponent, DividerComponent, ButtonComponent,
+    NgClass, PanelComponent, DividerComponent, CheckboxComponent,
     ReservationHeaderComponent, ReservationDetailsComponent, ReservationFilesComponent,
+    SelectableDirective, LongPressDirective,
   ],
   templateUrl: './reservation-card.component.html',
   styleUrl: './reservation-card.component.scss',
 })
 export class ReservationCardComponent {
   private readonly tripFacade = inject(TripFacade);
-  private readonly confirmDialogService = inject(ConfirmDialogService);
 
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
 
@@ -43,6 +45,8 @@ export class ReservationCardComponent {
 
   readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.reservation()?.booking?.status ?? BookingStatus.NOT_NEEDED]);
 
+  readonly selectableRef = computed<SelectableItemRef>(() => ({ kind: 'reservation', id: this.reservationId() }));
+
   get element(): HTMLElement {
     return this.cardContainer().nativeElement;
   }
@@ -51,12 +55,5 @@ export class ReservationCardComponent {
     const reservation = this.reservation();
     if (!reservation) return;
     this.tripFacade.updateReservation(this.tripId(), { ...reservation, title: newTitle });
-  }
-
-  confirmDelete(): void {
-    this.confirmDialogService.confirm({
-      message: 'Supprimer cette réservation ?',
-      accept: () => this.tripFacade.removeReservation(this.tripId(), this.reservationId()),
-    });
   }
 }

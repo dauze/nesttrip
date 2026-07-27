@@ -3,14 +3,6 @@
     <!-- Header -->
     <div cardTitle class="flex justify-content-between align-items-center w-full">
       <span class="text-2xl font-semibold">Mes voyages</span>
-      @if (trips().length > 0){
-        <app-button
-          [label]="editMode ? 'Annuler' : 'Modifier'"
-          [icon]="editMode ? 'pi pi-times' : 'pi pi-pencil'"
-          [severity]="editMode ? 'secondary' : 'primary'"
-          size="small"
-          (click)="toggleEditMode()"
-        />}
     </div>
 
     <!-- Content -->
@@ -40,65 +32,53 @@
         </div>
 
       <!-- List -->
-     <!-- List -->
-} @else {
-  <div class="grid">
-    @for (trip of trips(); track trip.id) {
-      <div class="col-12 md:col-6 lg:col-4">
-        <app-card
-          [ngClass]="{
-            'cursor-pointer hover:nt-bg-subtle': !editMode || user?.uid === trip.ownerId,
-            'cursor-default opacity-80': editMode && user?.uid !== trip.ownerId
-          }"
-          class="w-full h-full transition-colors transition-duration-200"
-          (click)="editMode ? (user?.uid === trip.ownerId && toggleTripSelection(trip.id)) : selectTrip(trip.id)"
-          appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
-          tooltipEvent="both"
-          [tooltipDisabled]="!editMode || user?.uid === trip.ownerId"
-        >
-          <div class="flex justify-content-between align-items-center">
+      } @else {
+        <div class="grid">
+          @for (trip of trips(); track trip.id) {
+            <div class="col-12 md:col-6 lg:col-4">
+              <app-card
+                [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
+                [selectableDisabled]="user?.uid !== trip.ownerId"
+                appLongPress (longPress)="sel.onLongPress()"
+                [ngClass]="{ 'cursor-default opacity-80': selectionService.active() && user?.uid !== trip.ownerId }"
+                class="w-full h-full transition-colors transition-duration-200"
+                appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
+                tooltipEvent="both"
+                [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
+              >
+                <div
+                  class="flex justify-content-between align-items-center cursor-pointer"
+                  role="button"
+                  tabindex="0"
+                  (click)="selectTrip(trip.id)"
+                  (keydown.enter)="selectTrip(trip.id)"
+                >
+                  <app-checkbox
+                    class="nt-select-checkbox flex-shrink-0"
+                    [checked]="sel.isSelected()"
+                    [disabled]="user?.uid !== trip.ownerId"
+                    (click)="sel.onCheckboxClick($event)"
+                  ></app-checkbox>
 
-            <!-- Checkbox (only in edit mode) -->
-            @if (editMode && user?.uid === trip.ownerId) {
-              <app-checkbox
-                [(checked)]="selectedTripsMap[trip.id]"
-                (click)="$event.stopPropagation()"
-              ></app-checkbox>
-            }
+                  <span
+                    class="font-medium text-lg flex-grow-1 ml-2"
+                    [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
+                  >
+                    {{ trip.title }}
+                  </span>
 
-            <!-- Title with conditional disabled color -->
-            <span 
-              class="font-medium text-lg flex-grow-1 ml-2"
-              [ngClass]="{ 'nt-text-muted opacity-60': editMode && user?.uid !== trip.ownerId }"
-            >
-              {{ trip.title }}
-            </span>
-
-            @if (!editMode) {
-              <i class="pi pi-arrow-right nt-text-muted"></i>
-            }
-          </div>
-        </app-card>
-      </div>
-    }
-  </div>
-}
+                  <i class="pi pi-arrow-right nt-text-muted"></i>
+                </div>
+              </app-card>
+            </div>
+          }
+        </div>
+      }
 
     </div>
 
     <!-- Footer buttons -->
     <div cardFooter class="flex justify-content-end gap-2">
-      <!-- Supprimer -->
-      @if (editMode) {
-        <app-button
-          label="Supprimer"
-          icon="pi pi-trash"
-          severity="danger"
-          size="small"
-          [disabled]="!hasSelection()"
-          (click)="confirmDelete()"
-        />
-      }
       <!-- Ajouter -->
       <app-button
         label="Créer un voyage"
@@ -109,3 +89,8 @@
     </div>
 
   </app-card>
+
+<app-selection-action-bar
+  [count]="selectionService.selectedCount()"
+  (cancelSelection)="onSelectionCancel()"
+  (deleteSelected)="onSelectionDelete()" />

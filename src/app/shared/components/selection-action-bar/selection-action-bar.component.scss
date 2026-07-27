@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+// Vrai `position: fixed` : comme FloatingAddButtonComponent, ce composant doit
+// être monté HORS du swiper de jours (un `swiper-slide` applique un transform
+// permanent qui casserait ce fixed) — voir TripDetailComponent.
+.selection-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  // Au-dessus de app-trip-tabs-nav (z-5) : recouvre entièrement la barre des
+  // jours tant que le mode sélection est actif (voir tokens.scss, échelle de
+  // z-index de l'appli).
+  z-index: var(--z-overlay-content);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: var(--nt-content-background);
+  box-shadow: 0 -0.25rem 0.75rem rgba(18, 18, 23, 0.15);
+}
+
+.selection-action-bar__count {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.selection-action-bar__actions {
+  display: flex;
+  gap: 0.5rem;
+}

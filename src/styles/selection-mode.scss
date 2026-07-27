@@ -1,0 +1,33 @@
+/* ---------------------------------------------------------------------
+ * Mode sélection multiple transverse (activités, réservations, notes, trips)
+ * — voir SelectableDirective. Classes globales : posées en host binding par
+ * la directive sur la racine de chaque carte, pas de scope par composant.
+ * ------------------------------------------------------------------- */
+
+.nt-selectable {
+  // Même jeton que PanelComponent/CardComponent (`--nt-content-border-radius`) :
+  // la directive `appSelectable` est parfois posée sur un simple wrapper
+  // (`#cardContainer`) qui enveloppe le vrai `app-panel`/`app-card` arrondi,
+  // pas sur ce dernier directement — un `border-radius: inherit` n'aurait
+  // hérité que du PARENT du wrapper (jamais arrondi), pas de l'enfant
+  // visuellement arrondi. Poser directement la valeur réelle est la seule
+  // façon fiable de faire épouser le rayon exact quel que soit l'élément hôte.
+  // `box-shadow` (pas `border`/`outline`) épouse ensuite ce rayon exactement,
+  // contrairement à `outline` dont le support du border-radius reste inégal
+  // selon les navigateurs.
+  border-radius: var(--nt-content-border-radius);
+  transition: box-shadow 150ms ease;
+}
+
+.nt-selectable.nt-selected {
+  box-shadow: 0 0 0 3px var(--nt-red-500);
+}
+
+// Checkbox PC toujours visible (voir SelectableDirective.onCheckboxClick) :
+// absente sur mobile, où la sélection passe uniquement par long-press + tap.
+// Même breakpoint que ViewportService (768px).
+.nt-select-checkbox {
+  @media (max-width: 768px) {
+    display: none;
+  }
+}

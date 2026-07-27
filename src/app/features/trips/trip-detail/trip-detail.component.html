@@ -31,13 +31,23 @@
 
       <!-- Hors du swiper de jours (voir FloatingAddButtonComponent) : un
            ancêtre `swiper-slide` applique un transform permanent, ce qui
-           casserait le `position:fixed` de ce bouton. -->
-      <app-floating-add-button
-        [icon]="fabIcon()"
-        [badge]="true"
-        [ariaLabel]="fabAriaLabel()"
-        [bottomOffset]="chromeService.tabsNavHeight()"
-        (activate)="onFabActivate()" />
+           casserait le `position:fixed` de ce bouton. Masqué pendant le mode
+           sélection (voir app-selection-action-bar juste en dessous), qui
+           recouvre de toute façon la barre des jours à cet endroit. -->
+      @if (!selectionService.active()) {
+        <app-floating-add-button
+          [icon]="fabIcon()"
+          [badge]="true"
+          [ariaLabel]="fabAriaLabel()"
+          [bottomOffset]="chromeService.tabsNavHeight()"
+          (activate)="onFabActivate()" />
+      }
+
+      <!-- Même contrainte hors-swiper que le "+" flottant ci-dessus. -->
+      <app-selection-action-bar
+        [count]="selectionService.selectedCount()"
+        (cancelSelection)="onSelectionCancel()"
+        (deleteSelected)="onSelectionDelete()" />
     </div>
   }
 

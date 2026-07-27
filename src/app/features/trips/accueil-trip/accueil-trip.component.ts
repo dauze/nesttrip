@@ -5,8 +5,11 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { SelectableDirective } from '@app/shared/directives/selectable.directive';
+import { LongPressDirective } from '@app/shared/directives/long-press.directive';
+import { SelectionModeService } from '@app/shared/services/selection-mode.service';
+import { SelectionActionBarComponent } from '@app/shared/components/selection-action-bar/selection-action-bar.component';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
-import { FormsModule } from '@angular/forms';
 import { TripFacade } from '../trip-facade.service';
 import { AuthService } from '@app/core/services/auth.service';
 import { NgClass } from '@angular/common';
@@ -22,81 +25,51 @@ import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
     MessageComponent,
     RouterModule,
     CheckboxComponent,
-    FormsModule,
     NgClass,
-    TooltipDirective
+    TooltipDirective,
+    SelectableDirective,
+    LongPressDirective,
+    SelectionActionBarComponent,
   ],
   templateUrl: 'accueil-trip.component.html',
+  // Une instance dédiée (voir SelectionModeService) : le mode sélection de
+  // cet écran ne doit jamais se mélanger avec celui de trip-detail.
+  providers: [SelectionModeService],
 })
 export class AccueilTripComponent {
   protected readonly tripFacade = inject(TripFacade);
   private readonly router = inject(Router);
   private readonly confirmDialogService = inject(ConfirmDialogService);
-   private readonly authService = inject(AuthService);
-  
+  private readonly authService = inject(AuthService);
+  protected readonly selectionService = inject(SelectionModeService);
 
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;
   readonly user = this.authService.getCurrentUser();
 
-  editMode = false;
-
-  // id -> boolean
-  selectedTripsMap: Record<string, boolean> = {};
-
-  constructor() {
-    //TODO un fix à prévoir, si on a qu'un seul trip, on ne peut plus retourner à la page, il faut mettre un verrou ou le faire sur l'accueil
-    // effect(() => {
-    //   const trips = this.trips();
-    //   if (!this.tripsLoading() && trips.length === 1) {
-    //     this.router.navigate(['/trips', trips[0].id], { replaceUrl: true });
-    //   }
-    // });
-  }
-
-  toggleEditMode(): void {
-    this.editMode = !this.editMode;
-
-    if (!this.editMode) {
-      this.selectedTripsMap = {};
-    }
-  }
-
   selectTrip(id: string): void {
     this.router.navigate(['/trips', id]);
   }
 
-  toggleTripSelection(tripId: string): void {
-    this.selectedTripsMap[tripId] = !this.selectedTripsMap[tripId];
+  onSelectionCancel(): void {
+    this.selectionService.cancel();
   }
 
-  hasSelection(): boolean {
-    return Object.values(this.selectedTripsMap).some(v => v === true);
-  }
+  onSelectionDelete(): void {
+    const ids = this.selectionService.values().map((ref) => ref.id);
+    if (ids.length === 0) return;
 
-  getSelectedTripIds(): string[] {
-    return Object.entries(this.selectedTripsMap)
-      .filter(([, selected]) => selected)
-      .map(([id]) => id);
-  }
-
-  confirmDelete(): void {
+    const plural = ids.length > 1 ? 's' : '';
     this.confirmDialogService.confirm({
-      message: 'Êtes-vous sûr de vouloir supprimer ces voyages ? Ils seront perdus définitivement.',
+      message: `Êtes-vous sûr de vouloir supprimer ${ids.length > 1 ? 'ces' : 'ce'} voyage${plural} ? Il${plural} ser${plural ? 'ont' : 'a'} perdu${plural} définitivement.`,
       header: 'Confirmation',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Oui',
       rejectLabel: 'Non',
       accept: () => {
-        const ids = this.getSelectedTripIds();
-        this.removeTrips(ids);
-        this.selectedTripsMap = {};
-        this.editMode = false;
-      }
+        for (const id of ids) this.tripFacade.removeTrip(id);
+        this.selectionService.cancel();
+      },
     });
-  }
-
-  removeTrips(ids: string[]): void {
-    ids.every(i =>  this.tripFacade.removeTrip(i));
   }
 }
