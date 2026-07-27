@@ -9,7 +9,6 @@ import { InputNumberComponent } from '@app/shared/components/input-number/input-
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -60,7 +59,7 @@ function initialPlacesFrom(reservation: Reservation): SelectedPlaces {
   standalone: true,
   imports: [
     NgClass, ReactiveFormsModule, SelectComponent, InputNumberComponent, DatePickerComponent, TimePickerDialogComponent,
-    DividerComponent, InputTextDirective, TextareaDirective,
+    DividerComponent, TextareaDirective,
     HotelFieldsComponent, FlightFieldsComponent, CarRentalFieldsComponent, GenericFieldsComponent,
     FlightStatusBadgeComponent, ReservationPlaceInfoComponent,
   ],

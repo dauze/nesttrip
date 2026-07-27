@@ -21,10 +21,10 @@ import { runOnceReady } from '@app/shared/utils/run-once-ready';
  * texte libre (CVA sur une chaîne) : l'objet `PlaceSummary` complet n'est
  * jamais dans un form, il est émis à part via `placeSelected`.
  *
- * Mobile (`ViewportService.isMobile()`) : même bascule que le titre d'activité
- * — champ statique + crayon qui ouvre `TitleEditDialogComponent` en tiroir
- * plein écran (réutilisé tel quel, générique), plutôt que l'autocomplete
- * inline utilisée sur desktop.
+ * Mobile (`ViewportService.isMobile()`) : texte statique cliquable (pas de
+ * crayon séparé) qui ouvre `TitleEditDialogComponent` en tiroir plein écran
+ * (réutilisé tel quel, générique) au clic/tap direct sur le texte, plutôt
+ * que l'autocomplete inline utilisée sur desktop.
  */
 @Component({
   selector: 'app-place-autocomplete-field',
@@ -77,8 +77,8 @@ export class PlaceAutocompleteFieldComponent {
 
   displayName = (place: { name: unknown }): string => this.extractPlaceName(place?.name);
 
-  /** Mobile uniquement (voir le template) : ouvre le tiroir plein écran de recherche, en lieu de l'autocomplete inline. */
-  openMobileDialog(event: MouseEvent): void {
+  /** Mobile uniquement (voir le template) : ouvre le tiroir plein écran de recherche au clic/tap sur le texte, en lieu de l'autocomplete inline. */
+  openMobileDialog(event: Event): void {
     event.stopPropagation();
 
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(

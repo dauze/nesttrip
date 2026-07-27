@@ -6,18 +6,14 @@
   }
 
   @if (viewport.isMobile()) {
-    <div class="place-autocomplete-field__row flex align-items-center gap-2 min-w-0">
-      <span class="place-autocomplete-field__value flex-1 min-w-0 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">
-        {{ displayControl.value || placeholder() }}
-      </span>
-      <button
-        type="button"
-        class="place-autocomplete-field__pencil flex-shrink-0"
-        aria-label="Modifier le lieu"
-        (click)="openMobileDialog($event)">
-        <i class="pi pi-pencil"></i>
-      </button>
-    </div>
+    <span
+      class="place-autocomplete-field__value block w-full min-w-0 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis"
+      role="button"
+      tabindex="0"
+      (click)="openMobileDialog($event)"
+      (keydown.enter)="openMobileDialog($event)">
+      {{ displayControl.value || placeholder() }}
+    </span>
   } @else {
     <app-autocomplete
       [suggestions]="places()"

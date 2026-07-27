@@ -3,24 +3,11 @@
     <i class="pi pi-bookmark text-xl nt-text-muted"></i>
   </div>
 
-  <app-autocomplete
-    #autocomplete
-    [suggestions]="places()"
-    [formControl]="titleControl"
-    (blurred)="onBlur()"
-    (searched)="onSearch($event)"
-    (optionSelected)="onSelect($event)"
-    (keydown.enter)="onEnter()"
-    [displayWith]="displayName"
+  <input
+    #titleInput
+    type="text"
+    class="nt-inline-field w-full font-semibold text-base"
     placeholder="Nom de la réservation"
-    class="w-full transparent-inputtext"
-    [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
-    inputClass="font-semibold p-0 text-base">
-    <ng-template #item let-place>
-      <div class="flex flex-column min-w-0 flex-1">
-        <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
-        <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
-      </div>
-    </ng-template>
-  </app-autocomplete>
+    (blur)="onBlur($any($event.target).value)"
+    (keydown.enter)="onEnter($any($event.target).value)" />
 </div>

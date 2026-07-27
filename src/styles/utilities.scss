@@ -33,6 +33,31 @@
   }
 }
 
+// Champ "texte" au repos (aucune bordure/fond visible) qui ne redevient
+// visuellement un champ qu'au focus (fond subtil) — même principe que le
+// titre d'une réservation/activité, réutilisable pour tout `<input>` simple
+// qui doit se fondre dans son contexte plutôt qu'afficher une "zone" de
+// saisie en permanence (compagnie, n° de vol, loueur...).
+.nt-inline-field {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0.125rem 0.25rem;
+  margin: -0.125rem -0.25rem;
+  border-radius: var(--nt-radius-sm, 0.25rem);
+  transition: background var(--nt-transition-duration, 0.15s) ease;
+
+  &::placeholder {
+    color: var(--nt-text-muted-color);
+  }
+
+  &:focus {
+    outline: none;
+    background: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
+  }
+}
+
 .transparent-textarea {
   --p-textarea-background: transparent;
   --p-textarea-border-color: transparent;

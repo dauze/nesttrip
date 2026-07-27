@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Injector, ViewContainerRef, afterNextRender, computed, effect, inject, input, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, effect, inject, input, viewChildren } from '@angular/core';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
@@ -14,9 +14,10 @@ import { NewReservationDraftComponent } from './new-reservation-draft/new-reserv
  * mêmes principes que `TripActivitiesComponent` (pool général des activités)
  * — pas de bouton "Ajouter" local, la création passe exclusivement par le
  * "+" flottant unique (voir `GeneralPanelComponent.onFabActivate` ->
- * `triggerCreate()` ci-dessous), sans jamais ouvrir de popup : brouillon
- * inline (desktop) ou tiroir plein écran (mobile), qui crée la réservation
- * immédiatement puis se referme sur une carte dépliable, éditable en direct.
+ * `triggerCreate()` ci-dessous), jamais de popup : un brouillon inline
+ * (`NewReservationDraftComponent`, même mobile que desktop) crée la
+ * réservation dès qu'un titre est saisi, puis se referme sur une carte
+ * dépliable, éditable en direct.
  */
 @Component({
   selector: 'app-reservations-list',
@@ -29,7 +30,6 @@ import { NewReservationDraftComponent } from './new-reservation-draft/new-reserv
 })
 export class ReservationsListComponent {
   private readonly tripFacade = inject(TripFacade);
-  private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly reservationFocusService = inject(ReservationFocusService);
   private readonly injector = inject(Injector);
   protected readonly creationService = inject(ReservationsCreationService);
@@ -44,7 +44,6 @@ export class ReservationsListComponent {
     this.creationService.connect({
       getCards: () => this.reservationCards(),
       getTripId: () => this.tripId(),
-      getViewContainerRef: () => this.viewContainerRef,
     });
 
     // Demande de navigation croisée (voir ReservationFocusService) : consomme

@@ -2,24 +2,12 @@
 
 .place-autocomplete-field__value {
   color: var(--nt-text-muted-color, inherit);
-}
-
-.place-autocomplete-field__pencil {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--nt-radius-sm, 0.25rem);
-  background: transparent;
-  color: var(--nt-text-muted-color);
-  font-size: 0.85rem;
   cursor: pointer;
-  transition: background var(--nt-transition-duration, 0.15s) ease, color var(--nt-transition-duration, 0.15s) ease;
+  border-radius: var(--nt-radius-sm, 0.25rem);
+  transition: background var(--nt-transition-duration, 0.15s) ease;
 
-  &:hover {
+  &:hover, &:focus-visible {
     background: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
+    outline: none;
   }
 }

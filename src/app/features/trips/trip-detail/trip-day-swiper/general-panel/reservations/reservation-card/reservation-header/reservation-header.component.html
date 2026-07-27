@@ -6,7 +6,7 @@
   <div class="reservation-header__meta flex flex-column flex-1 min-w-0 gap-1">
     <input
       type="text"
-      class="reservation-header__title-input font-semibold text-base"
+      class="nt-inline-field w-full font-semibold text-base"
       [value]="titleValue()"
       [placeholder]="typeMeta[reservation().type].label"
       (input)="onTitleInput($any($event.target).value)"

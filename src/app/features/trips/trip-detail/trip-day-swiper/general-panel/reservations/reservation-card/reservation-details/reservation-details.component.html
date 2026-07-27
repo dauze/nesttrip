@@ -1,4 +1,4 @@
-<form [formGroup]="form" class="reservation-details flex flex-column gap-2">
+<form [formGroup]="form" class="reservation-details compact-form flex flex-column gap-2">
   <div class="grid m-0">
     <div class="col-6 p-0 pr-1 min-w-0">
       <div class="flex flex-column gap-1 w-full min-w-0">
@@ -30,7 +30,7 @@
             <label for="reservation-airline" class="nt-text-muted text-sm flex align-items-center gap-1">
               <i class="pi pi-tag text-sm"></i>Compagnie
             </label>
-            <input id="reservation-airline" appInputText type="text" formControlName="airline" placeholder="Air France" class="w-full" />
+            <input id="reservation-airline" type="text" formControlName="airline" placeholder="Air France" class="nt-inline-field w-full" />
           </div>
         </div>
         <div class="col-6 p-0 pl-1 min-w-0">
@@ -38,7 +38,7 @@
             <label for="reservation-flight-number" class="nt-text-muted text-sm flex align-items-center gap-1">
               <i class="pi pi-hashtag text-sm"></i>N° de vol
             </label>
-            <input id="reservation-flight-number" appInputText type="text" formControlName="flightNumber" placeholder="AF1234" class="w-full" />
+            <input id="reservation-flight-number" type="text" formControlName="flightNumber" placeholder="AF1234" class="nt-inline-field w-full" />
           </div>
         </div>
       </div>
@@ -60,7 +60,7 @@
         <label for="reservation-company" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-tag text-sm"></i>Loueur
         </label>
-        <input id="reservation-company" appInputText type="text" formControlName="company" placeholder="Hertz, Europcar..." class="w-full" />
+        <input id="reservation-company" type="text" formControlName="company" placeholder="Hertz, Europcar..." class="nt-inline-field w-full" />
       </div>
       <app-car-rental-fields
         [initialPickupPlace]="currentPlaces().pickupPlace"
@@ -81,10 +81,10 @@
   <div class="grid m-0">
     <div class="col-6 p-0 pr-1 min-w-0">
       <div class="flex flex-column gap-1">
-        <label for="reservation-start-date" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <label for="reservation-start-date" class="reservation-details__date-label nt-text-muted text-sm flex align-items-end gap-1">
           <i class="pi pi-calendar text-sm"></i>{{ dateLabels().startLabel }}
         </label>
-        <div class="flex gap-1">
+        <div class="flex align-items-center gap-1">
           <app-date-picker inputId="reservation-start-date" formControlName="startDate" class="flex-1 min-w-0 transparent-inputtext" />
           <app-time-picker-dialog formControlName="startTime" class="flex-none" />
         </div>
@@ -92,10 +92,10 @@
     </div>
     <div class="col-6 p-0 pl-1 min-w-0">
       <div class="flex flex-column gap-1">
-        <label for="reservation-end-date" class="nt-text-muted text-sm flex align-items-center gap-1">
+        <label for="reservation-end-date" class="reservation-details__date-label nt-text-muted text-sm flex align-items-end gap-1">
           <i class="pi pi-calendar-times text-sm"></i>{{ dateLabels().endLabel }}
         </label>
-        <div class="flex gap-1">
+        <div class="flex align-items-center gap-1">
           <app-date-picker inputId="reservation-end-date" formControlName="endDate" class="flex-1 min-w-0 transparent-inputtext" />
           <app-time-picker-dialog formControlName="endTime" class="flex-none" />
         </div>
