@@ -87,7 +87,6 @@ export class DatePickerComponent implements ControlValueAccessor {
 
   readonly range = input(false);
   readonly placeholder = input('Sélectionner une date');
-  readonly icon = input(true);
   readonly inputId = input('');
 
   /** Émis avec la valeur finale (Date en mode simple, [début, fin] en mode plage) quand une sélection se termine. */
