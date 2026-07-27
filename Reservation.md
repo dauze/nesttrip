@@ -122,7 +122,7 @@ Indépendant du map `days`. Dot-notation pour les updates (`reservations.{id}`),
   - `car-rental-fields.component.ts` — `company`, `pickupPlace`/`dropoffPlace` (2x autocomplete Places)
   - `generic-fields.component.ts` — `place` optionnel
 
-**Champs communs (`commonForm`)** : `title` (pré-rempli auto selon le type, éditable), `startDateTime`/`endDateTime` (`p-datepicker`), `referenceNumber`, `notes`, `files` (réutiliser le composant d'upload existant sur `Activity`), `links` (FormArray dynamique), `price` (`p-inputnumber` + devise)
+**Champs communs (`commonForm`)** : `title` (pré-rempli auto selon le type, éditable), `startDateTime`/`endDateTime` (`p-datepicker`), `referenceNumber`, `notes`, `files` (réutiliser le composant d'upload existant sur `Activity`), `links` (FormArray dynamique), `price` (`p-inputnumber` + devise), adresse via un autocomplete comme pour title des activité, price avec currency. Le composant doit reprendre une partie des activitées : un table que l'on peut collapse, la selection des dates via calendrier, la me^me selection des liste 
 
 **Point d'attention pour Claude Code** : au changement de `type`, seul `detailsForm` doit être détruit/recréé — ne pas perdre les valeurs déjà saisies dans `commonForm`. À la sauvegarde, merger `commonForm.value` + `detailsForm.value` selon le discriminant `type` avant d'appeler `ReservationPersistenceService`.
 
@@ -202,3 +202,6 @@ const REFRESH_INTERVAL_MS: Record<RefreshPhase, number | null> = {
 2. Phase 2 (CRUD UI) — peut être livré et utilisé seul (sans bannières ni statut vol)
 3. Phase 3 (bannières) — dépend de la Phase 1 uniquement, peut être fait en parallèle de la Phase 2 si besoin
 4. Phase 4 (statut vol) — dépend de la Phase 2 (avoir des vols saisis pour tester)
+
+
+Pose mois des question si tu as des choix à faire pour que je te guide. Toujours en mode signal first ! 
