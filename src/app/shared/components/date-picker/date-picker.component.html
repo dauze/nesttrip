@@ -5,9 +5,6 @@
   [class.app-date-picker__trigger--open]="isOpen()"
   [disabled]="isDisabled()"
   (click)="toggle()">
-  @if (icon()) {
-    <i class="pi pi-calendar app-date-picker__icon"></i>
-  }
   <span class="app-date-picker__label" [class.app-date-picker__label--placeholder]="!displayText()">
     {{ displayText() || placeholder() }}
   </span>
