@@ -1,4 +1,5 @@
 <div class="day-panel-root flex flex-column gap-2 mb-2">
+  <app-day-reservation-banner [tripId]="tripId()" [dayId]="dayId()" />
   @if (activities().length > 0) {
     <app-timeline [activities]="activities()" (activitySelected)="scrollSync.focusActivity($event)"/>
     <div #stickyMap class="sticky-map">

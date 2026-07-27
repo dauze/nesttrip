@@ -13,6 +13,7 @@ import {
   ViewContainerRef
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
+import { DayReservationBannerComponent } from './day-reservation-banner/day-reservation-banner.component';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
@@ -36,7 +37,7 @@ import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-act
   standalone: true,
   imports: [
     TimelineComponent, ActivityCardComponent, PanelComponent, MessageComponent, SkeletonComponent,
-    NewActivityDraftComponent,
+    NewActivityDraftComponent, DayReservationBannerComponent,
   ],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',

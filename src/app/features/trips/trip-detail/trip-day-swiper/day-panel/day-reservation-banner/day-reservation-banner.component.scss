@@ -1,0 +1,22 @@
+:host { display: block; }
+
+.day-reservation-banner__item {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--nt-content-border-radius, 0.5rem);
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+  box-shadow: 0 0.0625rem 0.125rem 0 rgba(18, 18, 23, 0.05);
+  transition: background-color 0.15s ease;
+
+  &:hover, &:focus-visible {
+    background-color: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
+  }
+}
+
+.day-reservation-banner__role {
+  color: var(--nt-primary-color, inherit);
+}

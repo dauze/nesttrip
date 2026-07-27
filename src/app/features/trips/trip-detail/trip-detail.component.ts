@@ -16,6 +16,7 @@ import { ActivityDispatchService } from '@app/core/services/activity-dispatch.se
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
+import { ReservationFocusService } from './reservation-focus.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 
@@ -36,7 +37,7 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   // TripCreationTargetService : partagé entre le swiper de jours (qui
   // enregistre chaque panel actif) et le "+" flottant unique (voir plus bas),
   // tous deux descendants de ce composant dans l'arbre de vues.
-  providers: [TripCreationTargetService, DayActivityFocusService],
+  providers: [TripCreationTargetService, DayActivityFocusService, ReservationFocusService],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
@@ -47,6 +48,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly chromeService = inject(TripChromeService);
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);
+  private readonly reservationFocusService = inject(ReservationFocusService);
 
   private readonly headerRef = viewChild(TripHeaderComponent);
   private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
@@ -192,6 +194,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       const index = this.tabs().findIndex(t => t.id === pending.dayId);
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
       this.updateFragment(pending.dayId);
+    });
+
+    // Demande de navigation croisée symétrique (voir ReservationFocusService)
+    // : tap sur une bannière de réservation depuis un jour bascule ici sur
+    // l'onglet Général — GeneralPanelComponent (sous-onglet) puis
+    // ReservationsListComponent (ouverture du dialog d'édition) consomment
+    // ensuite la même requête, chacun à son échelle.
+    effect(() => {
+      const pending = this.reservationFocusService.pending();
+      if (!pending || this.activeDay() === 'notes') return;
+
+      this.activeDay.set('notes');
+      const index = this.tabs().findIndex(t => t.id === 'notes');
+      if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
+      this.updateFragment('notes');
     });
   }
 

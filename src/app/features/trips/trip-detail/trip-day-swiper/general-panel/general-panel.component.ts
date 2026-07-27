@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal, viewChild } from '@angular/core';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
+import { ReservationFocusService } from '@app/features/trips/trip-detail/reservation-focus.service';
 import { NotesComponent } from './notes/notes.component';
 import { TripActivitiesComponent } from './trip-activities/trip-activities.component';
 import { ReservationsListComponent } from './reservations/reservations-list.component';
@@ -18,6 +19,7 @@ type GeneralSubTab = 'notes' | 'activities' | 'reservations';
 })
 export class GeneralPanelComponent {
   private readonly fabTarget = inject(TripCreationTargetService);
+  private readonly reservationFocusService = inject(ReservationFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly notes = input.required<Notes>();
@@ -44,6 +46,16 @@ export class GeneralPanelComponent {
       trigger: () => this.onFabActivate(),
     });
     this.destroyRef.onDestroy(unregister);
+
+    // Demande de navigation croisée (voir ReservationFocusService) : bascule
+    // le sous-onglet dès qu'une bannière de réservation demande le focus,
+    // que ce sous-onglet soit déjà monté ou non (ReservationsListComponent
+    // consomme ensuite la requête une fois monté).
+    effect(() => {
+      if (this.reservationFocusService.pending()) {
+        this.activeSubTab.set('reservations');
+      }
+    });
   }
 
   selectSubTab(tab: GeneralSubTab | undefined): void {
