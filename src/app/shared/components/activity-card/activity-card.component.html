@@ -1,11 +1,11 @@
 @if (activity(); as activity) {
   <div #cardContainer
-       [appSelectable]="selectableRef()" #sel="appSelectable"
-       appLongPress (longPress)="sel.onLongPress()"
        [class.not-dispatched]="isPlacedNowhere()"
        [class.card-lifted]="isBeingDragged()"
        [class.card-pending]="isPendingLift()">
     <app-panel
+        [appSelectable]="selectableRef()" #sel="appSelectable"
+        appLongPress (longPress)="sel.onLongPress()"
         [ngClass]="'trip booking ' + bookingMeta().className"
         [toggleable]="true"
         [instant]="panelInstant()"

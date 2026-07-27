@@ -1,8 +1,9 @@
 @if (reservation(); as reservation) {
-  <div #cardContainer
-       [appSelectable]="selectableRef()" #sel="appSelectable"
-       appLongPress (longPress)="sel.onLongPress()">
-    <app-panel [ngClass]="'booking ' + bookingMeta().className" [toggleable]="true" [(collapsed)]="collapsed">
+  <div #cardContainer>
+    <app-panel
+        [appSelectable]="selectableRef()" #sel="appSelectable"
+        appLongPress (longPress)="sel.onLongPress()"
+        [ngClass]="'booking ' + bookingMeta().className" [toggleable]="true" [(collapsed)]="collapsed">
       <div panelHeader class="flex align-items-center w-full">
         <ng-content select="[dragHandle]" />
         <app-checkbox

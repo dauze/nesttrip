@@ -17,20 +17,27 @@
 }
 
 .nt-selectable.nt-selected {
-  // Trois couches, TOUTES en `inset` (jamais un box-shadow qui déborde vers
-  // l'extérieur) : `PanelComponent`/`app-panel` a son propre `overflow: hidden`
-  // (voir panel.component.scss) et la 1ère carte d'une liste touche souvent le
-  // bord haut de son conteneur scrollable — un anneau qui déborde s'y fait
-  // rogner (symptôme observé : "le trait du haut est plus fin sur la 1ère
-  // activité"). En restant strictement à l'intérieur de la boîte, l'anneau ne
-  // peut plus jamais être rogné par un ancêtre, quel que soit l'élément hôte.
-  // 1. Liseré net (2px, plus fin que l'ancien 3px "épaulé").
-  // 2. Halo flouté vers l'intérieur, pour la profondeur ("un peu de flou").
-  // 3. Léger lavis de fond (teinte très diluée), pour l'"opacity" demandée.
+  // TOUT en `inset` (jamais un box-shadow qui déborde vers l'extérieur) :
+  // `PanelComponent`/`app-panel` a son propre `overflow: hidden` (voir
+  // panel.component.scss) et la 1ère carte d'une liste touche souvent le bord
+  // haut de son conteneur scrollable — un anneau qui déborde s'y fait rogner
+  // (symptôme observé : "le trait du haut est plus fin sur la 1ère activité").
+  // En restant strictement à l'intérieur de la boîte, l'anneau ne peut plus
+  // jamais être rogné par un ancêtre, quel que soit l'élément hôte.
+  //
+  // 1. Liseré fin et semi-transparent (pas le rouge plein, plus subtil).
+  // 2. Halo flouté vers l'intérieur, pour la profondeur.
+  // 3. Dégradé "glossy" (lueur en haut qui s'estompe) par-dessus un très
+  //    léger lavis de fond uniforme.
   box-shadow:
-    inset 0 0 0 2px var(--nt-red-500),
-    inset 0 0 0.75rem 0 color-mix(in srgb, var(--nt-red-500) 25%, transparent);
-  background-color: color-mix(in srgb, var(--nt-red-500) 6%, transparent);
+    inset 0 0 0 1.5px color-mix(in srgb, var(--nt-red-500) 65%, transparent),
+    inset 0 0 1rem 0 color-mix(in srgb, var(--nt-red-500) 14%, transparent);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--nt-red-500) 9%, transparent),
+    transparent 65%
+  );
+  background-color: color-mix(in srgb, var(--nt-red-500) 4%, transparent);
 }
 
 // Checkbox PC toujours visible (voir SelectableDirective.onCheckboxClick) :
