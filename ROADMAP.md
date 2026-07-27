@@ -5,22 +5,26 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
+
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible
 
 ### UI Desktop
-- Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut
+
+- Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut : idem quand le portable est en position allongé non ?
 - Vue calendrier ?
 
 ### Carte
+
 - Gérer le cas Asie : alternative à Google Maps (non prioritaire)
-- Carte pliée par défaut dans "Général" (aperçu + "voir plus" → bon jour)
-- Rajouter la Position actuelle de l'utilisateur sur la carte
+- Carte pliée par défaut dans "Général" qui permet de voir toutes les activités du voyage. Même scroll que pour un day ?
+- Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
 - Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin.
 - Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange
-- Mettre la carte sur le côté lorsque le téléphone est en mode allongé 
+- Mettre la carte sur le côté lorsque le téléphone est en mode allongé
 
 ### Activités
+
 - Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
 - Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
@@ -29,37 +33,44 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
 
 ### Nouveau voyage / IA (non prioritaire)
+
 - Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA)
 
 ### Collaborateurs(non prioritaire)
-- Email quand ajouté à un trip 
+
+- Email quand ajouté à un trip
 
 ### Administratif
+
 - Catégorisation "en cours" / "future" / "passée" des réservations (grisée une fois passée) dans le sous-menu Réservations (non fait, voir Reservation.md)
 
 ### Devise
+
 - Sélection de la devise par voyage (valeur par défaut)
-- Compteur de somme de tous les éléments à mettre dan l'onglet générale, je ne sais pas encore ou 
+- Compteur de somme de tous les éléments à mettre dan l'onglet générale, je ne sais pas encore ou
 
 ### UX / Interactions
-- Suppression : passer en "rester appuyé" plutôt qu'icône corbeille toujours visible : on pourrait mettre des checkbox qui apparaissent pour supprimer en masse par exemple. le clique long est une idée ux améliorable car il y a pleins de trucs sur mon header : Rester appuyer fait sélectionner aec un contour d'une couleur pour le notes et les activitées. Un drawer arrive pas en dessous avec un bouton annuler et un bouton supprimer : on peut en selectionner une ou plusieurs puis cliquer sur le bouton "surrpimer", la popup de validation sera de nouveau affichée. 
-Sur ordinateur, il faut afficher les cases à cocher, un bouton "tout sélectionner", et la bar je ne sais pas ou la mettre ni comment faire bascuper en mode modification, à définir
-- mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés 
+
+- Suppression : passer en "rester appuyé" plutôt qu'icône corbeille toujours visible : on pourrait mettre des checkbox qui apparaissent pour supprimer en masse par exemple. le clique long est une idée ux améliorable car il y a pleins de trucs sur mon header : Rester appuyer fait sélectionner aec un contour d'une couleur pour le notes et les activitées. Un drawer arrive pas en dessous avec un bouton annuler et un bouton supprimer : on peut en selectionner une ou plusieurs puis cliquer sur le bouton "surrpimer", la popup de validation sera de nouveau affichée.
+  Sur ordinateur, il faut afficher les cases à cocher, un bouton "tout sélectionner", et la bar je ne sais pas ou la mettre ni comment faire bascuper en mode modification, à définir
+- mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours.
-- Drag and drop maison : agrandir la zone de décalage, vérifier si cdkDrag le propose, uniformiser le comportement entre tous les drags
 - Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position + ajouter le filtre sélectionné dans l'url
-- rajouter un indicateur quand s'est sauvegardé et quand la sauvegarde s'est mal passé, très discret, une petite bar verte au dessus de la bar d'état par exemple. et si ça marche pas, faire un truc rouge avec de vrai consigne mais je sais pas encore quoi 
-- Menu : mode sombre / clair / système
-- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input )
-- reseigner en input le titre dans le datepicker pour mettre le titre variable avec "selectionner heure de début" et "sélectionner heure de fin" idem sur les listes ?
+- rajouter un indicateur quand s'est sauvegardé et quand la sauvegarde s'est mal passé, très discret, une petite bar verte au dessus de la bar d'état par exemple. et si ça marche pas, faire un truc rouge avec de vrai consigne mais je sais pas encore quoi
+- Menu : mode sombre / clair / système qui est dans le menu au clique sur la roue cranté, via 3 icone en utiliser la même bar que "note - réservation - activité"
+- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input ) car c'est génant de cliquer à côté et que ça fasse la modification
+- reseigner en input le titre de la selection sur les listes lorsqu'elles s'ouvre sur mobile
 - clique sur n'importe ou du header pour le collapse true/ false et pas que sur le bouton, sauf la zone de drag and drop, l'image ou le stylo. Idem pour les notes
-- Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner avec l'infos qui est dans la bar de recherche
-- Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur
+- Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
+- Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
+- faire en sorte que le tab de login ai une largeur maximum car ça fait trop étiré sur vue PC
+- paramétrer la récup des infos du trafic d'avion
 
 ### Bugs / fixes
-- Depuis le pool, problème de drag and drop maison :  sélection d'une activité sous le calendrier : position mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
+
+- Depuis le pool, problème de drag and drop maison : si je prend une activité qui est sous le calendrier, le calendrier s'ouvre et la position du drag est mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
 - mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle
 - le minim width n'est plus appliqué et on peut de nouveau tasser jusqu'à avoir des chevauchement, il faut remettre un min width sur le plus haut niveau : le min-width: 24rem fonctionne toujours sur l'écran d'accueil, de login, mais plus sur "app-content" depuis les modifications du swiper
 - Dans les données de google pour afficher si fermé ou non, il en faut pas prendre l'heure actuelle mais plutôt l'heure annoncé par l'heure de début. Si l'heure n'est pas renseignée, l'afficher uniquement si il est fermé le jour entier sélectionné, sinon ne pas l'afficher.
@@ -67,17 +78,22 @@ Sur ordinateur, il faut afficher les cases à cocher, un bouton "tout sélection
 - l'ouverture du calendrier sur le drag and drop dans la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
 - le bouton flottant est trop pret du bord ! et ralentir un peu son annimation d'ouverture
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
-- Je peux pas actualiser depuis l'écran ou il y a le swiper
-- Sur ordinateur, afficher plusieurs jour si écran large ? 
-- Saisir date : ne pas valider si le choix est l'heure, aller sur les minutes via une animation ! 
-- Warning : <gmp-pin>: The `element` property is deprecated. Please use the PinElement directly.<gmp-advanced-marker>: Please use addEventListener('gmp-click', ...) instead of addEventListener('click', ...). A supprimer 
-- la couleur du drag and drop n'est plus respecté
+- Je peux pas actualiser depuis l'écran ou il y a le swiper via le racourcie google de swipe vers le bas
+- Sur ordinateur, afficher plusieurs jour si écran large ? mettre une taille maximum pour la largeur des activités en tout cas et en mettre plusieurs cote à cote via un grid
+- Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
+- Warning : <gmp-pin>: The `element` property is deprecated. Please use the PinElement directly.<gmp-advanced-marker>: Please use addEventListener('gmp-click', ...) instead of addEventListener('click', ...). A supprimer
+- la couleur du drag and drop maison n'est plus respecté, il faut que la bar de gauche reprenne la couleur de l'activité
 
 ### Qualité / process
+
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)
 - Secret de déploiement pour la release
-
+- tout passer en strategy onpush
+- passer à angular 22
+- basculer tous les scss possible via des scss primeflex
+- Duppliquer tout le code utiliser de primeflex et supprimer la librairie
+- empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ?
 
 ## ✅ Déjà fait
 
@@ -181,32 +197,32 @@ Sur ordinateur, il faut afficher les cases à cocher, un bouton "tout sélection
 - Hauteur de la carte Google en % d'écran plutôt qu'en pixels
 - Taille minimum dynamique sur les fenêtres swipe
 - Slide : repenser le slide: metttre le slide directement dans chaque slider, comme ça, en allant au jour suivant le slide d'un élément n'est pas pollué par le slide précédant. Par contre, il faut une facon élégante de masquer le header fixe + le header de voyage en scollant vers le bas. On pourrait faire du ménage sur le calcul du window.scrollY sur le body, et il faut faire très attention au slide qui est calculé sur chaque slider pour caler les activités à la carte. Attention aussi à ne pas afficher le slider dans le slide je ne veux pas plusieurs assenseurs. Cela simplifiera peut etre aussi le sticky sur la carte qui était compliqué à réaliser.
-- Le changement de type sur une activité ne fonctionne plus ! 
+- Le changement de type sur une activité ne fonctionne plus !
 - Barre du bas incohérente ("Général") lors du drag and drop d'activités : la bar est recréé dasn el composant de drag and drop mais elle est uniquement bien simulé dasn l'onglet Général, on ne pourrait pas faire un clone du visuelle comme pour le drag and drop que tu as mis ? Comme ça si il y a des changements futur, pas besoin de faire de correctif
 - Le drag and drop fonctionne pas sur mobile, il s'annule dès que je drag :le redémarrage de serveur avait pourtant corrigé ce beug en serveur local
 - Navbar : chiffre du jour en gros, mois complet en plus petit en dessous. Il serait bien d'avoir le jour de la semaine aussi; et de l'élargir un peut car sur les portables, si il y a la bar de multitache qui passe par dessus ça fait fin. Enfin, adapter la taille des jour si il y en as pas beaucoup pour qu'il prennent toute la place. peut être faire un custom plutôt ? avec le thème primeux attention
 - Fix : sélection décalée vers le haut si un panel se réduit pendant le drag custom
 - Si on ajoute des activités sur le pool, l'ordre ne doit pas changer.
 - au niveau du slide de la carte, il faudrait calculer la hauteur à prendre en fonction de la distance à parcourir : plus il y a de distance, plus il faut reculer. Moins il y en a, moins il faut reculer
-- Pouvoir supprimer des collaborateurs (via un clique sur les pastilles affiché:  ouvre la popup d'ajout des collob modifié qui permet la gestion des collab associés à ce trip, l'ajout d'un nouveau collab, la selection d'un companion de route à ajouter en clique rapide depuis une liste, la suppression d'un collab de route via une croix. Il faut donc stocker la liste des companions de route sur l'utilisateur, ou ? nouvelle bdd user ? => dans firestore ? Ca pourra servire pour le stockage des reglages du user.  faut faire attention à la gestion des user, seul l'owner peut supprimer des membres, et  il ne peut pas se supprimer lui même et doit supprimer le voyage, information à donner si son nom est grisé. Parti du dialog existant au clique sur "add collaborator". On pourrait supprimer le bouton "add colaborator" car le cluque sur la pastille remplacerai ça ? 
+- Pouvoir supprimer des collaborateurs (via un clique sur les pastilles affiché:  ouvre la popup d'ajout des collob modifié qui permet la gestion des collab associés à ce trip, l'ajout d'un nouveau collab, la selection d'un companion de route à ajouter en clique rapide depuis une liste, la suppression d'un collab de route via une croix. Il faut donc stocker la liste des companions de route sur l'utilisateur, ou ? nouvelle bdd user ? => dans firestore ? Ca pourra servire pour le stockage des reglages du user. faut faire attention à la gestion des user, seul l'owner peut supprimer des membres, et il ne peut pas se supprimer lui même et doit supprimer le voyage, information à donner si son nom est grisé. Parti du dialog existant au clique sur "add collaborator". On pourrait supprimer le bouton "add colaborator" car le cluque sur la pastille remplacerai ça ?
 - Et sortir le p-dialog pour le mettre dasn un composant à part, transverse comme ça sa taille n'est pas limité au composant
 - Ouvrir le calendrier en dialog si écran taille smartphone
-- Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas 
+- Tooltip propriétaire à repositionner sur la suppression des activité car il est parfois mal positionné et un top, bottom ne regle pas 100% des cas
 - Zones de drag and drop plus larges que les logos (réduire les mis-clics)
 - p-drawer mobile-only pour le mode modification de listes (desktop garde le fonctionnement actuel)
-- Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier 
+- Crayon pour modifier le titre pour pouvoir mettre le clique sur tout le header pour le déplier
 - Lorsque je choisi une activité dans le pool via la bar, les infos googles ne sont pas rensiegnés. Au deuxième clique, là ça marche. A corriger pour que ça marche du premier coup
-- La zone de saisie pour le prix n'est pas bonne 
-- L'ajout des activité dans le pool ne chaine pas sur la saisie du titre 
+- La zone de saisie pour le prix n'est pas bonne
+- L'ajout des activité dans le pool ne chaine pas sur la saisie du titre
 - Si j'ajoute un titre à une activité dans le p-autocomplete, la valeur du titre est bien mit à jour mais les données de google ne sont pas ramené, alors que la deuxième fois si
 - Bouton flottant d'ajout avec scroll auto vers la nouvelle activité créée et le curseur positionné sur le choix de l'activité
 - Uniformiser les pratique entre flouter et mettre en plus sombre quand il y a un modal
 - Afficher la carte seulement si pas d'activité ou activités incomplètes
 - Problème theme : skeleton bleu en dark mode, chip des pieces en thème dark sont en couleur claire, le contour de app overlay n'est pas la bonne couleur ni en dark ni en light
-- Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature  → embla-carousel en p-dialog sur toute la page
+- Image : suppression du bloc image, l'ouverture des images doit se faire via le clique sur l'image miniature → embla-carousel en p-dialog sur toute la page
 - Onglet Activités : tri par ville (avec fusion des doublons de même placeId, dates combinées) ou chronologique (jour par jour, "à assigner" en haut, jamais fusionné), barre de recherche, clic sur une date pour sauter au jour + scroller vers l'activité
 - Durée : autre méthode de saisie, gestion des durées > 24h si on a plusieurs jour plusieurs jours
-- Inciter l'utilisateur à compléter les données d'une carte/activité transport/hébergement en ouvrant l'élément à modifier suivant à la création d'une activité ? Ca ferai comme un pipe ou il chaine sur les 2-3 infos, pas trop relou en terme d'ux ? 
+- Inciter l'utilisateur à compléter les données d'une carte/activité transport/hébergement en ouvrant l'élément à modifier suivant à la création d'une activité ? Ca ferai comme un pipe ou il chaine sur les 2-3 infos, pas trop relou en terme d'ux ?
 - Modifier le système de saisie des horaire sur ordi pour faire 2 zones de saisie number : pas d'ouverture du composant
 - Modifier le composant timepicker pour permettre la saisie sur clavier comme sur le composant google !
 - Dans la modification de l'heure, si l'utilisateur positionne une heure puis une minute, alors il faut faire ok

@@ -5,12 +5,12 @@
                [appSelectable]="selectableRef(item.id)" #sel="appSelectable"
                appLongPress (longPress)="sel.onLongPress()">
       <div panelHeader class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
-        <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
         <app-checkbox
           class="nt-select-checkbox flex-shrink-0"
           [checked]="sel.isSelected()"
           (click)="sel.onCheckboxClick($event)"
         />
+        <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
         <textarea
           appTextarea
           class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
