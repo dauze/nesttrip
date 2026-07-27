@@ -1,0 +1,8 @@
+:host { display: block; }
+.file-name {
+  display: inline-block;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

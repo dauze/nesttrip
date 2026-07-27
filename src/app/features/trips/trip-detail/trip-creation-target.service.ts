@@ -1,6 +1,6 @@
 import { Injectable, Signal, signal } from '@angular/core';
 
-export type GeneralCreationSubTab = 'activities' | 'notes';
+export type GeneralCreationSubTab = 'activities' | 'notes' | 'reservations';
 
 export interface GeneralCreationTarget {
   activeSubTab: Signal<GeneralCreationSubTab>;

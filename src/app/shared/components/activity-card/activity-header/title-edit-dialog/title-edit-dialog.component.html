@@ -13,7 +13,7 @@
       type="text"
       class="title-edit-dialog__input"
       [value]="inputValue()"
-      placeholder="Nom de l'activité"
+      [placeholder]="placeholder"
       (input)="onInput($any($event.target).value)"
       (keydown.enter)="validate()" />
 

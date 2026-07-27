@@ -1,0 +1,11 @@
+:host { display: block; }
+
+// Réserve toujours la même hauteur (2 lignes) pour le libellé Début/Fin,
+// quelle que soit la longueur du texte selon le type ("Prise en charge" vs
+// "Restitution", "Check-in" vs "Check-out"...) : sans ça, une colonne dont
+// le libellé tient sur une ligne et l'autre sur deux fait démarrer les deux
+// rangées date/heure à des hauteurs différentes, donc visuellement
+// désalignées horizontalement l'une par rapport à l'autre.
+.reservation-details__date-label {
+  min-height: 2.25rem;
+}

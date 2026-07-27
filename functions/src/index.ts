@@ -9,10 +9,12 @@ import { removeCompanionHandler } from './companions/remove-companion.handler';
 import { authMiddleware } from './shared/auth.middleware';
 import { makePlaceDetailHandler } from './places/get-place.handler';
 import { getPlacePhotoHandler } from './places/photo.handler';
+import { getFlightStatusHandler } from './flights/get-flight-status.handler';
 
 admin.initializeApp();
 
 const googleApiKey = defineSecret('GOOGLE_PLACES_API_KEY');
+const aeroDataBoxApiKey = defineSecret('AERODATABOX_API_KEY');
 
 const app = express();
 app.use(express.json());
@@ -34,8 +36,9 @@ app.post('/api/collaborators', (req, res) => addCollaboratorHandler(req, res));
 app.delete('/api/collaborators/:tripId/:memberUid', (req, res) => removeCollaboratorHandler(req, res));
 app.delete('/api/companions/:companionUid', (req, res) => removeCompanionHandler(req, res));
 app.get('/api/photos/:photoRef', (req, res) =>  getPlacePhotoHandler(req, res, googleApiKey.value()));
+app.get('/api/vols/:flightNumber/status', (req, res) => getFlightStatusHandler(req, res, aeroDataBoxApiKey.value()));
 
 export const api = onRequest(
-  { secrets: [googleApiKey], region: 'europe-west1' },
+  { secrets: [googleApiKey, aeroDataBoxApiKey], region: 'europe-west1' },
   app
 );

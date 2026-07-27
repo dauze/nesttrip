@@ -7,10 +7,16 @@
     />
   </div>
   <div>
-    @if (activeSubTab() === 'notes') {
-      <app-notes [notes]="notes()" [tripId]="tripId()" />
-    } @else {
-      <app-trip-activities [tripId]="tripId()" />
+    @switch (activeSubTab()) {
+      @case ('notes') {
+        <app-notes [notes]="notes()" [tripId]="tripId()" />
+      }
+      @case ('reservations') {
+        <app-reservations-list [tripId]="tripId()" />
+      }
+      @default {
+        <app-trip-activities [tripId]="tripId()" />
+      }
     }
   </div>
 </div>

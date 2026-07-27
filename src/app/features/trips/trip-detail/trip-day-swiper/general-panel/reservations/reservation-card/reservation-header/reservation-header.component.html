@@ -1,0 +1,23 @@
+<div class="reservation-header__row flex align-items-center gap-2 w-full min-w-0">
+  <div class="reservation-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
+    <i [class]="'pi text-xl nt-text-muted ' + typeMeta[reservation().type].icon"></i>
+  </div>
+
+  <div class="reservation-header__meta flex flex-column flex-1 min-w-0 gap-1">
+    <input
+      type="text"
+      class="nt-inline-field w-full font-semibold text-base"
+      [value]="titleValue()"
+      [placeholder]="typeMeta[reservation().type].label"
+      (input)="onTitleInput($any($event.target).value)"
+      (blur)="onTitleBlur()"
+      (focus)="onTitleFocus($event)"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()" />
+
+    <span class="nt-text-muted text-xs flex align-items-center gap-1">
+      <i class="pi pi-calendar reservation-header__meta-icon"></i>
+      {{ reservation().startDateTime | date:'dd/MM HH:mm' }} → {{ reservation().endDateTime | date:'dd/MM HH:mm' }}
+    </span>
+  </div>
+</div>

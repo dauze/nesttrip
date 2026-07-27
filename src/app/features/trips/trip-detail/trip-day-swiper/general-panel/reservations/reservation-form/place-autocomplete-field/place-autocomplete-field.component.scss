@@ -1,0 +1,13 @@
+:host { display: block; }
+
+.place-autocomplete-field__value {
+  color: var(--nt-text-muted-color, inherit);
+  cursor: pointer;
+  border-radius: var(--nt-radius-sm, 0.25rem);
+  transition: background var(--nt-transition-duration, 0.15s) ease;
+
+  &:hover, &:focus-visible {
+    background: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
+    outline: none;
+  }
+}

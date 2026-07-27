@@ -1,0 +1,5 @@
+<app-place-autocomplete-field
+  label="Lieu (facultatif)"
+  placeholder="Rechercher un lieu..."
+  [initialPlace]="initialPlace()"
+  (placeSelected)="placeSelected.emit($event)" />
