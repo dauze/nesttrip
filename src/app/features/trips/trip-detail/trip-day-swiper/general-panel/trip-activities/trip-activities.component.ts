@@ -62,12 +62,12 @@ export class TripActivitiesComponent {
 
   readonly tripId = input.required<string>();
 
-  readonly sortMode = signal<SortMode>('city');
+  readonly sortMode = signal<SortMode>('chrono');
   readonly searchTerm = signal('');
 
   readonly sortOptions: SelectButtonOption<SortMode>[] = [
-    { label: 'Ville', value: 'city', icon: 'pi pi-map-marker' },
-    { label: 'Chronologique', value: 'chrono', icon: 'pi pi-calendar' },
+    { label: 'Chronologie', value: 'chrono', icon: 'pi pi-calendar' },
+    { label: 'Lieu', value: 'city', icon: 'pi pi-map-marker' },
   ];
 
   private readonly normalizedSearch = computed(() => this.searchTerm().trim().toLowerCase());
