@@ -73,15 +73,15 @@ export function reservationToFb(r: Reservation): ReservationFirebase {
 
   switch (r.type) {
     case 'hotel':
-      return { ...base, type: 'hotel', place: r.place };
+      return { ...base, type: 'hotel', ...(r.place ? { place: r.place } : {}) };
     case 'flight':
       return {
         ...base,
         type: 'flight',
-        airline: r.airline,
-        flightNumber: r.flightNumber,
-        departureAirport: r.departureAirport,
-        arrivalAirport: r.arrivalAirport,
+        ...(r.airline ? { airline: r.airline } : {}),
+        ...(r.flightNumber ? { flightNumber: r.flightNumber } : {}),
+        ...(r.departureAirport ? { departureAirport: r.departureAirport } : {}),
+        ...(r.arrivalAirport ? { arrivalAirport: r.arrivalAirport } : {}),
         ...(r.status ? { status: flightStatusToFb(r.status) } : {}),
         ...(r.statusFetchedAt ? { statusFetchedAt: String(r.statusFetchedAt.getTime()) } : {}),
       };
@@ -89,9 +89,9 @@ export function reservationToFb(r: Reservation): ReservationFirebase {
       return {
         ...base,
         type: 'carRental',
-        company: r.company,
-        pickupPlace: r.pickupPlace,
-        dropoffPlace: r.dropoffPlace,
+        ...(r.company ? { company: r.company } : {}),
+        ...(r.pickupPlace ? { pickupPlace: r.pickupPlace } : {}),
+        ...(r.dropoffPlace ? { dropoffPlace: r.dropoffPlace } : {}),
       };
     case 'other':
       return {

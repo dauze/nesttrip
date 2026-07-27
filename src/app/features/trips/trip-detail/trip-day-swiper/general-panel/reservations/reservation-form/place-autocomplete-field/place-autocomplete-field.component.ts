@@ -1,30 +1,44 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, output, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
+import {
+  TitleEditDialogComponent,
+  TitleEditDialogData,
+  TitleEditDialogResult,
+} from '@app/shared/components/activity-card/activity-header/title-edit-dialog/title-edit-dialog.component';
+import { DialogService } from '@app/shared/services/dialog.service';
+import { ViewportService } from '@core/services/viewport.service';
 import { GooglePlaceService } from '@core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@core/models/place.dto';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 
 /**
- * Champ d'autocomplete Google Places réutilisé par les 4 formulaires de
- * détail de réservation (hôtel/vol×2/location×2) — extrait pour éviter de
- * dupliquer 4 fois le même branchement sur `GooglePlaceService.search$`
- * (voir `ActivityHeaderComponent` pour le pattern d'origine). `AutoCompleteComponent`
- * n'accepte qu'une valeur texte libre (CVA sur une chaîne) : l'objet
- * `PlaceSummary` complet n'est jamais dans le form, il est émis à part via
- * `placeSelected`, à charge de l'appelant (`ReservationFormComponent`) de le
- * conserver pour la sauvegarde.
+ * Champ d'autocomplete Google Places réutilisé par les formulaires de détail
+ * de réservation (hôtel/vol×2/location×2) — extrait pour éviter de dupliquer
+ * le branchement sur `GooglePlaceService.search$` (voir `ActivityHeaderComponent`
+ * pour le pattern d'origine). `AutoCompleteComponent` n'accepte qu'une valeur
+ * texte libre (CVA sur une chaîne) : l'objet `PlaceSummary` complet n'est
+ * jamais dans un form, il est émis à part via `placeSelected`.
+ *
+ * Mobile (`ViewportService.isMobile()`) : même bascule que le titre d'activité
+ * — champ statique + crayon qui ouvre `TitleEditDialogComponent` en tiroir
+ * plein écran (réutilisé tel quel, générique), plutôt que l'autocomplete
+ * inline utilisée sur desktop.
  */
 @Component({
   selector: 'app-place-autocomplete-field',
   standalone: true,
   imports: [ReactiveFormsModule, AutoCompleteComponent],
   templateUrl: './place-autocomplete-field.component.html',
+  styleUrl: './place-autocomplete-field.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlaceAutocompleteFieldComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);
+  protected readonly viewport = inject(ViewportService);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
 
   readonly label = input('');
   readonly placeholder = input("Rechercher un lieu...");
@@ -62,6 +76,34 @@ export class PlaceAutocompleteFieldComponent {
   }
 
   displayName = (place: { name: unknown }): string => this.extractPlaceName(place?.name);
+
+  /** Mobile uniquement (voir le template) : ouvre le tiroir plein écran de recherche, en lieu de l'autocomplete inline. */
+  openMobileDialog(event: MouseEvent): void {
+    event.stopPropagation();
+
+    const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
+      TitleEditDialogComponent,
+      {
+        data: { initialTitle: this.displayControl.value },
+        panelClass: 'app-title-edit-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+      },
+    );
+
+    dialogRef.closed.subscribe((result) => {
+      if (!result) return;
+
+      if (result.type === 'place') {
+        this.onSelect(result.place);
+        return;
+      }
+
+      // Texte libre sans `placeId` : rien à émettre côté place (cohérent avec
+      // l'autocomplete desktop, qui n'émet `placeSelected` que sur un vrai
+      // choix Google, jamais sur une simple frappe de texte).
+      this.displayControl.setValue(result.text.trim());
+    });
+  }
 
   private extractPlaceName(name: unknown): string {
     if (typeof name === 'string') return name;

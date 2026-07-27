@@ -1,10 +1,6 @@
 <app-panel header="Réservations" class="reservations-list">
   <div class="flex flex-column gap-2">
-    <div class="flex justify-content-end">
-      <app-button label="Ajouter une réservation" icon="pi pi-plus" severity="secondary" [rounded]="true" (click)="triggerCreate()" />
-    </div>
-
-    @if (reservations().length === 0) {
+    @if (reservations().length === 0 && !creationService.draftActive()) {
       <app-message
         severity="info"
         icon="pi pi-info-circle"
@@ -12,27 +8,14 @@
         class="w-full" />
     } @else {
       @for (reservation of reservations(); track reservation.id) {
-        <app-card class="reservations-list__item cursor-pointer" (click)="openForm(reservation)">
-          <div class="flex align-items-center gap-2 w-full min-w-0">
-            <i [class]="typeMeta[reservation.type].icon + ' text-xl nt-text-muted flex-shrink-0'"></i>
-            <div class="flex flex-column min-w-0 flex-1 gap-1">
-              <span class="font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">
-                {{ reservation.title }}
-              </span>
-              <span class="nt-text-muted text-sm">
-                @if (sameDay(reservation.startDateTime, reservation.endDateTime)) {
-                  {{ reservation.startDateTime | date:'dd/MM/yyyy HH:mm' }}
-                } @else {
-                  {{ reservation.startDateTime | date:'dd/MM HH:mm' }} → {{ reservation.endDateTime | date:'dd/MM HH:mm' }}
-                }
-              </span>
-              @if (reservation.type === 'flight') {
-                <app-flight-status-badge [tripId]="tripId()" [reservation]="reservation" />
-              }
-            </div>
-          </div>
-        </app-card>
+        <app-reservation-card [tripId]="tripId()" [reservationId]="reservation.id" [initCollapsed]="true" />
       }
+    }
+
+    @if (creationService.draftActive()) {
+      <app-new-reservation-draft
+        (confirmed)="creationService.confirmDraft($event)"
+        (cancelled)="creationService.cancelDraft()" />
     }
   </div>
 </app-panel>

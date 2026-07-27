@@ -15,8 +15,10 @@
           </span>
           <span class="nt-text-muted text-sm flex-shrink-0">{{ occurrence.time | date:'HH:mm' }}</span>
         </div>
-        @if (occurrence.reservation.type === 'flight') {
-          <app-flight-status-badge [tripId]="tripId()" [reservation]="occurrence.reservation" />
+        @if (occurrence.reservation; as r) {
+          @if (r.type === 'flight' && r.flightNumber) {
+            <app-flight-status-badge [tripId]="tripId()" [reservation]="r" />
+          }
         }
       </div>
     }

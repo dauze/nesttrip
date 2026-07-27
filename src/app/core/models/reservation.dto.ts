@@ -38,26 +38,32 @@ export interface ReservationBase {
   price?: ReservationPrice;
 }
 
+/**
+ * Les champs "lieu" (place/aéroports/agences) sont optionnels sur tous les
+ * types : une réservation se crée d'abord vide (comme une activité, voir
+ * ReservationsCreationService) puis se complète progressivement dans la
+ * carte dépliée — jamais de champ obligatoire bloquant à la création.
+ */
 export interface HotelReservation extends ReservationBase {
   type: 'hotel';
-  place: PlaceSummary;
+  place?: PlaceSummary;
 }
 
 export interface FlightReservation extends ReservationBase {
   type: 'flight';
-  airline: string;
-  flightNumber: string;
-  departureAirport: PlaceSummary;
-  arrivalAirport: PlaceSummary;
+  airline?: string;
+  flightNumber?: string;
+  departureAirport?: PlaceSummary;
+  arrivalAirport?: PlaceSummary;
   status?: FlightStatus;
   statusFetchedAt?: Date;
 }
 
 export interface CarRentalReservation extends ReservationBase {
   type: 'carRental';
-  company: string;
-  pickupPlace: PlaceSummary;
-  dropoffPlace: PlaceSummary;
+  company?: string;
+  pickupPlace?: PlaceSummary;
+  dropoffPlace?: PlaceSummary;
 }
 
 export interface OtherReservation extends ReservationBase {

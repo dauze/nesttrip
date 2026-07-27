@@ -1,0 +1,20 @@
+@if (reservation(); as reservation) {
+  <div #cardContainer>
+    <app-panel [toggleable]="true" [(collapsed)]="collapsed">
+      <div panelHeader class="flex align-items-center w-full">
+        <app-reservation-header class="flex-1 min-w-0" [reservation]="reservation" (titleEdited)="onTitleChanged($event)" />
+        <app-button
+          icon="pi pi-trash"
+          [rounded]="true"
+          [text]="true"
+          severity="secondary"
+          class="ml-2 flex-shrink-0"
+          (click)="confirmDelete(); $event.stopPropagation()" />
+      </div>
+
+      <app-reservation-details [tripId]="tripId()" [reservation]="reservation" />
+      <app-divider class="m-1" />
+      <app-reservation-files [tripId]="tripId()" [reservation]="reservation" />
+    </app-panel>
+  </div>
+}

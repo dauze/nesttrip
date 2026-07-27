@@ -4,21 +4,37 @@
       <i class="pi pi-map-marker text-sm"></i>{{ label() }}
     </span>
   }
-  <app-autocomplete
-    [suggestions]="places()"
-    [formControl]="displayControl"
-    (searched)="onSearch($event)"
-    (optionSelected)="onSelect($event)"
-    [displayWith]="displayName"
-    [placeholder]="placeholder()"
-    [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
-    class="w-full transparent-inputtext"
-    inputClass="w-full text-sm">
-    <ng-template #item let-place>
-      <div class="flex flex-column min-w-0 flex-1">
-        <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
-        <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
-      </div>
-    </ng-template>
-  </app-autocomplete>
+
+  @if (viewport.isMobile()) {
+    <div class="place-autocomplete-field__row flex align-items-center gap-2 min-w-0">
+      <span class="place-autocomplete-field__value flex-1 min-w-0 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">
+        {{ displayControl.value || placeholder() }}
+      </span>
+      <button
+        type="button"
+        class="place-autocomplete-field__pencil flex-shrink-0"
+        aria-label="Modifier le lieu"
+        (click)="openMobileDialog($event)">
+        <i class="pi pi-pencil"></i>
+      </button>
+    </div>
+  } @else {
+    <app-autocomplete
+      [suggestions]="places()"
+      [formControl]="displayControl"
+      (searched)="onSearch($event)"
+      (optionSelected)="onSelect($event)"
+      [displayWith]="displayName"
+      [placeholder]="placeholder()"
+      [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
+      class="w-full transparent-inputtext"
+      inputClass="w-full text-sm">
+      <ng-template #item let-place>
+        <div class="flex flex-column min-w-0 flex-1">
+          <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
+          <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
+        </div>
+      </ng-template>
+    </app-autocomplete>
+  }
 </div>

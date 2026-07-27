@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { EMPTY, Observable, tap } from 'rxjs';
 import { FlightReservation, FlightStatus } from '@core/models/reservation.dto';
 import { FlightStatusApiService } from './flight-status-api.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
@@ -47,6 +47,8 @@ export class FlightStatusRefreshService {
   private readonly tripFacade = inject(TripFacade);
 
   refreshIfStale(tripId: string, reservation: FlightReservation, now = new Date()): void {
+    if (!reservation.flightNumber) return;
+
     const phase = getRefreshPhase(reservation, now);
     const intervalMs = REFRESH_INTERVAL_MS[phase];
     if (intervalMs === null) return;
@@ -59,8 +61,10 @@ export class FlightStatusRefreshService {
     });
   }
 
-  /** Bouton de rafraîchissement manuel : ignore la fraîcheur, toujours un vrai appel réseau. */
+  /** Bouton de rafraîchissement manuel : ignore la fraîcheur, toujours un vrai appel réseau. No-op tant que le n° de vol n'est pas encore renseigné. */
   forceRefresh(tripId: string, reservation: FlightReservation): Observable<FlightStatus> {
+    if (!reservation.flightNumber) return EMPTY;
+
     return this.api.getStatus$(reservation.flightNumber, reservation.startDateTime).pipe(
       tap((status) => this.tripFacade.updateFlightStatus(tripId, reservation, status, new Date())),
     );

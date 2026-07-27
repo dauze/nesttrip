@@ -1,0 +1,48 @@
+<div class="reservation-header__row flex align-items-center gap-2 w-full min-w-0">
+  <div class="reservation-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
+    <i [class]="'pi text-xl nt-text-muted ' + typeMeta[reservation().type].icon"></i>
+  </div>
+
+  <div class="reservation-header__meta flex flex-column flex-1 min-w-0 gap-1">
+    @if (viewport.isMobile()) {
+      <div class="reservation-header__title-mobile flex align-items-center gap-2 min-w-0">
+        <span class="reservation-header__title-text font-semibold text-base white-space-nowrap overflow-hidden text-overflow-ellipsis">
+          {{ reservation().title || typeMeta[reservation().type].label }}
+        </span>
+        <button
+          type="button"
+          class="reservation-header__pencil flex-shrink-0"
+          aria-label="Modifier le titre"
+          (click)="openTitleEditDialog($event)">
+          <i class="pi pi-pencil"></i>
+        </button>
+      </div>
+    } @else {
+      <div (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" tabindex="-1">
+        <app-autocomplete
+          [suggestions]="places()"
+          [formControl]="titleControl"
+          (blurred)="onTitleBlur()"
+          (searched)="onSearch($event)"
+          (optionSelected)="onSelect($event)"
+          [displayWith]="displayName"
+          [placeholder]="typeMeta[reservation().type].label"
+          class="w-full transparent-inputtext"
+          [emptyMessage]="searching() ? 'Chargement...' : 'Aucun résultat trouvé'"
+          inputClass="font-semibold p-0 text-base">
+          <ng-template #item let-place>
+            <div class="flex flex-column min-w-0 flex-1">
+              <span class="font-medium text-sm white-space-normal line-height-3">{{ displayName(place) }}</span>
+              <span class="nt-text-muted text-xs white-space-normal line-height-2">{{ place.address }}</span>
+            </div>
+          </ng-template>
+        </app-autocomplete>
+      </div>
+    }
+
+    <span class="nt-text-muted text-xs flex align-items-center gap-1">
+      <i class="pi pi-calendar reservation-header__meta-icon"></i>
+      {{ reservation().startDateTime | date:'dd/MM HH:mm' }} → {{ reservation().endDateTime | date:'dd/MM HH:mm' }}
+    </span>
+  </div>
+</div>

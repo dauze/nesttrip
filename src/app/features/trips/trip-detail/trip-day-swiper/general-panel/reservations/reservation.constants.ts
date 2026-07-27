@@ -3,7 +3,7 @@ import { ReservationType } from '@core/models/reservation.dto';
 export interface ReservationTypeMeta {
   label: string;
   icon: string;
-  /** Libellés contextuels des champs de dates communs (voir ReservationFormComponent). */
+  /** Libellés contextuels des champs de dates communs (voir ReservationDetailsComponent). */
   startLabel: string;
   endLabel: string;
 }

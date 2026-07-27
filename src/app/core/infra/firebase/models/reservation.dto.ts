@@ -30,24 +30,24 @@ export interface ReservationBaseFirebase {
 
 export interface HotelReservationFirebase extends ReservationBaseFirebase {
   type: 'hotel';
-  place: PlaceSummary;
+  place?: PlaceSummary;
 }
 
 export interface FlightReservationFirebase extends ReservationBaseFirebase {
   type: 'flight';
-  airline: string;
-  flightNumber: string;
-  departureAirport: PlaceSummary;
-  arrivalAirport: PlaceSummary;
+  airline?: string;
+  flightNumber?: string;
+  departureAirport?: PlaceSummary;
+  arrivalAirport?: PlaceSummary;
   status?: FlightStatusFirebase;
   statusFetchedAt?: string;
 }
 
 export interface CarRentalReservationFirebase extends ReservationBaseFirebase {
   type: 'carRental';
-  company: string;
-  pickupPlace: PlaceSummary;
-  dropoffPlace: PlaceSummary;
+  company?: string;
+  pickupPlace?: PlaceSummary;
+  dropoffPlace?: PlaceSummary;
 }
 
 export interface OtherReservationFirebase extends ReservationBaseFirebase {
