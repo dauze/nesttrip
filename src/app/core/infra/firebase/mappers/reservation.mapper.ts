@@ -9,7 +9,7 @@ function flightStatusFromFb(s: FlightStatusFirebase): FlightStatus {
   };
 }
 
-function flightStatusToFb(s: FlightStatus): FlightStatusFirebase {
+export function flightStatusToFb(s: FlightStatus): FlightStatusFirebase {
   return {
     ...s,
     actualDepartureTime: s.actualDepartureTime ? String(s.actualDepartureTime.getTime()) : '',

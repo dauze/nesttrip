@@ -10,11 +10,12 @@ import { ReservationFocusService } from '@app/features/trips/trip-detail/reserva
 import { Reservation } from '@core/models/reservation.dto';
 import { RESERVATION_TYPE_META } from './reservation.constants';
 import { ReservationFormComponent } from './reservation-form/reservation-form.component';
+import { FlightStatusBadgeComponent } from './flight-status-badge/flight-status-badge.component';
 
 @Component({
   selector: 'app-reservations-list',
   standalone: true,
-  imports: [PanelComponent, MessageComponent, CardComponent, ButtonComponent, DatePipe],
+  imports: [PanelComponent, MessageComponent, CardComponent, ButtonComponent, DatePipe, FlightStatusBadgeComponent],
   templateUrl: './reservations-list.component.html',
   styleUrl: './reservations-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 import { Day, Trip } from './trip.model';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
-import { Reservation } from '@core/models/reservation.dto';
+import { FlightReservation, FlightStatus, Reservation } from '@core/models/reservation.dto';
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -145,6 +145,10 @@ export class TripFacade {
 
   removeReservation(tripId: string, reservationId: string): void {
     this.store.removeReservation(tripId, reservationId);
+  }
+
+  updateFlightStatus(tripId: string, reservation: FlightReservation, status: FlightStatus, statusFetchedAt: Date): void {
+    this.store.updateFlightStatus(tripId, reservation, status, statusFetchedAt);
   }
 
   createItem(tripId: string, item: Item): void {

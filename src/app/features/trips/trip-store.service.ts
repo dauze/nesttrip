@@ -4,7 +4,7 @@ import { Trip, Day, TripMember } from './trip.model';
 import { Activity, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
-import { Reservation } from '@core/models/reservation.dto';
+import { FlightReservation, FlightStatus, Reservation } from '@core/models/reservation.dto';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
@@ -393,10 +393,38 @@ export class TripStore {
     });
   }
 
+  /**
+   * Met à jour uniquement le statut vol (cache Firestore partagé, voir
+   * `FlightStatusRefreshService`) : n'affecte aucun autre champ de la
+   * réservation. Écriture DIRECTE (pas `queueUpdate`/le writer débouncé) :
+   * le pending marqué ici ne peut donc pas compter sur l'`effect()` du
+   * constructeur (qui surveille `reservationPersistenceService.syncing()`,
+   * lequel ne passe jamais à `true` pour cette écriture) — il est retiré
+   * explicitement une fois la promesse résolue, pas par ce mécanisme partagé.
+   */
+  updateFlightStatus(tripId: string, reservation: FlightReservation, status: FlightStatus, statusFetchedAt: Date): void {
+    this._reservations.update((r) => ({ ...r, [reservation.id]: { ...reservation, status, statusFetchedAt } }));
+    this.markReservationPending(reservation.id);
+    this.reservationPersistenceService.updateFlightStatus(tripId, reservation.id, status, statusFetchedAt)
+      .catch((err) => {
+        console.error('[TripStore] Erreur mise à jour statut vol Firestore :', err);
+      })
+      .finally(() => this.unmarkReservationPending(reservation.id));
+  }
+
   private markReservationPending(id: string): void {
     this._pendingReservationIds.update((s) => {
       const copy = new Set(s);
       copy.add(id);
+      return copy;
+    });
+  }
+
+  private unmarkReservationPending(id: string): void {
+    this._pendingReservationIds.update((s) => {
+      if (!s.has(id)) return s;
+      const copy = new Set(s);
+      copy.delete(id);
       return copy;
     });
   }

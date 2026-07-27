@@ -1,0 +1,17 @@
+<div class="flight-status-badge flex flex-column gap-1">
+  <div class="flex align-items-center gap-2 flex-wrap">
+    <app-tag [value]="meta().label" [severity]="meta().severity" />
+    <app-button
+      icon="pi pi-refresh"
+      [text]="true"
+      [rounded]="true"
+      size="small"
+      [loading]="refreshing()"
+      [disabled]="cooldownRemaining() > 0"
+      [attr.aria-label]="cooldownRemaining() > 0 ? 'Rafraîchir (disponible dans ' + cooldownRemaining() + 's)' : 'Rafraîchir le statut du vol'"
+      (click)="onRefreshClick($event)" />
+  </div>
+  <span class="flight-status-badge__disclaimer nt-text-muted text-xs">
+    Statut informatif, peut différer de la source officielle de la compagnie.
+  </span>
+</div>

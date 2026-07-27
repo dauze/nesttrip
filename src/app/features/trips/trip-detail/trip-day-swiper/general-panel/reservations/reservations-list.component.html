@@ -26,6 +26,9 @@
                   {{ reservation.startDateTime | date:'dd/MM HH:mm' }} → {{ reservation.endDateTime | date:'dd/MM HH:mm' }}
                 }
               </span>
+              @if (reservation.type === 'flight') {
+                <app-flight-status-badge [tripId]="tripId()" [reservation]="reservation" />
+              }
             </div>
           </div>
         </app-card>

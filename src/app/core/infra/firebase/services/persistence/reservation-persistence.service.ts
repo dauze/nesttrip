@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { reservationToFb } from '@core/infra/firebase/mappers/reservation.mapper';
-import { Reservation } from '@core/models/reservation.dto';
+import { flightStatusToFb, reservationToFb } from '@core/infra/firebase/mappers/reservation.mapper';
+import { FlightStatus, Reservation } from '@core/models/reservation.dto';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { DebounceWriter } from '../../shared/debounced-writer';
@@ -49,6 +49,21 @@ export class ReservationPersistenceService extends DebounceWriter<string, Reserv
   remove(tripId: string, reservationId: string): Promise<void> {
     return updateDoc(doc(this.db, 'trips', tripId), {
       [`reservations.${reservationId}`]: deleteField(),
+    });
+  }
+
+  /**
+   * Écriture directe (non débouncée) et ciblée (dot-notation sur les deux
+   * seuls sous-champs concernés) du statut vol — cache partagé Firestore
+   * entre tous les membres du trip (voir `FlightStatusRefreshService`) :
+   * ne repasse jamais par `queueUpdate`/l'objet réservation complet, pour ne
+   * jamais entrer en conflit avec une édition manuelle en cours de debounce
+   * sur les autres champs.
+   */
+  updateFlightStatus(tripId: string, reservationId: string, status: FlightStatus, statusFetchedAt: Date): Promise<void> {
+    return updateDoc(doc(this.db, 'trips', tripId), {
+      [`reservations.${reservationId}.status`]: flightStatusToFb(status),
+      [`reservations.${reservationId}.statusFetchedAt`]: String(statusFetchedAt.getTime()),
     });
   }
 }

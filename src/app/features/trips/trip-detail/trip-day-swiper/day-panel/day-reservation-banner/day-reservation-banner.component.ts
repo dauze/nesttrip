@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { ReservationFocusService } from '@app/features/trips/trip-detail/reservation-focus.service';
 import { RESERVATION_TYPE_META } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/reservations/reservation.constants';
+import { FlightStatusBadgeComponent } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/reservations/flight-status-badge/flight-status-badge.component';
 import { getReservationDayOccurrences, ReservationDayOccurrence } from './reservation-day-occurrence';
 
 /**
@@ -17,7 +18,7 @@ import { getReservationDayOccurrences, ReservationDayOccurrence } from './reserv
 @Component({
   selector: 'app-day-reservation-banner',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, FlightStatusBadgeComponent],
   templateUrl: './day-reservation-banner.component.html',
   styleUrl: './day-reservation-banner.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
