@@ -1,4 +1,5 @@
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { Reservation } from '@core/models/reservation.dto';
 import { Notes } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 export type TripRole = 'owner' | 'editor';
@@ -13,6 +14,8 @@ export interface Trip {
   activities: PoolActivity[];
   /** Instances réelles (form) rattachées aux jours, référencées par Day.activityIds. */
   dayActivityInstances: DayActivityInstance[];
+  /** Réservations transverses (hôtel/vol/location/autre), indépendantes des jours. */
+  reservations: Reservation[];
   notes: Notes;
   placeId?: string;
 }

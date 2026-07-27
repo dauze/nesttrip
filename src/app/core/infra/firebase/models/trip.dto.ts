@@ -2,6 +2,7 @@
 import { Notes } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import {ActivityFirebase} from './activity.dto';
 import {DayActivityInstanceFirebase} from './day-activity-instance.dto';
+import {ReservationFirebase} from './reservation.dto';
 
 export type TripRoleFireBase = 'owner' | 'editor';
 
@@ -22,6 +23,8 @@ export interface TripFirebase {
   activities: Record<string, ActivityFirebase>;
   /** Instances réelles (form) rattachées aux jours, indexées par instance id. */
   dayActivityInstances: Record<string, DayActivityInstanceFirebase>;
+  /** Réservations transverses (hôtel/vol/location/autre), indépendantes du map `days`. */
+  reservations: Record<string, ReservationFirebase>;
   notes: Notes;
   placeId?: string;
 }

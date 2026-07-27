@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 import { Day, Trip } from './trip.model';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { Reservation } from '@core/models/reservation.dto';
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -134,6 +135,18 @@ export class TripFacade {
     this.store.dispatchActivity(tripId, activityId, origin, targetDayId);
   }
 
+  createReservation(tripId: string, reservation: Reservation): void {
+    this.store.createReservation(tripId, reservation);
+  }
+
+  updateReservation(tripId: string, reservation: Reservation): void {
+    this.store.updateReservation(tripId, reservation);
+  }
+
+  removeReservation(tripId: string, reservationId: string): void {
+    this.store.removeReservation(tripId, reservationId);
+  }
+
   createItem(tripId: string, item: Item): void {
     this.store.createItem(tripId, item);
   }
@@ -161,6 +174,28 @@ export class TripFacade {
   getNotesItems = this.store.getNotesItems.bind(this.store);
   // 1. Exposer le sélecteur et la commande
   getTripMembers = this.store.getTripMembers.bind(this.store);
+  getReservation = this.store.getReservation.bind(this.store);
+  /** Toutes les réservations d'un trip, sans tri (voir `allReservationsSorted`/`reservationsForDay` pour des vues dérivées). */
+  getAllReservations = this.store.getAllReservations.bind(this.store);
+
+  /** Réservations triées par `startDateTime`, pour la liste du sous-menu Réservations. */
+  allReservationsSorted(tripId: string): Reservation[] {
+    return [...this.store.getAllReservations(tripId)()].sort(
+      (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime(),
+    );
+  }
+
+  /** Réservations dont la plage `[startDateTime, endDateTime]` touche ce jour (même jour calendaire). */
+  reservationsForDay(tripId: string, dayId: Date): Reservation[] {
+    const dayStart = new Date(dayId);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    return this.store.getAllReservations(tripId)().filter(
+      (r) => r.startDateTime < dayEnd && r.endDateTime >= dayStart,
+    );
+  }
   // ── Hydratation ───────────────────────────────────────────────────────────
 
   private hydrate(trip: Trip): void {
@@ -171,6 +206,8 @@ export class TripFacade {
     const newTripDays = { ...this.store._tripDays() };
     const newDayActivityIds = { ...this.store._dayActivityIds() };
     const newTripActivities = { ...this.store._tripActivities() };
+    const newReservations = { ...this.store._reservations() };
+    const newTripReservations = { ...this.store._tripReservations() };
     const notesItems = { ...this.store._notesItems() };
     const tripNotesItems = { ...this.store._tripNotesItems() };
     const tripMembers = { ...this.store._tripMembers() };
@@ -189,6 +226,11 @@ export class TripFacade {
       delete newPoolActivities[activityId];
     }
 
+    const previousReservationIds = newTripReservations[trip.id] ?? [];
+    for (const reservationId of previousReservationIds) {
+      delete newReservations[reservationId];
+    }
+
     const previousItemIds = tripNotesItems[trip.id] ?? [];
     for (const itemId of previousItemIds) {
       delete notesItems[itemId];
@@ -197,11 +239,13 @@ export class TripFacade {
     delete tripNotesItems[trip.id];
     delete newTripDays[trip.id];
     delete newTripActivities[trip.id];
+    delete newTripReservations[trip.id];
     delete tripMembers[trip.id];
 
-    newTrips[trip.id] = { ...trip, days: [], activities: [], dayActivityInstances: [] };
+    newTrips[trip.id] = { ...trip, days: [], activities: [], dayActivityInstances: [], reservations: [] };
     newTripDays[trip.id] = [];
     newTripActivities[trip.id] = [];
+    newTripReservations[trip.id] = [];
     tripNotesItems[trip.id] = [];
 
     for (const item of trip.notes.items) {
@@ -213,6 +257,11 @@ export class TripFacade {
     for (const activity of trip.activities) {
       newPoolActivities[activity.id] = activity;
       newTripActivities[trip.id].push(activity.id);
+    }
+
+    for (const reservation of trip.reservations) {
+      newReservations[reservation.id] = reservation;
+      newTripReservations[trip.id].push(reservation.id);
     }
 
     // 2. Les instances (form) du trip.
@@ -236,6 +285,8 @@ export class TripFacade {
     this.store._tripDays.set(newTripDays);
     this.store._dayActivityIds.set(newDayActivityIds);
     this.store._tripActivities.set(newTripActivities);
+    this.store._reservations.set(newReservations);
+    this.store._tripReservations.set(newTripReservations);
     this.store._notesItems.set(notesItems);
     this.store._tripNotesItems.set(tripNotesItems);
     this.store._tripMembers.set(tripMembers);
@@ -319,6 +370,33 @@ export class TripFacade {
       const current = map[trip.id] ?? {};
       if (JSON.stringify(current) === JSON.stringify(trip.members)) return map;
       return { ...map, [trip.id]: trip.members };
+    });
+
+    // 4. Réservations : même logique anti-flicker, writer débouncé indépendant.
+    const pendingReservationIds = this.store._pendingReservationIds();
+    const currentReservations = this.store._reservations();
+    const newReservations = { ...currentReservations };
+    for (const reservation of trip.reservations) {
+      if (pendingReservationIds.has(reservation.id)) continue;
+
+      const current = currentReservations[reservation.id];
+      newReservations[reservation.id] =
+        current && JSON.stringify(current) === JSON.stringify(reservation)
+          ? current
+          : reservation;
+    }
+
+    const remoteReservationIds = new Set(trip.reservations.map((r) => r.id));
+    for (const id of this.store._tripReservations()[trip.id] ?? []) {
+      if (!remoteReservationIds.has(id) && !pendingReservationIds.has(id)) delete newReservations[id];
+    }
+
+    this.store._reservations.set(newReservations);
+    this.store._tripReservations.update((map) => {
+      const previousOrder = map[trip.id] ?? [];
+      const preserved = previousOrder.filter((id) => remoteReservationIds.has(id) || pendingReservationIds.has(id));
+      const newIds = trip.reservations.map((r) => r.id).filter((id) => !previousOrder.includes(id));
+      return { ...map, [trip.id]: [...preserved, ...newIds] };
     });
   }
 }
