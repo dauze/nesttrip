@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, signal, viewChildren } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
@@ -18,6 +19,7 @@ import { NewActivityDraftComponent } from '../../day-panel/new-activity-draft/ne
 const UNCATEGORIZED_LABEL = 'À catégoriser';
 
 type SortMode = 'city' | 'chrono';
+const SORT_MODES: SortMode[] = ['city', 'chrono'];
 
 /** Une ligne de la vue "Ville" : une ou plusieurs `PoolActivity` partageant le même `placeId` (doublons créés séparément sur des jours différents), affichées comme une seule carte "représentante". */
 interface CityRow {
@@ -57,12 +59,16 @@ export class TripActivitiesComponent {
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   protected readonly creationService = inject(TripActivitiesCreationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
 
   readonly tripId = input.required<string>();
 
-  readonly sortMode = signal<SortMode>('chrono');
+  // Restaure le tri depuis l'URL (?sort=...) au montage — voir onSortModeChange,
+  // qui l'y écrit à chaque changement (voir ROADMAP.md).
+  readonly sortMode = signal<SortMode>(this.readSortModeFromUrl() ?? 'chrono');
   readonly searchTerm = signal('');
 
   readonly sortOptions: SelectButtonOption<SortMode>[] = [
@@ -98,7 +104,19 @@ export class TripActivitiesComponent {
   }
 
   onSortModeChange(mode: SortMode | undefined): void {
-    if (mode) this.sortMode.set(mode);
+    if (!mode) return;
+    this.sortMode.set(mode);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { sort: mode },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private readSortModeFromUrl(): SortMode | null {
+    const value = this.route.snapshot.queryParamMap.get('sort');
+    return SORT_MODES.includes(value as SortMode) ? (value as SortMode) : null;
   }
 
   onSearchInput(event: Event): void {
