@@ -23,6 +23,10 @@ Ordre d'exécution prévu pour le reste :
 
 **Avancement (2026-07-28)** : warnings dépréciation Google Maps, couleur drag&drop, bouton flottant, min-width, pull-to-refresh, statut ouvert/fermé, thème clair/sombre/système (+ carte réactive), max-width colonnes jour/général, logo pièce jointe, largeur login, indicateur de sauvegarde, `?tab=`/`?sort=` dans l'URL — tous corrigés et poussés sur la branche. Restent en priorité 1 : les bugs liés au geste/à l'animation (drag&drop sous calendrier, animation cdkDrag, sursaut calendrier, scroll post-drop, aiguilles horaire) — **non vérifiés visuellement** : Google Maps/Fonts sont bloqués par la politique réseau de cet environnement (proxy renvoie 403), donc `ng serve` ne peut pas démarrer l'app complètement ici (l'app bloque au chargement de Google Maps). À tester côté utilisateur après merge.
 
+**Retours après test du 1er lot (2026-07-28)** — décisions prises avec l'utilisateur :
+- **Devise par défaut** : reste une valeur de préremplissage pour les nouvelles saisies uniquement, ne modifie jamais rétroactivement les activités/réservations déjà créées (le doute venait de là, pas d'un bug de sauvegarde).
+- **Tri des réservations** : passe en 100% automatique (chronologique, passées en bas) ; le glisser-déposer manuel existant est retiré (n'a plus de sens avec un ordre toujours recalculé).
+
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
@@ -52,11 +56,17 @@ Ordre d'exécution prévu pour le reste :
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
+- Les activités dans le pool en mode chronologie ont le détail affiché à tort (devrait rester replié comme les autres vues)
 
 ### Nouveau voyage / IA (non prioritaire)
 
 - Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA)
+
+### I18n (non prioritaire)
+
+- Internationalisation de l'app (textes)
+- Gestion de la devise par défaut en fonction de la position géographique
 
 ### Collaborateurs(non prioritaire)
 
@@ -64,11 +74,11 @@ Ordre d'exécution prévu pour le reste :
 
 ### Administratif
 
-- Catégorisation "en cours" / "future" / "passée" des réservations (grisée une fois passée) dans le sous-menu Réservations (non fait, voir Reservation.md)
+- Catégorisation "en cours" / "future" / "passée" des réservations (grisée une fois passée) dans le sous-menu Réservations (non fait, voir Reservation.md). **Fait**, revu suite aux retours du 2026-07-28 : passées en bas + contour en pointillés (comme les activités non placées), tri désormais 100% automatique (le glisser-déposer manuel est retiré).
 
 ### Devise
 
-- Sélection de la devise par voyage (valeur par défaut)
+- Sélection de la devise par voyage (valeur par défaut). **Fait** : sélecteur dans le header du voyage, préremplit les nouvelles activités/réservations. Confirmé avec l'utilisateur (2026-07-28) : ne met jamais à jour rétroactivement les entrées déjà créées, uniquement les nouvelles saisies.
 - Compteur de somme de tous les éléments à mettre dan l'onglet générale, je ne sais pas encore ou (reporté, voir plan d'exécution en tête de fichier)
 
 ### UX / Interactions
@@ -81,12 +91,16 @@ Ordre d'exécution prévu pour le reste :
 - Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
+- Basculer tout le CSS possible en classes PrimeFlex plutôt qu'en SCSS maison (doublon avec l'item Qualité/process existant, laissé là-bas — mis en pause pour les mêmes raisons)
+
+Retour du 2026-07-28 après test du 1er lot — à corriger :
+- Le bandeau "Sauvegardé" est trop large et pas assez discret : le rendre plus fin, retirer le texte "Sauvegardé", une animation qui glisse de gauche à droite serait plus discrète qu'un bandeau qui tombe.
+- Le sélecteur de menu thème clair/sombre/système doit être un vrai bouton à 3 icônes (comme demandé initialement), pas une liste de 3 lignes.
+- Le sélecteur de devise affiche un chevron qu'il ne devrait pas avoir.
 
 Corrigés durant cette session :
 - ~~mettre un petit logo piece jointe...~~ — icône trombone dans le header d'activité si `files` non vide.
 - ~~Ajouter dans l'url si on est dans l'onglet notes ou Activités...~~ — `?tab=` (sous-onglet Général) et `?sort=` (tri Activités) en query params, restaurés au montage.
-- ~~rajouter un indicateur quand s'est sauvegardé...~~ — `SaveStatusBarComponent`, fine barre tout en haut de l'écran, verte ~1.8s après un flush réussi, rouge persistante ("Échec de la sauvegarde, nouvelle tentative en cours…") tant qu'un writer débouncé échoue (retry auto déjà existant côté `DebounceWriter`). Message d'échec = défaut raisonnable, le roadmap ne tranchait pas non plus sur son contenu exact.
-- ~~Menu : mode sombre / clair / système...~~ — `ThemeService` + groupe "Thème" (3 entrées, coche sur le mode actif) dans le menu réglages.
 - ~~faire en sorte que le tab de login ai une largeur maximum...~~ — `max-width: 26rem` sur la carte de login.
 
 ### Bugs / fixes
@@ -97,13 +111,15 @@ Corrigés durant cette session :
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
 - Sur ordinateur, afficher plusieurs jour si écran large ? **Fait partiellement** : max-width centré (`--nt-content-max-width`, day-panel + general-panel). La grille multi-colonnes est repoussée dans le chantier UI Desktop/landscape (ci-dessus) : elle casserait la géométrie du drag and drop maison (calculs verticaux voisin-par-voisin), à traiter ensemble avec le reste du layout desktop, pas isolément.
+- Le mode drag and drop lance le mode modification (sélection multiple) à tort : ne pas déclencher le mode sélection quand un drag démarre.
+- Pull to refresh toujours cassé après le 1er correctif : le scroll du haut vers le bas est intercepté par Swiper (touch handling), donc le geste natif du navigateur ne se déclenche toujours pas.
 
 Corrigés durant cette session (voir historique git de la branche pour le détail) :
 - ~~le minim width n'est plus appliqué...~~ — min-width remonté au niveau html/body (le swiper étant passé en `position:fixed`, il échappait au min-width de `.app-content`).
 - ~~Dans les données de google pour afficher si fermé ou non...~~ — se base désormais sur `startTime` de l'activité, pas l'heure de consultation.
 - ~~Mode sombre/clair dynamique sur la carte...~~ — carte connectée à `ThemeService` (voir menu thème clair/sombre/système, UX/Interactions), plus de dépendance à un refresh.
 - ~~le bouton flottant est trop pret du bord...~~ — marge + `safe-area-inset-right`, animation ralentie.
-- ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — `overscroll-behavior: contain` retiré du slide (bloquait le pull-to-refresh natif).
+- ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — 1re tentative insuffisante (`overscroll-behavior: contain` retiré), voir ligne au-dessus : rouvert.
 - ~~Warning gmp-pin/gmp-advanced-marker...~~ — `PinElement` retourné directement, listener `gmp-click` natif posé nous-mêmes.
 - ~~la couleur du drag and drop maison n'est plus respecté...~~ — sélecteur `.p-panel` (mort depuis la sortie de PrimeNG) remplacé par `.booking`.
 
