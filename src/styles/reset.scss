@@ -53,8 +53,22 @@ body {
  * scrollbar body EN PLUS de celui du slide actif. Scopé à cette classe pour
  * ne pas casser le scroll body classique des autres écrans (accueil-trip,
  * new-trip, login).
+ *
+ * `overflow: hidden` seulement sur `body`, PAS sur `html` : en mode
+ * standards, `document.scrollingElement` (celui que Chrome regarde pour
+ * décider si le geste "tirer pour actualiser" est possible) est `<html>`,
+ * pas `<body>` — le laisser `overflow: hidden` désactivait le pull-to-refresh
+ * natif sur tout l'écran trip-detail (voir ROADMAP.md), en plus du
+ * `overscroll-behavior: contain` déjà retiré des slides. Sans contenu en
+ * flux normal dans `<body>` (tout est `position: fixed`, voir
+ * trip-day-swiper.component.scss), `<html>` n'a de toute façon rien à
+ * scroller réellement : le rendre "scrollable" ne réintroduit donc pas le
+ * double-scrollbar que ce garde-fou évite.
  * ------------------------------------------------------------------- */
-html.trip-detail-active,
+html.trip-detail-active {
+  height: 100%;
+}
+
 html.trip-detail-active body {
   height: 100%;
   overflow: hidden;
