@@ -17,6 +17,12 @@
   }
 }
 
+// Masque le chevron (ex. sélecteur de devise du header voyage, trop discret
+// pour justifier l'affordance "dropdown" habituelle) — voir TripHeaderComponent.
+:host(.no-chevron) .app-select__chevron {
+  display: none;
+}
+
 // Couleur du statut de réservation (activity-form : `[ngClass]="'booking ' +
 // bookingMeta().className"` pose `.booking.to_book`/`.booked`/... sur le
 // host, `--booking-status-color` étant définie par ces classes dans

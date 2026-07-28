@@ -12,21 +12,30 @@
   pointer-events: none;
 }
 
+// Fine barre (pas un bandeau) : juste un liseré de couleur qui glisse de
+// gauche à droite, façon barre de progression de navigateur — pas de texte,
+// discret par design (voir ROADMAP.md).
 .save-status-bar {
-  padding: max(0.25rem, env(safe-area-inset-top)) 0.75rem 0.25rem;
-  text-align: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #ffffff;
-  background: var(--nt-green-500);
-  animation: save-status-bar-fade-in 200ms ease;
-
-  &--error {
-    background: var(--nt-red-500);
-  }
+  height: 0.15rem;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
 }
 
-@keyframes save-status-bar-fade-in {
-  from { opacity: 0; transform: translateY(-100%); }
-  to { opacity: 1; transform: translateY(0); }
+.save-status-bar__runner {
+  height: 0.15rem;
+  width: 30%;
+  background: var(--nt-green-500);
+  border-radius: var(--nt-radius-md);
+  animation: save-status-bar-slide 1.8s ease-in-out;
+}
+
+.save-status-bar--error .save-status-bar__runner {
+  background: var(--nt-red-500);
+  animation-duration: 1.4s;
+  animation-iteration-count: infinite;
+}
+
+@keyframes save-status-bar-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(333%); }
 }
