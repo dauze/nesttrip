@@ -10,7 +10,6 @@
           [checked]="sel.isSelected()"
           (click)="sel.onCheckboxClick($event)"
         />
-        <ng-content select="[dragHandle]" />
         <app-reservation-header class="flex-1 min-w-0" [reservation]="reservation" (titleEdited)="onTitleChanged($event)" />
         @if (timeStatus() === 'current') {
           <app-tag severity="success" value="En cours" class="flex-shrink-0" />

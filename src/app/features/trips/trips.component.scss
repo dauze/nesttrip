@@ -15,3 +15,14 @@
   z-index: var(--z-app-toolbar);
   background: Canvas;
 }
+
+// Contrôle segmenté clair/sombre/système projeté en tête du menu réglages
+// (voir MenuComponent [menuTop] / TripsComponent) — même padding horizontal
+// que les items du menu, séparé du reste par un filet.
+.app-menu-theme-picker {
+  padding: 0.25rem 0.75rem 0.5rem;
+  margin-bottom: 0.25rem;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  display: flex;
+  justify-content: center;
+}

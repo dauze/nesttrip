@@ -6,7 +6,12 @@
 }
 
 // Réservation déjà terminée (endDateTime < maintenant) — voir
-// ReservationCardComponent.timeStatus / ROADMAP.md "Administratif".
+// ReservationCardComponent.timeStatus / ROADMAP.md "Administratif". Même
+// traitement que .not-dispatched côté activités (activity-card.component.scss) :
+// contour en pointillés + grisée, pour un langage visuel cohérent entre les
+// deux listes.
 .reservation-past {
   opacity: 0.55;
+  border-style: dashed;
+  border-left-style: inset;
 }

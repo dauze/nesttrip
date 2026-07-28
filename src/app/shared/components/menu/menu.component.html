@@ -1,5 +1,6 @@
 <ng-template #panel>
   <div class="app-menu-panel">
+    <ng-content select="[menuTop]" />
     @for (group of items(); track $index) {
       @if (group.items) {
         @if (group.label) {
@@ -11,9 +12,6 @@
               <i [class]="item.icon"></i>
             }
             <span>{{ item.label }}</span>
-            @if (item.active) {
-              <i class="pi pi-check app-menu-panel__item-check"></i>
-            }
           </button>
         }
       } @else {
@@ -22,9 +20,6 @@
             <i [class]="group.icon"></i>
           }
           <span>{{ group.label }}</span>
-          @if (group.active) {
-            <i class="pi pi-check app-menu-panel__item-check"></i>
-          }
         </button>
       }
     }

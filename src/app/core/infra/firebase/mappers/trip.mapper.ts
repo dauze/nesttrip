@@ -14,7 +14,6 @@ export function tripFromFb(data: TripFirebase): Trip {
     activities: Object.values(data.activities ?? {}).map((a) => activityFromFb(a)),
     dayActivityInstances: Object.values(data.dayActivityInstances ?? {}).map((a) => dayActivityInstanceFromFb(a)),
     reservations: Object.values(data.reservations ?? {}).map((r) => reservationFromFb(r)),
-    reservationOrder: data.reservationOrder ?? [],
   };
 }
 

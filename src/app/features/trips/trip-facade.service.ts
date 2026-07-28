@@ -155,11 +155,6 @@ export class TripFacade {
     this.store.updateFlightStatus(tripId, reservation, status, statusFetchedAt);
   }
 
-  /** Réordonnancement manuel (drag-and-drop, voir ReservationsListComponent). */
-  reorderReservations(tripId: string, ids: string[]): void {
-    this.store.reorderReservations(tripId, ids);
-  }
-
   createItem(tripId: string, item: Item): void {
     this.store.createItem(tripId, item);
   }
@@ -188,12 +183,27 @@ export class TripFacade {
   // 1. Exposer le sélecteur et la commande
   getTripMembers = this.store.getTripMembers.bind(this.store);
   getReservation = this.store.getReservation.bind(this.store);
-  /** Toutes les réservations d'un trip, dans l'ordre du store (voir `reservationsInOrder`/`reservationsForDay` pour des vues dérivées). */
+  /** Toutes les réservations d'un trip, sans tri (voir `allReservationsSorted`/`reservationsForDay` pour des vues dérivées). */
   getAllReservations = this.store.getAllReservations.bind(this.store);
 
-  /** Réservations dans l'ordre manuel (drag-and-drop, voir `reorderReservations`), pour la liste du sous-menu Réservations. */
-  reservationsInOrder(tripId: string): Reservation[] {
-    return this.store.getAllReservations(tripId)();
+  /**
+   * Réservations triées automatiquement pour la liste du sous-menu
+   * Réservations : en cours/futures d'abord (chronologique), passées à la
+   * fin (chronologique aussi) — voir ROADMAP.md "Administratif". Le
+   * glisser-déposer manuel a été retiré au profit de ce tri, recalculé à
+   * chaque lecture (même limite qu'`ActivityGoogleInfoComponent.isOpenNow` :
+   * ne "bascule" pas tout seul entre deux rendus si seul le temps a passé).
+   */
+  allReservationsSorted(tripId: string): Reservation[] {
+    const now = Date.now();
+    const isPast = (r: Reservation) => r.endDateTime.getTime() < now;
+
+    return [...this.store.getAllReservations(tripId)()].sort((a, b) => {
+      const pastA = isPast(a);
+      const pastB = isPast(b);
+      if (pastA !== pastB) return pastA ? 1 : -1;
+      return a.startDateTime.getTime() - b.startDateTime.getTime();
+    });
   }
 
   /** Réservations dont la plage `[startDateTime, endDateTime]` touche ce jour (même jour calendaire). */
@@ -270,27 +280,13 @@ export class TripFacade {
       newTripActivities[trip.id].push(activity.id);
     }
 
-    // L'ordre des réservations vient de `trip.reservationOrder` (persisté à
-    // part, voir ReservationOrderPersistenceService) — jamais de l'ordre de
-    // traversée de `trip.reservations` (issu d'un `Record` Firestore, dont
-    // l'ordre de clés n'est pas garanti). Première hydratation sans cet ordre
-    // encore posé (champ absent) : tri chronologique de repli. Toute
-    // réservation présente côté distant mais absente de l'ordre connu
-    // (nouvelle, créée par un autre client dont l'écriture d'ordre n'a pas
-    // encore synchronisé) est ajoutée à la fin.
-    const reservationById = new Map(trip.reservations.map((r) => [r.id, r]));
-    const orderedIds = trip.reservationOrder.length
-      ? trip.reservationOrder.filter((id) => reservationById.has(id))
-      : [...trip.reservations]
-          .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime())
-          .map((r) => r.id);
-    const missingIds = trip.reservations.map((r) => r.id).filter((id) => !orderedIds.includes(id));
-
-    for (const id of [...orderedIds, ...missingIds]) {
-      const reservation = reservationById.get(id);
-      if (!reservation) continue;
-      newReservations[id] = reservation;
-      newTripReservations[trip.id].push(id);
+    // Ordre de traversée quelconque : `getAllReservations` n'est plus lue
+    // directement par l'UI (voir `allReservationsSorted`, qui retrie à
+    // chaque lecture — plus de glisser-déposer manuel ni d'ordre à
+    // persister séparément).
+    for (const reservation of trip.reservations) {
+      newReservations[reservation.id] = reservation;
+      newTripReservations[trip.id].push(reservation.id);
     }
 
     // 2. Les instances (form) du trip.

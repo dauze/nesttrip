@@ -15,7 +15,16 @@
     <span toolbarCenter class="nesttrip-logo">NestTrip</span>
 
     <div toolbarEnd class="w-3rem flex justify-content-center">
-      <app-menu #menu [items]="menuItems()" />
+      <app-menu #menu [items]="menuItems">
+        <div menuTop class="app-menu-theme-picker">
+          <app-select-button
+            [options]="themeOptions"
+            [value]="themeService.mode()"
+            (valueChange)="themeService.setMode($event)"
+            variant="subtle"
+          />
+        </div>
+      </app-menu>
       <app-button
         (click)="menu.toggle($event)"
         icon="pi pi-cog"

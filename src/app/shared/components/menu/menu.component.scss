@@ -37,11 +37,6 @@
     color: var(--nt-text-muted-color);
   }
 
-  &-check {
-    margin-left: auto;
-    color: var(--nt-primary-color) !important;
-  }
-
   &:hover {
     // `--nt-content-hover-background` (pas `--nt-surface-100`, primitive qui
     // reste une teinte CLAIRE dans les deux modes — "100" désigne le haut de

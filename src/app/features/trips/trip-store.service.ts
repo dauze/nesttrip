@@ -9,7 +9,6 @@ import { ActivityPersistenceService } from '@app/core/infra/firebase/services/pe
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
 import { ReservationPersistenceService } from '@app/core/infra/firebase/services/persistence/reservation-persistence.service';
-import { ReservationOrderPersistenceService } from '@app/core/infra/firebase/services/persistence/reservation-order-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -41,7 +40,6 @@ export class TripStore {
   private readonly dayActivityInstancePersistenceService = inject(DayActivityInstancePersistenceService);
   private readonly dayActivitiesPersistenceService = inject(DayActivitiesPersistenceService);
   private readonly reservationPersistenceService = inject(ReservationPersistenceService);
-  private readonly reservationOrderPersistenceService = inject(ReservationOrderPersistenceService);
   private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
@@ -83,7 +81,6 @@ export class TripStore {
       this.dayActivityInstancePersistenceService,
       this.dayActivitiesPersistenceService,
       this.reservationPersistenceService,
-      this.reservationOrderPersistenceService,
       this.notesPersistenceService,
     ];
     if (writers.some((w) => w.hasError())) return 'error';
@@ -413,12 +410,6 @@ export class TripStore {
     this.reservationPersistenceService.remove(tripId, reservationId).catch((err) => {
       console.error('[TripStore] Erreur suppression réservation Firestore :', err);
     });
-  }
-
-  /** Réordonnancement manuel (drag-and-drop, voir ReservationsListComponent) : persiste l'ordre à part (voir `ReservationOrderPersistenceService`), un `Record` Firestore ne garantissant aucun ordre de clés. */
-  reorderReservations(tripId: string, ids: string[]): void {
-    this._tripReservations.update((t) => ({ ...t, [tripId]: ids }));
-    this.reservationOrderPersistenceService.queueUpdate(tripId, ids);
   }
 
   /**
