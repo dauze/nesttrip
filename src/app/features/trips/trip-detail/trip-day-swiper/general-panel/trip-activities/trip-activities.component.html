@@ -120,6 +120,7 @@
 
   @if (creationService.draftActive()) {
     <app-new-activity-draft
+      [initialTitle]="searchTerm()"
       (confirmed)="creationService.confirmDraft($event)"
       (cancelled)="creationService.cancelDraft()" />
   }

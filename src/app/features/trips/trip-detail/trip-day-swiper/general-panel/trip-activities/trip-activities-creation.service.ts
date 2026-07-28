@@ -15,6 +15,8 @@ export interface TripActivitiesCreationConfig {
   getCards: () => readonly ActivityCardComponent[];
   getTripId: () => string;
   getViewContainerRef: () => ViewContainerRef;
+  /** Texte courant de la barre de recherche/filtre (voir ROADMAP.md) : préremplit le titre à la création plutôt que de le perdre. */
+  getSearchTerm: () => string;
 }
 
 /** Titre saisi à la création, texte libre ou lieu Google — voir `startCreation`. */
@@ -76,7 +78,7 @@ export class TripActivitiesCreationService {
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
-        data: { initialTitle: '' },
+        data: { initialTitle: this.config.getSearchTerm() },
         panelClass: 'app-title-edit-dialog-panel',
         viewContainerRef: this.config.getViewContainerRef(),
       },

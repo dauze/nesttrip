@@ -95,6 +95,7 @@ export class TripActivitiesComponent {
       getCards: () => this.activityCards(),
       getTripId: () => this.tripId(),
       getViewContainerRef: () => this.viewContainerRef,
+      getSearchTerm: () => this.searchTerm(),
     });
   }
 
