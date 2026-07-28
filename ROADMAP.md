@@ -80,6 +80,7 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
+- en création d'une réservation, il faudrait fiare la même chose que pour la création d'une actuivité, c'est à dire basculer entre toutes les zones du formulaire
 
 ### Bugs / fixes
 
