@@ -29,4 +29,5 @@ export interface TripFirebase {
   reservationOrder?: string[];
   notes: Notes;
   placeId?: string;
+  defaultCurrency?: string;
 }

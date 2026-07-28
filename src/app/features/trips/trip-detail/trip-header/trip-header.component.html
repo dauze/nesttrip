@@ -10,7 +10,7 @@
     <ng-content select="[trip-actions]" />
   </div>
   <form [formGroup]="dateForm">
-    <div class="flex flex-column gap-2">
+    <div class="flex align-items-center gap-2 flex-wrap">
       <app-date-picker
         inputId="dates"
         class="w-max transparent-inputtext"
@@ -18,6 +18,11 @@
         [range]="true"
         placeholder="Sélectionner une période"
         (selected)="onDatesSelected()"
+      />
+      <app-select
+        [options]="currencyOptions"
+        [formControl]="currencyControl"
+        class="w-max transparent-select"
       />
     </div>
   </form>

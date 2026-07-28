@@ -20,6 +20,8 @@ export interface Trip {
   reservationOrder: string[];
   notes: Notes;
   placeId?: string;
+  /** Devise par défaut du voyage, préremplie à la création d'une nouvelle activité/réservation (voir ROADMAP.md "Devise") — n'affecte jamais les éléments déjà créés. */
+  defaultCurrency?: string;
 }
 
 export interface Day {

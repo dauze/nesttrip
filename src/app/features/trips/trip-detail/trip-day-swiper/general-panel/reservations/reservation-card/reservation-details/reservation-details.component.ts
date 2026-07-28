@@ -143,7 +143,7 @@ export class ReservationDetailsComponent {
         endDate: r.endDateTime,
         endTime: r.endDateTime,
         notes: r.notes ?? '',
-        price: r.price ?? { amount: 0, currency: 'EUR' },
+        price: r.price ?? { amount: 0, currency: this.tripFacade.activeTrip()?.defaultCurrency ?? 'EUR' },
         booking: r.booking,
         airline: r.type === 'flight' ? (r.airline ?? '') : '',
         flightNumber: r.type === 'flight' ? (r.flightNumber ?? '') : '',

@@ -123,7 +123,7 @@ export class DayActivityCreationService {
       activityId: poolId,
       type: ActivityType.ACTIVITE,
       duration: 0,
-      price: { amount: 0, currency: 'EUR' },
+      price: { amount: 0, currency: this.tripFacade.activeTrip()?.defaultCurrency ?? 'EUR' },
       booking: { status: BookingStatus.NOT_NEEDED, deadline: undefined },
       notes: '',
     };

@@ -9,7 +9,8 @@
           [trip]="trip"
           [title]="tripTitle()"
           (titleChange)="onTitleChange($event)"
-          (datesChange)="onDatesChange($event)">
+          (datesChange)="onDatesChange($event)"
+          (currencyChange)="onCurrencyChange($event)">
           <app-trip-collaborators
             trip-actions
             [tripId]="trip.id" />

@@ -3,12 +3,14 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
+import { SelectComponent } from '@app/shared/components/select/select.component';
+import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { Trip } from '../../trip.model';
 
 @Component({
   selector: 'app-trip-header',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerComponent],
+  imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerComponent, SelectComponent],
   templateUrl: './trip-header.component.html',
   styleUrl: './trip-header.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,10 +23,15 @@ export class TripHeaderComponent {
 
   readonly titleChange = output<string>();
   readonly datesChange = output<[Date, Date]>();
+  readonly currencyChange = output<string>();
+
+  readonly currencyOptions = CURRENCY_OPTIONS;
 
   readonly dateForm = this.fb.group({
     dates: this.fb.control<Date[] | null>(null),
   });
+
+  readonly currencyControl = this.fb.nonNullable.control<string>('EUR');
 
   private lastPatchedTripId: string | null = null;
 
@@ -38,6 +45,10 @@ export class TripHeaderComponent {
 
       this.lastPatchedTripId = trip.id;
       this.patchFromTrip(trip);
+    });
+
+    this.currencyControl.valueChanges.subscribe((currency) => {
+      if (currency !== this.trip()?.defaultCurrency) this.currencyChange.emit(currency);
     });
   }
 
@@ -67,5 +78,6 @@ export class TripHeaderComponent {
       { dates: [sorted[0].id, sorted[sorted.length - 1].id] },
       { emitEvent: false }
     );
+    this.currencyControl.setValue(trip.defaultCurrency ?? 'EUR', { emitEvent: false });
   }
 }

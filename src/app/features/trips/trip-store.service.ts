@@ -24,12 +24,12 @@ type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
 type ReservationEntities = Record<string, Reservation>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
 
-/** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché). */
-function defaultInstanceForm(): Omit<DayActivityInstance, 'id' | 'activityId'> {
+/** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
+function defaultInstanceForm(currency = 'EUR'): Omit<DayActivityInstance, 'id' | 'activityId'> {
   return {
     type: ActivityType.ACTIVITE,
     duration: 0,
-    price: { amount: 0, currency: 'EUR' },
+    price: { amount: 0, currency },
     booking: { status: BookingStatus.NOT_NEEDED },
     notes: '',
   };
@@ -525,6 +525,22 @@ export class TripStore {
     });
   }
 
+  updateTripCurrency(tripId: string, currency: string): void {
+    const trip = this._trips()[tripId];
+    if (!trip) return;
+
+    // 1. Hydratation optimiste locale
+    this._trips.update((trips) => ({
+      ...trips,
+      [tripId]: { ...trip, defaultCurrency: currency },
+    }));
+
+    // 2. Persistance Firestore
+    this.tripPersistenceService.updateTripCurrency(tripId, currency).catch((err) => {
+      console.error('[TripStore] Erreur update devise trip Firestore :', err);
+    });
+  }
+
   removeTrip(tripId: string) {
     this.tripPersistenceService.removeTrip(tripId);
     this._trips.update((t) => {
@@ -620,7 +636,7 @@ export class TripStore {
     const instance: DayActivityInstance = {
       id: crypto.randomUUID(),
       activityId: poolId,
-      ...defaultInstanceForm(),
+      ...defaultInstanceForm(this._trips()[tripId]?.defaultCurrency),
     };
     this.addDayActivityInstance(tripId, targetDayId, instance);
   }

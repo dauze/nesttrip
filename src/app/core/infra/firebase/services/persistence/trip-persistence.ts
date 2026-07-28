@@ -18,6 +18,10 @@ export class TripPersistenceService {
     });
   }
 
+  updateTripCurrency(tripId: string, currency: string): Promise<void> {
+    return updateDoc(doc(this.db, 'trips', tripId), { defaultCurrency: currency });
+  }
+
   removeTrip(tripId: string): Promise<void> {
     return deleteDoc(doc(this.db, 'trips', tripId));
   }

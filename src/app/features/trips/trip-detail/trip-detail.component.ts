@@ -274,6 +274,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.facade.updateTripTitle({ ...trip, title });
   }
 
+  protected onCurrencyChange(currency: string): void {
+    const trip = this.facade.activeTrip();
+    if (!trip) return;
+    this.facade.updateTripCurrency(trip.id, currency);
+  }
+
   protected onTabSelected(event: { id: string; index: number }): void {
     this.activeDay.set(event.id);
     this.tabsNavRef()?.scrollIntoView(event.index);

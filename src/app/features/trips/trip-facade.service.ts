@@ -75,6 +75,10 @@ export class TripFacade {
     this.store.updateTripTitle(trip);
   }
 
+  updateTripCurrency(tripId: string, currency: string): void {
+    this.store.updateTripCurrency(tripId, currency);
+  }
+
   removeTrip(tripId: string): void {
     this.store.removeTrip(tripId);
   }
