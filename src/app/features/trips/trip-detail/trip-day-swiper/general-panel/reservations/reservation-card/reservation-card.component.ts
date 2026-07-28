@@ -12,6 +12,7 @@ import { BOOKING_STATUS_META } from '@app/shared/components/activity-card/activi
 import { ReservationHeaderComponent } from './reservation-header/reservation-header.component';
 import { ReservationDetailsComponent } from './reservation-details/reservation-details.component';
 import { ReservationFilesComponent } from '../reservation-files/reservation-files.component';
+import { TagComponent } from '@app/shared/components/tag/tag.component';
 
 /**
  * Carte réservation dépliable — même structure que `ActivityCardComponent`
@@ -25,7 +26,7 @@ import { ReservationFilesComponent } from '../reservation-files/reservation-file
   imports: [
     NgClass, PanelComponent, DividerComponent, CheckboxComponent,
     ReservationHeaderComponent, ReservationDetailsComponent, ReservationFilesComponent,
-    SelectableDirective, LongPressDirective,
+    SelectableDirective, LongPressDirective, TagComponent,
   ],
   templateUrl: './reservation-card.component.html',
   styleUrl: './reservation-card.component.scss',
@@ -44,6 +45,20 @@ export class ReservationCardComponent {
   readonly collapsed = linkedSignal(() => this.initCollapsed());
 
   readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.reservation()?.booking?.status ?? BookingStatus.NOT_NEEDED]);
+
+  /**
+   * Catégorisation en cours/future/passée (voir ROADMAP.md, "Administratif") :
+   * "passée" grise la carte, "en cours" affiche un tag — le cas par défaut
+   * ("future") ne porte aucune marque visuelle particulière.
+   */
+  readonly timeStatus = computed<'past' | 'current' | 'future'>(() => {
+    const reservation = this.reservation();
+    if (!reservation) return 'future';
+    const now = Date.now();
+    if (reservation.endDateTime.getTime() < now) return 'past';
+    if (reservation.startDateTime.getTime() <= now) return 'current';
+    return 'future';
+  });
 
   readonly selectableRef = computed<SelectableItemRef>(() => ({ kind: 'reservation', id: this.reservationId() }));
 
