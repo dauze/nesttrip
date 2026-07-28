@@ -7,6 +7,8 @@
     @if (option.icon) {
       <i [class]="option.icon"></i>
     }
-    <span>{{ option.label }}</span>
+    @if (option.label) {
+      <span>{{ option.label }}</span>
+    }
   </button>
 }

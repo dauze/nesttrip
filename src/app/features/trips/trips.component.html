@@ -17,6 +17,7 @@
     <div toolbarEnd class="w-3rem flex justify-content-center">
       <app-menu #menu [items]="menuItems">
         <div menuTop class="app-menu-theme-picker">
+          <div class="app-menu-theme-picker__label">Thème</div>
           <app-select-button
             [options]="themeOptions"
             [value]="themeService.mode()"
