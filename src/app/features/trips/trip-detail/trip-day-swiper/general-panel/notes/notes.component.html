@@ -13,7 +13,7 @@
         <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
         <textarea
           appTextarea
-          class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
+          class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea nt-capped-inline-field"
           [rows]="1"
           [value]="item.title"
           (blur)="updateTitle(item, $any($event.target).value.trim())"
@@ -56,7 +56,7 @@
               appTextarea
               [rows]="1"
               [value]="point.text"
-              class="flex-1 overflow-hidden min-w-0 transparent-textarea"
+              class="flex-1 overflow-hidden min-w-0 transparent-textarea nt-capped-inline-field"
               [class.line-through]="item.type === NotesType.TODO && point.checked"
               [class.nt-text-muted]="item.type === NotesType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
@@ -110,7 +110,7 @@
                     appTextarea
                     [rows]="1"
                     [value]="point.text"
-                    class="flex-1 overflow-hidden min-w-0  transparent-textarea"
+                    class="flex-1 overflow-hidden min-w-0 transparent-textarea nt-capped-inline-field"
                     [class.line-through]="item.type === NotesType.TODO && point.checked"
                     [class.nt-text-muted]="item.type === NotesType.TODO && point.checked"
                     (input)="onTextChange(item, $index, $any($event.target).value)"

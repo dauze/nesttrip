@@ -75,6 +75,16 @@
   --nt-form-field-focus-border-color: transparent;
 }
 
+// Capé pour ne pas s'étirer sur toute la largeur de la colonne/carte (jusqu'à
+// 40rem) quand associée à `flex-1` (voir --nt-content-max-width) : sans ça,
+// tout l'espace vide à droite d'un texte court reste dans la zone
+// cliquable/focusable du textarea, gênant pour cliquer "à côté" sans
+// déclencher l'édition (voir ROADMAP.md). Seuls les titres inline (notes,
+// titre du voyage) l'utilisent aujourd'hui.
+.nt-capped-inline-field {
+  max-width: 24rem;
+}
+
 .transparent-inputtext {
   --p-inputtext-border-color: transparent;
   --p-inputtext-hover-border-color: transparent;

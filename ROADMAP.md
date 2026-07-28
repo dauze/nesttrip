@@ -72,7 +72,6 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 ### UX / Interactions
 
-- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`), reste à traiter les champs de saisie eux-mêmes.
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
 - en création d'une réservation, il faudrait fiare la même chose que pour la création d'une actuivité, c'est à dire basculer entre toutes les zones du formulaire
@@ -253,3 +252,4 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Préremplir l'input de recherche des sélecteurs mobiles avec la sélection courante à l'ouverture (`SelectComponent`)
 - Préremplir le titre de la nouvelle activité avec le texte déjà tapé dans la barre de recherche
 - Barre Activités/Réservations/Notes flottante en bas d'écran, au-dessus de la barre des jours, uniquement sur mobile (remplace la bascule inline en haut, cachée en dessous de 768px) — reste visible pendant le scroll sans avoir à remonter en haut de la liste
+- Max-width sur les textarea de titre inline (titre du voyage, titres/points de notes) : sur grand écran ils s'étiraient sur toute la largeur de la colonne, rendant l'espace vide à droite du texte cliquable/focusable à tort (`.nt-capped-inline-field`)
