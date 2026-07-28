@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -46,6 +46,22 @@ export class AccueilTripComponent {
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;
   readonly user = this.authService.getCurrentUser();
+
+  constructor() {
+    // Redirection directe vers l'unique trip, UNIQUEMENT à l'ouverture de la
+    // web app (juste après un login, voir AuthService.justLoggedIn) — jamais
+    // lors d'un retour manuel depuis un trip, sinon impossible de revenir
+    // sur cet écran (voir ROADMAP.md, tentative précédente désactivée pour
+    // cette raison). Consommé une seule fois, dès que le chargement des
+    // trips aboutit, quel que soit leur nombre.
+    effect(() => {
+      if (!this.authService.justLoggedIn() || this.tripsLoading()) return;
+
+      this.authService.justLoggedIn.set(false);
+      const trips = this.trips();
+      if (trips.length === 1) this.router.navigate(['/trips', trips[0].id]);
+    });
+  }
 
   selectTrip(id: string): void {
     this.router.navigate(['/trips', id]);

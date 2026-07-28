@@ -72,11 +72,8 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 ### UX / Interactions
 
-- Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours uniquement sur mobile
 - Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`), reste à traiter les champs de saisie eux-mêmes.
-- reseigner en input le titre de la selection sur les listes lorsqu'elles s'ouvre sur mobile
-- Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
 - en création d'une réservation, il faudrait fiare la même chose que pour la création d'une actuivité, c'est à dire basculer entre toutes les zones du formulaire
@@ -253,3 +250,6 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Fix : icônes du sélecteur (ex. thème) mal centrées quand un bouton n'a pas de label
 - Pull-to-refresh sur l'écran swiper : `overscroll-behavior` + `overflow` html/body corrigés (non confirmé testé par l'utilisateur)
 - Clic n'importe où dans le header (pas seulement le bouton bascule) pour replier/déplier une carte (activités, notes, réservations, panneaux jour...), sauf sur une zone interactive (poignée de drag, image, bouton crayon, checkbox) — générique au niveau de `PanelComponent`, accessible au clavier (tabindex + Entrée/Espace)
+- Redirection directe vers l'unique trip à l'ouverture de la web app (login interactif ET session déjà authentifiée restaurée au démarrage), jamais lors d'un retour manuel depuis un trip — flag `AuthService.justLoggedIn` initialisé à `true` à la construction du service (une seule fois par chargement de page), consommé une fois par `AccueilTripComponent`
+- Préremplir l'input de recherche des sélecteurs mobiles avec la sélection courante à l'ouverture (`SelectComponent`)
+- Préremplir le titre de la nouvelle activité avec le texte déjà tapé dans la barre de recherche
