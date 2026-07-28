@@ -17,7 +17,7 @@
             [position]="{ lat: point.latitude, lng: point.longitude }"
             [title]="point.name"
             [content]="markerContent(point)"
-            (mapClick)="onMarkerClick(point)"
+            (markerInitialized)="onMarkerInitialized($event, point)"
           />
         }
   </google-map>

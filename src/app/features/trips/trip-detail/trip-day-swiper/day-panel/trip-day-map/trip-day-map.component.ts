@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, effect, ElementRef, inject, input, linkedSignal, NgZone, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
@@ -30,6 +30,7 @@ export class TripDayMapComponent {
   readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ngZone = inject(NgZone);
 
   // Écoute directe du mode sombre globale du système/navigateur utilisé par le preset Aura
   isDarkMode = signal(false);
@@ -93,19 +94,27 @@ export class TripDayMapComponent {
     }
 
     const isSelected = point.activityId === this.selectedActivityId();
-    const pin = new google.maps.marker.PinElement({
+    // PinElement étend HTMLElement : on le retourne directement plutôt que
+    // sa propriété `.element`, dépréciée par l'API Google Maps.
+    return new google.maps.marker.PinElement({
       glyphText: String(point.order),
       glyphColor: '#ffffff',
       background: isSelected ? '#e53935' : '#3f51b5',
       borderColor: isSelected ? '#b71c1c' : '#283593',
       scale: isSelected ? 1.2 : 1,
     });
-    return pin.element;
   }
 
   onMarkerClick(point: DayMapPoint): void {
     this.focusOnPoint(point);
     this.activitySelected.emit(point);
+  }
+
+  // `(mapClick)` de @angular/google-maps s'appuie sur `advancedMarker.addListener('click', ...)`,
+  // dépréciée par l'API Google Maps au profit de `addEventListener('gmp-click', ...)` — on pose
+  // donc l'écouteur nous-mêmes sur le marker natif exposé par `markerInitialized`.
+  onMarkerInitialized(marker: google.maps.marker.AdvancedMarkerElement, point: DayMapPoint): void {
+    marker.addEventListener('gmp-click', () => this.ngZone.run(() => this.onMarkerClick(point)));
   }
 
   private focusOnPoint(point: DayMapPoint): void {
