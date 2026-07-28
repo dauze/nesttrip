@@ -21,6 +21,8 @@ Ordre d'exécution prévu pour le reste :
 5. **Carte** (carte pliée dans Général, fermeture carte pendant édition via dialog mobile, clarté visuelle carte superposée).
 6. **UI Desktop / landscape** (redesign le plus large, fait en dernier).
 
+**Avancement (2026-07-28)** : warnings dépréciation Google Maps, couleur drag&drop, bouton flottant, min-width, pull-to-refresh, statut ouvert/fermé, thème clair/sombre/système (+ carte réactive), max-width colonnes jour/général, logo pièce jointe, largeur login, indicateur de sauvegarde, `?tab=`/`?sort=` dans l'URL — tous corrigés et poussés sur la branche. Restent en priorité 1 : les bugs liés au geste/à l'animation (drag&drop sous calendrier, animation cdkDrag, sursaut calendrier, scroll post-drop, aiguilles horaire) — **non vérifiés visuellement** : Google Maps/Fonts sont bloqués par la politique réseau de cet environnement (proxy renvoie 403), donc `ng serve` ne peut pas démarrer l'app complètement ici (l'app bloque au chargement de Google Maps). À tester côté utilisateur après merge.
+
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
@@ -71,35 +73,39 @@ Ordre d'exécution prévu pour le reste :
 
 ### UX / Interactions
 
-- mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours.
-- Ajouter dans l'url si on est dans l'onglet notes ou Activités pour pouvoir actualiser sans perdre la position + ajouter le filtre sélectionné dans l'url
-- rajouter un indicateur quand s'est sauvegardé et quand la sauvegarde s'est mal passé, très discret, une petite bar verte au dessus de la bar d'état par exemple. et si ça marche pas, faire un truc rouge avec de vrai consigne mais je sais pas encore quoi. **Fait** : `SaveStatusBarComponent`, fine barre tout en haut de l'écran — verte ~1.8s après un flush réussi, rouge persistante ("Échec de la sauvegarde, nouvelle tentative en cours…") tant qu'un writer débouncé échoue (retry auto déjà existant côté `DebounceWriter`). Le message d'échec reste un défaut raisonnable plutôt qu'une "vraie consigne" précise, faute d'arbitrage sur ce point — à affiner si besoin.
-- Menu : mode sombre / clair / système qui est dans le menu au clique sur la roue cranté, via 3 icone en utiliser la même bar que "note - réservation - activité"
-- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input ) car c'est génant de cliquer à côté et que ça fasse la modification
+- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input ) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`, voir Bugs/fixes), reste à traiter les champs de saisie eux-mêmes.
 - reseigner en input le titre de la selection sur les listes lorsqu'elles s'ouvre sur mobile
 - clique sur n'importe ou du header pour le collapse true/ false et pas que sur le bouton, sauf la zone de drag and drop, l'image ou le stylo. Idem pour les notes
 - Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
-- faire en sorte que le tab de login ai une largeur maximum car ça fait trop étiré sur vue PC
 - paramétrer la récup des infos du trafic d'avion
+
+Corrigés durant cette session :
+- ~~mettre un petit logo piece jointe...~~ — icône trombone dans le header d'activité si `files` non vide.
+- ~~Ajouter dans l'url si on est dans l'onglet notes ou Activités...~~ — `?tab=` (sous-onglet Général) et `?sort=` (tri Activités) en query params, restaurés au montage.
+- ~~rajouter un indicateur quand s'est sauvegardé...~~ — `SaveStatusBarComponent`, fine barre tout en haut de l'écran, verte ~1.8s après un flush réussi, rouge persistante ("Échec de la sauvegarde, nouvelle tentative en cours…") tant qu'un writer débouncé échoue (retry auto déjà existant côté `DebounceWriter`). Message d'échec = défaut raisonnable, le roadmap ne tranchait pas non plus sur son contenu exact.
+- ~~Menu : mode sombre / clair / système...~~ — `ThemeService` + groupe "Thème" (3 entrées, coche sur le mode actif) dans le menu réglages.
+- ~~faire en sorte que le tab de login ai une largeur maximum...~~ — `max-width: 26rem` sur la carte de login.
 
 ### Bugs / fixes
 
 - Depuis le pool, problème de drag and drop maison : si je prend une activité qui est sous le calendrier, le calendrier s'ouvre et la position du drag est mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
 - mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle
-- le minim width n'est plus appliqué et on peut de nouveau tasser jusqu'à avoir des chevauchement, il faut remettre un min width sur le plus haut niveau : le min-width: 24rem fonctionne toujours sur l'écran d'accueil, de login, mais plus sur "app-content" depuis les modifications du swiper
-- Dans les données de google pour afficher si fermé ou non, il en faut pas prendre l'heure actuelle mais plutôt l'heure annoncé par l'heure de début. Si l'heure n'est pas renseignée, l'afficher uniquement si il est fermé le jour entier sélectionné, sinon ne pas l'afficher.
-- Mode sombre/clair dynamique sur la carte, ça fonctionne pas si je change le thème de chromme sans réactialiser Le bouton doit être dans le menu des séting en mode une lune, un soleuil et un apparail via un bouton en 3 parties
 - l'ouverture du calendrier sur le drag and drop dans la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
-- le bouton flottant est trop pret du bord ! et ralentir un peu son annimation d'ouverture
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
-- Je peux pas actualiser depuis l'écran ou il y a le swiper via le racourcie google de swipe vers le bas
-- Sur ordinateur, afficher plusieurs jour si écran large ? mettre une taille maximum pour la largeur des activités en tout cas et en mettre plusieurs cote à cote via un grid. **Fait partiellement** : max-width centré (`--nt-content-max-width`, day-panel + general-panel). La grille multi-colonnes est repoussée dans le chantier UI Desktop/landscape (ci-dessus) : elle casserait la géométrie du drag and drop maison (calculs verticaux voisin-par-voisin), à traiter ensemble avec le reste du layout desktop, pas isolément.
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
-- Warning : <gmp-pin>: The `element` property is deprecated. Please use the PinElement directly.<gmp-advanced-marker>: Please use addEventListener('gmp-click', ...) instead of addEventListener('click', ...). A supprimer
-- la couleur du drag and drop maison n'est plus respecté, il faut que la bar de gauche reprenne la couleur de l'activité
+- Sur ordinateur, afficher plusieurs jour si écran large ? **Fait partiellement** : max-width centré (`--nt-content-max-width`, day-panel + general-panel). La grille multi-colonnes est repoussée dans le chantier UI Desktop/landscape (ci-dessus) : elle casserait la géométrie du drag and drop maison (calculs verticaux voisin-par-voisin), à traiter ensemble avec le reste du layout desktop, pas isolément.
+
+Corrigés durant cette session (voir historique git de la branche pour le détail) :
+- ~~le minim width n'est plus appliqué...~~ — min-width remonté au niveau html/body (le swiper étant passé en `position:fixed`, il échappait au min-width de `.app-content`).
+- ~~Dans les données de google pour afficher si fermé ou non...~~ — se base désormais sur `startTime` de l'activité, pas l'heure de consultation.
+- ~~Mode sombre/clair dynamique sur la carte...~~ — carte connectée à `ThemeService` (voir menu thème clair/sombre/système, UX/Interactions), plus de dépendance à un refresh.
+- ~~le bouton flottant est trop pret du bord...~~ — marge + `safe-area-inset-right`, animation ralentie.
+- ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — `overscroll-behavior: contain` retiré du slide (bloquait le pull-to-refresh natif).
+- ~~Warning gmp-pin/gmp-advanced-marker...~~ — `PinElement` retourné directement, listener `gmp-click` natif posé nous-mêmes.
+- ~~la couleur du drag and drop maison n'est plus respecté...~~ — sélecteur `.p-panel` (mort depuis la sortie de PrimeNG) remplacé par `.booking`.
 
 ### Qualité / process
 
