@@ -488,7 +488,7 @@ export class ActivityCardComponent {
     // donc toujours sur la couleur primaire au lieu de la couleur de statut.
     const panelEl = el.querySelector('.booking') as HTMLElement | null;
     const value = getComputedStyle(panelEl ?? el).getPropertyValue('--booking-status-color').trim();
-    return value || 'var(--p-primary-color)';
+    return value || 'var(--nt-primary-color)';
   }
 
   get element(): HTMLElement {

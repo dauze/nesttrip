@@ -1,14 +1,13 @@
 /* ---------------------------------------------------------------------
  * Utilitaires de COULEUR maison, sur le modèle des classes PrimeFlex
  * qu'elles remplacent (`text-color-secondary`, `text-primary`, `surface-*`...).
- * PrimeFlex reste utilisé librement pour tout le reste (flex/grid/gap/col-/
- * p-/m-/w-full...) : seules les classes qui posaient une COULEUR sont
- * remplacées ici, pour ne dépendre que des jetons `--nt-*` (adaptatifs
- * clair/sombre) plutôt que de la palette brute `--p-surface-*` de
- * PrimeFlex — voir le shim commenté dans tokens.scss : `--p-surface-*` est
- * une palette PLATE (slate, ne s'inverse pas par mode comme `--nt-surface-*`
- * qui elle est "zinc"), d'où un rendu bleuté incohérent en dark mode sur
- * tout ce qui utilisait encore `surface-0/50/100`.
+ * Pendant de `layout-utilities.scss` (Phase 11 de la sortie de PrimeNG, voir
+ * PRIMENG_MIGRATION.md) qui couvre le reste (flex/grid/gap/col-/p-/m-/
+ * w-full...) : seules les classes qui posaient une COULEUR sont remplacées
+ * ici, pour ne dépendre que des jetons `--nt-*` (adaptatifs clair/sombre)
+ * plutôt que d'une palette plate (slate, ne s'inversant pas par mode comme
+ * `--nt-surface-*` qui elle est "zinc"), qui donnait un rendu bleuté
+ * incohérent en dark mode sur tout ce qui utilisait encore `surface-0/50/100`.
  * ------------------------------------------------------------------- */
 
 .nt-text-color {

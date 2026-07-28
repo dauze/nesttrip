@@ -569,7 +569,7 @@ export class ActivityDayDispatchOverlayComponent {
    * CSS posée ici ne portant donc que sur `border-color`.
    */
   private startBorderColorTransition(ball: HTMLElement): void {
-    const color = this.dragged()?.color ?? 'var(--p-primary-color)';
+    const color = this.dragged()?.color ?? 'var(--nt-primary-color)';
     ball.style.transition = `border-color ${BALL_TRAVEL_DURATION}ms ease`;
     ball.style.borderTopColor = color;
     ball.style.borderRightColor = color;
@@ -723,7 +723,7 @@ export class ActivityDayDispatchOverlayComponent {
     const { width: collapsedWidth, height: collapsedHeight } = this.ballContentService.computeCollapsedSize(origin);
     const collapsedLeft = origin.left;
     const collapsedTop = origin.top + (origin.height - collapsedHeight) / 2;
-    const color = this.dragged()?.color ?? 'var(--p-primary-color)';
+    const color = this.dragged()?.color ?? 'var(--nt-primary-color)';
 
     // `transform` DOIT rester piloté par WAAPI ici, pas par une simple
     // affectation de style : dès `this.formed.set(false)` ci-dessus, le
@@ -847,7 +847,7 @@ export class ActivityDayDispatchOverlayComponent {
     const current = ball.getBoundingClientRect();
     const { width: collapsedWidth, height: collapsedHeight } = this.ballContentService.computeCollapsedSize(origin);
     const pos = `translate3d(${current.left}px, ${current.top}px, 0)`;
-    const color = this.dragged()?.color ?? 'var(--p-primary-color)';
+    const color = this.dragged()?.color ?? 'var(--nt-primary-color)';
 
     // `transform` DOIT rester piloté par WAAPI (même s'il ne change pas de
     // valeur ici, "SUR PLACE") : dès `this.formed.set(false)` ci-dessus, le

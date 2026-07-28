@@ -1,6 +1,6 @@
-// `.w-full` (primeflex) étire la carte sur toute la largeur de son
-// conteneur flex, correct sur mobile mais beaucoup trop large sur desktop
-// (tab de login étiré sur tout l'écran) — voir ROADMAP.md.
+// `.w-full` étire la carte sur toute la largeur de son conteneur flex,
+// correct sur mobile mais beaucoup trop large sur desktop (tab de login
+// étiré sur tout l'écran) — voir ROADMAP.md.
 .login-card {
   max-width: 26rem;
 }

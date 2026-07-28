@@ -1,10 +1,8 @@
 // Ce fichier ne fait QUE de la géométrie (position fixe, tailles, décalages
-// d'animation). Les couleurs/fonds viennent de classes PrimeFlex posées dans
-// le template (surface-0, text-color-secondary...), PAS de var(--p-surface-*)
-// écrites ici : ces variables brutes ne s'adaptent PAS au mode sombre — seules
-// les classes utilitaires PrimeFlex les enveloppent dans light-dark().
-// var(--p-primary-color) reste utilisée telle quelle : les couleurs de marque
-// ne changent pas selon le mode.
+// d'animation). Les couleurs/fonds viennent des classes maison posées dans le
+// template (nt-bg-content...) ou directement des tokens --nt-* (adaptatifs
+// clair/sombre) — var(--nt-primary-color) reste utilisée telle quelle : les
+// couleurs de marque ne changent pas selon le mode.
 
 .dispatch-overlay {
   z-index: var(--z-overlay-backdrop);
@@ -150,7 +148,7 @@
   position: absolute;
   top: 0.125rem;
   right: 0.25rem;
-  color: var(--p-primary-color);
+  color: var(--nt-primary-color);
 }
 
 // ── Bulle flottante (clone du header de la carte) ──────────────────────────
