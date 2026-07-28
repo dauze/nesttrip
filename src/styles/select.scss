@@ -71,6 +71,22 @@
   padding: 0.5rem;
 }
 
+// Recherche/filtre du tiroir mobile — préremplie avec la sélection courante
+// à l'ouverture (voir SelectComponent.open), flex-shrink:0 pour ne jamais
+// être écrasée par la liste (flex:1 1 auto juste au-dessus).
+.app-select-panel__search {
+  flex-shrink: 0;
+  margin: 0.5rem 0.5rem 0;
+  width: auto;
+}
+
+.app-select-panel__empty {
+  padding: 0.75rem;
+  text-align: center;
+  color: var(--nt-text-muted-color);
+  font-size: 0.9rem;
+}
+
 .app-select-overlay--mobile .app-select-panel__option {
   justify-content: center;
   text-align: center;
