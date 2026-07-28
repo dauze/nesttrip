@@ -40,7 +40,7 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Gérer le cas Asie : alternative à Google Maps (non prioritaire)
 - Carte pliée par défaut dans "Général" qui permet de voir toutes les activités du voyage. Même scroll que pour un day ?
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
-- Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones, pour les ordi, pas besoin : pour ce point, il manque une solution pour les textarea et la zone prix, tout le reste passe par un composant mobile déjà
+- Version "mieux" (reportée) de la fermeture de carte pendant modification : faire passer TOUTE l'édition d'activité par un dialog qui recouvre l'écran sur smartphone (comme les composants mobiles existants pour la plupart des champs), plutôt que le formulaire inline actuel — bloqué par l'absence d'équivalent dialog pour le textarea (notes) et la zone prix, tout le reste a déjà un composant mobile dédié
 
 ### Activités
 
@@ -253,3 +253,4 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Barre Activités/Réservations/Notes flottante en bas d'écran, au-dessus de la barre des jours, uniquement sur mobile (remplace la bascule inline en haut, cachée en dessous de 768px) — reste visible pendant le scroll sans avoir à remonter en haut de la liste
 - Max-width sur les textarea de titre inline (titre du voyage, titres/points de notes) : sur grand écran ils s'étiraient sur toute la largeur de la colonne, rendant l'espace vide à droite du texte cliquable/focusable à tort (`.nt-capped-inline-field`)
 - Carte épinglée (sticky) au-dessus de la liste d'activités du jour : ajout d'une ombre portée pour séparer visuellement la carte du contenu qui défile dessous, qui donnait l'impression d'un bug d'empilement
+- Carte repliée automatiquement pendant l'édition d'une activité, mobile uniquement (verrou réentrant `GoogleMapPanelService.beginEditLock/endEditLock`, plusieurs cartes peuvent être en édition en même temps)

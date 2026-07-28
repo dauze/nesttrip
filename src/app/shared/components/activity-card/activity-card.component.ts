@@ -16,6 +16,8 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
+import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { ViewportService } from '@app/core/services/viewport.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
@@ -59,6 +61,9 @@ export class ActivityCardComponent {
   // isBeingDragged ci-dessous) ; `null` si ce composant est un jour utilisé
   // hors de ce contexte.
   private readonly swiperLockService = inject(SwiperLockService, { optional: true });
+  // Optionnel pour la même raison que swiperLockService juste au-dessus.
+  private readonly googleMapPanelService = inject(GoogleMapPanelService, { optional: true });
+  private readonly viewport = inject(ViewportService);
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -225,6 +230,19 @@ export class ActivityCardComponent {
       if (this.isBeingDragged()) {
         this.swiperLockService?.lock();
         onCleanup(() => this.swiperLockService?.unlock());
+      }
+    });
+
+    // Replie la carte pendant l'édition d'une activité, mobile uniquement
+    // (voir ROADMAP.md) : sur petit écran, la carte épinglée et le form
+    // ouvert se disputent l'espace vertical, contrairement au desktop où il
+    // y a de la place pour les deux — voir GoogleMapPanelService.beginEditLock
+    // pour la gestion du réentrant (plusieurs cartes peuvent être ouvertes en
+    // même temps dans un même jour).
+    effect((onCleanup) => {
+      if (this.inDayList() && this.viewport.isMobile() && !this.collapsed()) {
+        this.googleMapPanelService?.beginEditLock();
+        onCleanup(() => this.googleMapPanelService?.endEditLock());
       }
     });
 
