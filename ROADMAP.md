@@ -12,7 +12,7 @@ Objectif : traiter tout ce qui n'est pas marqué "non prioritaire" ci-dessous. D
 - **Devise par défaut** : préremplissage des nouvelles saisies uniquement, jamais rétroactif sur les activités/réservations déjà créées.
 - **Tri des réservations** : 100% automatique (chronologique, passées en bas) ; le glisser-déposer manuel a été retiré.
 
-Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : passage Angular 22, suppression de la dépendance PrimeFlex, empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur).
+Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur).
 
 Ordre d'exécution prévu pour le reste :
 1. **Bugs / fixes** liés au geste/à l'animation (drag&drop sous calendrier, animation cdkDrag, sursaut calendrier, scroll post-drop, aiguilles horaire) — **non vérifiés visuellement** : Google Maps/Fonts sont bloqués par la politique réseau de l'environnement d'exécution (proxy renvoie 403), donc `ng serve`/`ng build` n'y suffisent pas pour tester visuellement — à tester côté utilisateur.
@@ -91,10 +91,6 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e (Playwright) : socle en place le 2026-07-28 (compte de test Firebase Auth dédié, `npm run e2e`) — parcours 1 (login) et 2 (création de trip) couverts, parcours 3 à 7 (activité, form jour, dispatch, réservation, suppression) en backlog, voir `.claude/skills/nesttrip-e2e/SKILL.md`.
-- passer tous les composant en strategy onpush pour être en fiull signal et v22 ready 
-- basculer tous les scss possible via des scss primeflex puis 
-- Duppliquer tout le code utiliser de primeflex et supprimer la librairie et enfin 
-- passer à angular 22 montée de version majeure, à valideravant de lancer pour éviter de casser l'existant en même temps que le reste du plan et surtout profiter de toutes les améliorations possibles 
 - empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ? — **en pause** : décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer, pas lancé dans ce lot.
 
 ## ✅ Déjà fait
@@ -237,7 +233,7 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Bouton flottant trop près du bord (marge + `safe-area-inset-right`) + animation d'ouverture ralentie
 - `min-width: 24rem` remonté au niveau `html`/`body` : protège aussi les éléments passés en `position: fixed` (le swiper), que le `min-width` local de `.app-content` ne couvrait plus
 - Statut ouvert/fermé Google basé sur l'heure de début de l'activité, plus l'heure de consultation
-- Thème clair/sombre/système : `ThemeService`, bouton segmenté 3 icônes (même style qu'Activités/Réservations/Notes) dans le menu réglages, avec le libellé "Thème" ; carte Google Maps recréée à chaque bascule pour un rendu correct (`colorScheme` ne se rafraîchit pas visuellement via `setOptions()` sur une carte déjà créée) ; `color-scheme` posé explicitement sur `:root[data-theme]` pour que `light-dark()` (primeflex) suive le thème choisi
+- Thème clair/sombre/système : `ThemeService`, bouton segmenté 3 icônes (même style qu'Activités/Réservations/Notes) dans le menu réglages, avec le libellé "Thème" ; carte Google Maps recréée à chaque bascule pour un rendu correct (`colorScheme` ne se rafraîchit pas visuellement via `setOptions()` sur une carte déjà créée) ; `color-scheme` posé explicitement sur `:root[data-theme]` pour que `light-dark()` (classes utilitaires) suive le thème choisi
 - Max-width centré sur les colonnes jour/général en grand écran (`--nt-content-max-width`)
 - Logo pièce jointe dans le header d'activité si des fichiers sont associés
 - Largeur max du tab de login sur PC
@@ -258,4 +254,7 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Carte repliée automatiquement pendant l'édition d'une activité, mobile uniquement (verrou réentrant `GoogleMapPanelService.beginEditLock/endEditLock`, plusieurs cartes peuvent être en édition en même temps)
 - Saisie clavier des dates dans `app-date-picker`, desktop uniquement : le trigger devient un vrai champ texte (`dd/MM/yyyy`, ou `dd/MM/yyyy - dd/MM/yyyy` en mode plage) à côté d'un bouton icône séparé pour ouvrir le calendrier — mobile inchangé (bouton seul)
 - Infrastructure de travail autonome : 4 skills projet (`nesttrip-roadmap`, `nesttrip-verify`, `nesttrip-testing`, `nesttrip-e2e`), section "Workflow" dans `CLAUDE.md`, premiers tests unitaires réels (Vitest — mappers + `TripStore` avec ses services de persistence stubbés, anti-flicker `_pendingActivityIds` couvert), et socle e2e Playwright (compte de test dédié, parcours login + création de trip couverts)
+- Tous les composants passés en `ChangeDetectionStrategy.OnPush` : 3 `ControlValueAccessor` corrigés au passage (InputNumber, Password, TimePickerDialog — état en signal plutôt qu'en champ simple, `writeValue()`/`setDisabledState()` étant appelés depuis l'extérieur du template) ; `provideZonelessChangeDetection()` ajouté explicitement (l'app tournait déjà sans `zone.js`, en fallback implicite) et 3 usages `NgZone` devenus des no-ops nettoyés
+- SCSS custom dupliquant une classe PrimeFlex existante basculé vers ces classes utilitaires (triage fichier par fichier, uniquement quand la valeur est strictement identique et sans redéfinition locale en conflit) puis suppression complète de la dépendance PrimeFlex : sous-ensemble réellement utilisé dupliqué dans `src/styles/layout-utilities.scss` (portage 1:1, mêmes noms/valeurs), shim `--p-*` de `tokens.scss` supprimé
+- Montée Angular 22 (+ `@angular/cdk`, `@angular/google-maps`, `angular-eslint`, TypeScript 6) : `ng update` en un seul passage, migration automatique (`withXhr()` sur `provideHttpClient`), dernier `@ViewChild` décorateur converti en `viewChild()` signal
 - Secret de déploiement pour la release — **en pause** : nécessite une valeur/action manuelle de l'utilisateur (créer le secret côté hébergeur/CI), pas actionnable par le développement seul.
