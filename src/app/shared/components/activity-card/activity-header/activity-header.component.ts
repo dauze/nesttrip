@@ -67,6 +67,8 @@ export class ActivityHeaderComponent {
     return refs && refs.length > 0 ? refs[0] : null;
   });
 
+  readonly hasFiles = computed(() => (this.activity().files?.length ?? 0) > 0);
+
   constructor() {
      runOnceReady(this.activity, (a) => this.titleControl.setValue(a.title, { emitEvent: false }));
   }
