@@ -1,10 +1,16 @@
-import { ApplicationConfig, inject, LOCALE_ID, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  LOCALE_ID,
+  provideAppInitializer,
+  provideZonelessChangeDetection,
+} from '@angular/core';
 import { provideRouter, withViewTransitions } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { routes } from './app.routes';
 import { environment } from '@environments/environment';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import localeFr from '@angular/common/locales/fr';
 import { registerLocaleData } from '@angular/common';
@@ -28,7 +34,7 @@ export const appConfig: ApplicationConfig = {
     // dépendre d'un comportement de repli non garanti par l'API publique.
     provideZonelessChangeDetection(),
     provideRouter(routes, withViewTransitions({ onViewTransitionCreated })),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     provideAppInitializer(() => inject(GoogleMapsLoaderService).load()),
     // Instancie ThemeService dès le bootstrap (pas seulement une fois /trips
@@ -36,8 +42,10 @@ export const appConfig: ApplicationConfig = {
     // première peinture, y compris sur /login — un service root n'est créé
     // qu'à sa première injection, sans ce hook il resterait inerte tant
     // qu'aucun composant ne l'injecte.
-    provideAppInitializer(() => { inject(ThemeService); }),
+    provideAppInitializer(() => {
+      inject(ThemeService);
+    }),
     FirebaseUserProfileRepository,
     { provide: UserProfileRepository, useExisting: FirebaseUserProfileRepository },
-  ]
+  ],
 };

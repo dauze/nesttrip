@@ -6,7 +6,7 @@ Voir `ROADMAP.md` à la racine pour la liste des fonctionnalités déjà en plac
 
 ## Stack
 
-- Angular 21 (standalone, signals, `inject()`) — pas de NgModules, pas d'injection par constructeur
+- Angular 22 (standalone, signals, `inject()`, zoneless) — pas de NgModules, pas d'injection par constructeur
 - Firebase JS SDK v12 (`firestore`, `auth`, `storage`)
 - RxJS 7.8
 - Composants UI maison (`src/app/shared/components/`) sur tokens CSS `--nt-*` + PrimeIcons pour les icônes — PrimeNG et PrimeFlex ont été entièrement retirés (voir `PRIMENG_MIGRATION.md`)

@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, ViewChild, effect, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -48,8 +48,7 @@ export class TimePickerClockComponent implements AfterViewInit {
     private readonly data = inject<TimePickerClockData>(DIALOG_DATA);
     private readonly cdr = inject(ChangeDetectorRef);
 
-    @ViewChild('clockFace')
-    clockFace!: ElementRef<HTMLDivElement>;
+    private readonly clockFaceRef = viewChild<ElementRef<HTMLDivElement>>('clockFace');
 
     private readonly timeFields = viewChild<TimeFieldsComponent>('timeFields');
 
@@ -88,7 +87,7 @@ export class TimePickerClockComponent implements AfterViewInit {
     // Taille réelle du cadran (`.clock-face`, 16.5rem en CSS) : lue une seule
     // fois dans `ngAfterViewInit` (pas dans les getters positionnels
     // ci-dessous). Avant ce correctif, `getClockSize()` retombait sur un
-    // FALLBACK figé (280) tant que `@ViewChild` n'était pas encore résolu —
+    // FALLBACK figé (280) tant que `clockFaceRef()` n'était pas encore résolu —
     // donc pour TOUT le premier rendu (chiffres du cadran, aiguille,
     // sélecteur), puisque ces getters sont évalués dans le template avant
     // `ngAfterViewInit`. 280px ne correspond pas à 16.5rem (264px à 16px
@@ -130,8 +129,9 @@ export class TimePickerClockComponent implements AfterViewInit {
         // En mode durée (`isDurationMode`), le cadran n'est jamais monté au
         // démarrage (`viewMode` vaut 'keyboard' d'entrée) : `clockFace` reste
         // alors `undefined`.
-        if (this.clockFace) {
-            this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+        const clockFace = this.clockFaceRef();
+        if (clockFace) {
+            this.clockSize.set(clockFace.nativeElement.clientWidth);
             this.cdr.detectChanges();
         }
     }
@@ -179,8 +179,9 @@ export class TimePickerClockComponent implements AfterViewInit {
         // `clockSize`) : `clockFace` ne se résout qu'après ce `detectChanges`
         // puisque le cadran vient tout juste de réapparaître dans le DOM.
         this.cdr.detectChanges();
-        if (this.clockFace) {
-            this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+        const clockFace = this.clockFaceRef();
+        if (clockFace) {
+            this.clockSize.set(clockFace.nativeElement.clientWidth);
         }
     }
 
@@ -298,12 +299,13 @@ export class TimePickerClockComponent implements AfterViewInit {
         event: PointerEvent
     ): void {
 
-        if (!this.clockFace) {
+        const clockFace = this.clockFaceRef();
+        if (!clockFace) {
             return;
         }
 
         const rect =
-            this.clockFace.nativeElement.getBoundingClientRect();
+            clockFace.nativeElement.getBoundingClientRect();
 
         const centerX =
             rect.left + rect.width / 2;
