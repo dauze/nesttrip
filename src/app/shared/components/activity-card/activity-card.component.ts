@@ -450,7 +450,14 @@ export class ActivityCardComponent {
   }
 
   private resolveRingColor(el: HTMLElement): string {
-    const panelEl = el.querySelector('.p-panel') as HTMLElement | null;
+    // `.booking` (+ la classe de statut) est posée sur `<app-panel>` lui-même
+    // (voir le template) : `--booking-status-color` est une variable CSS,
+    // elle n'est visible qu'en descendant du DOM depuis cet élément, jamais
+    // en remontant depuis `el` (le conteneur ANCÊTRE). L'ancien sélecteur
+    // `.p-panel` datait de PrimeNG (avant le remplacement par PanelComponent,
+    // voir PRIMENG_MIGRATION.md) et ne matche plus rien depuis : on retombait
+    // donc toujours sur la couleur primaire au lieu de la couleur de statut.
+    const panelEl = el.querySelector('.booking') as HTMLElement | null;
     const value = getComputedStyle(panelEl ?? el).getPropertyValue('--booking-status-color').trim();
     return value || 'var(--p-primary-color)';
   }
