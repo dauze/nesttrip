@@ -119,4 +119,8 @@ export class TripsComponent {
   goBack(): void {
     this.router.navigate(['/trips']);
   }
+
+  protected onThemeChange(mode: ThemeMode | undefined): void {
+    if (mode) this.themeService.setMode(mode);
+  }
 }

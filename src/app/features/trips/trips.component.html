@@ -20,7 +20,7 @@
           <app-select-button
             [options]="themeOptions"
             [value]="themeService.mode()"
-            (valueChange)="themeService.setMode($event)"
+            (valueChange)="onThemeChange($event)"
             variant="subtle"
           />
         </div>
