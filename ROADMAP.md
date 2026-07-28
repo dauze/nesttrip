@@ -71,7 +71,6 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 ### UX / Interactions
 
-- Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
 - en création d'une réservation, il faudrait fiare la même chose que pour la création d'une actuivité, c'est à dire basculer entre toutes les zones du formulaire
 
@@ -254,3 +253,4 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Max-width sur les textarea de titre inline (titre du voyage, titres/points de notes) : sur grand écran ils s'étiraient sur toute la largeur de la colonne, rendant l'espace vide à droite du texte cliquable/focusable à tort (`.nt-capped-inline-field`)
 - Carte épinglée (sticky) au-dessus de la liste d'activités du jour : ajout d'une ombre portée pour séparer visuellement la carte du contenu qui défile dessous, qui donnait l'impression d'un bug d'empilement
 - Carte repliée automatiquement pendant l'édition d'une activité, mobile uniquement (verrou réentrant `GoogleMapPanelService.beginEditLock/endEditLock`, plusieurs cartes peuvent être en édition en même temps)
+- Saisie clavier des dates dans `app-date-picker`, desktop uniquement : le trigger devient un vrai champ texte (`dd/MM/yyyy`, ou `dd/MM/yyyy - dd/MM/yyyy` en mode plage) à côté d'un bouton icône séparé pour ouvrir le calendrier — mobile inchangé (bouton seul)

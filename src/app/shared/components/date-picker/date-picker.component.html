@@ -1,14 +1,38 @@
-<button
-  type="button"
-  class="app-date-picker__trigger"
-  [id]="inputId()"
-  [class.app-date-picker__trigger--open]="isOpen()"
-  [disabled]="isDisabled()"
-  (click)="toggle()">
-  <span class="app-date-picker__label" [class.app-date-picker__label--placeholder]="!displayText()">
-    {{ displayText() || placeholder() }}
-  </span>
-</button>
+@if (viewport.isMobile()) {
+  <button
+    type="button"
+    class="app-date-picker__trigger"
+    [id]="inputId()"
+    [class.app-date-picker__trigger--open]="isOpen()"
+    [disabled]="isDisabled()"
+    (click)="toggle()">
+    <span class="app-date-picker__label" [class.app-date-picker__label--placeholder]="!displayText()">
+      {{ displayText() || placeholder() }}
+    </span>
+  </button>
+} @else {
+  <div class="app-date-picker__trigger app-date-picker__trigger--desktop" [class.app-date-picker__trigger--open]="isOpen()">
+    <input
+      type="text"
+      class="app-date-picker__input"
+      [id]="inputId()"
+      [disabled]="isDisabled()"
+      [placeholder]="placeholder()"
+      [value]="draftText() ?? displayText()"
+      (focus)="onInputFocus($any($event.target))"
+      (input)="draftText.set($any($event.target).value)"
+      (keydown.enter)="onInputEnter($any($event.target))"
+      (blur)="commitDraft()" />
+    <button
+      type="button"
+      class="app-date-picker__calendar-toggle"
+      [disabled]="isDisabled()"
+      aria-label="Ouvrir le calendrier"
+      (click)="toggle()">
+      <i class="pi pi-calendar"></i>
+    </button>
+  </div>
+}
 
 <ng-template #panel>
   <div class="app-date-picker-panel">

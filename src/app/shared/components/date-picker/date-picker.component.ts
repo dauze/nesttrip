@@ -2,7 +2,7 @@ import { Component, ElementRef, TemplateRef, ViewContainerRef, computed, forward
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { addDays, addMonths, addYears, eachDayOfInterval, format, isBefore, isSameDay, isSameMonth, isToday as isTodayDate, startOfMonth, startOfWeek, subMonths, subYears } from 'date-fns';
+import { addDays, addMonths, addYears, eachDayOfInterval, format, isBefore, isSameDay, isSameMonth, isToday as isTodayDate, isValid, parse, startOfMonth, startOfWeek, subMonths, subYears } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ViewportService } from '@core/services/viewport.service';
 
@@ -65,6 +65,22 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
  * sauter la hauteur du panneau — donc claquer visuellement — en changeant
  * de mois) : la grille est toujours calculée comme 42 jours consécutifs
  * depuis `gridStart`, quel que soit le mois affiché.
+ *
+ * Saisie clavier (desktop uniquement, `!viewport.isMobile()` — voir
+ * ROADMAP.md) : un vrai `<input>` texte remplace le bouton déclencheur, à
+ * côté d'un bouton icône séparé qui ouvre/ferme le calendrier
+ * (`toggle()`, inchangé). Volontairement DEUX éléments distincts plutôt que
+ * de faire aussi ouvrir le panneau au focus de l'input : le clic sur un
+ * jour dans le panneau (portail CDK, hors de cet arbre de vue) fait perdre
+ * le focus à l'input AVANT que le clic ne soit traité, ce qui aurait
+ * déclenché la validation du texte tapé en plein milieu d'une sélection à
+ * la souris — les deux interactions restent donc totalement indépendantes.
+ * `draftText` porte le texte en cours d'édition (`null` = pas en édition,
+ * l'input affiche alors `displayText()`) ; à la perte de focus
+ * (`commitDraft`), le texte est parsé (`dd/MM/yyyy`, ou `dd/MM/yyyy -
+ * dd/MM/yyyy` en mode plage) et appliqué s'il est valide, silencieusement
+ * abandonné sinon (l'input retombe sur `displayText()`, dernière valeur
+ * connue) — pas d'état d'erreur séparé à gérer.
  */
 @Component({
   selector: 'app-date-picker',
@@ -147,6 +163,9 @@ export class DatePickerComponent implements ControlValueAccessor {
     if (!end) return `${format(start, 'dd/MM/yyyy')} - …`;
     return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
   });
+
+  /** Texte en cours de saisie clavier (desktop), voir la doc de la classe. */
+  protected readonly draftText = signal<string | null>(null);
 
   private overlayRef?: OverlayRef;
   private onChange?: (value: Date | Date[] | null) => void;
@@ -310,6 +329,52 @@ export class DatePickerComponent implements ControlValueAccessor {
     this.onChange?.([rangeStart, rangeEnd]);
     this.selected.emit([rangeStart, rangeEnd]);
     this.close();
+  }
+
+  protected onInputFocus(target: HTMLInputElement): void {
+    this.draftText.set(this.displayText());
+    target.select();
+  }
+
+  protected onInputEnter(target: HTMLInputElement): void {
+    // Déclenche (blur), qui appelle commitDraft — évite de dupliquer la logique.
+    target.blur();
+  }
+
+  protected commitDraft(): void {
+    const raw = this.draftText();
+    this.draftText.set(null);
+    if (raw !== null) this.tryParseAndApply(raw);
+  }
+
+  private tryParseAndApply(raw: string): void {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+
+    if (!this.range()) {
+      const parsed = parse(trimmed, 'dd/MM/yyyy', new Date());
+      if (!isValid(parsed)) return;
+
+      this.singleValue.set(parsed);
+      this.viewMonth.set(startOfMonth(parsed));
+      this.onChange?.(parsed);
+      this.selected.emit(parsed);
+      return;
+    }
+
+    const parts = trimmed.split('-').map((p) => p.trim()).filter(Boolean);
+    if (parts.length !== 2) return;
+
+    const start = parse(parts[0], 'dd/MM/yyyy', new Date());
+    const end = parse(parts[1], 'dd/MM/yyyy', new Date());
+    if (!isValid(start) || !isValid(end)) return;
+
+    const [rangeStart, rangeEnd] = isBefore(end, start) ? [end, start] : [start, end];
+    this.rangeStart.set(rangeStart);
+    this.rangeEnd.set(rangeEnd);
+    this.viewMonth.set(startOfMonth(rangeStart));
+    this.onChange?.([rangeStart, rangeEnd]);
+    this.selected.emit([rangeStart, rangeEnd]);
   }
 
   private open(): void {

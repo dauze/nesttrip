@@ -59,6 +59,60 @@
   color: var(--nt-form-field-placeholder-color);
 }
 
+// Variante desktop (saisie clavier, voir la doc de la classe) : le trigger
+// n'est plus un unique `<button>` mais un conteneur flex avec un vrai champ
+// texte + un bouton icône séparé pour le calendrier — cursor par défaut
+// (pas pointer, hérité du bouton) puisque le conteneur lui-même n'est plus
+// cliquable dans son ensemble.
+.app-date-picker__trigger--desktop {
+  cursor: text;
+  padding: 0;
+  padding-right: 0.25rem;
+}
+
+.app-date-picker__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+
+  &:focus {
+    outline: none;
+  }
+
+  &::placeholder {
+    color: var(--nt-form-field-placeholder-color);
+  }
+}
+
+.app-date-picker__calendar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  cursor: pointer;
+  transition: background-color var(--nt-transition-duration) ease;
+
+  &:hover:not(:disabled) {
+    background: var(--nt-content-hover-background);
+  }
+
+  &:disabled {
+    color: var(--nt-form-field-disabled-color);
+    cursor: not-allowed;
+  }
+}
+
 // Le panneau (.app-date-picker-panel et tout ce qu'il contient) est attaché
 // par @angular/cdk/overlay dans .cdk-overlay-container, HORS de l'arbre de
 // vue de ce composant (portail) : ses styles vivent dans
