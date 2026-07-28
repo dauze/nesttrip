@@ -44,7 +44,14 @@
   z-index: 10;
   background: canvas;
   padding-top: 0.5rem;
-  border-radius: 0 0 var(--nt-radius-md) var(--nt-radius-md);
+  // Sans ombre, la carte épinglée (app-panel plein cadre, coins arrondis,
+  // bordure) n'avait AUCUNE séparation visuelle avec les cartes d'activité
+  // qui défilent juste en dessous (elles n'ont volontairement pas de z-index,
+  // voir trip-detail.component.scss) : le contenu disparaissait sous un
+  // rectangle plat avec une coupure nette, lisible comme un bug d'empilement
+  // plutôt qu'un vrai "sticky" voulu — voir ROADMAP.md. Même token que les
+  // popovers (élévation discrète), pas le modal (beaucoup trop marqué ici).
+  box-shadow: var(--nt-overlay-popover-shadow);
 }
 
 // L'ancien second bloc `:host { scroll-margin-top: var(--sticky-height, 0px); }`
