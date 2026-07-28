@@ -25,6 +25,11 @@ const MOVE_THRESHOLD_PX = 10;
  * était déjà en train de dragger. `document` reste dans le chemin de
  * propagation même après un retarget vers `<html>` (qui EST `document`'s
  * enfant), donc les events y arrivent toujours.
+ *
+ * Un `pointerdown` qui démarre SUR une poignée de drag (`.drag-handle` du
+ * drag maison, `[cdkDragHandle]` pour Notes) n'arme jamais le timer : la
+ * poignée est exclusivement réservée au drag, jamais à la sélection, même si
+ * l'utilisateur reste appuyé sans bouger avant de vraiment dragger.
  */
 @Directive({
   selector: '[appLongPress]',
@@ -64,6 +69,9 @@ export class LongPressDirective {
     // Souris : pas de long-press (sur PC, l'entrée en mode sélection passe
     // uniquement par la checkbox, voir SelectableDirective).
     if (event.pointerType === 'mouse') return;
+
+    // Poignée de drag : jamais de long-press-sélection, voir la doc de classe.
+    if ((event.target as HTMLElement).closest('.drag-handle, [cdkDragHandle]')) return;
 
     this.clearTimer();
     this.startX = event.clientX;
