@@ -36,7 +36,12 @@ swiper-slide {
   box-sizing: border-box;
   height: 100%;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  // PAS de `overscroll-behavior: contain` ici (retiré) : ça bloquait le geste
+  // natif Chrome "swipe vers le bas pour actualiser" en haut d'un slide (voir
+  // ROADMAP.md), car ce geste dépend de l'overscroll qui remonte jusqu'au
+  // navigateur. Sans risque de scroll-bleed pour autant : `html.trip-detail-active`/
+  // son `body` restent `overflow: hidden` (voir styles/reset.scss), donc rien
+  // ne peut visuellement scroller au-delà du slide même si l'overscroll chaîne.
   -webkit-overflow-scrolling: touch;
   transition: transform 150ms ease-out;
   filter: blur(var(--slide-blur, 0px));
