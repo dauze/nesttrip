@@ -6,4 +6,8 @@
 .general-panel-root {
   padding-top: var(--chrome-top-offset, 0px);
   padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // Même colonne centrée que day-panel-root — voir sa doc et
+  // --nt-content-max-width (tokens.scss).
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
 }

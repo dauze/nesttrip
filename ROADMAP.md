@@ -96,7 +96,7 @@ Ordre d'exécution prévu pour le reste :
 - le bouton flottant est trop pret du bord ! et ralentir un peu son annimation d'ouverture
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Je peux pas actualiser depuis l'écran ou il y a le swiper via le racourcie google de swipe vers le bas
-- Sur ordinateur, afficher plusieurs jour si écran large ? mettre une taille maximum pour la largeur des activités en tout cas et en mettre plusieurs cote à cote via un grid
+- Sur ordinateur, afficher plusieurs jour si écran large ? mettre une taille maximum pour la largeur des activités en tout cas et en mettre plusieurs cote à cote via un grid. **Fait partiellement** : max-width centré (`--nt-content-max-width`, day-panel + general-panel). La grille multi-colonnes est repoussée dans le chantier UI Desktop/landscape (ci-dessus) : elle casserait la géométrie du drag and drop maison (calculs verticaux voisin-par-voisin), à traiter ensemble avec le reste du layout desktop, pas isolément.
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
 - Warning : <gmp-pin>: The `element` property is deprecated. Please use the PinElement directly.<gmp-advanced-marker>: Please use addEventListener('gmp-click', ...) instead of addEventListener('click', ...). A supprimer
 - la couleur du drag and drop maison n'est plus respecté, il faut que la bar de gauche reprenne la couleur de l'activité

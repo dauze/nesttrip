@@ -162,6 +162,14 @@
   // (4px/6px) sans raison fonctionnelle de diverger.
   --nt-blur-backdrop: 0.375rem;
 
+  // Largeur max des colonnes de contenu (jour/général : carte, timeline,
+  // activités, notes, réservations) sur grand écran — évite qu'une carte
+  // d'activité ou une liste s'étire sur toute la largeur d'un écran
+  // desktop, ce qui rend les clics à côté (au lieu de dessus) fréquents.
+  // Pas de limite en dessous (mobile) : un `max-width` n'a aucun effet tant
+  // que le viewport reste plus étroit que la valeur.
+  --nt-content-max-width: 40rem;
+
   // Mouvement — courbe d'accélération dupliquée telle quelle dans
   // styles.scss (transitions de navigation, dispatch-overlay) et les
   // composants d'overlay : un seul jeton de référence.

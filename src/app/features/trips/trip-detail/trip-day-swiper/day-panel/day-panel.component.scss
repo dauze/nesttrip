@@ -31,6 +31,11 @@
 .day-panel-root {
   padding-top: var(--chrome-top-offset, 0px);
   padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // Centre le contenu (carte, timeline, activités) dans une colonne de
+  // largeur raisonnable sur grand écran plutôt que de l'étirer sur toute la
+  // largeur — voir --nt-content-max-width (tokens.scss) et ROADMAP.md.
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
 }
 
 .sticky-map {
