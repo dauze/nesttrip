@@ -7,7 +7,7 @@
 :host {
   display: block;
   position: fixed;
-  right: 2rem;
+  right: calc(2.5rem + env(safe-area-inset-right, 0px));
   bottom: calc(var(--fab-bottom-offset, 0px) + 1.5rem);
   z-index: 12;
 }
@@ -42,9 +42,9 @@
   overflow: hidden;
   white-space: nowrap;
   transition:
-    max-width 420ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 320ms ease,
-    margin-right 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    max-width 560ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 420ms ease,
+    margin-right 560ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fab-icon {
