@@ -91,10 +91,10 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e (Playwright) : socle en place le 2026-07-28 (compte de test Firebase Auth dédié, `npm run e2e`) — parcours 1 (login) et 2 (création de trip) couverts, parcours 3 à 7 (activité, form jour, dispatch, réservation, suppression) en backlog, voir `.claude/skills/nesttrip-e2e/SKILL.md`.
-- tout passer en strategy onpush puis : 
+- passer tous les composant en strategy onpush pour être en fiull signal et v22 ready 
 - basculer tous les scss possible via des scss primeflex puis 
 - Duppliquer tout le code utiliser de primeflex et supprimer la librairie et enfin 
-- passer à angular 22 montée de version majeure, à valideravant de lancer pour éviter de casser l'existant en même temps que le reste du plan.
+- passer à angular 22 montée de version majeure, à valideravant de lancer pour éviter de casser l'existant en même temps que le reste du plan et surtout profiter de toutes les améliorations possibles 
 - empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ? — **en pause** : décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer, pas lancé dans ce lot.
 
 ## ✅ Déjà fait
