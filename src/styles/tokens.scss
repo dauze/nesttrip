@@ -276,67 +276,150 @@
   --p-primary-color: var(--nt-primary-color);
 }
 
+// Jetons redéfinis par mode — factorisés en mixins pour être appliqués à la
+// fois via la media query (mode "système", voir ThemeService) et via
+// l'attribut `data-theme` posé par ThemeService sur `<html>` quand
+// l'utilisateur choisit explicitement clair/sombre dans le menu réglages
+// (roue crantée) plutôt que de suivre l'OS — voir CLAUDE.md/ROADMAP.md.
+// `:root[data-theme='...']` a une spécificité plus élevée qu'un simple
+// `:root` posé dans un `@media`, donc un choix explicite l'emporte toujours
+// sur la préférence système, quel que soit l'ordre des règles.
+@mixin nt-dark-tokens {
+  --nt-primary-color: var(--nt-primary-400);
+  --nt-primary-contrast-color: var(--nt-surface-900);
+  --nt-primary-hover-color: var(--nt-primary-300);
+  --nt-primary-active-color: var(--nt-primary-200);
+
+  // Palette surface (zinc — valeur par défaut Aura en dark)
+  --nt-surface-0: #ffffff;
+  --nt-surface-50: #fafafa;
+  --nt-surface-100: #f4f4f5;
+  --nt-surface-200: #e4e4e7;
+  --nt-surface-300: #d4d4d8;
+  --nt-surface-400: #a1a1aa;
+  --nt-surface-500: #71717a;
+  --nt-surface-600: #52525b;
+  --nt-surface-700: #3f3f46;
+  --nt-surface-800: #27272a;
+  --nt-surface-900: #18181b;
+  --nt-surface-950: #09090b;
+
+  --nt-text-color: var(--nt-surface-0);
+  --nt-text-hover-color: var(--nt-surface-0);
+  --nt-text-muted-color: var(--nt-surface-400);
+  --nt-text-hover-muted-color: var(--nt-surface-300);
+
+  --nt-content-background: var(--nt-surface-900);
+  --nt-content-hover-background: var(--nt-surface-800);
+  --nt-content-border-color: var(--nt-surface-700);
+
+  --nt-overlay-background: var(--nt-surface-900);
+  --nt-overlay-border-color: var(--nt-surface-700);
+  --nt-mask-background: rgba(0, 0, 0, 0.6);
+
+  --nt-form-field-background: var(--nt-surface-950);
+  --nt-form-field-disabled-background: var(--nt-surface-700);
+  --nt-form-field-border-color: var(--nt-surface-600);
+  --nt-form-field-hover-border-color: var(--nt-surface-500);
+  --nt-form-field-invalid-border-color: #fca5a5;
+  --nt-form-field-color: var(--nt-surface-0);
+  --nt-form-field-disabled-color: var(--nt-surface-400);
+  --nt-form-field-placeholder-color: var(--nt-surface-400);
+  --nt-form-field-icon-color: var(--nt-surface-400);
+
+  // Teintes plus claires que la version light (lisibilité sur fond sombre),
+  // mais gardent la même intensité/saturation relative — voir la version
+  // light plus haut pour le raisonnement.
+  --nt-red-500: #ff6166;
+  --nt-green-500: #32d583;
+  --nt-blue-500: #53b1fd;
+  --nt-yellow-500: #fdb022;
+
+  --nt-secondary-bg: var(--nt-surface-800);
+  --nt-secondary-hover-bg: var(--nt-surface-700);
+  --nt-secondary-active-bg: var(--nt-surface-600);
+  --nt-secondary-color: var(--nt-surface-300);
+  --nt-secondary-outlined-color: var(--nt-surface-400);
+  --nt-secondary-outlined-hover-bg: rgba(255, 255, 255, 0.04);
+  --nt-secondary-outlined-active-bg: rgba(255, 255, 255, 0.16);
+
+  --nt-skeleton-bg: rgba(255, 255, 255, 0.06);
+  --nt-skeleton-shimmer: rgba(255, 255, 255, 0.04);
+}
+
+// Mirroir exact des valeurs par défaut (light) déclarées dans `:root`
+// ci-dessus, pour pouvoir les réaffirmer explicitement quand l'utilisateur
+// choisit "clair" alors que l'OS est en sombre (sinon le bloc `@media`
+// resterait actif malgré le choix explicite).
+@mixin nt-light-tokens {
+  --nt-primary-color: var(--nt-primary-500);
+  --nt-primary-contrast-color: #ffffff;
+  --nt-primary-hover-color: var(--nt-primary-600);
+  --nt-primary-active-color: var(--nt-primary-700);
+
+  --nt-surface-0: #ffffff;
+  --nt-surface-50: #f8fafc;
+  --nt-surface-100: #f1f5f9;
+  --nt-surface-200: #e2e8f0;
+  --nt-surface-300: #cbd5e1;
+  --nt-surface-400: #94a3b8;
+  --nt-surface-500: #64748b;
+  --nt-surface-600: #475569;
+  --nt-surface-700: #334155;
+  --nt-surface-800: #1e293b;
+  --nt-surface-900: #0f172a;
+  --nt-surface-950: #020617;
+
+  --nt-text-color: var(--nt-surface-700);
+  --nt-text-hover-color: var(--nt-surface-800);
+  --nt-text-muted-color: var(--nt-surface-500);
+  --nt-text-hover-muted-color: var(--nt-surface-600);
+
+  --nt-content-background: var(--nt-surface-0);
+  --nt-content-hover-background: var(--nt-surface-100);
+  --nt-content-border-color: var(--nt-surface-200);
+
+  --nt-overlay-background: var(--nt-surface-0);
+  --nt-overlay-border-color: var(--nt-surface-200);
+  --nt-mask-background: rgba(0, 0, 0, 0.4);
+
+  --nt-form-field-background: var(--nt-surface-0);
+  --nt-form-field-disabled-background: var(--nt-surface-200);
+  --nt-form-field-border-color: var(--nt-surface-300);
+  --nt-form-field-hover-border-color: var(--nt-surface-400);
+  --nt-form-field-invalid-border-color: #f87171;
+  --nt-form-field-color: var(--nt-surface-700);
+  --nt-form-field-disabled-color: var(--nt-surface-500);
+  --nt-form-field-placeholder-color: var(--nt-surface-500);
+  --nt-form-field-icon-color: var(--nt-surface-400);
+
+  --nt-red-500: #f5222d;
+  --nt-green-500: #12b76e;
+  --nt-blue-500: #1570ef;
+  --nt-yellow-500: #f79009;
+
+  --nt-secondary-bg: var(--nt-surface-100);
+  --nt-secondary-hover-bg: var(--nt-surface-200);
+  --nt-secondary-active-bg: var(--nt-surface-300);
+  --nt-secondary-color: var(--nt-surface-600);
+  --nt-secondary-outlined-color: var(--nt-surface-500);
+  --nt-secondary-outlined-hover-bg: var(--nt-surface-50);
+  --nt-secondary-outlined-active-bg: var(--nt-surface-100);
+
+  --nt-skeleton-bg: var(--nt-surface-200);
+  --nt-skeleton-shimmer: rgba(255, 255, 255, 0.4);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --nt-primary-color: var(--nt-primary-400);
-    --nt-primary-contrast-color: var(--nt-surface-900);
-    --nt-primary-hover-color: var(--nt-primary-300);
-    --nt-primary-active-color: var(--nt-primary-200);
-
-    // Palette surface (zinc — valeur par défaut Aura en dark)
-    --nt-surface-0: #ffffff;
-    --nt-surface-50: #fafafa;
-    --nt-surface-100: #f4f4f5;
-    --nt-surface-200: #e4e4e7;
-    --nt-surface-300: #d4d4d8;
-    --nt-surface-400: #a1a1aa;
-    --nt-surface-500: #71717a;
-    --nt-surface-600: #52525b;
-    --nt-surface-700: #3f3f46;
-    --nt-surface-800: #27272a;
-    --nt-surface-900: #18181b;
-    --nt-surface-950: #09090b;
-
-    --nt-text-color: var(--nt-surface-0);
-    --nt-text-hover-color: var(--nt-surface-0);
-    --nt-text-muted-color: var(--nt-surface-400);
-    --nt-text-hover-muted-color: var(--nt-surface-300);
-
-    --nt-content-background: var(--nt-surface-900);
-    --nt-content-hover-background: var(--nt-surface-800);
-    --nt-content-border-color: var(--nt-surface-700);
-
-    --nt-overlay-background: var(--nt-surface-900);
-    --nt-overlay-border-color: var(--nt-surface-700);
-    --nt-mask-background: rgba(0, 0, 0, 0.6);
-
-    --nt-form-field-background: var(--nt-surface-950);
-    --nt-form-field-disabled-background: var(--nt-surface-700);
-    --nt-form-field-border-color: var(--nt-surface-600);
-    --nt-form-field-hover-border-color: var(--nt-surface-500);
-    --nt-form-field-invalid-border-color: #fca5a5;
-    --nt-form-field-color: var(--nt-surface-0);
-    --nt-form-field-disabled-color: var(--nt-surface-400);
-    --nt-form-field-placeholder-color: var(--nt-surface-400);
-    --nt-form-field-icon-color: var(--nt-surface-400);
-
-    // Teintes plus claires que la version light (lisibilité sur fond sombre),
-    // mais gardent la même intensité/saturation relative — voir la version
-    // light plus haut pour le raisonnement.
-    --nt-red-500: #ff6166;
-    --nt-green-500: #32d583;
-    --nt-blue-500: #53b1fd;
-    --nt-yellow-500: #fdb022;
-
-    --nt-secondary-bg: var(--nt-surface-800);
-    --nt-secondary-hover-bg: var(--nt-surface-700);
-    --nt-secondary-active-bg: var(--nt-surface-600);
-    --nt-secondary-color: var(--nt-surface-300);
-    --nt-secondary-outlined-color: var(--nt-surface-400);
-    --nt-secondary-outlined-hover-bg: rgba(255, 255, 255, 0.04);
-    --nt-secondary-outlined-active-bg: rgba(255, 255, 255, 0.16);
-
-    --nt-skeleton-bg: rgba(255, 255, 255, 0.06);
-    --nt-skeleton-shimmer: rgba(255, 255, 255, 0.04);
+    @include nt-dark-tokens;
   }
+}
+
+:root[data-theme='dark'] {
+  @include nt-dark-tokens;
+}
+
+:root[data-theme='light'] {
+  @include nt-light-tokens;
 }

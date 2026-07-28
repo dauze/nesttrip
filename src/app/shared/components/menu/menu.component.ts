@@ -6,6 +6,8 @@ export interface AppMenuItem {
   label?: string;
   icon?: string;
   command?: () => void;
+  /** Affiche une coche à droite de l'item (ex. mode de thème actuellement sélectionné) — voir TripsComponent. */
+  active?: boolean;
   /** Groupe (en-tête `label` + sous-items) — voir `runCommand`/le template pour le rendu à plat sinon. */
   items?: AppMenuItem[];
 }

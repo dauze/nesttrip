@@ -14,7 +14,7 @@
     <span toolbarCenter class="nesttrip-logo">NestTrip</span>
 
     <div toolbarEnd class="w-3rem flex justify-content-center">
-      <app-menu #menu [items]="menuItems" />
+      <app-menu #menu [items]="menuItems()" />
       <app-button
         (click)="menu.toggle($event)"
         icon="pi pi-cog"

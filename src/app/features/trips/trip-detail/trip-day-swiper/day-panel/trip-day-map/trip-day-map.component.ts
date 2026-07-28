@@ -1,7 +1,8 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, input, linkedSignal, NgZone, output, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, linkedSignal, NgZone, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { ThemeService } from '@app/core/services/theme.service';
 import { environment } from '@environments/environment';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 
@@ -29,17 +30,20 @@ export class TripDayMapComponent {
 
   readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly ngZone = inject(NgZone);
+  private readonly themeService = inject(ThemeService);
 
-  // Écoute directe du mode sombre globale du système/navigateur utilisé par le preset Aura
-  isDarkMode = signal(false);
+  // Suit ThemeService (mode clair/sombre/système choisi dans le menu
+  // réglages, voir sa doc) plutôt qu'un matchMedia local : un seul point de
+  // vérité réactif, qui répond aussi bien à un choix explicite qu'à un
+  // changement système, sans recharger la page.
+  isDarkMode = this.themeService.isDark;
 
   // Les options de la carte deviennent un computed réactif
   mapOptions = computed<google.maps.MapOptions>(() => {
     return {
       // Tu laisses l'ID de carte classique (raster ou vectoriel de base)
-      mapId: environment.googleMapsMapId, 
+      mapId: environment.googleMapsMapId,
       colorScheme: this.isDarkMode() ? 'DARK' : 'LIGHT',
       disableDefaultUI: false,
       gestureHandling: 'greedy',
@@ -57,13 +61,6 @@ export class TripDayMapComponent {
   private lastPointsKey: string | null = null;
 
   constructor() {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    this.isDarkMode.set(mediaQuery.matches);
-
-    const listener = (e: MediaQueryListEvent) => this.isDarkMode.set(e.matches);
-    mediaQuery.addEventListener('change', listener);
-    this.destroyRef.onDestroy(() => mediaQuery.removeEventListener('change', listener));
-
     effect(() => {
       this.googleMapPanelService.setCollapse(this.collapsed());
     });

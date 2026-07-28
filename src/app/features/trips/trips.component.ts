@@ -18,6 +18,7 @@ import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
+import { ThemeService } from '@app/core/services/theme.service';
 
 @Component({
   selector: 'app-trips',
@@ -51,6 +52,7 @@ export class TripsComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   protected readonly chromeService = inject(TripChromeService);
+  private readonly themeService = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
@@ -93,18 +95,44 @@ export class TripsComponent {
     return /^\/trips\/.+/.test(url);
   });
 
-  readonly menuItems: AppMenuItem[] = [
-    {
-      label: 'Compte',
-      items: [
-        {
-          label: 'Se déconnecter',
-          icon: 'pi pi-sign-out',
-          command: () => this.authService.logout().subscribe(),
-        },
-      ],
-    },
-  ];
+  readonly menuItems = computed<AppMenuItem[]>(() => {
+    const mode = this.themeService.mode();
+    return [
+      {
+        label: 'Thème',
+        items: [
+          {
+            label: 'Clair',
+            icon: 'pi pi-sun',
+            active: mode === 'light',
+            command: () => this.themeService.setMode('light'),
+          },
+          {
+            label: 'Sombre',
+            icon: 'pi pi-moon',
+            active: mode === 'dark',
+            command: () => this.themeService.setMode('dark'),
+          },
+          {
+            label: 'Système',
+            icon: 'pi pi-desktop',
+            active: mode === 'system',
+            command: () => this.themeService.setMode('system'),
+          },
+        ],
+      },
+      {
+        label: 'Compte',
+        items: [
+          {
+            label: 'Se déconnecter',
+            icon: 'pi pi-sign-out',
+            command: () => this.authService.logout().subscribe(),
+          },
+        ],
+      },
+    ];
+  });
 
   goBack(): void {
     this.router.navigate(['/trips']);
