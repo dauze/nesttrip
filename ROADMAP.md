@@ -37,6 +37,14 @@ Ordre d'exécution prévu pour le reste :
 - Pull-to-refresh : 2e tentative — `overflow:hidden` ne doit être posé que sur `<body>`, pas sur `<html>` (qui est le `scrollingElement` que Chrome regarde pour ce geste). Toujours **non vérifié visuellement** (voir limite réseau ci-dessus) : à confirmer côté utilisateur, je n'ai pas trouvé d'autre cause plausible côté code après investigation.
 - Sur le thème "ne fonctionne pas en temps réel" (carte + fond) : relu tout le circuit (service, effect, CSS compilée, wiring Google Maps `setOptions`) sans trouver de bug — tout semble correct sur le papier. Le nouveau bouton segmenté remplace en tout cas l'UI en liste qui ne correspondait pas à la demande initiale ; si le fond/la carte ne suivent toujours pas après ce correctif, il me faudra une info concrète (erreur console, ou si l'attribut `data-theme` apparaît bien sur `<html>` dans l'inspecteur) pour aller plus loin, faute de pouvoir reproduire ici.
 
+**3e lot (2026-07-28)** — 2 vraies causes trouvées grâce aux infos de test de l'utilisateur (fond calé sur le thème de l'appareil, carte qui ne suit qu'après un F5) :
+- Fond (toolbar/header/day-panel) : `background: Canvas` (couleur système CSS) suit `color-scheme`, resté `light dark` (piloté par l'OS/le navigateur) même avec un `data-theme` explicite posé — un choix manuel dans l'appli n'avait donc aucun effet sur ces 3 endroits, ni sur `light-dark()` (utilisé massivement par primeflex.css : ce bug touchait potentiellement plus large que juste ces 3 fonds). `color-scheme: dark`/`light` posé explicitement sur `:root[data-theme='dark'|'light']` ; les 3 `background: Canvas` remplacés par `--nt-content-background`.
+- Carte : `google.maps.Map` ne rafraîchit pas visuellement son rendu quand `colorScheme` change via `setOptions()` sur une instance déjà créée (limitation de l'API, confirmée par l'utilisateur : ne fonctionnait qu'après F5). Le sous-arbre `<google-map>` est désormais recréé en entier à chaque bascule clair/sombre (`@for` à un seul élément tracké par `isDarkMode()`) — perd la position de caméra courante (réinitialisée sur `center()`/`zoom()` par défaut), acceptable pour une action ponctuelle.
+- Icônes du sélecteur de thème mal centrées : `SelectButtonComponent` rendait un `<span>` vide même sans label, décalait visuellement l'icône via le `gap` flex — ne se rend plus du tout si le label est vide.
+- Ajout du libellé "Thème" avant le contrôle segmenté.
+- Long-press sur la poignée de drag (`.drag-handle`/`[cdkDragHandle]`) armait quand même le mode sélection si l'utilisateur restait appuyé sans bouger avant qu'un drag ne soit détecté — la poignée n'arme plus jamais le long-press, exclusivement réservée au drag.
+- Style du sélecteur de thème aligné sur Activités/Réservations/Notes (`variant` solid par défaut au lieu de `subtle`).
+
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
