@@ -425,9 +425,18 @@
 }
 
 :root[data-theme='dark'] {
+  // `color-scheme: light dark` (posé plus haut) laisse le navigateur choisir
+  // la branche en fonction de la préférence OS — ce qui pilote aussi bien les
+  // couleurs système CSS (`Canvas`, voir day-panel/trip-detail/trips.component.scss)
+  // que `light-dark()` (massivement utilisé par primeflex.css, voir plus
+  // haut). Sans ce réglage explicite, un choix de thème manuel dans l'appli
+  // n'avait aucun effet sur ces deux mécanismes : ils continuaient de suivre
+  // le thème du système/navigateur quoi qu'il arrive (voir ROADMAP.md).
+  color-scheme: dark;
   @include nt-dark-tokens;
 }
 
 :root[data-theme='light'] {
+  color-scheme: light;
   @include nt-light-tokens;
 }

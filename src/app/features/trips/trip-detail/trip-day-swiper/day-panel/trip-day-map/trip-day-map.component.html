@@ -5,21 +5,31 @@
     </div>
 
     <div class="flex flex-column gap-2 swiper-no-swiping map-container" >
-      <google-map
-        height="32dvh"
-        width="100%"
-        [center]="center()"
-        [zoom]="zoom()"
-        [options]="mapOptions()"
-      >
-        @for (point of points(); track point.activityId) {
-          <map-advanced-marker
-            [position]="{ lat: point.latitude, lng: point.longitude }"
-            [title]="point.name"
-            [content]="markerContent(point)"
-            (markerInitialized)="onMarkerInitialized($event, point)"
-          />
-        }
-  </google-map>
+      <!--
+        @for à un seul élément, tracké par isDarkMode() : google.maps.Map ne
+        rafraîchit pas visuellement son rendu quand `colorScheme` change via
+        setOptions() sur une carte déjà créée (limitation constatée de l'API,
+        voir ROADMAP.md — le thème carte ne s'appliquait qu'après un F5).
+        Recréer tout le sous-arbre (donc la vraie instance Map) à chaque
+        bascule clair/sombre force un nouveau rendu correct dès la création.
+      -->
+      @for (darkMode of [isDarkMode()]; track darkMode) {
+        <google-map
+          height="32dvh"
+          width="100%"
+          [center]="center()"
+          [zoom]="zoom()"
+          [options]="mapOptions()"
+        >
+          @for (point of points(); track point.activityId) {
+            <map-advanced-marker
+              [position]="{ lat: point.latitude, lng: point.longitude }"
+              [title]="point.name"
+              [content]="markerContent(point)"
+              (markerInitialized)="onMarkerInitialized($event, point)"
+            />
+          }
+        </google-map>
+      }
   </div>
 </app-panel>
