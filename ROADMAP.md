@@ -62,9 +62,8 @@ Ordre d'exécution prévu pour le reste :
 - Gérer le cas Asie : alternative à Google Maps (non prioritaire)
 - Carte pliée par défaut dans "Général" qui permet de voir toutes les activités du voyage. Même scroll que pour un day ?
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
-- Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin.
-- Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange
-- Mettre la carte sur le côté lorsque le téléphone est en mode allongé (fusionné avec le layout desktop/landscape ci-dessus)
+- Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin : pour ce point, il manque une solution pour les textarea et la zone prix, tout le reste passe par un composant mobile déjà
+- Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange, même si le fonctionnement est parfaitement fonctionnel
 
 ### Activités
 
@@ -102,7 +101,7 @@ Ordre d'exécution prévu pour le reste :
 ### UX / Interactions
 
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
-- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours.
+- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours uniquement sur mobile 
 - Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input ) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`, voir Bugs/fixes), reste à traiter les champs de saisie eux-mêmes.
 - reseigner en input le titre de la selection sur les listes lorsqu'elles s'ouvre sur mobile
 - clique sur n'importe ou du header pour le collapse true/ false et pas que sur le bouton, sauf la zone de drag and drop, l'image ou le stylo. Idem pour les notes
