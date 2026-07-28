@@ -42,29 +42,41 @@ export class ActivityGoogleInfoComponent {
 
   readonly todayDayName = computed(() => DAY_NAMES[(this.dayId() ?? new Date()).getDay()]);
 
+  /**
+   * `null` = pas de statut à afficher. On juge le statut par rapport à
+   * l'heure de DÉBUT de l'activité (`startTime`), pas l'heure actuelle : une
+   * activité prévue à 20h sur un lieu fermé maintenant mais ouvert ce
+   * soir-là ne doit pas afficher "fermé" juste parce qu'on regarde la carte
+   * en pleine journée. Si l'heure de début n'est pas renseignée, on ne peut
+   * pas viser un instant précis : on n'affiche alors le statut QUE si le
+   * lieu est fermé toute la journée sélectionnée (sans ambiguïté), jamais
+   * "ouvert" (on ne sait pas à quelle heure l'activité aura lieu).
+   */
   readonly isOpenNow = computed(() => {
     const hours = this.details()?.openingHours;
     if (!hours?.length) return null;
 
     const day = this.dayId() ?? new Date();
-    const now = new Date();
-    const checkTime = new Date(day);
-    checkTime.setHours(now.getHours(), now.getMinutes(), 0, 0);
-
-    const todayName = DAY_NAMES[checkTime.getDay()];
+    const todayName = DAY_NAMES[day.getDay()];
     const todayLine = hours.find((h) => h.toLowerCase().startsWith(todayName));
     if (!todayLine) return false;
     if (todayLine.toLowerCase().includes('fermé')) return false;
 
-    const ranges = [...todayLine.matchAll(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/g)];
-    const hm = checkTime.getHours() * 60 + checkTime.getMinutes();
+    const ranges = [...todayLine.matchAll(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/g)].map(
+      ([, sh, sm, eh, em]) => {
+        const start = +sh * 60 + +sm;
+        let end = +eh * 60 + +em;
+        if (end < start) end += 24 * 60;
+        return { start, end };
+      },
+    );
+    if (!ranges.length) return false;
 
-    return ranges.some(([, sh, sm, eh, em]) => {
-      const start = +sh * 60 + +sm;
-      let end = +eh * 60 + +em;
-      if (end < start) end += 24 * 60;
-      return hm >= start && hm <= end;
-    });
+    const startTime = this.activity().startTime;
+    if (!startTime) return null;
+
+    const hm = startTime.getHours() * 60 + startTime.getMinutes();
+    return ranges.some(({ start, end }) => hm >= start && hm <= end);
   });
 
   onPanelToggle(event: PanelToggleEvent) {
