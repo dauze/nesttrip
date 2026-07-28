@@ -34,6 +34,18 @@ body {
   color: var(--nt-text-color);
 }
 
+// Garde-fou global : le `min-width: 24rem` posé localement sur `.app-content`
+// (trips.component.html) ne protège plus trip-detail depuis que son contenu
+// (header, swiper de jours) est passé en `position: fixed` — un élément fixed
+// a pour containing block le VIEWPORT, pas `.app-content`, donc n'hérite plus
+// de son min-width et peut se tasser jusqu'au chevauchement. Posé ici au
+// niveau racine, ça vaut pour tout l'écran (fixed compris) : sous 24rem, un
+// scroll horizontal apparaît plutôt qu'un tassement.
+html,
+body {
+  min-width: 24rem;
+}
+
 /* ---------------------------------------------------------------------
  * trip-detail (voir TripDetailComponent.ngOnInit/ngOnDestroy) gère son
  * propre scroll slide par slide (voir trip-day-swiper.component.scss) :
