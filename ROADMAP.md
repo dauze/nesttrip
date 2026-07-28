@@ -2,6 +2,25 @@
 
 Ce document sert de référence pour le projet : ce qui est déjà en place (à ne pas casser) et ce qu'il reste à faire.
 
+## 📋 Plan d'exécution en cours (branche `claude/roadmap-planning-r5e7av`)
+
+Objectif : traiter tout ce qui n'est pas marqué "non prioritaire" ci-dessous. Décisions prises avec l'utilisateur le 2026-07-28 :
+
+- **Layout desktop (carte gauche / activités droite, jours en haut)** : s'applique aussi au mobile en position allongée (landscape), pas seulement au vrai desktop.
+- **Vue calendrier** (UI Desktop) : reportée, pas assez spécifiée pour l'instant.
+- **Compteur de somme devise** : reporté (un onglet dédié n'est pas voulu, le mettre dans le header prendrait trop de place — à retravailler plus tard).
+- **Suppression multi-sélection "rester appuyé"** : déjà fait (commit `c38c45f`, PR #7) — déplacé dans "Déjà fait" ci-dessous.
+
+Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : passage Angular 22, suppression de la dépendance PrimeFlex, empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur), périmètre des tests e2e.
+
+Ordre d'exécution prévu pour le reste :
+1. **Bugs / fixes** — bien spécifiés, faible risque, pas de question de design ouverte.
+2. **UX/Interactions concrètes** (URL, indicateur de sauvegarde, barre sticky, max-width, collapse header, préremplissage titre, largeur tab login, logo pièce jointe).
+3. **Administratif** (catégorisation réservations) et **Devise** (sélection devise, hors compteur).
+4. **Activités** (widget horaire simplifié, affichage multi-jours).
+5. **Carte** (carte pliée dans Général, fermeture carte pendant édition via dialog mobile, clarté visuelle carte superposée).
+6. **UI Desktop / landscape** (redesign le plus large, fait en dernier).
+
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
@@ -11,8 +30,8 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 
 ### UI Desktop
 
-- Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut : idem quand le portable est en position allongé non ?
-- Vue calendrier ?
+- Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut. Décision : s'applique aussi au mobile en landscape.
+- Vue calendrier (reporté, pas assez cadré)
 
 ### Carte
 
@@ -21,7 +40,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
 - Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin.
 - Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange
-- Mettre la carte sur le côté lorsque le téléphone est en mode allongé
+- Mettre la carte sur le côté lorsque le téléphone est en mode allongé (fusionné avec le layout desktop/landscape ci-dessus)
 
 ### Activités
 
@@ -48,12 +67,10 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ### Devise
 
 - Sélection de la devise par voyage (valeur par défaut)
-- Compteur de somme de tous les éléments à mettre dan l'onglet générale, je ne sais pas encore ou
+- Compteur de somme de tous les éléments à mettre dan l'onglet générale, je ne sais pas encore ou (reporté, voir plan d'exécution en tête de fichier)
 
 ### UX / Interactions
 
-- Suppression : passer en "rester appuyé" plutôt qu'icône corbeille toujours visible : on pourrait mettre des checkbox qui apparaissent pour supprimer en masse par exemple. le clique long est une idée ux améliorable car il y a pleins de trucs sur mon header : Rester appuyer fait sélectionner aec un contour d'une couleur pour le notes et les activitées. Un drawer arrive pas en dessous avec un bouton annuler et un bouton supprimer : on peut en selectionner une ou plusieurs puis cliquer sur le bouton "surrpimer", la popup de validation sera de nouveau affichée.
-  Sur ordinateur, il faut afficher les cases à cocher, un bouton "tout sélectionner", et la bar je ne sais pas ou la mettre ni comment faire bascuper en mode modification, à définir
 - mettre un petit logo piece jointe dans le header d'une activité si il y a des fichiers associés
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
 - Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours.
@@ -87,16 +104,17 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 ### Qualité / process
 
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
-- Tests e2e avec Claude (skills, agents, bonnes pratiques)
-- Secret de déploiement pour la release
+- Tests e2e avec Claude (skills, agents, bonnes pratiques) — **en pause** : périmètre pas défini (quels parcours couvrir ?), à recadrer avant de lancer.
+- Secret de déploiement pour la release — **en pause** : nécessite une valeur/action manuelle de l'utilisateur (créer le secret côté hébergeur/CI), pas actionnable par le développement seul.
 - tout passer en strategy onpush
-- passer à angular 22
-- basculer tous les scss possible via des scss primeflex
-- Duppliquer tout le code utiliser de primeflex et supprimer la librairie
-- empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ?
+- passer à angular 22 — **en pause** : montée de version majeure, à valider (compat PrimeNG/PrimeFlex) avant de lancer pour éviter de casser l'existant en même temps que le reste du plan.
+- basculer tous les scss possible via des scss primeflex — **en pause**, gros refacto transverse, à faire isolément.
+- Duppliquer tout le code utiliser de primeflex et supprimer la librairie — **en pause**, dépend de l'item précédent.
+- empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ? — **en pause** : décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer, pas lancé dans ce lot.
 
 ## ✅ Déjà fait
 
+- Suppression multi-sélection unifiée (activités, réservations, notes, accueil-trip) : long-press + drawer sur mobile, checkbox toujours visible sur PC, `SelectionModeService` transverse + `TripItemDeletionService`
 - Skeleton loading
 - Refacto du style vers PrimeNG (composants + usage cohérent)
 - Multiupload de fichiers
