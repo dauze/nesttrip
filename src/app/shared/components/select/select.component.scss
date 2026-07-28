@@ -32,11 +32,6 @@
 }
 
 .app-select__trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
   border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
   border-radius: var(--nt-form-field-border-radius);

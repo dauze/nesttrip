@@ -1,6 +1,4 @@
 .app-menu-panel {
-  display: flex;
-  flex-direction: column;
   gap: 0.125rem;
   min-width: 12rem;
   padding: 0.25rem;
@@ -19,10 +17,6 @@
 }
 
 .app-menu-panel__item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
   padding: 0.5rem 0.75rem;
   border: none;
   border-radius: var(--nt-radius-sm);

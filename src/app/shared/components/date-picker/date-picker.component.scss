@@ -17,10 +17,6 @@
 }
 
 .app-date-picker__trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
   border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
   border-radius: var(--nt-form-field-border-radius);
@@ -90,10 +86,6 @@
 }
 
 .app-date-picker__calendar-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
   width: 1.75rem;
   height: 1.75rem;
   border: none;

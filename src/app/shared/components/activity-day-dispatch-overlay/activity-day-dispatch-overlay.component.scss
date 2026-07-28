@@ -199,10 +199,3 @@
 // porte l'attribut de scope d'ActivityHeaderComponent, pas celui de ce
 // composant-ci (même remarque que .dispatch-overlay__replica-tab--out/
 // --flipped pour la réplique de la barre de jours).
-.dispatch-ball__content {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-}

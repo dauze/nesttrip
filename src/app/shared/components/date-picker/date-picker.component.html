@@ -1,7 +1,7 @@
 @if (viewport.isMobile()) {
   <button
     type="button"
-    class="app-date-picker__trigger"
+    class="app-date-picker__trigger flex align-items-center gap-2 w-full"
     [id]="inputId()"
     [class.app-date-picker__trigger--open]="isOpen()"
     [disabled]="isDisabled()"
@@ -11,7 +11,7 @@
     </span>
   </button>
 } @else {
-  <div class="app-date-picker__trigger app-date-picker__trigger--desktop" [class.app-date-picker__trigger--open]="isOpen()">
+  <div class="app-date-picker__trigger app-date-picker__trigger--desktop flex align-items-center gap-2 w-full" [class.app-date-picker__trigger--open]="isOpen()">
     <input
       type="text"
       class="app-date-picker__input"
@@ -25,7 +25,7 @@
       (blur)="commitDraft()" />
     <button
       type="button"
-      class="app-date-picker__calendar-toggle"
+      class="app-date-picker__calendar-toggle inline-flex align-items-center justify-content-center flex-shrink-0"
       [disabled]="isDisabled()"
       aria-label="Ouvrir le calendrier"
       (click)="toggle()">

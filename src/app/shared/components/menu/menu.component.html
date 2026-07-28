@@ -1,5 +1,5 @@
 <ng-template #panel>
-  <div class="app-menu-panel">
+  <div class="app-menu-panel flex flex-column">
     <ng-content select="[menuTop]" />
     @for (group of items(); track $index) {
       @if (group.items) {
@@ -7,7 +7,7 @@
           <div class="app-menu-panel__group-label">{{ group.label }}</div>
         }
         @for (item of group.items; track item.label) {
-          <button type="button" class="app-menu-panel__item" (click)="runCommand(item)">
+          <button type="button" class="app-menu-panel__item flex align-items-center gap-2 w-full" (click)="runCommand(item)">
             @if (item.icon) {
               <i [class]="item.icon"></i>
             }
@@ -15,7 +15,7 @@
           </button>
         }
       } @else {
-        <button type="button" class="app-menu-panel__item" (click)="runCommand(group)">
+        <button type="button" class="app-menu-panel__item flex align-items-center gap-2 w-full" (click)="runCommand(group)">
           @if (group.icon) {
             <i [class]="group.icon"></i>
           }

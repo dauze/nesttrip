@@ -46,7 +46,7 @@
 
                     <button
                         type="button"
-                        class="clock-number"
+                        class="clock-number flex align-items-center justify-content-center"
                         [class.selected]="selectedValue === item.label"
                         [class.inner]="item.inner"
                         [style.left]="item.x"
@@ -64,7 +64,7 @@
                 ></div>
 
                 <div
-                    class="clock-selector"
+                    class="clock-selector flex align-items-center justify-content-center"
                     [style.left]="selectorPosition.left"
                     [style.top]="selectorPosition.top"
                 ></div>
@@ -75,7 +75,7 @@
 
         } @else {
 
-            <div class="keyboard-fields">
+            <div class="keyboard-fields flex justify-content-center align-items-center">
                 <app-time-fields
                     #timeFields
                     [hour]="tempHour"
@@ -90,13 +90,13 @@
     </div>
 
     <ng-container dialogFooter>
-        <div class="time-picker-footer">
-            <div class="time-picker-footer__mode">
+        <div class="time-picker-footer flex align-items-center justify-content-between w-full">
+            <div class="time-picker-footer__mode flex">
                 @if (!isDurationMode) {
                     @if (viewMode() === 'clock') {
                         <button
                             type="button"
-                            class="mode-toggle"
+                            class="mode-toggle inline-flex align-items-center justify-content-center"
                             aria-label="Saisir l'heure au clavier"
                             (click)="switchToKeyboard()"
                         >
@@ -107,7 +107,7 @@
                     } @else {
                         <button
                             type="button"
-                            class="mode-toggle"
+                            class="mode-toggle inline-flex align-items-center justify-content-center"
                             aria-label="Revenir au cadran"
                             (click)="switchToClock()"
                         >
@@ -117,7 +117,7 @@
                 }
             </div>
 
-            <div class="time-picker-footer__actions">
+            <div class="time-picker-footer__actions flex gap-2">
                 <app-button
                     label="Annuler"
                     [outlined]="true"

@@ -9,17 +9,7 @@
   border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
 
-.app-toolbar__start,
-.app-toolbar__end {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
 .app-toolbar__center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex: 1 1 auto;
   text-align: center;
 }

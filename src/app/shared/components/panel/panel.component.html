@@ -1,6 +1,6 @@
-<div class="app-panel__header">
+<div class="app-panel__header flex align-items-center justify-content-between gap-2">
   <div
-    class="app-panel__header-content"
+    class="app-panel__header-content flex align-items-center gap-2"
     [class.app-panel__header-content--toggleable]="toggleable()"
     [attr.tabindex]="toggleable() ? 0 : null"
     (click)="onHeaderContentClick($event)"
@@ -14,7 +14,7 @@
   @if (toggleable()) {
     <button
       type="button"
-      class="app-panel__toggle"
+      class="app-panel__toggle inline-flex align-items-center justify-content-center flex-shrink-0"
       [attr.aria-expanded]="!collapsed()"
       aria-label="Afficher/masquer"
       (click)="toggle()">
