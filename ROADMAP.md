@@ -27,6 +27,16 @@ Ordre d'exécution prévu pour le reste :
 - **Devise par défaut** : reste une valeur de préremplissage pour les nouvelles saisies uniquement, ne modifie jamais rétroactivement les activités/réservations déjà créées (le doute venait de là, pas d'un bug de sauvegarde).
 - **Tri des réservations** : passe en 100% automatique (chronologique, passées en bas) ; le glisser-déposer manuel existant est retiré (n'a plus de sens avec un ordre toujours recalculé).
 
+**2e lot (2026-07-28)** — tous corrigés et poussés :
+- Menu thème : vrai bouton segmenté à 3 icônes (`app-select-button` projeté en tête du menu réglages), plus une liste de 3 lignes.
+- Bandeau de sauvegarde : remplacé par une fine barre (liseré qui glisse de gauche à droite), sans texte.
+- Chevron retiré du sélecteur de devise.
+- Réservations : tri 100% automatique + contour en pointillés pour les passées (glisser-déposer manuel et son champ `reservationOrder` supprimés du code).
+- Bug réel trouvé et corrigé : le tri chronologique de l'onglet Activités montait le form d'édition à tort (confondait "dayId fourni pour identifier l'instance" et "vraie liste d'un jour, éditable").
+- Bug réel trouvé et corrigé : démarrer un drag and drop déclenchait le mode sélection ~500ms plus tard (le timer de long-press n'était plus annulable une fois le pointer capturé par `<html>` pendant le drag).
+- Pull-to-refresh : 2e tentative — `overflow:hidden` ne doit être posé que sur `<body>`, pas sur `<html>` (qui est le `scrollingElement` que Chrome regarde pour ce geste). Toujours **non vérifié visuellement** (voir limite réseau ci-dessus) : à confirmer côté utilisateur, je n'ai pas trouvé d'autre cause plausible côté code après investigation.
+- Sur le thème "ne fonctionne pas en temps réel" (carte + fond) : relu tout le circuit (service, effect, CSS compilée, wiring Google Maps `setOptions`) sans trouver de bug — tout semble correct sur le papier. Le nouveau bouton segmenté remplace en tout cas l'UI en liste qui ne correspondait pas à la demande initiale ; si le fond/la carte ne suivent toujours pas après ce correctif, il me faudra une info concrète (erreur console, ou si l'attribut `data-theme` apparaît bien sur `<html>` dans l'inspecteur) pour aller plus loin, faute de pouvoir reproduire ici.
+
 ## 🔧 À faire
 
 ### Offline & données (non prioritaire)
@@ -56,7 +66,7 @@ Ordre d'exécution prévu pour le reste :
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
-- Les activités dans le pool en mode chronologie ont le détail affiché à tort (devrait rester replié comme les autres vues)
+- ~~Les activités dans le pool en mode chronologie ont le détail affiché à tort~~ — **Fait** : le form d'édition n'était gardé que par `dayId()`, or le tri chronologique passe aussi `dayId` (nécessaire pour résoudre la bonne instance) sans vouloir de form inline ; ne se monte plus que si `inDayList()` (vraie liste d'un jour) ET `dayId()`.
 
 ### Nouveau voyage / IA (non prioritaire)
 
@@ -93,15 +103,13 @@ Ordre d'exécution prévu pour le reste :
 - paramétrer la récup des infos du trafic d'avion
 - Basculer tout le CSS possible en classes PrimeFlex plutôt qu'en SCSS maison (doublon avec l'item Qualité/process existant, laissé là-bas — mis en pause pour les mêmes raisons)
 
-Retour du 2026-07-28 après test du 1er lot — à corriger :
-- Le bandeau "Sauvegardé" est trop large et pas assez discret : le rendre plus fin, retirer le texte "Sauvegardé", une animation qui glisse de gauche à droite serait plus discrète qu'un bandeau qui tombe.
-- Le sélecteur de menu thème clair/sombre/système doit être un vrai bouton à 3 icônes (comme demandé initialement), pas une liste de 3 lignes.
-- Le sélecteur de devise affiche un chevron qu'il ne devrait pas avoir.
-
 Corrigés durant cette session :
 - ~~mettre un petit logo piece jointe...~~ — icône trombone dans le header d'activité si `files` non vide.
 - ~~Ajouter dans l'url si on est dans l'onglet notes ou Activités...~~ — `?tab=` (sous-onglet Général) et `?sort=` (tri Activités) en query params, restaurés au montage.
 - ~~faire en sorte que le tab de login ai une largeur maximum...~~ — `max-width: 26rem` sur la carte de login.
+- ~~Le bandeau "Sauvegardé" est trop large...~~ — fine barre (0.15rem), liseré qui glisse de gauche à droite, plus de texte.
+- ~~Le sélecteur de menu thème clair/sombre/système doit être un vrai bouton à 3 icônes...~~ — `app-select-button` (3 icônes) projeté en tête du menu réglages, remplace la liste de 3 lignes.
+- ~~Le sélecteur de devise affiche un chevron...~~ — modificateur `.no-chevron` sur `app-select`.
 
 ### Bugs / fixes
 
@@ -111,17 +119,16 @@ Corrigés durant cette session :
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
 - Sur ordinateur, afficher plusieurs jour si écran large ? **Fait partiellement** : max-width centré (`--nt-content-max-width`, day-panel + general-panel). La grille multi-colonnes est repoussée dans le chantier UI Desktop/landscape (ci-dessus) : elle casserait la géométrie du drag and drop maison (calculs verticaux voisin-par-voisin), à traiter ensemble avec le reste du layout desktop, pas isolément.
-- Le mode drag and drop lance le mode modification (sélection multiple) à tort : ne pas déclencher le mode sélection quand un drag démarre.
-- Pull to refresh toujours cassé après le 1er correctif : le scroll du haut vers le bas est intercepté par Swiper (touch handling), donc le geste natif du navigateur ne se déclenche toujours pas.
 
 Corrigés durant cette session (voir historique git de la branche pour le détail) :
 - ~~le minim width n'est plus appliqué...~~ — min-width remonté au niveau html/body (le swiper étant passé en `position:fixed`, il échappait au min-width de `.app-content`).
 - ~~Dans les données de google pour afficher si fermé ou non...~~ — se base désormais sur `startTime` de l'activité, pas l'heure de consultation.
 - ~~Mode sombre/clair dynamique sur la carte...~~ — carte connectée à `ThemeService` (voir menu thème clair/sombre/système, UX/Interactions), plus de dépendance à un refresh.
 - ~~le bouton flottant est trop pret du bord...~~ — marge + `safe-area-inset-right`, animation ralentie.
-- ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — 1re tentative insuffisante (`overscroll-behavior: contain` retiré), voir ligne au-dessus : rouvert.
+- ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — 2 correctifs cumulés : `overscroll-behavior: contain` retiré du slide, puis `overflow: hidden` retiré de `<html>` (gardé sur `<body>` seulement — `<html>` est le `scrollingElement` que Chrome regarde pour ce geste). Toujours non vérifié visuellement, voir plan d'exécution en tête de fichier.
 - ~~Warning gmp-pin/gmp-advanced-marker...~~ — `PinElement` retourné directement, listener `gmp-click` natif posé nous-mêmes.
 - ~~la couleur du drag and drop maison n'est plus respecté...~~ — sélecteur `.p-panel` (mort depuis la sortie de PrimeNG) remplacé par `.booking`.
+- ~~Le mode drag and drop lance le mode modification à tort...~~ — `LongPressDirective` écoutait pointermove/up/cancel sur son propre élément, or `setPointerCapture(<html>)` posé par le drag retargete ces events et les empêche de bubbler jusque-là ; écoute désormais sur `document` (toujours dans le chemin de propagation), filtrée par pointerId.
 
 ### Qualité / process
 
