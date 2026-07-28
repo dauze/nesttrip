@@ -68,6 +68,31 @@ export class PanelComponent {
   /** Plafond figé le temps d'une transition déclenchée par `toggle()` ; `null` = pas de plafond (état au repos une fois dépliée). */
   protected readonly maxHeightPx = signal<number | null>(null);
 
+  /**
+   * Clic (ou Entrée/Espace, le contenu étant focusable quand toggleable)
+   * n'importe où dans le header — pas seulement le bouton bascule : replie/
+   * déplie, sauf sur une zone interactive du header PROJETÉ (poignée de
+   * drag, image, bouton crayon, checkbox de sélection...) — exclusion large
+   * basée sur la sémantique HTML native (`button`/`a`/`input`/`textarea`/
+   * `select`/`img`) + la convention `.drag-handle`/`[cdkDragHandle]` du
+   * projet, plutôt qu'une liste figée par appelant (voir ROADMAP.md).
+   * `CheckboxComponent` étant un vrai `<button>`, il est déjà couvert (et son
+   * propre clic stoppe de toute façon sa propagation, voir SelectableDirective).
+   *
+   * Pas de `role="button"` sur ce conteneur (juste `tabindex`) : il englobe
+   * de VRAIS éléments interactifs projetés (checkbox, bouton crayon...), et
+   * `role="button"` dessus créerait un bouton imbriqué dans un bouton,
+   * sémantique ARIA invalide. Le bouton de bascule dédié reste, lui,
+   * parfaitement accessible au clavier indépendamment de tout ceci.
+   */
+  protected onHeaderContentClick(event: Event): void {
+    if (!this.toggleable()) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select, img, .drag-handle, [cdkDragHandle]')) return;
+    if (event instanceof KeyboardEvent && event.key === ' ') event.preventDefault();
+    this.toggle();
+  }
+
   protected toggle(): void {
     if (!this.toggleable()) return;
     const current = this.collapsed();

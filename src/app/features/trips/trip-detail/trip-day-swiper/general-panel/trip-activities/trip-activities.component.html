@@ -81,7 +81,7 @@
           class="trip-activities__day-header flex align-items-center gap-2"
           role="button"
           tabindex="0"
-          (click)="onDayHeaderClick(group.day)"
+          (click)="$event.stopPropagation(); onDayHeaderClick(group.day)"
           (keydown.enter)="onDayHeaderClick(group.day)">
           <i class="pi pi-calendar"></i>
           <span class="trip-activities__day-label">{{ group.day.id | date:'EEEE d MMMM' }}</span>
