@@ -128,7 +128,8 @@ Corrigés durant cette session (voir historique git de la branche pour le détai
 - ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — 2 correctifs cumulés : `overscroll-behavior: contain` retiré du slide, puis `overflow: hidden` retiré de `<html>` (gardé sur `<body>` seulement — `<html>` est le `scrollingElement` que Chrome regarde pour ce geste). Toujours non vérifié visuellement, voir plan d'exécution en tête de fichier.
 - ~~Warning gmp-pin/gmp-advanced-marker...~~ — `PinElement` retourné directement, listener `gmp-click` natif posé nous-mêmes.
 - ~~la couleur du drag and drop maison n'est plus respecté...~~ — sélecteur `.p-panel` (mort depuis la sortie de PrimeNG) remplacé par `.booking`.
-- ~~Le mode drag and drop lance le mode modification à tort...~~ — `LongPressDirective` écoutait pointermove/up/cancel sur son propre élément, or `setPointerCapture(<html>)` posé par le drag retargete ces events et les empêche de bubbler jusque-là ; écoute désormais sur `document` (toujours dans le chemin de propagation), filtrée par pointerId.
+- ~~Le mode drag and drop lance le mode modification à tort...~~ — 2 correctifs cumulés : (1) `LongPressDirective` écoutait pointermove/up/cancel sur son propre élément, or `setPointerCapture(<html>)` posé par le drag retargete ces events et les empêche de bubbler jusque-là ; écoute désormais sur `document` (toujours dans le chemin de propagation), filtrée par pointerId. (2) Rester appuyé SUR la poignée sans bouger immédiatement armait quand même le timer avant qu'un drag ne soit détecté ; un `pointerdown` qui démarre sur `.drag-handle`/`[cdkDragHandle]` n'arme désormais plus jamais le long-press (la poignée est exclusivement réservée au drag).
+- ~~Le sélecteur de thème (bouton 3 icônes) n'a pas le même style que Activités/Réservations/Notes...~~ — `variant="subtle"` remplacé par le variant par défaut ('solid'), identique au reste de l'onglet Général.
 
 ### Qualité / process
 
