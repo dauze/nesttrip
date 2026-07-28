@@ -28,7 +28,7 @@
           (placementClicked)="onPlacementClicked($event)" />
       </div>
 
-      @if (dayId(); as day) {
+      @if (inDayList() && dayId(); as day) {
         <app-activity-form [tripId]="tripId()" [dayId]="day" [activity]="activity" />
         <app-divider class="m-1"/>
       }

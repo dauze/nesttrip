@@ -69,7 +69,17 @@ export class ActivityCardComponent {
   /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
   readonly dayId = input<Date | undefined>(undefined);
   readonly activityId = input.required<string>();
-  /** true uniquement pour les cartes rendues dans la liste réordonnable d'un jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans `startDispatchGesture`. */
+  /**
+   * true uniquement pour les cartes rendues dans la liste réordonnable d'un
+   * jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans
+   * `startDispatchGesture`, ET (voir le template) si le form d'édition
+   * (`app-activity-form`) est monté. `dayId()` seul ne suffit pas pour cette
+   * 2e décision : TripActivitiesComponent (onglet Activités, tri
+   * chronologique) passe aussi `dayId` — nécessaire pour résoudre la bonne
+   * instance via `getDayActivity` — sans pour autant vouloir un form éditable
+   * inline dans cette vue d'ensemble en lecture (voir ROADMAP.md, "le détail
+   * était affiché à tort en mode chronologie").
+   */
   readonly inDayList = input(false);
   /**
    * Fourni uniquement par TripActivitiesComponent pour une carte "représentante"
