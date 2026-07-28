@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
@@ -16,6 +16,7 @@ import { TripFacade } from '../trip-facade.service';
 @Component({
   selector: 'app-new-trip',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, InputTextDirective, DatePickerComponent, ButtonComponent,
     CardComponent, AutoCompleteComponent

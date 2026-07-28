@@ -1,4 +1,4 @@
-import { Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
@@ -25,6 +25,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
 @Component({
   selector: 'app-trips',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y

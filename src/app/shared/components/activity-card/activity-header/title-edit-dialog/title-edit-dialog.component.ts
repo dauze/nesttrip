@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -34,6 +34,7 @@ export type TitleEditDialogResult = { type: 'raw'; text: string } | { type: 'pla
 @Component({
   selector: 'app-title-edit-dialog',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ButtonComponent],
   templateUrl: './title-edit-dialog.component.html',
   styleUrl: './title-edit-dialog.component.scss',

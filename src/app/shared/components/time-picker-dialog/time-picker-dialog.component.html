@@ -5,13 +5,13 @@
         tabindex="0"
         (click)="openDialog()"
     >
-        {{ displayText }}
+        {{ displayText() }}
     </div>
 } @else {
     <app-time-fields
         variant="flat"
-        [hour]="hourText"
-        [minute]="minuteText"
+        [hour]="hourText()"
+        [minute]="minuteText()"
         (hourChange)="onHourFieldChange($event)"
         (minuteChange)="onMinuteFieldChange($event)"
     />

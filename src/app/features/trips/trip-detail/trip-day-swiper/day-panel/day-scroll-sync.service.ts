@@ -1,4 +1,4 @@
-import { Injectable, NgZone, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
@@ -31,8 +31,6 @@ export interface DayScrollSyncConfig {
  */
 @Injectable()
 export class DayScrollSyncService implements OnDestroy {
-  private readonly zone = inject(NgZone);
-
   private config!: DayScrollSyncConfig;
 
   readonly stickyHeight = signal(0);
@@ -125,9 +123,7 @@ export class DayScrollSyncService implements OnDestroy {
   readonly wakeLoop = (): void => {
     this.idleFrames = 0;
     if (!this.rafLoop) {
-      this.zone.runOutsideAngular(() => {
-        this.rafLoop = requestAnimationFrame(this.tick);
-      });
+      this.rafLoop = requestAnimationFrame(this.tick);
     }
   };
 

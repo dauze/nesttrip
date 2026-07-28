@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild, effect, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, ViewChild, effect, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -37,6 +37,7 @@ export interface TimePickerClockData {
 @Component({
     selector: 'app-time-picker-clock',
     standalone: true,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CommonModule, ButtonComponent, DialogFrameComponent, TimeFieldsComponent],
     templateUrl: './time-picker-clock.component.html',
     styleUrl: './time-picker-clock.component.scss',

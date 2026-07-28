@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -57,6 +57,7 @@ function initialPlacesFrom(reservation: Reservation): SelectedPlaces {
 @Component({
   selector: 'app-reservation-details',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     NgClass, ReactiveFormsModule, SelectComponent, InputNumberComponent, DatePickerComponent, TimePickerDialogComponent,
     DividerComponent, TextareaDirective,

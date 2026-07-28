@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import {
-  Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild, viewChildren
+  ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild, viewChildren
 } from '@angular/core';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { Day } from '@app/features/trips/trip.model';
@@ -68,6 +68,7 @@ function easeInOutCubic(t: number): number {
 @Component({
   selector: 'app-activity-day-dispatch-overlay',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ButtonComponent],
   templateUrl: './activity-day-dispatch-overlay.component.html',
   styleUrl: './activity-day-dispatch-overlay.component.scss',

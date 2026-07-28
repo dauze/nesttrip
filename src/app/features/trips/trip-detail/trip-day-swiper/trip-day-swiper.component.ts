@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
@@ -11,7 +12,6 @@ import {
   AfterViewInit,
   OnDestroy,
   Injector,
-  NgZone,
   afterNextRender,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
@@ -27,6 +27,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [DayPanelComponent, GeneralPanelComponent, TripDayMapComponent],
   providers: [SwiperLockService, TripDayMapHostService],
@@ -36,7 +37,6 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
-  private readonly zone = inject(NgZone);
   private readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
@@ -292,9 +292,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly wakeChromeLoop = (): void => {
     this.chromeIdleFrames = 0;
     if (this.chromeRafLoop == null) {
-      this.zone.runOutsideAngular(() => {
-        this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
-      });
+      this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
     }
   };
 
@@ -313,9 +311,8 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       this.lastChromeScrollTop = scrollTop;
       this.chromeIdleFrames = 0;
       // setScrollTop écrit le transform directement en DOM (voir
-      // TripChromeService) — pas de signal/template en jeu, donc pas besoin
-      // de rentrer dans la zone Angular : rester outside-zone de bout en bout
-      // évite tout passage par la détection de changement sur ce chemin chaud.
+      // TripChromeService) — pas de signal/template en jeu, donc ce chemin
+      // chaud ne déclenche aucune détection de changement (app zoneless).
       this.chromeService.setScrollTop(scrollTop);
     } else {
       this.chromeIdleFrames++;

@@ -1,4 +1,4 @@
-import { Component, computed, effect, ElementRef, inject, input, linkedSignal, NgZone, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
@@ -9,6 +9,7 @@ import { PanelComponent } from '@app/shared/components/panel/panel.component';
 @Component({
   selector: 'app-trip-day-map',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [GoogleMap, MapAdvancedMarker, PanelComponent,],
   templateUrl: 'trip-day-map.component.html',
   styleUrl: 'trip-day-map.component.scss',
@@ -30,7 +31,6 @@ export class TripDayMapComponent {
 
   readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
-  private readonly ngZone = inject(NgZone);
   private readonly themeService = inject(ThemeService);
 
   // Suit ThemeService (mode clair/sombre/système choisi dans le menu
@@ -111,7 +111,7 @@ export class TripDayMapComponent {
   // dépréciée par l'API Google Maps au profit de `addEventListener('gmp-click', ...)` — on pose
   // donc l'écouteur nous-mêmes sur le marker natif exposé par `markerInitialized`.
   onMarkerInitialized(marker: google.maps.marker.AdvancedMarkerElement, point: DayMapPoint): void {
-    marker.addEventListener('gmp-click', () => this.ngZone.run(() => this.onMarkerClick(point)));
+    marker.addEventListener('gmp-click', () => this.onMarkerClick(point));
   }
 
   private focusOnPoint(point: DayMapPoint): void {

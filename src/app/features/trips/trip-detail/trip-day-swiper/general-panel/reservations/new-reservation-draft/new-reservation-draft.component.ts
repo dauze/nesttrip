@@ -1,4 +1,4 @@
-import { Component, ElementRef, afterNextRender, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, output, viewChild } from '@angular/core';
 
 /**
  * Affiché (mobile ET desktop) à la place de la future carte au clic sur le
@@ -11,6 +11,7 @@ import { Component, ElementRef, afterNextRender, output, viewChild } from '@angu
 @Component({
   selector: 'app-new-reservation-draft',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './new-reservation-draft.component.html',
   styleUrl: './new-reservation-draft.component.scss',
 })

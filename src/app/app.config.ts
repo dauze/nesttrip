@@ -1,4 +1,4 @@
-import { ApplicationConfig, inject, LOCALE_ID, provideAppInitializer } from '@angular/core';
+import { ApplicationConfig, inject, LOCALE_ID, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, withViewTransitions } from '@angular/router';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -22,6 +22,11 @@ export const firebaseAuth = getAuth(firebaseApp);
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // `zone.js` n'a jamais été un polyfill du projet (absent d'angular.json/package.json) :
+    // l'app tournait déjà en zoneless "implicite" (fallback silencieux d'Angular en
+    // l'absence de Zone globale). Rendu explicite ici plutôt que de continuer à
+    // dépendre d'un comportement de repli non garanti par l'API publique.
+    provideZonelessChangeDetection(),
     provideRouter(routes, withViewTransitions({ onViewTransitionCreated })),
     provideHttpClient(withInterceptors([authInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },

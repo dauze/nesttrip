@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { DialogRef } from '@angular/cdk/dialog';
 import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
 import { AvatarGroupComponent } from '@app/shared/components/avatar-group/avatar-group.component';
@@ -14,6 +14,7 @@ import { getInitials } from '@app/shared/utils/get-initials';
 @Component({
   selector: 'app-trip-collaborators',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AvatarComponent, AvatarGroupComponent, TooltipDirective],
   templateUrl: './trip-collaborators.component.html',
   styleUrl: './trip-collaborators.component.scss',

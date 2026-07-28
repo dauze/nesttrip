@@ -1,5 +1,5 @@
 import {
-  ChangeDetectorRef, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
   input, linkedSignal, output, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -43,6 +43,7 @@ const PANEL_COLLAPSE_DELAY_MS = 300;
 @Component({
   selector: 'app-activity-card',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, PanelComponent, DividerComponent, CheckboxComponent,
     ActivityHeaderComponent, ActivityFormComponent,

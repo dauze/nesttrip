@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { Day, Trip } from '../trip.model';
@@ -27,6 +27,7 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TripDetailSkeletonComponent,
     TripHeaderComponent,

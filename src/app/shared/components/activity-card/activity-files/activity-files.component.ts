@@ -1,4 +1,4 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChipComponent } from '@app/shared/components/chip/chip.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -12,6 +12,7 @@ import { Activity, ActivityFile } from '../activity.model';
 @Component({
   selector: 'app-activity-files',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ChipComponent, ButtonComponent, ProgressSpinnerComponent],
   templateUrl: './activity-files.component.html',
   styleUrl: './activity-files.component.scss',

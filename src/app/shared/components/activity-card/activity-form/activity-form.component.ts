@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -20,6 +20,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
 @Component({
   selector: 'app-activity-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
     SelectComponent, InputNumberComponent, DatePickerComponent, DividerComponent, TextareaDirective,

@@ -1,4 +1,4 @@
-import { Component, ElementRef, Injector, TemplateRef, ViewContainerRef, afterNextRender, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, TemplateRef, ViewContainerRef, afterNextRender, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -33,6 +33,7 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
 @Component({
   selector: 'app-select',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './select.component.html',
   styleUrl: './select.component.scss',
   providers: [

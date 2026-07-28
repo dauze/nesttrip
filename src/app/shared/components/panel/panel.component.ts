@@ -1,4 +1,4 @@
-import { Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
 
 export interface PanelToggleEvent {
   collapsed: boolean;
@@ -48,6 +48,7 @@ export interface PanelToggleEvent {
 @Component({
   selector: 'app-panel',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './panel.component.html',
   styleUrl: './panel.component.scss',
   host: {

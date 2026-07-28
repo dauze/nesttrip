@@ -1,9 +1,11 @@
 import {
+    ChangeDetectionStrategy,
     Component,
     forwardRef,
     inject,
     input,
-    output
+    output,
+    signal
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
@@ -35,6 +37,7 @@ import { TimeFieldsComponent } from './time-fields/time-fields.component';
 @Component({
     selector: 'app-time-picker-dialog',
     standalone: true,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         CommonModule,
         TimeFieldsComponent
@@ -63,12 +66,12 @@ export class TimePickerDialogComponent
     /** Titre du dialog mobile (ex. "Sélectionner l'heure de début") — retombe sur un libellé générique selon `mode` si non fourni, voir TimePickerClockComponent. */
     readonly label = input<string>('');
 
-    currentDate: Date | null = null;
+    currentDate = signal<Date | null>(null);
 
-    displayText = '--:--';
+    displayText = signal('--:--');
 
-    hourText = '00';
-    minuteText = '00';
+    hourText = signal('00');
+    minuteText = signal('00');
 
     onChange?: (value: Date | null) => void;
 
@@ -81,19 +84,21 @@ export class TimePickerDialogComponent
         value: Date | null
     ): void {
 
-        this.currentDate = value;
+        this.currentDate.set(value);
 
         if (value instanceof Date) {
 
-            this.hourText = String(value.getHours()).padStart(2, '0');
-            this.minuteText = String(value.getMinutes()).padStart(2, '0');
-            this.displayText = `${this.hourText}:${this.minuteText}`;
+            const hour = String(value.getHours()).padStart(2, '0');
+            const minute = String(value.getMinutes()).padStart(2, '0');
+            this.hourText.set(hour);
+            this.minuteText.set(minute);
+            this.displayText.set(`${hour}:${minute}`);
 
         } else {
 
-            this.hourText = '00';
-            this.minuteText = '00';
-            this.displayText = '--:--';
+            this.hourText.set('00');
+            this.minuteText.set('00');
+            this.displayText.set('--:--');
         }
     }
 
@@ -107,7 +112,7 @@ export class TimePickerDialogComponent
 
     openDialog(): void {
         const dialogRef = this.dialogService.open<Date | undefined, TimePickerClockData>(TimePickerClockComponent, {
-            data: { initialDate: this.currentDate, mode: this.mode(), label: this.label() },
+            data: { initialDate: this.currentDate(), mode: this.mode(), label: this.label() },
             // Mode durée : le dialog s'ouvre directement en vue clavier (pas de
             // cadran). Le focus initial du champ heure passe par ce sélecteur
             // CDK plutôt que par un `effect()` côté TimePickerClockComponent :
@@ -130,23 +135,27 @@ export class TimePickerDialogComponent
     }
 
     onHourFieldChange(value: string): void {
-        const date = this.currentDate ? new Date(this.currentDate) : new Date();
+        const current = this.currentDate();
+        const date = current ? new Date(current) : new Date();
         date.setHours(Number(value) || 0, date.getMinutes(), 0, 0);
         this.applySelectedDate(date);
     }
 
     onMinuteFieldChange(value: string): void {
-        const date = this.currentDate ? new Date(this.currentDate) : new Date();
+        const current = this.currentDate();
+        const date = current ? new Date(current) : new Date();
         date.setMinutes(Number(value) || 0, 0, 0);
         this.applySelectedDate(date);
     }
 
     private applySelectedDate(date: Date): void {
-        this.currentDate = date;
-        this.hourText = String(date.getHours()).padStart(2, '0');
-        this.minuteText = String(date.getMinutes()).padStart(2, '0');
-        this.displayText = `${this.hourText}:${this.minuteText}`;
-        this.onChange?.(this.currentDate);
+        const hour = String(date.getHours()).padStart(2, '0');
+        const minute = String(date.getMinutes()).padStart(2, '0');
+        this.currentDate.set(date);
+        this.hourText.set(hour);
+        this.minuteText.set(minute);
+        this.displayText.set(`${hour}:${minute}`);
+        this.onChange?.(date);
         this.onTouch?.();
     }
 }

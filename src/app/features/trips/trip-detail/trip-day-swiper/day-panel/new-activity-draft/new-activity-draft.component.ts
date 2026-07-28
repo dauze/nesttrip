@@ -1,4 +1,4 @@
-import { Component, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
@@ -20,6 +20,7 @@ export interface NewActivityDraftResult {
 @Component({
   selector: 'app-new-activity-draft',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, AutoCompleteComponent],
   templateUrl: './new-activity-draft.component.html',
   styleUrl: './new-activity-draft.component.scss',

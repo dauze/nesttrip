@@ -1,5 +1,6 @@
 import {
   afterNextRender,
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   computed,
@@ -35,6 +36,7 @@ import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-act
 @Component({
   selector: 'app-day-panel',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TimelineComponent, ActivityCardComponent, PanelComponent, MessageComponent, SkeletonComponent,
     NewActivityDraftComponent, DayReservationBannerComponent,

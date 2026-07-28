@@ -1,4 +1,4 @@
-import { Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -85,6 +85,7 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
 @Component({
   selector: 'app-date-picker',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './date-picker.component.html',
   styleUrl: './date-picker.component.scss',
   providers: [

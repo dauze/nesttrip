@@ -1,4 +1,4 @@
-import { Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -18,6 +18,7 @@ import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 @Component({
   selector: 'app-accueil-trip',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CardComponent,
     ButtonComponent,

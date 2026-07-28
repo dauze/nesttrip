@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewContainerRef, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, TemplateRef, ViewContainerRef, inject, input, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 
@@ -28,6 +28,7 @@ const POSITIONS: ConnectedPosition[] = [
 @Component({
   selector: 'app-menu',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './menu.component.html',
   styleUrl: './menu.component.scss',
 })

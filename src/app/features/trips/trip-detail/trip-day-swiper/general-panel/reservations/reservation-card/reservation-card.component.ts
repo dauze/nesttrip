@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, input, linkedSignal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, linkedSignal, viewChild } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
@@ -23,6 +23,7 @@ import { TagComponent } from '@app/shared/components/tag/tag.component';
 @Component({
   selector: 'app-reservation-card',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     NgClass, PanelComponent, DividerComponent, CheckboxComponent,
     ReservationHeaderComponent, ReservationDetailsComponent, ReservationFilesComponent,
