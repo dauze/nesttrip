@@ -1,0 +1,9 @@
+@if (visible()) {
+  <div class="save-status-bar" [class.save-status-bar--error]="kind() === 'error'">
+    @if (kind() === 'error') {
+      <span>Échec de la sauvegarde, nouvelle tentative en cours…</span>
+    } @else {
+      <span>Sauvegardé</span>
+    }
+  </div>
+}

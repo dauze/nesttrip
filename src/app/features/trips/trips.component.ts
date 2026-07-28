@@ -19,11 +19,12 @@ import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { ThemeService } from '@app/core/services/theme.service';
+import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.

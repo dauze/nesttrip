@@ -71,6 +71,26 @@ export class TripStore {
     });
   }
 
+  /**
+   * État agrégé de sauvegarde, tous writers débouncés confondus — consommé
+   * par SaveStatusBarComponent (indicateur discret, voir ROADMAP.md/CLAUDE.md
+   * "UX/Interactions"). 'error' prime sur 'saving' : un échec doit rester
+   * visible même si un autre writer termine son flush au même instant.
+   */
+  readonly saveStatus = computed<'idle' | 'saving' | 'error'>(() => {
+    const writers = [
+      this.activityPersistenceService,
+      this.dayActivityInstancePersistenceService,
+      this.dayActivitiesPersistenceService,
+      this.reservationPersistenceService,
+      this.reservationOrderPersistenceService,
+      this.notesPersistenceService,
+    ];
+    if (writers.some((w) => w.hasError())) return 'error';
+    if (writers.some((w) => w.syncing())) return 'saving';
+    return 'idle';
+  });
+
   // ── État normalisé ────────────────────────────────────────────────────────
 
   /** @internal — écrit uniquement par TripLoaderService */
