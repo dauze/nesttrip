@@ -9,41 +9,19 @@ Objectif : traiter tout ce qui n'est pas marqué "non prioritaire" ci-dessous. D
 - **Layout desktop (carte gauche / activités droite, jours en haut)** : s'applique aussi au mobile en position allongée (landscape), pas seulement au vrai desktop.
 - **Vue calendrier** (UI Desktop) : reportée, pas assez spécifiée pour l'instant.
 - **Compteur de somme devise** : reporté (un onglet dédié n'est pas voulu, le mettre dans le header prendrait trop de place — à retravailler plus tard).
-- **Suppression multi-sélection "rester appuyé"** : déjà fait (commit `c38c45f`, PR #7) — déplacé dans "Déjà fait" ci-dessous.
+- **Devise par défaut** : préremplissage des nouvelles saisies uniquement, jamais rétroactif sur les activités/réservations déjà créées.
+- **Tri des réservations** : 100% automatique (chronologique, passées en bas) ; le glisser-déposer manuel a été retiré.
 
 Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : passage Angular 22, suppression de la dépendance PrimeFlex, empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur), périmètre des tests e2e.
 
 Ordre d'exécution prévu pour le reste :
-1. **Bugs / fixes** — bien spécifiés, faible risque, pas de question de design ouverte.
-2. **UX/Interactions concrètes** (URL, indicateur de sauvegarde, barre sticky, max-width, collapse header, préremplissage titre, largeur tab login, logo pièce jointe).
-3. **Administratif** (catégorisation réservations) et **Devise** (sélection devise, hors compteur).
+1. **Bugs / fixes** liés au geste/à l'animation (drag&drop sous calendrier, animation cdkDrag, sursaut calendrier, scroll post-drop, aiguilles horaire) — **non vérifiés visuellement** : Google Maps/Fonts sont bloqués par la politique réseau de l'environnement d'exécution (proxy renvoie 403), donc `ng serve`/`ng build` n'y suffisent pas pour tester visuellement — à tester côté utilisateur.
+2. **UX/Interactions** restantes (redirection single-trip, barre sticky, max-width des champs, préremplissages, saisie clavier calendrier).
+3. **Carte** (carte pliée dans Général, fermeture carte pendant édition via dialog mobile, clarté visuelle carte superposée).
 4. **Activités** (widget horaire simplifié, affichage multi-jours).
-5. **Carte** (carte pliée dans Général, fermeture carte pendant édition via dialog mobile, clarté visuelle carte superposée).
-6. **UI Desktop / landscape** (redesign le plus large, fait en dernier).
+5. **UI Desktop / landscape** (redesign le plus large, fait en dernier).
 
-**Avancement (2026-07-28)** : warnings dépréciation Google Maps, couleur drag&drop, bouton flottant, min-width, pull-to-refresh, statut ouvert/fermé, thème clair/sombre/système (+ carte réactive), max-width colonnes jour/général, logo pièce jointe, largeur login, indicateur de sauvegarde, `?tab=`/`?sort=` dans l'URL — tous corrigés et poussés sur la branche. Restent en priorité 1 : les bugs liés au geste/à l'animation (drag&drop sous calendrier, animation cdkDrag, sursaut calendrier, scroll post-drop, aiguilles horaire) — **non vérifiés visuellement** : Google Maps/Fonts sont bloqués par la politique réseau de cet environnement (proxy renvoie 403), donc `ng serve` ne peut pas démarrer l'app complètement ici (l'app bloque au chargement de Google Maps). À tester côté utilisateur après merge.
-
-**Retours après test du 1er lot (2026-07-28)** — décisions prises avec l'utilisateur :
-- **Devise par défaut** : reste une valeur de préremplissage pour les nouvelles saisies uniquement, ne modifie jamais rétroactivement les activités/réservations déjà créées (le doute venait de là, pas d'un bug de sauvegarde).
-- **Tri des réservations** : passe en 100% automatique (chronologique, passées en bas) ; le glisser-déposer manuel existant est retiré (n'a plus de sens avec un ordre toujours recalculé).
-
-**2e lot (2026-07-28)** — tous corrigés et poussés :
-- Menu thème : vrai bouton segmenté à 3 icônes (`app-select-button` projeté en tête du menu réglages), plus une liste de 3 lignes.
-- Bandeau de sauvegarde : remplacé par une fine barre (liseré qui glisse de gauche à droite), sans texte.
-- Chevron retiré du sélecteur de devise.
-- Réservations : tri 100% automatique + contour en pointillés pour les passées (glisser-déposer manuel et son champ `reservationOrder` supprimés du code).
-- Bug réel trouvé et corrigé : le tri chronologique de l'onglet Activités montait le form d'édition à tort (confondait "dayId fourni pour identifier l'instance" et "vraie liste d'un jour, éditable").
-- Bug réel trouvé et corrigé : démarrer un drag and drop déclenchait le mode sélection ~500ms plus tard (le timer de long-press n'était plus annulable une fois le pointer capturé par `<html>` pendant le drag).
-- Pull-to-refresh : 2e tentative — `overflow:hidden` ne doit être posé que sur `<body>`, pas sur `<html>` (qui est le `scrollingElement` que Chrome regarde pour ce geste). Toujours **non vérifié visuellement** (voir limite réseau ci-dessus) : à confirmer côté utilisateur, je n'ai pas trouvé d'autre cause plausible côté code après investigation.
-- Sur le thème "ne fonctionne pas en temps réel" (carte + fond) : relu tout le circuit (service, effect, CSS compilée, wiring Google Maps `setOptions`) sans trouver de bug — tout semble correct sur le papier. Le nouveau bouton segmenté remplace en tout cas l'UI en liste qui ne correspondait pas à la demande initiale ; si le fond/la carte ne suivent toujours pas après ce correctif, il me faudra une info concrète (erreur console, ou si l'attribut `data-theme` apparaît bien sur `<html>` dans l'inspecteur) pour aller plus loin, faute de pouvoir reproduire ici.
-
-**3e lot (2026-07-28)** — 2 vraies causes trouvées grâce aux infos de test de l'utilisateur (fond calé sur le thème de l'appareil, carte qui ne suit qu'après un F5) :
-- Fond (toolbar/header/day-panel) : `background: Canvas` (couleur système CSS) suit `color-scheme`, resté `light dark` (piloté par l'OS/le navigateur) même avec un `data-theme` explicite posé — un choix manuel dans l'appli n'avait donc aucun effet sur ces 3 endroits, ni sur `light-dark()` (utilisé massivement par primeflex.css : ce bug touchait potentiellement plus large que juste ces 3 fonds). `color-scheme: dark`/`light` posé explicitement sur `:root[data-theme='dark'|'light']` ; les 3 `background: Canvas` remplacés par `--nt-content-background`.
-- Carte : `google.maps.Map` ne rafraîchit pas visuellement son rendu quand `colorScheme` change via `setOptions()` sur une instance déjà créée (limitation de l'API, confirmée par l'utilisateur : ne fonctionnait qu'après F5). Le sous-arbre `<google-map>` est désormais recréé en entier à chaque bascule clair/sombre (`@for` à un seul élément tracké par `isDarkMode()`) — perd la position de caméra courante (réinitialisée sur `center()`/`zoom()` par défaut), acceptable pour une action ponctuelle.
-- Icônes du sélecteur de thème mal centrées : `SelectButtonComponent` rendait un `<span>` vide même sans label, décalait visuellement l'icône via le `gap` flex — ne se rend plus du tout si le label est vide.
-- Ajout du libellé "Thème" avant le contrôle segmenté.
-- Long-press sur la poignée de drag (`.drag-handle`/`[cdkDragHandle]`) armait quand même le mode sélection si l'utilisateur restait appuyé sans bouger avant qu'un drag ne soit détecté — la poignée n'arme plus jamais le long-press, exclusivement réservée au drag.
-- Style du sélecteur de thème aligné sur Activités/Réservations/Notes (`variant` solid par défaut au lieu de `subtle`).
+Tout ce qui a déjà été livré (avec le détail des correctifs) est listé dans **✅ Déjà fait**, tout en bas.
 
 ## 🔧 À faire
 
@@ -54,7 +32,7 @@ Ordre d'exécution prévu pour le reste :
 
 ### UI Desktop
 
-- Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut. Décision : s'applique aussi au mobile en landscape.
+- Adapter l'IHM pour desktop : carte à gauche, activités à droite ; barre des jours en haut. Décision : s'applique aussi au mobile en landscape. Inclut la grille multi-colonnes pour les activités sur grand écran (repoussée ici plutôt que traitée isolément : elle casserait la géométrie du drag and drop maison, calculs verticaux voisin-par-voisin).
 - Vue calendrier (reporté, pas assez cadré)
 
 ### Carte
@@ -62,7 +40,7 @@ Ordre d'exécution prévu pour le reste :
 - Gérer le cas Asie : alternative à Google Maps (non prioritaire)
 - Carte pliée par défaut dans "Général" qui permet de voir toutes les activités du voyage. Même scroll que pour un day ?
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
-- Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones,pour les ordi, pas besoin : pour ce point, il manque une solution pour les textarea et la zone prix, tout le reste passe par un composant mobile déjà
+- Fermer la carte pendant la modification d'une activité : ou mieux ! Quand on est en modification d'une activité, toute modification passe par un dialog qui passe au dessus, c'est plus propre pour de l'ui sur smartphone. Attention, il faut que le faire pour les smartphones, pour les ordi, pas besoin : pour ce point, il manque une solution pour les textarea et la zone prix, tout le reste passe par un composant mobile déjà
 - Rendre visuellement clair que la carte superposée n'est pas un bug : le visu est actuellement étrange, même si le fonctionnement est parfaitement fonctionnel
 
 ### Activités
@@ -73,7 +51,6 @@ Ordre d'exécution prévu pour le reste :
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
-- ~~Les activités dans le pool en mode chronologie ont le détail affiché à tort~~ — **Fait** : le form d'édition n'était gardé que par `dayId()`, or le tri chronologique passe aussi `dayId` (nécessaire pour résoudre la bonne instance) sans vouloir de form inline ; ne se monte plus que si `inDayList()` (vraie liste d'un jour) ET `dayId()`.
 
 ### Nouveau voyage / IA (non prioritaire)
 
@@ -85,38 +62,24 @@ Ordre d'exécution prévu pour le reste :
 - Internationalisation de l'app (textes)
 - Gestion de la devise par défaut en fonction de la position géographique
 
-### Collaborateurs(non prioritaire)
+### Collaborateurs (non prioritaire)
 
 - Email quand ajouté à un trip
 
-### Administratif
-
-- Catégorisation "en cours" / "future" / "passée" des réservations (grisée une fois passée) dans le sous-menu Réservations (non fait, voir Reservation.md). **Fait**, revu suite aux retours du 2026-07-28 : passées en bas + contour en pointillés (comme les activités non placées), tri désormais 100% automatique (le glisser-déposer manuel est retiré).
-
 ### Devise
 
-- Sélection de la devise par voyage (valeur par défaut). **Fait** : sélecteur dans le header du voyage, préremplit les nouvelles activités/réservations. Confirmé avec l'utilisateur (2026-07-28) : ne met jamais à jour rétroactivement les entrées déjà créées, uniquement les nouvelles saisies.
-- Compteur de somme de tous les éléments à mettre dan l'onglet générale, je ne sais pas encore ou (reporté, voir plan d'exécution en tête de fichier)
+- Compteur de somme de tous les éléments à mettre dans l'onglet générale, je ne sais pas encore où (reporté, voir plan d'exécution en tête de fichier)
 
 ### UX / Interactions
 
 - Si un seul trip, y aller directement et pas afficher la page de liste des trips : attention, j'ai désactivé ta modif car si on a qu'un seul trip, alors on peut pas retourner sur l'écrna d'accueil. Il faudrait que ce soit à l'ouverture de la web app uniquement, si l'utilisateur clique sur retour il peut aller sur l'accueil
-- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours uniquement sur mobile 
-- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input ) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`, voir Bugs/fixes), reste à traiter les champs de saisie eux-mêmes.
+- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours uniquement sur mobile
+- Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`), reste à traiter les champs de saisie eux-mêmes.
 - reseigner en input le titre de la selection sur les listes lorsqu'elles s'ouvre sur mobile
 - clique sur n'importe ou du header pour le collapse true/ false et pas que sur le bouton, sauf la zone de drag and drop, l'image ou le stylo. Idem pour les notes
 - Quand on tape dan la bar de recherche une activité, si on clique sur ajouter, renseigner le titre avec le texte quia été tapé dans la bar de recherche
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
-- Basculer tout le CSS possible en classes PrimeFlex plutôt qu'en SCSS maison (doublon avec l'item Qualité/process existant, laissé là-bas — mis en pause pour les mêmes raisons)
-
-Corrigés durant cette session :
-- ~~mettre un petit logo piece jointe...~~ — icône trombone dans le header d'activité si `files` non vide.
-- ~~Ajouter dans l'url si on est dans l'onglet notes ou Activités...~~ — `?tab=` (sous-onglet Général) et `?sort=` (tri Activités) en query params, restaurés au montage.
-- ~~faire en sorte que le tab de login ai une largeur maximum...~~ — `max-width: 26rem` sur la carte de login.
-- ~~Le bandeau "Sauvegardé" est trop large...~~ — fine barre (0.15rem), liseré qui glisse de gauche à droite, plus de texte.
-- ~~Le sélecteur de menu thème clair/sombre/système doit être un vrai bouton à 3 icônes...~~ — `app-select-button` (3 icônes) projeté en tête du menu réglages, remplace la liste de 3 lignes.
-- ~~Le sélecteur de devise affiche un chevron...~~ — modificateur `.no-chevron` sur `app-select`.
 
 ### Bugs / fixes
 
@@ -125,18 +88,6 @@ Corrigés durant cette session :
 - l'ouverture du calendrier sur le drag and drop dans la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
-- Sur ordinateur, afficher plusieurs jour si écran large ? **Fait partiellement** : max-width centré (`--nt-content-max-width`, day-panel + general-panel). La grille multi-colonnes est repoussée dans le chantier UI Desktop/landscape (ci-dessus) : elle casserait la géométrie du drag and drop maison (calculs verticaux voisin-par-voisin), à traiter ensemble avec le reste du layout desktop, pas isolément.
-
-Corrigés durant cette session (voir historique git de la branche pour le détail) :
-- ~~le minim width n'est plus appliqué...~~ — min-width remonté au niveau html/body (le swiper étant passé en `position:fixed`, il échappait au min-width de `.app-content`).
-- ~~Dans les données de google pour afficher si fermé ou non...~~ — se base désormais sur `startTime` de l'activité, pas l'heure de consultation.
-- ~~Mode sombre/clair dynamique sur la carte...~~ — carte connectée à `ThemeService` (voir menu thème clair/sombre/système, UX/Interactions), plus de dépendance à un refresh.
-- ~~le bouton flottant est trop pret du bord...~~ — marge + `safe-area-inset-right`, animation ralentie.
-- ~~Je peux pas actualiser depuis l'écran ou il y a le swiper...~~ — 2 correctifs cumulés : `overscroll-behavior: contain` retiré du slide, puis `overflow: hidden` retiré de `<html>` (gardé sur `<body>` seulement — `<html>` est le `scrollingElement` que Chrome regarde pour ce geste). Toujours non vérifié visuellement, voir plan d'exécution en tête de fichier.
-- ~~Warning gmp-pin/gmp-advanced-marker...~~ — `PinElement` retourné directement, listener `gmp-click` natif posé nous-mêmes.
-- ~~la couleur du drag and drop maison n'est plus respecté...~~ — sélecteur `.p-panel` (mort depuis la sortie de PrimeNG) remplacé par `.booking`.
-- ~~Le mode drag and drop lance le mode modification à tort...~~ — 2 correctifs cumulés : (1) `LongPressDirective` écoutait pointermove/up/cancel sur son propre élément, or `setPointerCapture(<html>)` posé par le drag retargete ces events et les empêche de bubbler jusque-là ; écoute désormais sur `document` (toujours dans le chemin de propagation), filtrée par pointerId. (2) Rester appuyé SUR la poignée sans bouger immédiatement armait quand même le timer avant qu'un drag ne soit détecté ; un `pointerdown` qui démarre sur `.drag-handle`/`[cdkDragHandle]` n'arme désormais plus jamais le long-press (la poignée est exclusivement réservée au drag).
-- ~~Le sélecteur de thème (bouton 3 icônes) n'a pas le même style que Activités/Réservations/Notes...~~ — `variant="subtle"` remplacé par le variant par défaut ('solid'), identique au reste de l'onglet Général.
 
 ### Qualité / process
 
@@ -283,4 +234,21 @@ Corrigés durant cette session (voir historique git de la branche pour le détai
 - Dans la modification de l'heure, si l'utilisateur positionne une heure puis une minute, alors il faut faire ok
 - Si j'ai qu'un seul trip, je ne peux plus faire retour sur la première page, donc je ne peux pas créer de trip. C'est à la connexion qu'il faut aller sur le trip, pas tout le temps
 - style zones saisie sur ordi + taille durée qui n'est pas bon quand on est pas en mode horloge (trop haut) + durée tu as fais du spécifique ? Il faudrait pas et réutiliser le même composant. min-height: 16.5rem; à enlever quand pas horloge
-- Saisir duré : faire le focus sur l'heure 
+- Saisir duré : faire le focus sur l'heure
+- Warnings de dépréciation Google Maps (`PinElement.element`, `click` → `gmp-click`)
+- Couleur de la barre de drag&drop maison : sélecteur CSS `.p-panel` obsolète (mort depuis la sortie de PrimeNG) remplacé par `.booking`
+- Bouton flottant trop près du bord (marge + `safe-area-inset-right`) + animation d'ouverture ralentie
+- `min-width: 24rem` remonté au niveau `html`/`body` : protège aussi les éléments passés en `position: fixed` (le swiper), que le `min-width` local de `.app-content` ne couvrait plus
+- Statut ouvert/fermé Google basé sur l'heure de début de l'activité, plus l'heure de consultation
+- Thème clair/sombre/système : `ThemeService`, bouton segmenté 3 icônes (même style qu'Activités/Réservations/Notes) dans le menu réglages, avec le libellé "Thème" ; carte Google Maps recréée à chaque bascule pour un rendu correct (`colorScheme` ne se rafraîchit pas visuellement via `setOptions()` sur une carte déjà créée) ; `color-scheme` posé explicitement sur `:root[data-theme]` pour que `light-dark()` (primeflex) suive le thème choisi
+- Max-width centré sur les colonnes jour/général en grand écran (`--nt-content-max-width`)
+- Logo pièce jointe dans le header d'activité si des fichiers sont associés
+- Largeur max du tab de login sur PC
+- Indicateur discret de sauvegarde : fine barre qui glisse de gauche à droite (verte si succès, rouge en boucle si échec), sans texte
+- État de l'onglet Général (`?tab=`) et du tri Activités (`?sort=`) dans l'URL, restaurés au montage
+- Catégorisation en cours/future/passée des réservations : passées grisées avec contour en pointillés (comme les activités non placées), tri désormais 100% automatique (glisser-déposer manuel retiré)
+- Devise par défaut par voyage : sélecteur dans le header, préremplit les nouvelles activités/réservations (jamais rétroactif sur l'existant)
+- Fix : le tri chronologique de l'onglet Activités affichait le formulaire d'édition à tort
+- Fix : tenir appuyé sur la poignée de drag and drop (ou démarrer un drag) déclenchait le mode sélection à tort
+- Fix : icônes du sélecteur (ex. thème) mal centrées quand un bouton n'a pas de label
+- Pull-to-refresh sur l'écran swiper : `overscroll-behavior` + `overflow` html/body corrigés (non confirmé testé par l'utilisateur)
