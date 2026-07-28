@@ -15,8 +15,6 @@
   right: 0.5rem;
   z-index: var(--z-app-header);
   padding: 0 0rem  0.5rem 0rem;
-  // Voir la même note dans trips.component.scss : --nt-content-background,
-  // pas Canvas (couleur système, ignore un thème explicite choisi dans l'appli).
   background: var(--nt-content-background);
 }
 

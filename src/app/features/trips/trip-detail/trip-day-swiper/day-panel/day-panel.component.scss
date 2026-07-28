@@ -42,9 +42,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  // Voir la même note dans trips.component.scss : --nt-content-background,
-  // pas Canvas (couleur système, ignore un thème explicite choisi dans l'appli).
-  background: var(--nt-content-background);
+  background: canvas;
   padding-top: 0.5rem;
   border-radius: 0 0 var(--nt-radius-md) var(--nt-radius-md);
 }

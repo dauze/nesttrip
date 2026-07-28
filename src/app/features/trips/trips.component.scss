@@ -13,10 +13,7 @@
   left: 0;
   right: 0;
   z-index: var(--z-app-toolbar);
-  // `--nt-content-background`, pas la couleur système `Canvas` : cette
-  // dernière suit `color-scheme`, qui restait piloté par l'OS/le navigateur
-  // même avec un thème explicite choisi dans l'appli (voir ROADMAP.md).
-  background: var(--nt-content-background);
+  background: canvas;
 }
 
 // Contrôle segmenté clair/sombre/système projeté en tête du menu réglages
