@@ -45,3 +45,9 @@ __screenshots__/
 Thumbs.db
 
 src/environments/environment.ts
+
+# e2e (Playwright)
+.env.e2e
+/test-results
+/playwright-report
+/playwright/.cache

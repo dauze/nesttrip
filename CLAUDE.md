@@ -11,18 +11,31 @@ Voir `ROADMAP.md` à la racine pour la liste des fonctionnalités déjà en plac
 - RxJS 7.8
 - PrimeNG / PrimeFlex / PrimeIcons pour l'UI
 - Swiper (élément web) pour les carousels de jours
-- Tests : Vitest (`ng test`) — pas Jasmine/Karma
+- Tests unitaires : Vitest (`ng test`) — pas Jasmine/Karma
+- Tests e2e : Playwright (`npm run e2e`)
 - Lint : ESLint (angular-eslint) + Prettier
 
 ## Commandes
 
 - `ng serve` — dev server
 - `ng build` — build prod
-- `ng test` — tests (Vitest)
+- `ng test` — tests unitaires (Vitest)
+- `npm run e2e` — tests e2e (Playwright, nécessite `.env.e2e`, voir `.env.e2e.example`)
 - `ng lint` — lint
 - `npx tsx scripts/seed-firestore.ts` (ou `npm run script`) — seed Firestore
 
 Toujours lancer `ng lint` avant de considérer une modification terminée.
+
+## Workflow
+
+Le travail sur ce repo s'appuie sur 4 skills projet (`.claude/skills/`), à invoquer proactivement plutôt qu'à redécouvrir à chaque session :
+
+- **`nesttrip-roadmap`** — reprendre/détailler/clore un item de `ROADMAP.md` (respecter l'ordre d'exécution, ne pas deviner un choix UX ambigu).
+- **`nesttrip-verify`** — gate obligatoire avant d'annoncer une tâche terminée (lint, typecheck, tests, limites de vérification visuelle).
+- **`nesttrip-testing`** — conventions de tests unitaires (quoi couvrir en priorité).
+- **`nesttrip-e2e`** — parcours Playwright déjà couverts et backlog.
+
+Règle simple : ne jamais considérer une modification terminée sans être passé par `nesttrip-verify`.
 
 ## Architecture
 

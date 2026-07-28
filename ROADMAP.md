@@ -12,7 +12,7 @@ Objectif : traiter tout ce qui n'est pas marqué "non prioritaire" ci-dessous. D
 - **Devise par défaut** : préremplissage des nouvelles saisies uniquement, jamais rétroactif sur les activités/réservations déjà créées.
 - **Tri des réservations** : 100% automatique (chronologique, passées en bas) ; le glisser-déposer manuel a été retiré.
 
-Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : passage Angular 22, suppression de la dépendance PrimeFlex, empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur), périmètre des tests e2e.
+Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : passage Angular 22, suppression de la dépendance PrimeFlex, empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur).
 
 Ordre d'exécution prévu pour le reste :
 1. **Bugs / fixes** liés au geste/à l'animation (drag&drop sous calendrier, animation cdkDrag, sursaut calendrier, scroll post-drop, aiguilles horaire) — **non vérifiés visuellement** : Google Maps/Fonts sont bloqués par la politique réseau de l'environnement d'exécution (proxy renvoie 403), donc `ng serve`/`ng build` n'y suffisent pas pour tester visuellement — à tester côté utilisateur.
@@ -47,9 +47,10 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
 - Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
-- Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire)
+- Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
+- Cohabitation entre le drag-and-drop libre (réorganisation manuelle des activités d'un jour) et un mode "par horaires" (tri automatique selon l'heure saisie) : pas de solution élégante trouvée pour gérer les deux sans réglage explicite — philosophie du produit : simplicité, pas de paramétrage, doit rester intuitif par défaut. À détailler via une question UX concrète avant d'implémenter (voir `.claude/skills/nesttrip-roadmap/SKILL.md`).
 
 ### Nouveau voyage / IA (non prioritaire)
 
@@ -81,16 +82,19 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - l'ouverture du calendrier sur le drag and drop dans la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
+- Vue "lieux" (tri par ville, fusion des doublons de même placeId — onglet Activités) : ne pas afficher la couleur de statut de réservation ni le pictogramme trombone sur une carte qui représente plusieurs activités fusionnées — n'a pas de sens sur un agrégat.
+- Clignotement des photos d'activité : l'image précédente s'affiche brièvement avant la nouvelle.
+- Bouton flottant d'ajout : ne doit pas rester positionné au-dessus du clavier mobile quand celui-ci est ouvert.
+- Pull-to-refresh sur l'écran swiper : toujours cassé malgré le correctif `overscroll-behavior`/`overflow` déjà tenté (voir "Déjà fait") — diagnostic : le scroll du haut est intercepté par Swiper avant d'atteindre le pull-to-refresh natif.
 
 ### Qualité / process
 
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
-- Tests e2e avec Claude (skills, agents, bonnes pratiques) — **en pause** : périmètre pas défini (quels parcours couvrir ?), à recadrer avant de lancer.
-- Secret de déploiement pour la release — **en pause** : nécessite une valeur/action manuelle de l'utilisateur (créer le secret côté hébergeur/CI), pas actionnable par le développement seul.
-- tout passer en strategy onpush
-- passer à angular 22 — **en pause** : montée de version majeure, à valider (compat PrimeNG/PrimeFlex) avant de lancer pour éviter de casser l'existant en même temps que le reste du plan.
-- basculer tous les scss possible via des scss primeflex — **en pause**, gros refacto transverse, à faire isolément.
-- Duppliquer tout le code utiliser de primeflex et supprimer la librairie — **en pause**, dépend de l'item précédent.
+- Tests e2e (Playwright) : socle en place le 2026-07-28 (compte de test Firebase Auth dédié, `npm run e2e`) — parcours 1 (login) et 2 (création de trip) couverts, parcours 3 à 7 (activité, form jour, dispatch, réservation, suppression) en backlog, voir `.claude/skills/nesttrip-e2e/SKILL.md`.
+- tout passer en strategy onpush puis : 
+- basculer tous les scss possible via des scss primeflex puis 
+- Duppliquer tout le code utiliser de primeflex et supprimer la librairie et enfin 
+- passer à angular 22 montée de version majeure, à valideravant de lancer pour éviter de casser l'existant en même temps que le reste du plan.
 - empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ? — **en pause** : décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer, pas lancé dans ce lot.
 
 ## ✅ Déjà fait
@@ -244,7 +248,6 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Fix : le tri chronologique de l'onglet Activités affichait le formulaire d'édition à tort
 - Fix : tenir appuyé sur la poignée de drag and drop (ou démarrer un drag) déclenchait le mode sélection à tort
 - Fix : icônes du sélecteur (ex. thème) mal centrées quand un bouton n'a pas de label
-- Pull-to-refresh sur l'écran swiper : `overscroll-behavior` + `overflow` html/body corrigés (non confirmé testé par l'utilisateur)
 - Clic n'importe où dans le header (pas seulement le bouton bascule) pour replier/déplier une carte (activités, notes, réservations, panneaux jour...), sauf sur une zone interactive (poignée de drag, image, bouton crayon, checkbox) — générique au niveau de `PanelComponent`, accessible au clavier (tabindex + Entrée/Espace)
 - Redirection directe vers l'unique trip à l'ouverture de la web app (login interactif ET session déjà authentifiée restaurée au démarrage), jamais lors d'un retour manuel depuis un trip — flag `AuthService.justLoggedIn` initialisé à `true` à la construction du service (une seule fois par chargement de page), consommé une fois par `AccueilTripComponent`
 - Préremplir l'input de recherche des sélecteurs mobiles avec la sélection courante à l'ouverture (`SelectComponent`)
@@ -254,3 +257,5 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Carte épinglée (sticky) au-dessus de la liste d'activités du jour : ajout d'une ombre portée pour séparer visuellement la carte du contenu qui défile dessous, qui donnait l'impression d'un bug d'empilement
 - Carte repliée automatiquement pendant l'édition d'une activité, mobile uniquement (verrou réentrant `GoogleMapPanelService.beginEditLock/endEditLock`, plusieurs cartes peuvent être en édition en même temps)
 - Saisie clavier des dates dans `app-date-picker`, desktop uniquement : le trigger devient un vrai champ texte (`dd/MM/yyyy`, ou `dd/MM/yyyy - dd/MM/yyyy` en mode plage) à côté d'un bouton icône séparé pour ouvrir le calendrier — mobile inchangé (bouton seul)
+- Infrastructure de travail autonome : 4 skills projet (`nesttrip-roadmap`, `nesttrip-verify`, `nesttrip-testing`, `nesttrip-e2e`), section "Workflow" dans `CLAUDE.md`, premiers tests unitaires réels (Vitest — mappers + `TripStore` avec ses services de persistence stubbés, anti-flicker `_pendingActivityIds` couvert), et socle e2e Playwright (compte de test dédié, parcours login + création de trip couverts)
+- Secret de déploiement pour la release — **en pause** : nécessite une valeur/action manuelle de l'utilisateur (créer le secret côté hébergeur/CI), pas actionnable par le développement seul.
