@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { clamp } from '@app/shared/utils/scroll-container';
 
-type ChromeKey = 'toolbar' | 'header' | 'tabsNav';
+type ChromeKey = 'toolbar' | 'header' | 'tabsNav' | 'generalSubTabBar';
 
 /**
  * Pilote le chrome persistant (toolbar app + header voyage) partagé entre
@@ -25,7 +25,7 @@ type ChromeKey = 'toolbar' | 'header' | 'tabsNav';
  */
 @Injectable()
 export class TripChromeService {
-  private readonly heights = signal<Record<ChromeKey, number>>({ toolbar: 0, header: 0, tabsNav: 0 });
+  private readonly heights = signal<Record<ChromeKey, number>>({ toolbar: 0, header: 0, tabsNav: 0, generalSubTabBar: 0 });
   private readonly chromeEls = new Set<HTMLElement>();
   private currentTranslateY = 0;
 
@@ -35,6 +35,8 @@ export class TripChromeService {
   readonly headerHeight = computed(() => this.heights().header);
   /** Hauteur de la barre des jours (fixed bottom, jamais masquée) : réservée en `padding-bottom` par le contenu du swiper. */
   readonly tabsNavHeight = computed(() => this.heights().tabsNav);
+  /** Hauteur de la barre Activités/Réservations/Notes flottante mobile (voir `GeneralSubTabBarComponent`), 0 quand elle n'est pas montée (desktop, ou onglet jour) : réservée en `padding-bottom` par `GeneralPanelComponent` uniquement. */
+  readonly generalSubTabBarHeight = computed(() => this.heights().generalSubTabBar);
   /** Hauteur cumulée toolbar+header : borne le `translateY` (au-delà, tout le chrome est masqué). N'inclut PAS la barre du bas, qui ne suit pas ce mécanisme. */
   readonly chromeHeight = computed(() => this.toolbarHeight() + this.headerHeight());
 

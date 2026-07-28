@@ -72,7 +72,6 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 ### UX / Interactions
 
-- Bar "Activités - Notes" en sticky en bas au slide, au dessus de la bar des jours uniquement sur mobile
 - Modifier la taille des zones pour pas qu'elles prennent tout l'écran (donc mettre un max-width sur les lists, input) car c'est génant de cliquer à côté et que ça fasse la modification — colonnes jour/général déjà limitées (`--nt-content-max-width`), reste à traiter les champs de saisie eux-mêmes.
 - Pour le calendrier, pouvoir saisir la date lorsque l'on est en vue ordinateur, donc pas que le calendrier masi aussi une zone de texte de date intelligente qui permette de le taper au clavier
 - paramétrer la récup des infos du trafic d'avion
@@ -253,3 +252,4 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Redirection directe vers l'unique trip à l'ouverture de la web app (login interactif ET session déjà authentifiée restaurée au démarrage), jamais lors d'un retour manuel depuis un trip — flag `AuthService.justLoggedIn` initialisé à `true` à la construction du service (une seule fois par chargement de page), consommé une fois par `AccueilTripComponent`
 - Préremplir l'input de recherche des sélecteurs mobiles avec la sélection courante à l'ouverture (`SelectComponent`)
 - Préremplir le titre de la nouvelle activité avec le texte déjà tapé dans la barre de recherche
+- Barre Activités/Réservations/Notes flottante en bas d'écran, au-dessus de la barre des jours, uniquement sur mobile (remplace la bascule inline en haut, cachée en dessous de 768px) — reste visible pendant le scroll sans avoir à remonter en haut de la liste

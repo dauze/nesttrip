@@ -6,7 +6,8 @@
   init="false"
   class="tab-content-wrapper"
   [style.--chrome-top-offset.px]="chromeService.chromeHeight()"
-  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavHeight()">
+  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavHeight()"
+  [style.--chrome-sub-tab-bar-height.px]="chromeService.generalSubTabBarHeight()">
   <swiper-slide>
     @if (visitedDays().has('notes')) {
       <app-general-panel [notes]="trip().notes" [tripId]="trip().id" />

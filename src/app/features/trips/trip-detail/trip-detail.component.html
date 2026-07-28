@@ -44,6 +44,13 @@
           (activate)="onFabActivate()" />
       }
 
+      <!-- Même contrainte hors-swiper, uniquement sur l'onglet "Général" (voir
+           GeneralSubTabBarComponent) — masqué pendant le mode sélection pour
+           la même raison que le "+" flottant ci-dessus. -->
+      @if (activeDay() === 'notes' && !selectionService.active()) {
+        <app-general-sub-tab-bar [bottomOffset]="chromeService.tabsNavHeight()" />
+      }
+
       <!-- Même contrainte hors-swiper que le "+" flottant ci-dessus. -->
       <app-selection-action-bar
         [count]="selectionService.selectedCount()"

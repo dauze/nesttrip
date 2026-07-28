@@ -50,6 +50,8 @@ export class GeneralPanelComponent {
     // le "+" flottant unique porté par TripDetailComponent.
     const unregister = this.fabTarget.registerGeneral({
       activeSubTab: this.activeSubTab,
+      subTabOptions: this.subTabOptions,
+      selectSubTab: (tab) => this.selectSubTab(tab),
       trigger: () => this.onFabActivate(),
     });
     this.destroyRef.onDestroy(unregister);

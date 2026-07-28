@@ -1,0 +1,10 @@
+@if (viewport.isMobile()) {
+  @if (fabTarget.general(); as target) {
+    <div #bar class="sub-tab-bar">
+      <app-select-button
+        [options]="target.subTabOptions"
+        [value]="target.activeSubTab()"
+        (valueChange)="selectSubTab($event)" />
+    </div>
+  }
+}

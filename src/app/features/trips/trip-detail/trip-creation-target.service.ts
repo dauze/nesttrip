@@ -1,9 +1,12 @@
 import { Injectable, Signal, signal } from '@angular/core';
+import { SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 
 export type GeneralCreationSubTab = 'activities' | 'notes' | 'reservations';
 
 export interface GeneralCreationTarget {
   activeSubTab: Signal<GeneralCreationSubTab>;
+  subTabOptions: SelectButtonOption<GeneralCreationSubTab>[];
+  selectSubTab: (tab: GeneralCreationSubTab) => void;
   trigger: () => void;
 }
 
@@ -17,7 +20,11 @@ export interface GeneralCreationTarget {
  * chaque panel s'enregistre ici au montage, et se désenregistre au destroy.
  *
  * `general` : un seul enregistrement possible (onglet "Général", singleton —
- * jamais deux instances de `GeneralPanelComponent` simultanément).
+ * jamais deux instances de `GeneralPanelComponent` simultanément). Sert
+ * aussi de pont pour `GeneralSubTabBarComponent` (bouton Activités/
+ * Réservations/Notes flottant en bas, mobile uniquement — même contrainte
+ * hors-swiper que le "+" flottant) : `subTabOptions`/`selectSubTab`
+ * permettent de piloter le sous-onglet actif depuis l'extérieur du panel.
  * `day` : plusieurs jours peuvent être montés en même temps (préchargement
  * des jours voisins, voir TripDaySwiperComponent.preloadAround), d'où une Map
  * indexée par dayId — seul le trigger du jour COURANT (`activeDay()`,

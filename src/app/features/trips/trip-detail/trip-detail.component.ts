@@ -12,6 +12,7 @@ import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
 import { FloatingAddButtonComponent } from '@app/shared/components/floating-add-button/floating-add-button.component';
+import { GeneralSubTabBarComponent } from './general-sub-tab-bar/general-sub-tab-bar.component';
 import { SelectionActionBarComponent } from '@app/shared/components/selection-action-bar/selection-action-bar.component';
 import { SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
@@ -34,6 +35,7 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
     FloatingAddButtonComponent,
+    GeneralSubTabBarComponent,
     SelectionActionBarComponent,
   ],
   templateUrl: 'trip-detail.component.html',

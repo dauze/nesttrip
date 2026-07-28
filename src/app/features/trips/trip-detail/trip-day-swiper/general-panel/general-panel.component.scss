@@ -5,9 +5,23 @@
 // (`display:block` du host lui-même géré globalement, styles/reset.scss).
 .general-panel-root {
   padding-top: var(--chrome-top-offset, 0px);
-  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // + --chrome-sub-tab-bar-height (0 sur desktop/onglet jour, voir
+  // GeneralSubTabBarComponent) : la barre Activités/Réservations/Notes
+  // flottante mobile se superpose au-dessus de la barre des jours, sinon les
+  // derniers éléments de liste resteraient masqués derrière elle.
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--chrome-sub-tab-bar-height, 0px));
   // Même colonne centrée que day-panel-root — voir sa doc et
   // --nt-content-max-width (tokens.scss).
   max-width: var(--nt-content-max-width);
   margin-inline: auto;
+}
+
+// Sur mobile, ce sélecteur est remplacé par GeneralSubTabBarComponent (barre
+// flottante en bas, au-dessus de la barre des jours — voir ROADMAP.md) :
+// resterait sinon dupliqué (un en haut ici, un en bas). Même breakpoint que
+// ViewportService (768px, voir sa doc).
+@media (max-width: 768px) {
+  .sub-tab-switch {
+    display: none;
+  }
 }
