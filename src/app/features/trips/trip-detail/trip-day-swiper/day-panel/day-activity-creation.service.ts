@@ -33,7 +33,7 @@ interface CreationTitle {
  * Orchestration du bouton "+" d'un jour : la création réelle (pool + instance,
  * voir CLAUDE.md/TripStore) n'est déclenchée qu'une fois le nom de l'activité
  * connu, jamais avant — voir ROADMAP.md et la demande utilisateur associée.
- * Mobile : tiroir plein écran (`TitleEditDialogComponent`, réutilisé tel quel)
+ * Mobile : tiroir dédié (`TitleEditDialogComponent`, réutilisé tel quel)
  * puis, une fois créée, scroll vers la nouvelle carte + chaînage de saisie
  * guidée Type→Résa→Début→Fin→Prix (voir `ActivityCardComponent.startGuidedEntry`).
  * Desktop : `draftActive` piloté ici, consommé par `DayPanelComponent` pour
@@ -103,7 +103,7 @@ export class DayActivityCreationService {
       TitleEditDialogComponent,
       {
         data: { initialTitle: '' },
-        panelClass: 'app-title-edit-dialog-panel',
+        panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.config.getViewContainerRef(),
         // Voir la doc sur le même `autoFocus` dans ActivityHeaderComponent.openTitleEditDialog :
         // sans lui, l'autofocus CDK par défaut ('first-tabbable') cible le

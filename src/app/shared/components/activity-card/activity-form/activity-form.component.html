@@ -57,24 +57,12 @@
       </div>
       
       <!-- PRIX -->
-      <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="price">
+      <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label for="price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-euro text-sm"></i>Prix
           </label>
-          <div class="flex align-items-center gap-1 w-full min-w-0">
-            <app-input-number
-              #priceInput
-              inputId="price-amount"
-              formControlName="amount"
-              class="flex-1 min-w-0 transparent-inputtext"
-              inputClass="w-full min-w-0 text-sm" />
-            <app-select
-              label="Devise"
-              [options]="currencyOptions"
-              formControlName="currency"
-              class="flex-none w-max transparent-select" />
-          </div>
+          <app-price-field #priceField inputId="price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-full min-w-0" />
         </div>
       </div>
       
@@ -100,6 +88,6 @@
     <label for="form-notes" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes
     </label>
-    <textarea id="form-notes" appTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" class="w-full"></textarea>
+    <app-notes-field inputId="form-notes" formControlName="notes" placeholder="Ajouter une note…" class="w-full" />
   </div>
 </form>

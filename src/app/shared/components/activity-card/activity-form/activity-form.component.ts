@@ -5,10 +5,10 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
 
 import { SelectComponent } from '@app/shared/components/select/select.component';
-import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { TextareaDirective } from '@app/shared/directives/textarea.directive';
+import { NotesFieldComponent } from '@app/shared/components/notes-field/notes-field.component';
+import { PriceFieldComponent } from '@app/shared/components/price-field/price-field.component';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
@@ -23,7 +23,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
-    SelectComponent, InputNumberComponent, DatePickerComponent, DividerComponent, TextareaDirective,
+    SelectComponent, DatePickerComponent, DividerComponent, NotesFieldComponent, PriceFieldComponent,
     TimePickerDialogComponent
   ],
   templateUrl: './activity-form.component.html',
@@ -53,10 +53,7 @@ export class ActivityFormComponent {
       status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
       deadline: this.fb.control<Date | null>(null),
     }),
-    price: this.fb.group({
-      amount: this.fb.nonNullable.control<number>(0),
-      currency: this.fb.nonNullable.control<string>('EUR'),
-    }),
+    price: this.fb.nonNullable.control<{ amount: number; currency: string }>({ amount: 0, currency: 'EUR' }),
   });
 
   // Refs template pour le chaînage de saisie guidée mobile (Type → Résa → Début → Fin → Prix), voir startGuidedEntry().
@@ -64,7 +61,7 @@ export class ActivityFormComponent {
   private readonly bookingSelect = viewChild.required<SelectComponent<BookingStatus>>('bookingSelect');
   private readonly startTimePickerRef = viewChild.required<TimePickerDialogComponent>('startTimePicker');
   private readonly endTimePickerRef = viewChild.required<TimePickerDialogComponent>('endTimePicker');
-  private readonly priceInput = viewChild.required<InputNumberComponent>('priceInput');
+  private readonly priceField = viewChild.required<PriceFieldComponent>('priceField');
 
   private readonly formChanges = toSignal(this.form.valueChanges, { initialValue: null });
 
@@ -323,7 +320,7 @@ export class ActivityFormComponent {
           this.endTimePickerRef().openDialog();
           this.subscribeOnce(this.endTimePickerRef().closed, (end) => {
             if (!end) return;
-            this.priceInput().focus();
+            this.priceField().openDialog();
           });
         });
       });

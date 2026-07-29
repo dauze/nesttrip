@@ -1,0 +1,56 @@
+/* ---------------------------------------------------------------------
+ * Habillage des tiroirs mobile de type "champ dédié" (notes, prix, titre —
+ * `NotesFieldComponent`/`PriceFieldComponent`/`TitleEditDialogComponent`),
+ * ouverts via `DialogService` (`@angular/cdk/dialog`). Classes globales
+ * (pas scopées à un composant) : le panel CDK est ajouté dans
+ * `.cdk-overlay-container`, en dehors de l'arbre de vue du composant hôte.
+ * Sélecteur à 3 classes pour gagner par spécificité sur
+ * `.cdk-overlay-pane.app-dialog-panel` (dialog.scss) quel que soit l'ordre
+ * de chargement des feuilles CSS.
+ *
+ * IMPORTANT : le centrage (horizontal ET vertical) reste le comportement
+ * PAR DÉFAUT de `DialogService`/`Dialog.open()` — aucune `positionStrategy`
+ * custom ici, ne pas en ajouter une pour "ancrer en haut" ou autre : une
+ * tentative précédente en CSS pur (`position:fixed`/`left`/`transform`)
+ * décentrait le panneau horizontalement (le centrage par défaut est déjà
+ * géré par le wrapper CDK via flexbox, une valeur `transform:translateX(-50%)`
+ * posée en plus sur le panneau lui-même le décale au lieu de le centrer).
+ * Ces classes ne redéfinissent donc QUE ce qui doit vraiment changer par
+ * rapport à `.app-dialog-panel` (largeur, hauteur max, overflow) — tout le
+ * reste (centrage, fond, ombre, coins arrondis, animation d'entrée) reste
+ * hérité de la règle de base, déjà correcte partout ailleurs dans l'app.
+ * `max-height: calc(100dvh - 2rem)` réserve la même marge (1rem) en haut/bas
+ * qu'en largeur (`calc(100vw - 2rem)`) — cohérent une fois le panneau centré
+ * et à sa taille maximale ; `100dvh` (pas `100vh`) suit le rétrécissement du
+ * clavier virtuel, donc le panneau reste centré dans l'espace RESTANT
+ * au-dessus du clavier une fois celui-ci ouvert.
+ *
+ * Les trois tiroirs (`app-price-dialog-panel`, `app-wide-dialog-panel` pour
+ * notes/titre) partagent volontairement l'anatomie et les boutons
+ * "Annuler"/"OK" en pied de panneau (voir chaque composant) — uniformité
+ * demandée explicitement par l'utilisateur, ne pas réintroduire un pattern
+ * différent (ex. plein écran forcé, header avec OK inline) pour un futur
+ * tiroir de ce type sans repasser par cette discussion.
+ * ------------------------------------------------------------------- */
+
+// Prix : panneau compact, taille de contenu (montant + devise, toujours
+// court) — juste plus étroit que le `max-width` par défaut (28rem).
+.cdk-overlay-pane.app-dialog-panel.app-price-dialog-panel {
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+}
+
+// Notes / titre (recherche Google) : plus large (zone d'écriture ou liste
+// de résultats), hauteur AUTO plafonnée par `dvh` — PAS plein écran forcé :
+// avec seulement 1 ligne de note ou 2 suggestions, le panneau reste petit,
+// il ne grandit que si le contenu (texte tapé, `NotesEditDialogComponent` ;
+// liste de résultats, `TitleEditDialogComponent`) en a besoin. Le scroll
+// au-delà de `max-height` est géré par l'élément scrollable interne de
+// chaque composant (`overflow-y:auto` posé sur le `<textarea>` ou la liste,
+// pas ici) — cette classe ne fait que plafonner l'enveloppe globale.
+.cdk-overlay-pane.app-dialog-panel.app-wide-dialog-panel {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}

@@ -28,7 +28,7 @@ interface CreationTitle {
 /**
  * Équivalent de `DayActivityCreationService` pour le pool général du trip
  * (onglet "Général" — voir TripActivitiesComponent) : même report de la
- * création réelle au moment où le nom est connu (mobile : tiroir plein écran,
+ * création réelle au moment où le nom est connu (mobile : tiroir dédié,
  * desktop : champ inline focus auto). Pas de chaînage de saisie guidée ici :
  * `ActivityFormComponent` n'est jamais monté hors contexte jour (voir
  * ActivityCardComponent.startGuidedEntry, no-op dans ce contexte), et pas de
@@ -79,7 +79,7 @@ export class TripActivitiesCreationService {
       TitleEditDialogComponent,
       {
         data: { initialTitle: this.config.getSearchTerm() },
-        panelClass: 'app-title-edit-dialog-panel',
+        panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.config.getViewContainerRef(),
       },
     );

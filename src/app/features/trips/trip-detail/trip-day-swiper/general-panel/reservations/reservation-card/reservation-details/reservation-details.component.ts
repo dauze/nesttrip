@@ -5,11 +5,11 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
 
 import { SelectComponent } from '@app/shared/components/select/select.component';
-import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { TextareaDirective } from '@app/shared/directives/textarea.directive';
+import { NotesFieldComponent } from '@app/shared/components/notes-field/notes-field.component';
+import { PriceFieldComponent } from '@app/shared/components/price-field/price-field.component';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { PlaceSummary } from '@core/models/place.dto';
@@ -59,8 +59,8 @@ function initialPlacesFrom(reservation: Reservation): SelectedPlaces {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgClass, ReactiveFormsModule, SelectComponent, InputNumberComponent, DatePickerComponent, TimePickerDialogComponent,
-    DividerComponent, TextareaDirective,
+    NgClass, ReactiveFormsModule, SelectComponent, DatePickerComponent, TimePickerDialogComponent,
+    DividerComponent, NotesFieldComponent, PriceFieldComponent,
     HotelFieldsComponent, FlightFieldsComponent, CarRentalFieldsComponent, GenericFieldsComponent,
     FlightStatusBadgeComponent, ReservationPlaceInfoComponent,
   ],
@@ -94,10 +94,7 @@ export class ReservationDetailsComponent {
     endDate: this.fb.control<Date | null>(null),
     endTime: this.fb.control<Date | null>(null),
     notes: this.fb.nonNullable.control<string>(''),
-    price: this.fb.group({
-      amount: this.fb.nonNullable.control<number>(0),
-      currency: this.fb.nonNullable.control<string>('EUR'),
-    }),
+    price: this.fb.nonNullable.control<{ amount: number; currency: string }>({ amount: 0, currency: 'EUR' }),
     booking: this.fb.group({
       status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
       deadline: this.fb.control<Date | null>(null),

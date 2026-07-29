@@ -116,8 +116,8 @@ export class ActivityHeaderComponent {
   }
 
   /**
-   * Mobile uniquement (voir template) : ouvre le tiroir plein écran d'édition
-   * du titre à la place de l'autocomplete inline utilisée sur desktop.
+   * Mobile uniquement (voir template) : ouvre le tiroir dédié d'édition du
+   * titre à la place de l'autocomplete inline utilisée sur desktop.
    * `stopPropagation` : le crayon vit dans `.activity-header__meta`, qui ne
    * stoppe plus lui-même la propagation en mode mobile (voir template) pour
    * que le reste du header (y compris le titre) déplie/replie le panneau au
@@ -140,7 +140,7 @@ export class ActivityHeaderComponent {
       TitleEditDialogComponent,
       {
         data: { initialTitle: this.activity().title },
-        panelClass: 'app-title-edit-dialog-panel',
+        panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
         // `autoFocus: 'first-tabbable'` (défaut de DialogService) focaliserait
         // le bouton de fermeture (premier élément focusable du template, voir

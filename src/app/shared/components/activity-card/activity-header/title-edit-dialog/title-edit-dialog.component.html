@@ -6,8 +6,12 @@
       [text]="true"
       severity="secondary"
       class="flex-shrink-0"
+      aria-label="Fermer"
       (click)="cancel()" />
+    <span class="title-edit-dialog__title">{{ headerTitle }}</span>
+  </div>
 
+  <div class="title-edit-dialog__input-row flex-shrink-0">
     <input
       #inputEl
       type="text"
@@ -16,8 +20,6 @@
       [placeholder]="placeholder"
       (input)="onInput($any($event.target).value)"
       (keydown.enter)="validate()" />
-
-    <app-button label="OK" class="flex-shrink-0" [disabled]="inputValue().trim().length === 0" (click)="validate()" />
   </div>
 
   <div class="title-edit-dialog__list">
@@ -33,5 +35,10 @@
     } @else if (inputValue().trim().length > 0) {
       <div class="title-edit-dialog__empty">Aucun résultat trouvé</div>
     }
+  </div>
+
+  <div class="title-edit-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
+    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
+    <app-button label="OK" [disabled]="inputValue().trim().length === 0" (click)="validate()" />
   </div>
 </div>

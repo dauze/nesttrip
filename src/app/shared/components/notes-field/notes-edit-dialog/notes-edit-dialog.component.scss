@@ -1,0 +1,65 @@
+// Plus de hauteur imposée ici (voir field-edit-dialogs.scss,
+// `.app-wide-dialog-panel`) : le panneau CDK se dimensionne à son contenu.
+// `position:sticky` sur le header reste une protection défensive si jamais
+// le panneau (garde-fou `overflow-y:auto`, field-edit-dialogs.scss) doit
+// scroller malgré tout — le cas normal est que `.notes-edit-dialog__textarea`
+// gère SON PROPRE scroll interne une fois sa `max-height` atteinte (voir
+// plus bas), donc le panneau ne devrait jamais avoir à le faire.
+:host {
+  display: block;
+}
+
+.notes-edit-dialog__row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--nt-overlay-background);
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.notes-edit-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+.notes-edit-dialog__textarea {
+  display: block;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--nt-text-color);
+  font-family: inherit;
+  // 16px (pas moins) : en dessous, Safari iOS zoome automatiquement la page
+  // au focus du champ (même remarque que title-edit-dialog.component.scss).
+  font-size: 1rem;
+  padding: 1rem;
+  // Une ligne vide au repos (voir ROADMAP.md, "si il y a rien, le mettre
+  // que de la hauteur du header et d'une ligne") : `appTextarea`
+  // (TextareaDirective) grandit ensuite avec le contenu via
+  // `el.style.height = scrollHeight`.
+  min-height: calc(1.5em + 2rem);
+  // Plafond = hauteur du panneau (`100dvh - 2rem`, field-edit-dialogs.scss)
+  // moins header (~3.25rem) et footer Annuler/OK (~3.25rem). Au-delà, ce
+  // `<textarea>` scrolle LUI-MÊME (`overflow-y:auto` prime sur `.app-textarea
+  // {overflow:hidden}` par défaut, form-fields.scss, grâce à la spécificité
+  // du sélecteur scopé) : le navigateur garde nativement le curseur visible
+  // pendant la frappe, sans le bricolage JS "scroller le panneau parent"
+  // essayé avant (voir la doc du composant sur pourquoi ça ne marchait pas).
+  max-height: calc(100dvh - 8.5rem);
+  overflow-y: auto;
+
+  &::placeholder {
+    color: var(--nt-text-muted-color);
+  }
+}
+
+.notes-edit-dialog__footer {
+  padding: 0.5rem;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}

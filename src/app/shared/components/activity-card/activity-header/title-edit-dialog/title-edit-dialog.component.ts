@@ -9,27 +9,36 @@ export interface TitleEditDialogData {
   initialTitle: string;
   /** Texte du champ quand vide — défaut conservé pour les appelants historiques (activité). */
   placeholder?: string;
+  /** Titre affiché en tête du tiroir — défaut "Titre" (voir NotesFieldComponent/PriceFieldComponent, même pattern d'uniformité). */
+  title?: string;
 }
 
 /** `raw` : texte libre validé via OK (aucune donnée Google). `place` : suggestion Google choisie dans la liste. */
 export type TitleEditDialogResult = { type: 'raw'; text: string } | { type: 'place'; place: PlaceSummary };
 
 /**
- * Tiroir plein écran mobile pour éditer le titre d'une activité (voir
- * ROADMAP.md, "Crayon pour modifier le titre..."). Ouvert par
- * `ActivityHeaderComponent` (via `DialogService`, uniquement quand
+ * Tiroir mobile pour éditer le titre d'une activité ou rechercher un lieu
+ * (voir ROADMAP.md, "Crayon pour modifier le titre..."). Ouvert par
+ * `ActivityHeaderComponent`/`DayActivityCreationService`/`TripActivitiesCreationService`/
+ * `PlaceAutocompleteFieldComponent` (via `DialogService`, uniquement quand
  * `ViewportService.isMobile()`) à la place de l'édition inline utilisée sur
- * desktop (`AutoCompleteComponent` dans le header) : sur mobile, taper
- * directement dans le header ouvre un clavier au-dessus d'un panneau ancré
- * minuscule, peu lisible — ce composant occupe toute la page (voir
- * `.app-title-edit-dialog-panel` dans src/styles/title-edit-dialog.scss),
- * champ + bouton OK sur la même ligne en haut, liste de suggestions
- * scrollable juste en dessous (le clavier virtuel réduit la hauteur
- * disponible du panneau, `100dvh`, sans jamais recouvrir la liste).
+ * desktop : sur mobile, taper directement dans le header ouvre un clavier
+ * au-dessus d'un panneau ancré minuscule, peu lisible.
+ *
+ * Header (croix + titre) / champ de recherche / liste de suggestions /
+ * pied "Annuler"-"OK" : même anatomie que `NotesEditDialogComponent`/
+ * `PriceEditDialogComponent` (uniformité demandée explicitement par
+ * l'utilisateur) — hauteur AUTO plafonnée par `dvh`
+ * (`.app-wide-dialog-panel`, field-edit-dialogs.scss), pas plein écran
+ * forcé : avec 1-2 suggestions le panneau reste petit, il ne grandit que si
+ * la liste en a besoin (scroll interne au-delà, voir
+ * `.title-edit-dialog__list` dans le SCSS).
  *
  * Deux sorties possibles, fermées par `DialogRef.close(result)` :
- * `ActivityHeaderComponent.openTitleEditDialog` route ensuite vers exactement
- * les mêmes chemins que le mode desktop (`onSelect`/`titleEdited`).
+ * cliquer une suggestion ferme immédiatement (choix explicite, pas besoin
+ * d'un "OK" séparé) ; le texte libre tapé au clavier passe par le bouton
+ * "OK" du pied de page (ou Entrée). Les appelants routent ensuite vers
+ * exactement les mêmes chemins que le mode desktop (`onSelect`/`titleEdited`).
  */
 @Component({
   selector: 'app-title-edit-dialog',
@@ -46,6 +55,7 @@ export class TitleEditDialogComponent implements AfterViewInit {
 
   private readonly inputRef = viewChild.required<ElementRef<HTMLInputElement>>('inputEl');
 
+  protected readonly headerTitle = this.data.title ?? 'Titre';
   protected readonly inputValue = signal(this.data.initialTitle ?? '');
   protected readonly placeholder = this.data.placeholder ?? "Nom de l'activité";
 

@@ -22,7 +22,7 @@ import { runOnceReady } from '@app/shared/utils/run-once-ready';
  * jamais dans un form, il est émis à part via `placeSelected`.
  *
  * Mobile (`ViewportService.isMobile()`) : texte statique cliquable (pas de
- * crayon séparé) qui ouvre `TitleEditDialogComponent` en tiroir plein écran
+ * crayon séparé) qui ouvre `TitleEditDialogComponent` en tiroir dédié
  * (réutilisé tel quel, générique) au clic/tap direct sur le texte, plutôt
  * que l'autocomplete inline utilisée sur desktop.
  */
@@ -84,8 +84,8 @@ export class PlaceAutocompleteFieldComponent {
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
-        data: { initialTitle: this.displayControl.value, placeholder: this.placeholder() },
-        panelClass: 'app-title-edit-dialog-panel',
+        data: { initialTitle: this.displayControl.value, placeholder: this.placeholder(), title: this.label() || 'Titre' },
+        panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
       },
     );

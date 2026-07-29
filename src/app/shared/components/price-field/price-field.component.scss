@@ -1,0 +1,25 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+// Trigger mobile uniquement — desktop (branche `@else`) reprend tel quel
+// le rendu inline précédent (`.transparent-inputtext`/`.transparent-select`),
+// inchangé.
+.price-field-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.price-field-trigger__value {
+  color: var(--nt-text-color);
+}
+
+.price-field-trigger__placeholder {
+  color: var(--nt-text-muted-color);
+}

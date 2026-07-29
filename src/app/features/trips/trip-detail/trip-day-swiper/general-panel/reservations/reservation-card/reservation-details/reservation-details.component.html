@@ -103,14 +103,11 @@
     </div>
   </div>
 
-  <div class="flex flex-column gap-1" formGroupName="price">
+  <div class="flex flex-column gap-1">
     <label for="reservation-price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-euro text-sm"></i>Prix
     </label>
-    <div class="flex align-items-center gap-1 w-full min-w-0">
-      <app-input-number inputId="reservation-price-amount" formControlName="amount" class="flex-1 min-w-0 transparent-inputtext" inputClass="w-full text-sm" />
-      <app-select label="Devise" [options]="currencyOptions" formControlName="currency" class="flex-none w-max transparent-select" />
-    </div>
+    <app-price-field inputId="reservation-price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-full min-w-0" />
   </div>
 
   @if (showDeadline()) {
@@ -128,6 +125,6 @@
     <label for="reservation-notes" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-align-left text-xs"></i>Notes
     </label>
-    <textarea id="reservation-notes" appTextarea formControlName="notes" placeholder="Ajouter une note…" rows="2" class="w-full"></textarea>
+    <app-notes-field inputId="reservation-notes" formControlName="notes" placeholder="Ajouter une note…" class="w-full" />
   </div>
 </form>

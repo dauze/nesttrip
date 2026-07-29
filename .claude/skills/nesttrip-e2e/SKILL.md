@@ -17,9 +17,13 @@ Périmètre débloqué le 2026-07-28 (était "en pause" dans `ROADMAP.md`, faute
 
 Chaque exécution de `create-trip.spec.ts` crée un vrai trip dans Firestore sous le compte de test (titre horodaté `E2E Test Trip <timestamp>` pour les distinguer). **Aucun nettoyage automatique pour l'instant** — les trips s'accumulent sur le compte de test au fil des runs. À traiter quand le parcours 7 (suppression) sera ajouté (voir backlog ci-dessous) : un `afterEach` pourrait supprimer ce que le test vient de créer.
 
-## Limite réseau (bac à sable Claude)
+## Accès réseau (bac à sable Claude) : à retester, pas à supposer bloqué
 
-Google Maps/Fonts sont bloqués (403) dans le bac à sable d'exécution de Claude (voir `nesttrip-verify`, `ROADMAP.md`). Le compte npm/Playwright, lui, a un accès réseau qui fonctionne (téléchargement des binaires navigateur + connexion à Firebase testés avec succès le 2026-07-28). Mais un parcours qui dépend du **rendu visuel** de Maps (tuiles, marqueurs) ne peut pas être confirmé à 100% par un run Playwright lancé par Claude dans ce bac à sable — se contenter de vérifier que le conteneur de carte est monté, pas le rendu des tuiles, ou laisser ce parcours à l'utilisateur/CI.
+Cette section affirmait que Google Maps/Fonts étaient bloqués (403) dans le bac à sable d'exécution de Claude, limitant les parcours Playwright dépendant du rendu Maps à une simple vérification "le conteneur de carte est monté". **Retesté le 2026-07-29** (voir `nesttrip-verify`) : Maps s'affiche bel et bien (tuiles réelles, marqueurs), l'autocomplete Places répond — un parcours Playwright lancé par Claude peut donc, à cette date, confirmer visuellement le rendu Maps (captures d'écran lues via l'outil de lecture d'image), pas seulement le montage du conteneur.
+
+Le compte npm/Playwright a de toute façon toujours un accès réseau qui fonctionne (téléchargement des binaires navigateur + connexion à Firebase, testés avec succès le 2026-07-28).
+
+L'accès réseau au sens large (Maps compris) peut varier d'une session à l'autre selon le bac à sable — retester avant de conclure quoi que ce soit plutôt que de se fier à cette note indéfiniment ; si un parcours Maps échoue avec des signes de blocage réseau, retomber sur "vérifier que le conteneur est monté, laisser le rendu à l'utilisateur/CI".
 
 ## Parcours déjà couverts
 

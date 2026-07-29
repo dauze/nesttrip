@@ -1,0 +1,46 @@
+// Plus de hauteur/position forcées ici (voir field-edit-dialogs.scss,
+// `.app-price-dialog-panel`) : ce n'est plus un panneau plein écran, il se
+// dimensionne naturellement à son contenu (montant + devise, toujours
+// court), le panneau CDK se charge du `max-height`/clic extérieur.
+:host {
+  display: block;
+}
+
+.price-edit-dialog__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.price-edit-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+.price-edit-dialog__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem;
+}
+
+.price-edit-dialog__footer {
+  padding: 0.5rem;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+// Cible via `inputClass` sur `app-input-number` (voir template) — la classe
+// vit sur le `<input>` natif à l'intérieur, pas sur le host du composant :
+// nécessaire pour que `autoFocus: '.price-edit-dialog__amount'` (DialogService)
+// trouve un élément réellement focusable (même remarque que TimePickerDialogComponent,
+// autoFocus ciblé sur `input[aria-label="Heures"]`).
+:host ::ng-deep .price-edit-dialog__amount {
+  width: min(16rem, 100%);
+  text-align: center;
+  font-size: 2rem;
+}
