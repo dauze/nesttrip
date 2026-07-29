@@ -89,8 +89,10 @@
 // --- Espacement (gap/padding/margin) ---
 
 .gap-0 { gap: 0rem !important; }
-.gap-1 { gap: 0.25rem !important; }
-.gap-2 { gap: 0.5rem !important; }
+// .gap-1/.gap-2 : mêmes valeurs que --nt-layout-gap-stacked/--nt-layout-gap-split
+// (tokens.scss), référencées plutôt que dupliquées — voir sa doc.
+.gap-1 { gap: var(--nt-layout-gap-stacked, 0.25rem) !important; }
+.gap-2 { gap: var(--nt-layout-gap-split, 0.5rem) !important; }
 .gap-3 { gap: 1rem !important; }
 .gap-4 { gap: 1.5rem !important; }
 

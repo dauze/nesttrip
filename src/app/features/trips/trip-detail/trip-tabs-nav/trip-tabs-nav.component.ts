@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, effect, inject, input, output, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
@@ -49,6 +49,17 @@ export class TripTabsNavComponent {
         observer.disconnect();
         this.chromeService.registerHeight('tabsNav', 0);
       });
+    });
+
+    // Rejoint le groupe qui glisse au scroll (toolbar+header) uniquement en
+    // mode 'split-hideable' (layout scindé mais viewport trop bas pour garder
+    // le chrome en permanence, ex. mobile paysage) — voir TripChromeService.
+    // En 'mobile' elle reste fixe en bas (jamais masquée, comportement
+    // historique) ; en 'split-pinned' rien ne se masque de toute façon.
+    effect((onCleanup) => {
+      if (this.chromeService.mode() !== 'split-hideable') return;
+      const unregister = this.chromeService.registerChromeElement(this.hostRef.nativeElement);
+      onCleanup(unregister);
     });
   }
 

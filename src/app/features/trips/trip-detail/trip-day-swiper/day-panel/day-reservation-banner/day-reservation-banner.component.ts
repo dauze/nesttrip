@@ -22,6 +22,15 @@ import { getReservationDayOccurrences, ReservationDayOccurrence } from './reserv
   templateUrl: './day-reservation-banner.component.html',
   styleUrl: './day-reservation-banner.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    // Sans réservation ce jour-là, le host doit disparaître ENTIÈREMENT du
+    // flux flex (pas juste visuellement à 0px) : `.day-panel-body`/
+    // `.day-panel-activities-group` posent un `gap` entre TOUS leurs enfants
+    // directs, y compris un enfant vide — laisser le host `display:block`
+    // vide ajoutait quand même un `gap` avant l'élément suivant, doublant
+    // l'écart (bandeau vide + gap) au lieu d'un seul gap propre.
+    '[style.display]': "occurrences().length ? null : 'none'",
+  },
 })
 export class DayReservationBannerComponent {
   private readonly tripFacade = inject(TripFacade);

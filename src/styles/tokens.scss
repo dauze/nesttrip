@@ -170,6 +170,19 @@
   // que le viewport reste plus étroit que la valeur.
   --nt-content-max-width: 40rem;
 
+  // Espacement entre blocs du layout jour/général (carte, timeline, bandeau
+  // réservation, activités...) : une seule paire de valeurs, réutilisée
+  // partout au lieu de `gap: 0.25rem`/`0.5rem` répété au cas par cas — mêmes
+  // valeurs que les utilitaires `.gap-1`/`.gap-2` (layout-utilities.scss),
+  // qui les référencent désormais plutôt que de les dupliquer. `--nt-layout-gap-split`
+  // est aussi la valeur (en px) de `SPLIT_CHROME_GAP_PX` dans
+  // `trip-chrome.service.ts` (header/barre des jours/contenu, voir ROADMAP.md
+  // "UI Desktop") — ce service raisonne en pixels réels mesurés, pas en CSS
+  // var, donc dupliquée là plutôt que lue dynamiquement, à garder synchronisée
+  // si retouchée ici.
+  --nt-layout-gap-stacked: 0.25rem;
+  --nt-layout-gap-split: 0.5rem;
+
   // Mouvement — courbe d'accélération dupliquée telle quelle dans
   // styles.scss (transitions de navigation, dispatch-overlay) et les
   // composants d'overlay : un seul jeton de référence.

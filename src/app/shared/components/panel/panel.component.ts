@@ -53,6 +53,7 @@ export interface PanelToggleEvent {
   styleUrl: './panel.component.scss',
   host: {
     class: 'app-panel',
+    '[class.app-panel--fill-height]': 'fillHeight()',
   },
 })
 export class PanelComponent {
@@ -60,6 +61,14 @@ export class PanelComponent {
   readonly toggleable = input(false);
   readonly collapsed = model(false);
   readonly instant = input(false);
+  /**
+   * Optionnel : le panel s'étire pour occuper toute la hauteur de SON PROPRE
+   * parent (au lieu de se dimensionner sur son contenu, comportement par
+   * défaut) — utilisé par `TripDayMapComponent` en layout scindé (carte à
+   * gauche pleine hauteur, voir ROADMAP.md "UI Desktop"). N'affecte aucun
+   * autre appelant (défaut `false`, comportement historique inchangé).
+   */
+  readonly fillHeight = input(false);
 
   readonly beforeToggle = output<PanelToggleEvent>();
   readonly afterToggle = output<PanelToggleEvent>();

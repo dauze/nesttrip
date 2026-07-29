@@ -3,6 +3,7 @@ import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ThemeService } from '@app/core/services/theme.service';
+import { ViewportService } from '@app/core/services/viewport.service';
 import { environment } from '@environments/environment';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 
@@ -24,7 +25,9 @@ export class TripDayMapComponent {
   readonly collapsed = linkedSignal(() => this.googleMapPanelService.isCollapsed());
   zoom = input(13);
   readonly focusZoom = input(13);
-  
+  /** Layout scindé (carte à gauche, voir ROADMAP.md "UI Desktop") : le panel s'étire pleine hauteur (`PanelComponent.fillHeight`) et la carte suit via `height="100%"` — `32dvh` empilé (mobile) sinon. */
+  protected readonly viewport = inject(ViewportService);
+
 
   // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
   public readonly elementRef = inject(ElementRef);

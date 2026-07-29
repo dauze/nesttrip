@@ -4,7 +4,7 @@
       <div
         #headerWrapper
         class="app-trip-header-fixed"
-        [style.top.px]="chromeService.toolbarHeight()">
+        [style.top.px]="chromeService.headerTop()">
         <app-trip-header
           [trip]="trip"
           [title]="tripTitle()"
@@ -18,8 +18,16 @@
         </app-trip-header>
       </div>
 
+      <!-- Layout scindé (desktop / mobile paysage, voir ViewportService) :
+           la barre des jours passe sticky juste sous toolbar+header au lieu
+           de flotter en bas (décision produit, voir ROADMAP.md "UI Desktop"). -->
+      <!-- `class.top-0` n'est PAS utilisable ici : l'utilitaire `.top-0` pose
+           `top: 0 !important` (layout-utilities.scss), qui écraserait la
+           valeur dynamique posée juste en dessous par `[style.top.px]`. -->
       <app-trip-tabs-nav
-        class="fixed bottom-0 left-0 right-0 z-5"
+        class="fixed app-trip-tabs-nav-fixed z-5"
+        [class.bottom-0]="!viewport.isSplitLayout()"
+        [style.top.px]="viewport.isSplitLayout() ? chromeService.tabsNavTop() : null"
         [tabs]="tabs()"
         [activeId]="activeDay()"
         (tabSelected)="onTabSelected($event)" />
@@ -41,7 +49,7 @@
           [icon]="fabIcon()"
           [badge]="true"
           [ariaLabel]="fabAriaLabel()"
-          [bottomOffset]="chromeService.tabsNavHeight() + chromeService.generalSubTabBarHeight()"
+          [bottomOffset]="chromeService.tabsNavBottomReserve() + chromeService.generalSubTabBarHeight()"
           (activate)="onFabActivate()" />
       }
 
@@ -49,13 +57,13 @@
            GeneralSubTabBarComponent) — masqué pendant le mode sélection pour
            la même raison que le "+" flottant ci-dessus. -->
       @if (activeDay() === 'notes' && !selectionService.active()) {
-        <app-general-sub-tab-bar [bottomOffset]="chromeService.tabsNavHeight()" />
+        <app-general-sub-tab-bar [bottomOffset]="chromeService.tabsNavBottomReserve()" />
       }
 
       <!-- Même contrainte hors-swiper que le "+" flottant ci-dessus. -->
       <app-selection-action-bar
         [count]="selectionService.selectedCount()"
-        [minHeight]="chromeService.tabsNavHeight()"
+        [minHeight]="chromeService.tabsNavBottomReserve()"
         (cancelSelection)="onSelectionCancel()"
         (deleteSelected)="onSelectionDelete()" />
     </div>

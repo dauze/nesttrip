@@ -16,6 +16,23 @@
   margin-inline: auto;
 }
 
+// Épinglée en haut du scrollport (même mécanique que `.sticky-map` dans
+// day-panel.component.scss — même `swiper-slide` ancêtre comme unique
+// conteneur de scroll, pas de nouveau scrollport imbriqué) : sans ça, la
+// bascule Activités/Réservations/Notes défilait hors champ avec le reste du
+// contenu, il fallait remonter tout en haut de la liste pour en changer.
+.sub-tab-switch {
+  position: sticky;
+  // JAMAIS `0` en dur : voir la doc de `TripChromeService.stickyContentTop`
+  // (colle sinon derrière le chrome fixe en layout desktop, qui ne se masque
+  // jamais au scroll contrairement au mobile).
+  top: var(--sticky-top-offset, 0px);
+  z-index: 10;
+  background: canvas;
+  padding-block: 0.5rem;
+  box-shadow: var(--nt-overlay-popover-shadow);
+}
+
 // Sur mobile, ce sélecteur est remplacé par GeneralSubTabBarComponent (barre
 // flottante en bas, au-dessus de la barre des jours — voir ROADMAP.md) :
 // resterait sinon dupliqué (un en haut ici, un en bas). Même breakpoint que

@@ -55,6 +55,38 @@
   transition: max-height var(--nt-transition-duration) ease;
 }
 
+// `fillHeight` (voir panel.component.ts) : le host devient une colonne flex
+// (header à sa taille naturelle, contenu qui prend le reste) au lieu de se
+// dimensionner sur son contenu. Le `max-height` posé en inline style par
+// `toggle()` (voir panel.component.ts) n'entre pas en conflit : au repos il
+// vaut `none`, qui n'empêche pas `flex:1` de dicter la hauteur — seul le
+// bref instant d'une animation de dépli/repli reste borné par le contenu
+// mesuré, ce qui est le comportement voulu (une transition, pas un saut).
+:host(.app-panel--fill-height) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+// `:host(...)` obligatoire ici (pas `.app-panel--fill-height .foo`) : sous
+// l'encapsulation émulée d'Angular, l'élément host ne porte QUE l'attribut
+// `_nghost-*` (jamais `_ngcontent-*`, réservé aux descendants) — un sélecteur
+// composé qui commence par une classe simple sans `:host()` se voit ajouter
+// `[_ngcontent-*]` par le compilateur et ne matche donc jamais le host lui-même.
+:host(.app-panel--fill-height) .app-panel__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host(.app-panel--fill-height) .app-panel__content-inner {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .app-panel__content--instant {
   transition: none;
 }

@@ -1,6 +1,40 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
-// (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
+// (composant de FEATURE, pas une primitive shared — plus de `:host` ici en
+// principe). Exception ici : `TripDayMapHostService.moveTo` place cet élément
+// (le `<app-trip-day-map>` lui-même, pas de div racine propre dans son
+// template — voir trip-day-map.component.html) directement comme enfant de
+// `.sticky-map`. C'est donc LUI, et lui seul, qui doit relayer la hauteur
+// concrète de `.sticky-map` (voir day-panel.component.scss) vers `app-panel`
+// (`height:100%`, voir `PanelComponent.fillHeight`/panel.component.scss) —
+// sans ce maillon la chaîne `flex`/`height:100%` s'arrête net ici, faute de
+// wrapper interne à qui déléguer. Sans effet en layout empilé (mobile) :
+// `.sticky-map` n'y a pas de hauteur explicite, un `height:100%` contre un
+// parent `auto` est traité comme `auto`, donc ignoré.
+:host {
+  height: 100%;
+}
+
 .map-container {
   border-radius: 0.1875rem;
   overflow: hidden;
+}
+
+// Layout scindé (voir `PanelComponent.fillHeight`, activé depuis le
+// template) : chaîne de `flex:1`/`height:100%` jusqu'à `<google-map>`, qui
+// reçoit alors `[height]="'100%'"` — tous les maillons de cette chaîne
+// vivent dans des fichiers qu'on possède (celui-ci, panel.component.scss,
+// day-panel.component.scss pour `.sticky-map`), donc en CSS normal, sans
+// `::ng-deep`/`!important` pour aller forcer l'intérieur d'un composant tiers
+// (@angular/google-maps) — seule la valeur finale ('100%') lui est transmise
+// via son input public `[height]`, documenté pour cet usage.
+.map-container--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  google-map {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
 }

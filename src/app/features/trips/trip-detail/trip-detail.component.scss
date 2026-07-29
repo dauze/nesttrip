@@ -18,6 +18,15 @@
   background: var(--nt-content-background);
 }
 
+// Même inset gauche/droite que .app-trip-header-fixed juste au-dessus — la
+// barre des jours touchait les bords de l'écran (`left-0 right-0`, voir
+// ROADMAP.md), seul élément fixe de ce groupe à ne pas reproduire ce
+// ml-2/mr-2 implicite de `.app-content`.
+.app-trip-tabs-nav-fixed {
+  left: 0.5rem;
+  right: 0.5rem;
+}
+
 // Le skeleton doit se superposer au contenu (invisible mais toujours dans
 // le flux, pour permettre au swiper de se monter/mesurer) plutôt que de
 // s'afficher après lui : sinon il est poussé tout en bas de la page.

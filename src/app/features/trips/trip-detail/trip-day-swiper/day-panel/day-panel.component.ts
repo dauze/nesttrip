@@ -32,6 +32,7 @@ import { DayActivityCreationService } from './day-activity-creation.service';
 import { NewActivityDraftComponent } from './new-activity-draft/new-activity-draft.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -56,6 +57,7 @@ export class DayPanelComponent {
   private readonly dispatchService = inject(ActivityDispatchService);
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly focusService = inject(DayActivityFocusService);
+  private readonly viewport = inject(ViewportService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
@@ -153,6 +155,7 @@ export class DayPanelComponent {
       getDayMapPoints: () => this.dayMapPoints(),
       getMapComponent: () => this.activeMapComponent(),
       getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
+      isSplitLayout: () => this.viewport.isSplitLayout(),
     });
 
     this.reorderService.connect({

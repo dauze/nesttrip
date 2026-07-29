@@ -1,5 +1,5 @@
 @if (occurrences().length > 0) {
-  <div class="day-reservation-banner flex flex-column gap-2 mb-2">
+  <div class="day-reservation-banner flex flex-column">
     @for (occurrence of occurrences(); track occurrence.reservation.id + occurrence.role) {
       <div
         class="day-reservation-banner__item flex flex-column gap-1 w-full"

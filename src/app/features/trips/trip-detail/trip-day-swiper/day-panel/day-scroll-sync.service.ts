@@ -12,6 +12,13 @@ export interface DayScrollSyncConfig {
   getDayMapPoints: () => DayMapPoint[];
   getMapComponent: () => TripDayMapComponent | null;
   getStickyMapEl: () => HTMLElement | null;
+  /**
+   * Layout scindé (carte à gauche, activités à droite — voir ViewportService)
+   * : la carte n'est plus empilée AU-DESSUS de la liste, donc elle ne
+   * "bloque" plus rien en haut du scroll — voir son usage dans
+   * `updateMapFromScroll`/`focusActivity`/`trySnapActivity`.
+   */
+  isSplitLayout: () => boolean;
 }
 
 /**
@@ -119,6 +126,17 @@ export class DayScrollSyncService implements OnDestroy {
         window.requestAnimationFrame(() => {
           this.stickyHeight.set(entries[0].contentRect.height);
           this.wakeLoop();
+          // Google Maps ne réagit PAS tout seul à un changement de taille CSS
+          // de son conteneur (contrairement à un simple redimensionnement de
+          // fenêtre) : sans ce trigger, l'instance continue de peindre à son
+          // ANCIENNE taille interne (juste étirée en CSS) — d'où un rendu
+          // flou et des tuiles qui ne se rechargent plus au pan une fois le
+          // conteneur agrandi (ex. layout scindé, voir ROADMAP.md "UI Desktop").
+          // Le trigger ponctuel déjà fait plus bas (juste après le déplacement
+          // DOM) ne couvre que CE moment précis, pas les redimensionnements
+          // ultérieurs du même conteneur (resize fenêtre, rotation...).
+          const nativeMap = map.googleMap;
+          if (nativeMap) google.maps.event.trigger(nativeMap, 'resize');
         });
       }
     });
@@ -210,7 +228,13 @@ export class DayScrollSyncService implements OnDestroy {
     // C'est le scroll actuel + l'espace total occupé par tes éléments fixes à l'écran.
     // Si la map et la timeline sont l'une sur l'autre dans le bloc sticky, stickyContainerHeight englobe déjà le tout.
     // Par sécurité, on s'assure de prendre au moins la hauteur de la map.
-    const totalStickyShield = Math.max(stickyContainerHeight, mapHeight);
+    // En layout scindé (carte à gauche, PAS au-dessus de la liste), rien ne
+    // bloque le haut du scroll : un bouclier de la hauteur de la carte
+    // décalerait le déclenchement de toute sa hauteur (~70dvh), très en
+    // retard — juste une petite marge cohérente avec ACTIVITY_SCROLL_GAP.
+    const totalStickyShield = this.config.isSplitLayout()
+      ? this.ACTIVITY_SCROLL_GAP
+      : Math.max(stickyContainerHeight, mapHeight);
     const triggerLine = scrollY + totalStickyShield;
 
     // 4. Trouver l'index de la carte par rapport à cette ligne
@@ -311,9 +335,14 @@ export class DayScrollSyncService implements OnDestroy {
 
     const stickyElement = this.config.getStickyMapEl();
 
-    const stickyHeight = stickyElement
-      ? stickyElement.getBoundingClientRect().height
-      : this.stickyHeight();
+    // En layout scindé, la carte est à côté (pas au-dessus) de la liste :
+    // aucune hauteur à soustraire pour "sortir de dessous" la carte, voir
+    // updateMapFromScroll ci-dessus pour le même raisonnement.
+    const stickyHeight = this.config.isSplitLayout()
+      ? 0
+      : stickyElement
+        ? stickyElement.getBoundingClientRect().height
+        : this.stickyHeight();
 
     const targetScroll = target.top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
 
@@ -394,7 +423,8 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
-    const stickyHeight = stickyElement.getBoundingClientRect().height;
+    // Même raisonnement que focusActivity ci-dessus : rien à soustraire en layout scindé.
+    const stickyHeight = this.config.isSplitLayout() ? 0 : stickyElement.getBoundingClientRect().height;
 
     const anchor = slideEl.scrollTop + stickyHeight;
 

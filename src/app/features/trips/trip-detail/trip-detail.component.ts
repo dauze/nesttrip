@@ -17,6 +17,7 @@ import { SelectionActionBarComponent } from '@app/shared/components/selection-ac
 import { SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { ViewportService } from '@app/core/services/viewport.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
 import { ReservationFocusService } from './reservation-focus.service';
@@ -61,6 +62,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
+  protected readonly viewport = inject(ViewportService);
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);
   private readonly reservationFocusService = inject(ReservationFocusService);
@@ -143,6 +145,19 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     afterNextRender(() => {
       const el = this.dragPortalRef()?.nativeElement;
       if (el) this.dispatchService.registerDragPortal(el);
+    });
+
+    // Traduit le layout (ViewportService) en mode chrome (voir TripChromeService.ChromeMode) :
+    // pas de layout scindé -> comportement mobile historique ; layout scindé
+    // + assez de hauteur (desktop) -> chrome jamais masqué ; layout scindé
+    // mais viewport bas (mobile paysage) -> la barre des jours (en haut)
+    // rejoint le groupe qui se masque au scroll (voir TripTabsNavComponent).
+    effect(() => {
+      if (!this.viewport.isSplitLayout()) {
+        this.chromeService.setMode('mobile');
+      } else {
+        this.chromeService.setMode(this.viewport.isChromePinned() ? 'split-pinned' : 'split-hideable');
+      }
     });
 
     // effect() (pas afterNextRender, qui ne s'exécute qu'une seule fois) :

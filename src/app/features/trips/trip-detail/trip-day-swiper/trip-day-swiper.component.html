@@ -5,9 +5,10 @@
   #swiperRef
   init="false"
   class="tab-content-wrapper"
-  [style.--chrome-top-offset.px]="chromeService.chromeHeight()"
-  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavHeight()"
-  [style.--chrome-sub-tab-bar-height.px]="chromeService.generalSubTabBarHeight()">
+  [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
+  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
+  [style.--chrome-sub-tab-bar-height.px]="chromeService.generalSubTabBarHeight()"
+  [style.--sticky-top-offset.px]="chromeService.stickyContentTop()">
   <swiper-slide>
     @if (visitedDays().has('notes')) {
       <app-general-panel [notes]="trip().notes" [tripId]="trip().id" />
