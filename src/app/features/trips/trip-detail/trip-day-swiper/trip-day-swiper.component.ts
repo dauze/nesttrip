@@ -54,6 +54,9 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private chromeRafLoop?: number;
   private lastChromeScrollTop = -1;
   private chromeIdleFrames = 0;
+  /** Garde-fou anti-emballement, même principe que DayScrollSyncService.frameBudget (voir sa doc). */
+  private chromeFrameBudget = 0;
+  private static readonly CHROME_MAX_FRAMES_WITHOUT_IDLE = 600;
 
   readonly trip = input.required<Trip>();
   readonly tabs = input<TripTab[]>([]);
@@ -303,6 +306,17 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
    * ainsi visuellement collé au scroll réel, sans retard perceptible.
    */
   private readonly chromeTick = (): void => {
+    this.chromeFrameBudget++;
+    if (this.chromeFrameBudget > TripDaySwiperComponent.CHROME_MAX_FRAMES_WITHOUT_IDLE) {
+      console.error(
+        '[TripDaySwiperComponent] Boucle rAF (chrome) arrêtée après', this.chromeFrameBudget,
+        'frames sans repos — diagnostic :',
+        { lastChromeScrollTop: this.lastChromeScrollTop, isDragging: this.isDragging, isTransitioning: this.isTransitioning },
+      );
+      this.chromeRafLoop = undefined;
+      return;
+    }
+
     const swiper = this.swiperRef()?.nativeElement?.swiper;
     const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
     const scrollTop = activeSlide?.scrollTop ?? 0;
@@ -322,6 +336,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
     } else {
       this.chromeRafLoop = undefined;
+      this.chromeFrameBudget = 0;
     }
   };
 

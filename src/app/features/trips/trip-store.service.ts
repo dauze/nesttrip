@@ -129,6 +129,14 @@ export class TripStore {
   readonly _tripNotesItems = signal<Record<string, string[]>>({});
   /** @internal */
  readonly _tripsResult = signal<Pick<Trip, 'id' | 'title' | 'ownerId'>[] | undefined>(undefined);
+  /**
+   * @internal — devise par défaut par trip, séparée de `_trips` : la modifier
+   * ne doit PAS faire recalculer `activeTrip` (lu par énormément de
+   * composants, y compris le skeleton de chargement) juste pour un
+   * changement d'affichage de devise — voir ROADMAP.md "Devise" et
+   * `getTripCurrency`.
+   */
+  readonly _tripCurrency = signal<Record<string, string>>({});
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
@@ -238,6 +246,18 @@ export class TripStore {
   private readonly poolActivityById = new Map<string, Signal<PoolActivity>>();
   private readonly poolActivityViewById = new Map<string, Signal<Activity>>();
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
+  private readonly tripCurrencyByTrip = new Map<string, Signal<string>>();
+
+  /** Devise par défaut du trip — voir `_tripCurrency` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.defaultCurrency` (valeur d'hydratation) puis 'EUR'. */
+  getTripCurrency(tripId: string): Signal<string> {
+    if (!this.tripCurrencyByTrip.has(tripId)) {
+      this.tripCurrencyByTrip.set(
+        tripId,
+        computed(() => this._tripCurrency()[tripId] ?? this._trips()[tripId]?.defaultCurrency ?? 'EUR'),
+      );
+    }
+    return this.tripCurrencyByTrip.get(tripId)!;
+  }
 
   /** Les instances (form) rattachées à un jour, composées avec l'identité de leur activité de pool. */
   getDayActivities(dayId: Date): Signal<Activity[]> {
@@ -517,14 +537,10 @@ export class TripStore {
   }
 
   updateTripCurrency(tripId: string, currency: string): void {
-    const trip = this._trips()[tripId];
-    if (!trip) return;
+    if (!this._trips()[tripId]) return;
 
-    // 1. Hydratation optimiste locale
-    this._trips.update((trips) => ({
-      ...trips,
-      [tripId]: { ...trip, defaultCurrency: currency },
-    }));
+    // 1. Signal dédié (voir `_tripCurrency`), pas `_trips`.
+    this._tripCurrency.update((map) => ({ ...map, [tripId]: currency }));
 
     // 2. Persistance Firestore
     this.tripPersistenceService.updateTripCurrency(tripId, currency).catch((err) => {
@@ -627,7 +643,7 @@ export class TripStore {
     const instance: DayActivityInstance = {
       id: crypto.randomUUID(),
       activityId: poolId,
-      ...defaultInstanceForm(this._trips()[tripId]?.defaultCurrency),
+      ...defaultInstanceForm(this.getTripCurrency(tripId)()),
     };
     this.addDayActivityInstance(tripId, targetDayId, instance);
   }

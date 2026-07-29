@@ -13,16 +13,10 @@
 <ng-template #panel>
   <div class="app-select-panel">
     @if (viewport.isMobile()) {
-      <input
-        #mobileSearchInput
-        type="text"
-        class="app-input-text app-select-panel__search"
-        [value]="mobileSearchTerm()"
-        (input)="mobileSearchTerm.set($any($event.target).value)"
-        placeholder="Rechercher..." />
+      <div class="app-select-panel__title">{{ panelTitle() }}</div>
     }
     <div class="app-select-panel__list">
-      @for (option of filteredOptions(); track option.label) {
+      @for (option of options(); track option.label) {
         <button
           type="button"
           class="app-select-panel__option"
@@ -30,9 +24,6 @@
           (click)="selectOption(option)">
           {{ option.label }}
         </button>
-      }
-      @if (!filteredOptions().length) {
-        <div class="app-select-panel__empty">Aucun résultat</div>
       }
     </div>
   </div>

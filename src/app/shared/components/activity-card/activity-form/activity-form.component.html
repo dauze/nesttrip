@@ -8,7 +8,7 @@
           <label for="activity-type" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-tag text-sm"></i>Type
           </label>
-          <app-select #typeSelect id="activity-type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
+          <app-select #typeSelect id="activity-type" label="Type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -18,7 +18,7 @@
           <label for="booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-bookmark text-sm"></i>Résa
           </label>
-          <app-select #bookingSelect id="booking-status" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+          <app-select #bookingSelect id="booking-status" label="Résa" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -70,6 +70,7 @@
               class="flex-1 min-w-0 transparent-inputtext"
               inputClass="w-full min-w-0 text-sm" />
             <app-select
+              label="Devise"
               [options]="currencyOptions"
               formControlName="currency"
               class="flex-none w-max transparent-select" />

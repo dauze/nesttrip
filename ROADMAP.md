@@ -25,6 +25,15 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 ## 🔧 À faire
 
+### Régressions post-migration OnPush/PrimeFlex/Angular 22 — reste à confirmer par l'utilisateur
+
+Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/PrimeFlex/Angular 22 (commit `c2e2ee7`), y compris le gel total au clic sur un jour en mode mobile (antérieur à la migration, voir "Déjà fait"), est corrigé et détaillé dans "✅ Déjà fait". Reste :
+- Check-in/check-out (réservation) : aucune régression fonctionnelle identifiée dans le code pour "le clavier ne sort plus" — seule cause plausible trouvée et corrigée, le même rétrécissement de largeur que la zone de dates du jour (voir "Déjà fait"). À reconfirmer une fois le correctif de largeur testé ; si le problème persiste, redécrire précisément ce qui se passe (clavier qui ne s'affiche pas du tout ? champ qui refuse la saisie ?).
+
+### Bugs / fixes
+
+- Focus manquant sur le champ de saisie d'adresse Google à l'ouverture du composant mobile de création d'activité (bouton "+") : le composant s'ouvre mais le clavier/focus ne se pose pas automatiquement dessus.
+
 ### Offline & données (non prioritaire)
 
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
@@ -74,6 +83,8 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 
 - paramétrer la récup des infos du trafic d'avion
 - en création d'une réservation, il faudrait fiare la même chose que pour la création d'une actuivité, c'est à dire basculer entre toutes les zones du formulaire
+
+- Depuis les listes qui sont affichés en mode mobile, rajouter le titre ppour le chainage 
 
 ### Bugs / fixes
 
@@ -246,7 +257,7 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - Fix : icônes du sélecteur (ex. thème) mal centrées quand un bouton n'a pas de label
 - Clic n'importe où dans le header (pas seulement le bouton bascule) pour replier/déplier une carte (activités, notes, réservations, panneaux jour...), sauf sur une zone interactive (poignée de drag, image, bouton crayon, checkbox) — générique au niveau de `PanelComponent`, accessible au clavier (tabindex + Entrée/Espace)
 - Redirection directe vers l'unique trip à l'ouverture de la web app (login interactif ET session déjà authentifiée restaurée au démarrage), jamais lors d'un retour manuel depuis un trip — flag `AuthService.justLoggedIn` initialisé à `true` à la construction du service (une seule fois par chargement de page), consommé une fois par `AccueilTripComponent`
-- Préremplir l'input de recherche des sélecteurs mobiles avec la sélection courante à l'ouverture (`SelectComponent`)
+- Tiroir mobile de `SelectComponent` : titre de la liste au lieu d'un input de recherche (voir régression du 2026-07-29 corrigée plus bas — les listes concernées sont toutes courtes, la recherche n'apportait rien)
 - Préremplir le titre de la nouvelle activité avec le texte déjà tapé dans la barre de recherche
 - Barre Activités/Réservations/Notes flottante en bas d'écran, au-dessus de la barre des jours, uniquement sur mobile (remplace la bascule inline en haut, cachée en dessous de 768px) — reste visible pendant le scroll sans avoir à remonter en haut de la liste
 - Max-width sur les textarea de titre inline (titre du voyage, titres/points de notes) : sur grand écran ils s'étiraient sur toute la largeur de la colonne, rendant l'espace vide à droite du texte cliquable/focusable à tort (`.nt-capped-inline-field`)
@@ -258,3 +269,15 @@ Tout ce qui a déjà été livré (avec le détail des correctifs) est listé da
 - SCSS custom dupliquant une classe PrimeFlex existante basculé vers ces classes utilitaires (triage fichier par fichier, uniquement quand la valeur est strictement identique et sans redéfinition locale en conflit) puis suppression complète de la dépendance PrimeFlex : sous-ensemble réellement utilisé dupliqué dans `src/styles/layout-utilities.scss` (portage 1:1, mêmes noms/valeurs), shim `--p-*` de `tokens.scss` supprimé
 - Montée Angular 22 (+ `@angular/cdk`, `@angular/google-maps`, `angular-eslint`, TypeScript 6) : `ng update` en un seul passage, migration automatique (`withXhr()` sur `provideHttpClient`), dernier `@ViewChild` décorateur converti en `viewChild()` signal
 - Secret de déploiement pour la release — **en pause** : nécessite une valeur/action manuelle de l'utilisateur (créer le secret côté hébergeur/CI), pas actionnable par le développement seul.
+- **Régressions post-migration OnPush/PrimeFlex/Angular 22 (remontées le 2026-07-29)** :
+  - Cause racine du "drag and drop qui plante" (desktop) : `activityToFb` (mapper d'une activité de pool) spreadait l'objet domaine tel quel, laissant passer `address`/`latitude`/`longitude` à `undefined` pour une activité sans lieu Google (ex. saisie en texte libre) — Firestore rejette toute écriture contenant un champ `undefined` (`updateDoc`/`setDoc` lèvent une exception non rattrapée), retentée indéfiniment toutes les 3s par `DebounceWriter` (voir `debounced-writer.ts`). Corrigé à l'endroit prévu pour ça : `activityToFb`/`tripToFb` omettent maintenant les champs optionnels absents plutôt que de les écrire à `undefined`, même règle déjà appliquée par `reservationToFb` (voir sa doc) — `ignoreUndefinedProperties: true` gardé sur l'instance Firestore (`FirebaseService`) en filet de sécurité, mais le mapper reste la source de vérité pour la propreté des données
+  - **Gel total au clic sur un jour en mode mobile** (confirmé par l'utilisateur comme antérieur à la migration, pas la même cause que le point Firestore ci-dessus) : `ActivityCardComponent` a un `effect()` qui replie la carte Google pendant l'édition d'une activité sur mobile (`GoogleMapPanelService.beginEditLock/endEditLock`, verrou réentrant car jusqu'à 3 `DayPanelComponent` coexistent — préchargement des jours voisins par `TripDaySwiperComponent`). Cet effect rappelait `beginEditLock`/`endEditLock` à CHAQUE réévaluation de ses dépendances (`inDayList()`, `viewport.isMobile()`, `collapsed()`), pas seulement quand le verrou devait réellement changer d'état — sur un jour avec au moins une activité, un changement de viewport (redimensionnement, ou ouverture du jour sur mobile) déclenchait une cascade d'allers-retours coûteux (déplacement DOM de la carte + resize Google Maps) qui gelait le thread principal. Reproduit et confirmé de façon fiable via Playwright (`page.setViewportSize` sur une page avec ≥1 activité sur le jour affiché) avant correctif, taille réduite quasi instantanée après. Fix : l'effect ne rappelle plus le service que si l'état verrouillé/déverrouillé change réellement (`isEditLocked` comparé avant d'agir). Garde-fous ajoutés en complément (arrêt + diagnostic console si une boucle `requestAnimationFrame` tourne anormalement longtemps sans jamais atteindre l'idle) dans `DayScrollSyncService`/`TripDaySwiperComponent`, qui n'étaient pas la cause ici mais restent une protection utile
+  - Vue "chronologie" du pool d'activités : le message "Aucune activité pour l'instant" ne s'affiche plus en bas de liste (redondant avec la catégorisation par jour, déjà visible même vide)
+  - Devise par défaut du trip : signal dédié (`TripStore._tripCurrency` / `TripFacade.getTripCurrency`), la modifier ne met plus à jour `_trips` (qui faisait recalculer `activeTrip`, lu par énormément de composants, et rafraîchissait tout l'écran à chaque changement)
+  - Heure de fin/minutes d'une activité (et check-in/check-out d'une réservation, même composant `app-time-picker-dialog`) renseignées à tort avec l'heure/minute actuelles lors d'une saisie clavier partielle (desktop) : le champ retombait sur `new Date()` (l'instant de la frappe) au lieu d'une base neutre 00:00 quand aucune heure n'était encore saisie
+  - "Fermé" affiché à tort sur un établissement ouvert 24h/24 (`ActivityGoogleInfoComponent.isOpenNow` ne reconnaissait pas la mention "24h/24", faute de plage horaire `hh:mm–hh:mm` à parser) ; bloc "Horaires d'ouverture" masqué quand la liste est vide plutôt qu'affiché sans contenu
+  - Texte barré des notes (`.line-through`) : classe utilitaire oubliée lors du portage du sous-ensemble PrimeFlex vers `layout-utilities.scss`
+  - Zone de saisie des dates du jour/voyage (`app-date-picker`, desktop) tronquée depuis le passage de l'année à 4 chiffres : largeur mini en `ch` dimensionnée pour le format le plus long (`dd/MM/yyyy` ou plage complète), `flex:1` (flex-basis 0) ignorait sinon la taille du contenu dans un host `width:max-content`
+  - Bouton flottant "Ajouter" qui passait par-dessus le bouton "Notes" de la barre de bascule mobile (Général) : sa hauteur (`TripChromeService.generalSubTabBarHeight()`) n'était pas prise en compte dans le décalage bas du bouton, seule la barre des jours l'était
+  - Barre du mode sélection ("Annuler"/"Supprimer") plus petite que la barre des jours qu'elle doit recouvrir entièrement : hauteur mini alignée sur `TripChromeService.tabsNavHeight()`
+  - Carte du jour : le clic sur un marqueur ne recentrait/scrollait plus vers l'activité correspondante — `gmpClickable` non activé sur les markers avancés dont l'écouteur `gmp-click` est posé à la main (`addEventListener`, pas le helper `addListener` historique qui l'activait implicitement) : le marker restait visuellement affiché mais insensible aux clics réels

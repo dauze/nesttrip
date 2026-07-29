@@ -61,6 +61,10 @@ export class ActivityGoogleInfoComponent {
     const todayLine = hours.find((h) => h.toLowerCase().startsWith(todayName));
     if (!todayLine) return false;
     if (todayLine.toLowerCase().includes('fermé')) return false;
+    // "Ouvert 24h/24" (ou "24 heures sur 24") n'a pas de plage horaire à
+    // parser plus bas — sans ce cas à part, l'absence de plage faisait
+    // conclure à tort "fermé" sur un lieu ouvert en continu.
+    if (/24\s*h(?:eures)?\s*(?:\/|sur)\s*24/i.test(todayLine)) return true;
 
     const ranges = [...todayLine.matchAll(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/g)].map(
       ([, sh, sm, eh, em]) => {

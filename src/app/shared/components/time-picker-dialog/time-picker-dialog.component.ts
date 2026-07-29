@@ -136,16 +136,29 @@ export class TimePickerDialogComponent
 
     onHourFieldChange(value: string): void {
         const current = this.currentDate();
-        const date = current ? new Date(current) : new Date();
+        const date = current ? new Date(current) : this.blankDate();
         date.setHours(Number(value) || 0, date.getMinutes(), 0, 0);
         this.applySelectedDate(date);
     }
 
     onMinuteFieldChange(value: string): void {
         const current = this.currentDate();
-        const date = current ? new Date(current) : new Date();
+        const date = current ? new Date(current) : this.blankDate();
         date.setMinutes(Number(value) || 0, 0, 0);
         this.applySelectedDate(date);
+    }
+
+    /**
+     * Base neutre (00:00) pour une saisie clavier partant de rien — jamais
+     * `new Date()` telle quelle : sinon saisir seulement l'heure (champ minute
+     * pas encore touché) fait hériter les minutes de l'INSTANT de la frappe,
+     * pas d'une valeur neutre (même piège que le drag and drop, voir
+     * ROADMAP.md "Lorsque je drag and drop les activités...").
+     */
+    private blankDate(): Date {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        return date;
     }
 
     private applySelectedDate(date: Date): void {

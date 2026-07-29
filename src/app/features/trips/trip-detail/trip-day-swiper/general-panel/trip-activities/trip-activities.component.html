@@ -102,7 +102,7 @@
     }
   }
 
-  @if (hasNoActivityAtAll() && !creationService.draftActive()) {
+  @if (hasNoActivityAtAll() && sortMode() !== 'chrono' && !creationService.draftActive()) {
     <app-message
       severity="info"
       icon="pi pi-info-circle"

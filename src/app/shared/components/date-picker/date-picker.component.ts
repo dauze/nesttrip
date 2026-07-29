@@ -168,6 +168,15 @@ export class DatePickerComponent implements ControlValueAccessor {
   /** Texte en cours de saisie clavier (desktop), voir la doc de la classe. */
   protected readonly draftText = signal<string | null>(null);
 
+  /**
+   * Largeur mini (en `ch`) du champ texte desktop, dimensionnée pour le
+   * format le plus long possible (`dd/MM/yyyy` ou `dd/MM/yyyy - dd/MM/yyyy`)
+   * — sans ça, `flex:1` (flex-basis:0%) ignore la taille du contenu quand le
+   * host est dimensionné en `width:max-content` (ex. trip-header), et le
+   * texte (passé à l'année sur 4 chiffres) se retrouve tronqué.
+   */
+  protected readonly inputMinWidthCh = computed(() => (this.range() ? 23 : 10));
+
   private overlayRef?: OverlayRef;
   private onChange?: (value: Date | Date[] | null) => void;
   private onTouched?: () => void;

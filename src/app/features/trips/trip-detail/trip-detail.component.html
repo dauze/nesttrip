@@ -8,6 +8,7 @@
         <app-trip-header
           [trip]="trip"
           [title]="tripTitle()"
+          [currency]="facade.getTripCurrency(trip.id)()"
           (titleChange)="onTitleChange($event)"
           (datesChange)="onDatesChange($event)"
           (currencyChange)="onCurrencyChange($event)">
@@ -40,7 +41,7 @@
           [icon]="fabIcon()"
           [badge]="true"
           [ariaLabel]="fabAriaLabel()"
-          [bottomOffset]="chromeService.tabsNavHeight()"
+          [bottomOffset]="chromeService.tabsNavHeight() + chromeService.generalSubTabBarHeight()"
           (activate)="onFabActivate()" />
       }
 
@@ -54,6 +55,7 @@
       <!-- Même contrainte hors-swiper que le "+" flottant ci-dessus. -->
       <app-selection-action-bar
         [count]="selectionService.selectedCount()"
+        [minHeight]="chromeService.tabsNavHeight()"
         (cancelSelection)="onSelectionCancel()"
         (deleteSelected)="onSelectionDelete()" />
     </div>

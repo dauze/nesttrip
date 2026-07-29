@@ -17,9 +17,13 @@ export function tripFromFb(data: TripFirebase): Trip {
   };
 }
 
+/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`defaultCurrency` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/reservationToFb. */
 export function tripToFb(data: Trip): TripFirebase {
+  const { placeId, defaultCurrency, ...rest } = data;
   return {
-    ...data,
+    ...rest,
+    ...(placeId ? { placeId } : {}),
+    ...(defaultCurrency ? { defaultCurrency } : {}),
     days: Object.fromEntries(
       data.days.map((d) => [
         String(d.id.getTime()),

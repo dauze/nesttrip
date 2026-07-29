@@ -20,6 +20,8 @@ export class TripHeaderComponent {
 
   readonly trip = input<Trip | null>(null);
   readonly title = input<string>('');
+  /** Devise par défaut du trip — signal dédié côté TripFacade, pas lu depuis `trip()` (voir TripStore._tripCurrency, ROADMAP.md "Devise"). */
+  readonly currency = input<string>('EUR');
 
   readonly titleChange = output<string>();
   readonly datesChange = output<[Date, Date]>();
@@ -47,8 +49,15 @@ export class TripHeaderComponent {
       this.patchFromTrip(trip);
     });
 
+    // Séparé du reste (voir `currency` input) : ne doit pas dépendre de
+    // `lastPatchedTripId`, sinon un changement de devise arrivant après le
+    // premier patch (ex. autre onglet/collaborateur) ne serait jamais repris.
+    effect(() => {
+      this.currencyControl.setValue(this.currency(), { emitEvent: false });
+    });
+
     this.currencyControl.valueChanges.subscribe((currency) => {
-      if (currency !== this.trip()?.defaultCurrency) this.currencyChange.emit(currency);
+      if (currency !== this.currency()) this.currencyChange.emit(currency);
     });
   }
 
@@ -78,6 +87,5 @@ export class TripHeaderComponent {
       { dates: [sorted[0].id, sorted[sorted.length - 1].id] },
       { emitEvent: false }
     );
-    this.currencyControl.setValue(trip.defaultCurrency ?? 'EUR', { emitEvent: false });
   }
 }

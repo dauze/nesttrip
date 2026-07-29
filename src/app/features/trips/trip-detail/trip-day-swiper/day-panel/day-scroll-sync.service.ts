@@ -39,6 +39,19 @@ export class DayScrollSyncService implements OnDestroy {
   private lastScrollY = -1;
   private idleFrames = 0;
   private readonly IDLE_THRESHOLD = 30;
+  /**
+   * Garde-fou anti-emballement : nombre de frames consécutives depuis le
+   * dernier `wakeLoop()` sans jamais atteindre `IDLE_THRESHOLD` (30 frames de
+   * scroll inchangé, ~0.5s) — signale une boucle de rétroaction (le scroll ou
+   * la géométrie mesurée changent à CHAQUE frame sans jamais se stabiliser),
+   * jamais un usage normal (même un long scroll continu finit par ralentir).
+   * Remonté suite à un signalement utilisateur de gel total (CPU à fond,
+   * onglet/PC bloqué) en cliquant sur un jour en mode mobile — cause exacte
+   * pas encore identifiée : ce garde-fou arrête la boucle et journalise un
+   * diagnostic au lieu de tourner indéfiniment, le temps de la retrouver.
+   */
+  private frameBudget = 0;
+  private static readonly MAX_FRAMES_WITHOUT_IDLE = 600;
   private readonly ACTIVITY_SCROLL_GAP = 8;
   private readonly SNAP_DELAY = 500;
   private readonly SNAP_DISTANCE = 60;
@@ -90,6 +103,9 @@ export class DayScrollSyncService implements OnDestroy {
 
   /** Branche les listeners propres à l'instance partagée de la carte, une fois qu'elle vient d'être déplacée dans ce jour — ex-`wireActiveMap`. */
   attachMap(map: TripDayMapComponent): void {
+    // Nouveau jour = nouveau budget pour le garde-fou anti-emballement (voir tick()).
+    this.frameBudget = 0;
+
     // Reconnexion de l'événement de clic sur un marqueur
     this.mapSubscription?.unsubscribe();
     this.mapSubscription = map.activitySelected.subscribe((point) => {
@@ -122,12 +138,38 @@ export class DayScrollSyncService implements OnDestroy {
 
   readonly wakeLoop = (): void => {
     this.idleFrames = 0;
+    // `frameBudget` n'est volontairement PAS remis à 0 ici : si quelque chose
+    // rappelle `wakeLoop()` en continu (ex. un ResizeObserver qui se
+    // redéclenche à cause d'un effet de bord de `updateMapFromScroll`), ça
+    // viderait le compteur avant qu'il n'atteigne jamais le seuil — le
+    // garde-fou doit mesurer la durée totale sans repos, pas juste depuis le
+    // dernier réveil. Remis à 0 uniquement quand la boucle atteint vraiment
+    // l'idle (voir tick()) ou qu'un nouveau jour est branché (attachMap).
     if (!this.rafLoop) {
       this.rafLoop = requestAnimationFrame(this.tick);
     }
   };
 
   private readonly tick = (): void => {
+    this.frameBudget++;
+    if (this.frameBudget > DayScrollSyncService.MAX_FRAMES_WITHOUT_IDLE) {
+      console.error(
+        '[DayScrollSyncService] Boucle rAF arrêtée après', this.frameBudget,
+        'frames sans repos (probable boucle de rétroaction scroll/carte) — diagnostic :',
+        {
+          lastScrollY: this.lastScrollY,
+          currentScrollY: this.config.getSlideEl()?.scrollTop,
+          isActive: this.config.isActive(),
+          offsetsCount: this.config.getFreshOffsets().length,
+          mapPointsCount: this.config.getDayMapPoints().length,
+          isAutoScrolling: this.isAutoScrolling,
+          isTouching: this.isTouching,
+        },
+      );
+      this.rafLoop = undefined;
+      return;
+    }
+
     const currentScrollY = this.config.getSlideEl()?.scrollTop ?? 0;
 
     if (currentScrollY !== this.lastScrollY) {
@@ -142,6 +184,7 @@ export class DayScrollSyncService implements OnDestroy {
       this.rafLoop = requestAnimationFrame(this.tick);
     } else {
       this.rafLoop = undefined;
+      this.frameBudget = 0;
     }
   };
 

@@ -180,6 +180,8 @@ export class TripFacade {
   /** Map poolActivityId -> liste des placements (jour + instance) où elle est présente. */
   getActivityPlacements = this.store.getActivityPlacements.bind(this.store);
   getNotesItems = this.store.getNotesItems.bind(this.store);
+  /** Devise par défaut du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripCurrency). */
+  getTripCurrency = this.store.getTripCurrency.bind(this.store);
   // 1. Exposer le sélecteur et la commande
   getTripMembers = this.store.getTripMembers.bind(this.store);
   getReservation = this.store.getReservation.bind(this.store);

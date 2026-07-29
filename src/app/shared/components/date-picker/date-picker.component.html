@@ -15,6 +15,7 @@
     <input
       type="text"
       class="app-date-picker__input"
+      [style.min-width.ch]="inputMinWidthCh()"
       [id]="inputId()"
       [disabled]="isDisabled()"
       [placeholder]="placeholder()"

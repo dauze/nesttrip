@@ -67,6 +67,8 @@ export class ActivityCardComponent {
   private readonly viewport = inject(ViewportService);
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly destroyRef = inject(DestroyRef);
+  /** État actuellement poussé vers `GoogleMapPanelService` — voir le garde-fou anti-emballement dans le constructeur. */
+  private isEditLocked = false;
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
@@ -240,10 +242,27 @@ export class ActivityCardComponent {
     // y a de la place pour les deux — voir GoogleMapPanelService.beginEditLock
     // pour la gestion du réentrant (plusieurs cartes peuvent être ouvertes en
     // même temps dans un même jour).
-    effect((onCleanup) => {
-      if (this.inDayList() && this.viewport.isMobile() && !this.collapsed()) {
-        this.googleMapPanelService?.beginEditLock();
-        onCleanup(() => this.googleMapPanelService?.endEditLock());
+    // Garde-fou anti-emballement (voir `isEditLocked`) : jusqu'à 3 `DayPanelComponent`
+    // coexistent (préchargement des jours voisins par TripDaySwiperComponent),
+    // et une même activité peut être rendue par plusieurs `ActivityCardComponent`
+    // en même temps (jour + vue "Général" chronologique préchargée) — un
+    // simple `effect()` sans garde rappelait `beginEditLock`/`endEditLock` à
+    // chaque ré-évaluation des dépendances (même quand la valeur résultante
+    // ne changeait pas réellement), provoquant en cascade des allers-retours
+    // coûteux (déplacement DOM + resize Google Maps) au moindre changement de
+    // viewport — gel total observé au clic sur un jour en mode mobile dès
+    // qu'au moins une activité est présente (voir ROADMAP.md).
+    effect(() => {
+      const shouldLock = this.inDayList() && this.viewport.isMobile() && !this.collapsed();
+      if (shouldLock === this.isEditLocked) return;
+      this.isEditLocked = shouldLock;
+      if (shouldLock) this.googleMapPanelService?.beginEditLock();
+      else this.googleMapPanelService?.endEditLock();
+    });
+    this.destroyRef.onDestroy(() => {
+      if (this.isEditLocked) {
+        this.isEditLocked = false;
+        this.googleMapPanelService?.endEditLock();
       }
     });
 

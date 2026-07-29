@@ -9,10 +9,17 @@ export function activityFromFb(a: ActivityFirebase): PoolActivity {
   };
 }
 
+/** Firestore n'accepte aucune valeur `undefined` (même imbriquée) : les champs optionnels absents (activité sans lieu Google, ex. saisie en texte libre) sont omis plutôt qu'écrits à `undefined` — même règle que reservationToFb. */
 export function activityToFb(a: PoolActivity): ActivityFirebase {
   return {
-    ...a,
+    id: a.id,
+    title: a.title,
     files: a.files ?? [],
+    photoRefs: a.photoRefs,
+    ...(a.placeId ? { placeId: a.placeId } : {}),
+    ...(a.address ? { address: a.address } : {}),
+    ...(a.latitude !== undefined ? { latitude: a.latitude } : {}),
+    ...(a.longitude !== undefined ? { longitude: a.longitude } : {}),
   };
 }
 

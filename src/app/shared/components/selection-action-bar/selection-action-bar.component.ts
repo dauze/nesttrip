@@ -17,6 +17,8 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 })
 export class SelectionActionBarComponent {
   readonly count = input.required<number>();
+  /** Hauteur mini (px) à réserver, pour recouvrir entièrement la barre qu'elle remplace (ex. `TripChromeService.tabsNavHeight()`) — même pattern générique que `FloatingAddButtonComponent.bottomOffset`. */
+  readonly minHeight = input<number>(0);
 
   readonly cancelSelection = output<void>();
   readonly deleteSelected = output<void>();

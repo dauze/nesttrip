@@ -111,6 +111,14 @@ export class TripDayMapComponent {
   // dépréciée par l'API Google Maps au profit de `addEventListener('gmp-click', ...)` — on pose
   // donc l'écouteur nous-mêmes sur le marker natif exposé par `markerInitialized`.
   onMarkerInitialized(marker: google.maps.marker.AdvancedMarkerElement, point: DayMapPoint): void {
+    // `gmpClickable` n'est pas activé automatiquement par un simple
+    // `addEventListener('gmp-click', ...)` posé à la main (contrairement au
+    // helper `addListener` historique) : sans ce flag, le marker reste
+    // visuellement affiché mais ne reçoit AUCUN clic réel (les clics
+    // traversent jusqu'à la carte en dessous) — seul un événement `gmp-click`
+    // déclenché programmatiquement passait encore, d'où le clic qui ne
+    // recentrait/scrollait plus rien en usage normal.
+    marker.gmpClickable = true;
     marker.addEventListener('gmp-click', () => this.onMarkerClick(point));
   }
 

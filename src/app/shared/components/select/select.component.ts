@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, TemplateRef, ViewContainerRef, afterNextRender, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, TemplateRef, ViewContainerRef, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -48,17 +48,17 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
   private readonly overlay = inject(Overlay);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly elementRef = inject(ElementRef<HTMLElement>);
-  private readonly injector = inject(Injector);
   protected readonly viewport = inject(ViewportService);
 
   readonly options = input<SelectOption<T>[]>([]);
   readonly placeholder = input('Sélectionner');
+  /** Titre affiché en tête du tiroir mobile (ex. "Devise", "Type", "Résa") — retombe sur `placeholder()` si non fourni. Les listes de ce sélecteur sont volontairement courtes, pas besoin de recherche. */
+  readonly label = input('');
 
   /** Émis à la fermeture du panneau, `selected` distingue un choix (`selectOption`) d'un simple backdrop/Échap — utilisé par le chaînage de saisie guidée (voir ActivityFormComponent.startGuidedEntry). */
   readonly closed = output<{ selected: boolean }>();
 
   private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panel');
-  private readonly mobileSearchInput = viewChild<ElementRef<HTMLInputElement>>('mobileSearchInput');
 
   protected readonly value = signal<T | null>(null);
   protected readonly isOpen = signal(false);
@@ -69,19 +69,7 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
     return this.options().find((o) => o.value === current)?.label ?? '';
   });
 
-  /**
-   * Tiroir mobile uniquement (voir le template) : préremplie avec le libellé
-   * de la sélection courante à l'ouverture, pour qu'on la voie tout de suite
-   * plutôt que de devoir chercher parmi les options — voir ROADMAP.md.
-   * Filtre aussi la liste au fil de la frappe.
-   */
-  protected readonly mobileSearchTerm = signal('');
-
-  protected readonly filteredOptions = computed(() => {
-    const term = this.mobileSearchTerm().trim().toLowerCase();
-    if (!term) return this.options();
-    return this.options().filter((o) => o.label.toLowerCase().includes(term));
-  });
+  protected readonly panelTitle = computed(() => this.label() || this.placeholder());
 
   private overlayRef?: OverlayRef;
   private onChange?: (value: T) => void;
@@ -121,7 +109,6 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
 
   private open(): void {
     const isMobile = this.viewport.isMobile();
-    this.mobileSearchTerm.set(isMobile ? this.selectedLabel() : '');
 
     const positionStrategy = isMobile
       ? this.overlay.position().global().centerHorizontally().bottom('0')
@@ -149,10 +136,6 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
 
     overlayRef.attach(new TemplatePortal(this.panelTemplate(), this.viewContainerRef));
     this.isOpen.set(true);
-
-    if (isMobile) {
-      afterNextRender(() => this.mobileSearchInput()?.nativeElement.select(), { injector: this.injector });
-    }
   }
 
   private close(selected = false): void {
