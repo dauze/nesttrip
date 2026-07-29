@@ -55,6 +55,17 @@ export class DayActivityCreationService {
   /** Desktop uniquement : `NewActivityDraftComponent` est affiché tant que ce signal est vrai. */
   readonly draftActive = signal(false);
 
+  /**
+   * Id de l'instance en cours de création, tant que sa carte n'a pas encore
+   * été retrouvée dans `getCards()` (fenêtre entre `tripFacade.createActivity`
+   * et le `afterNextRender` qui la localise, voir `createActivity`) — un
+   * second clic sur "+" pendant cette fenêtre ouvrait un second
+   * draft/dialog en parallèle du premier (symptôme observé : "le draft ne
+   * fonctionne plus"), au lieu de simplement re-scroller vers la création en
+   * cours.
+   */
+  private readonly creatingInstanceId = signal<string | null>(null);
+
   /** Branche le service sur cette instance de DayPanelComponent — à appeler une seule fois (constructeur). */
   connect(config: DayActivityCreationConfig): void {
     this.config = config;
@@ -62,6 +73,13 @@ export class DayActivityCreationService {
 
   /** Point d'entrée unique du bouton "+" d'un jour. */
   startCreation(): void {
+    const inProgressId = this.creatingInstanceId();
+    if (inProgressId) {
+      this.config.getCards().find((c) => c.activityId() === inProgressId)
+        ?.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     if (this.viewport.isMobile()) {
       this.startMobileCreation();
     } else {
@@ -87,6 +105,10 @@ export class DayActivityCreationService {
         data: { initialTitle: '' },
         panelClass: 'app-title-edit-dialog-panel',
         viewContainerRef: this.config.getViewContainerRef(),
+        // Voir la doc sur le même `autoFocus` dans ActivityHeaderComponent.openTitleEditDialog :
+        // sans lui, l'autofocus CDK par défaut ('first-tabbable') cible le
+        // bouton de fermeture plutôt que le champ de saisie.
+        autoFocus: '.title-edit-dialog__input',
       },
     );
 
@@ -129,25 +151,49 @@ export class DayActivityCreationService {
     };
 
     this.tripFacade.createActivity(this.config.getTripId(), this.config.getDayId(), poolActivity, instance);
+    this.creatingInstanceId.set(instanceId);
 
     // Un `queueMicrotask` s'exécute AVANT qu'Angular n'ait rendu la nouvelle
     // carte issue du `@for` (le viewChildren(ActivityCardComponent) de
     // DayPanelComponent n'est donc pas encore à jour) — `afterNextRender`,
     // lui, attend le prochain rendu réel, garanti après la mise à jour du DOM.
-    afterNextRender(() => {
-      const card = this.config.getCards().find((c) => c.activityId() === instanceId);
-      if (!card) return;
+    afterNextRender(() => this.focusNewCardWhenReady(instanceId, place, options), { injector: this.injector });
+  }
 
-      if (place) card.onPlaceSelected(place);
+  /**
+   * Retente sur quelques frames avant d'abandonner silencieusement — même
+   * raison que `DayScrollSyncService.focusActivityWhenReady` : `getCards()`
+   * peut ne pas encore refléter la carte tout juste créée au moment du
+   * premier `afterNextRender`. Libère `creatingInstanceId` dès que la carte
+   * est trouvée (voir `startCreation`) — un second clic sur "+" reste guidé
+   * vers cette carte tant qu'elle n'est pas localisée, jamais après.
+   */
+  private focusNewCardWhenReady(
+    instanceId: string,
+    place: PlaceSummary | undefined,
+    options: { guided?: boolean },
+    attemptsLeft = 15,
+  ): void {
+    const card = this.config.getCards().find((c) => c.activityId() === instanceId);
+    if (!card) {
+      if (attemptsLeft <= 0) {
+        this.creatingInstanceId.set(null);
+        return;
+      }
+      requestAnimationFrame(() => this.focusNewCardWhenReady(instanceId, place, options, attemptsLeft - 1));
+      return;
+    }
 
-      // `startGuidedEntry` n'ouvre le panneau "Type" qu'APRÈS la fin du
-      // scroll (`onComplete`, pas juste après son lancement) : ce panneau
-      // s'ancre (CDK) à la position du champ au moment de l'ouverture et ne
-      // suit pas le scroll programmatique en cours — l'ouvrir plus tôt le
-      // désancre visuellement dès que le scroll continue.
-      this.scrollSync.focusActivity(instanceId, () => {
-        if (options.guided) card.startGuidedEntry();
-      });
-    }, { injector: this.injector });
+    this.creatingInstanceId.set(null);
+    if (place) card.onPlaceSelected(place);
+
+    // `startGuidedEntry` n'ouvre le panneau "Type" qu'APRÈS la fin du
+    // scroll (`onComplete`, pas juste après son lancement) : ce panneau
+    // s'ancre (CDK) à la position du champ au moment de l'ouverture et ne
+    // suit pas le scroll programmatique en cours — l'ouvrir plus tôt le
+    // désancre visuellement dès que le scroll continue.
+    this.scrollSync.focusActivity(instanceId, () => {
+      if (options.guided) card.startGuidedEntry();
+    });
   }
 }

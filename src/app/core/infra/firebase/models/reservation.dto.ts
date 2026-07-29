@@ -19,8 +19,8 @@ export interface ReservationBaseFirebase {
   id: string;
   type: ReservationType;
   title: string;
-  startDateTime: string;
-  endDateTime: string;
+  startDateTime?: string;
+  endDateTime?: string;
   referenceNumber?: string;
   notes?: string;
   files?: FileFirebase[];

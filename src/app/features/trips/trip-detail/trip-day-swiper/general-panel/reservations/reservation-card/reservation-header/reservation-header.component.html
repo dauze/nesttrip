@@ -17,7 +17,11 @@
 
     <span class="nt-text-muted text-xs flex align-items-center gap-1">
       <i class="pi pi-calendar reservation-header__meta-icon"></i>
-      {{ reservation().startDateTime | date:'dd/MM HH:mm' }} → {{ reservation().endDateTime | date:'dd/MM HH:mm' }}
+      @if (reservation().startDateTime || reservation().endDateTime) {
+        {{ reservation().startDateTime | date:'dd/MM HH:mm' }} → {{ reservation().endDateTime | date:'dd/MM HH:mm' }}
+      } @else {
+        Date à renseigner
+      }
     </span>
   </div>
 </div>

@@ -142,6 +142,13 @@ export class ActivityHeaderComponent {
         data: { initialTitle: this.activity().title },
         panelClass: 'app-title-edit-dialog-panel',
         viewContainerRef: this.viewContainerRef,
+        // `autoFocus: 'first-tabbable'` (défaut de DialogService) focaliserait
+        // le bouton de fermeture (premier élément focusable du template, voir
+        // TitleEditDialogComponent), pas le champ de saisie — l'autofocus CDK
+        // s'exécute après `ngAfterViewInit` du contenu et écrase le
+        // `input.focus()` qui y est déjà posé. Même pattern que
+        // TimePickerDialogComponent (mode durée) pour cibler directement le champ.
+        autoFocus: '.title-edit-dialog__input',
       },
     );
 

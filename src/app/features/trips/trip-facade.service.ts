@@ -190,25 +190,31 @@ export class TripFacade {
 
   /**
    * Réservations triées automatiquement pour la liste du sous-menu
-   * Réservations : en cours/futures d'abord (chronologique), passées à la
-   * fin (chronologique aussi) — voir ROADMAP.md "Administratif". Le
-   * glisser-déposer manuel a été retiré au profit de ce tri, recalculé à
+   * Réservations : sans date d'abord (jamais préremplie à la création, voir
+   * ROADMAP.md — visible immédiatement pour inciter à la compléter, plutôt
+   * que mélangée ou perdue), puis en cours/futures (chronologique), puis
+   * passées à la fin (chronologique aussi) — voir ROADMAP.md "Administratif".
+   * Le glisser-déposer manuel a été retiré au profit de ce tri, recalculé à
    * chaque lecture (même limite qu'`ActivityGoogleInfoComponent.isOpenNow` :
    * ne "bascule" pas tout seul entre deux rendus si seul le temps a passé).
    */
   allReservationsSorted(tripId: string): Reservation[] {
     const now = Date.now();
-    const isPast = (r: Reservation) => r.endDateTime.getTime() < now;
+    const rank = (r: Reservation): 0 | 1 | 2 => {
+      if (!r.startDateTime || !r.endDateTime) return 0;
+      return r.endDateTime.getTime() < now ? 2 : 1;
+    };
 
     return [...this.store.getAllReservations(tripId)()].sort((a, b) => {
-      const pastA = isPast(a);
-      const pastB = isPast(b);
-      if (pastA !== pastB) return pastA ? 1 : -1;
-      return a.startDateTime.getTime() - b.startDateTime.getTime();
+      const rankA = rank(a);
+      const rankB = rank(b);
+      if (rankA !== rankB) return rankA - rankB;
+      if (rankA === 0) return 0;
+      return a.startDateTime!.getTime() - b.startDateTime!.getTime();
     });
   }
 
-  /** Réservations dont la plage `[startDateTime, endDateTime]` touche ce jour (même jour calendaire). */
+  /** Réservations dont la plage `[startDateTime, endDateTime]` touche ce jour (même jour calendaire) — celles sans date n'en touchent aucun. */
   reservationsForDay(tripId: string, dayId: Date): Reservation[] {
     const dayStart = new Date(dayId);
     dayStart.setHours(0, 0, 0, 0);
@@ -216,7 +222,7 @@ export class TripFacade {
     dayEnd.setDate(dayEnd.getDate() + 1);
 
     return this.store.getAllReservations(tripId)().filter(
-      (r) => r.startDateTime < dayEnd && r.endDateTime >= dayStart,
+      (r) => r.startDateTime && r.endDateTime && r.startDateTime < dayEnd && r.endDateTime >= dayStart,
     );
   }
   // ── Hydratation ───────────────────────────────────────────────────────────

@@ -16,8 +16,6 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
-import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
-import { ViewportService } from '@app/core/services/viewport.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
@@ -62,13 +60,8 @@ export class ActivityCardComponent {
   // isBeingDragged ci-dessous) ; `null` si ce composant est un jour utilisé
   // hors de ce contexte.
   private readonly swiperLockService = inject(SwiperLockService, { optional: true });
-  // Optionnel pour la même raison que swiperLockService juste au-dessus.
-  private readonly googleMapPanelService = inject(GoogleMapPanelService, { optional: true });
-  private readonly viewport = inject(ViewportService);
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly destroyRef = inject(DestroyRef);
-  /** État actuellement poussé vers `GoogleMapPanelService` — voir le garde-fou anti-emballement dans le constructeur. */
-  private isEditLocked = false;
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
@@ -233,36 +226,6 @@ export class ActivityCardComponent {
       if (this.isBeingDragged()) {
         this.swiperLockService?.lock();
         onCleanup(() => this.swiperLockService?.unlock());
-      }
-    });
-
-    // Replie la carte pendant l'édition d'une activité, mobile uniquement
-    // (voir ROADMAP.md) : sur petit écran, la carte épinglée et le form
-    // ouvert se disputent l'espace vertical, contrairement au desktop où il
-    // y a de la place pour les deux — voir GoogleMapPanelService.beginEditLock
-    // pour la gestion du réentrant (plusieurs cartes peuvent être ouvertes en
-    // même temps dans un même jour).
-    // Garde-fou anti-emballement (voir `isEditLocked`) : jusqu'à 3 `DayPanelComponent`
-    // coexistent (préchargement des jours voisins par TripDaySwiperComponent),
-    // et une même activité peut être rendue par plusieurs `ActivityCardComponent`
-    // en même temps (jour + vue "Général" chronologique préchargée) — un
-    // simple `effect()` sans garde rappelait `beginEditLock`/`endEditLock` à
-    // chaque ré-évaluation des dépendances (même quand la valeur résultante
-    // ne changeait pas réellement), provoquant en cascade des allers-retours
-    // coûteux (déplacement DOM + resize Google Maps) au moindre changement de
-    // viewport — gel total observé au clic sur un jour en mode mobile dès
-    // qu'au moins une activité est présente (voir ROADMAP.md).
-    effect(() => {
-      const shouldLock = this.inDayList() && this.viewport.isMobile() && !this.collapsed();
-      if (shouldLock === this.isEditLocked) return;
-      this.isEditLocked = shouldLock;
-      if (shouldLock) this.googleMapPanelService?.beginEditLock();
-      else this.googleMapPanelService?.endEditLock();
-    });
-    this.destroyRef.onDestroy(() => {
-      if (this.isEditLocked) {
-        this.isEditLocked = false;
-        this.googleMapPanelService?.endEditLock();
       }
     });
 

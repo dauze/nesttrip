@@ -30,8 +30,9 @@ export interface ReservationBase {
   id: string;
   type: ReservationType;
   title: string;
-  startDateTime: Date;
-  endDateTime: Date;
+  /** Absent tant que l'utilisateur n'a pas renseigné de date (voir ReservationsCreationService — jamais préremplie à la création, même principe que les heures d'activité). */
+  startDateTime?: Date;
+  endDateTime?: Date;
   referenceNumber?: string;
   notes?: string;
   files: ReservationFile[];

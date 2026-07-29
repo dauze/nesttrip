@@ -37,6 +37,9 @@
 
 <ng-template #panel>
   <div class="app-date-picker-panel">
+    @if (label()) {
+      <div class="app-date-picker-panel__label">{{ label() }}</div>
+    }
     <div class="app-date-picker-panel__header">
       <button type="button" class="app-date-picker-panel__nav" (click)="prevPage()" aria-label="Précédent">
         <i class="pi pi-chevron-left"></i>

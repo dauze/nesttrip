@@ -18,6 +18,9 @@ function diffHours(a: Date, b: Date): number {
  * seul le bouton de rafraîchissement manuel fonctionne.
  */
 export function getRefreshPhase(flight: FlightReservation, now: Date): RefreshPhase {
+  // Pas de date renseignée : rien à programmer, seul le rafraîchissement manuel a un sens (et est de toute façon bloqué par forceRefresh tant que la date n'est pas là).
+  if (!flight.startDateTime || !flight.endDateTime) return 'manual';
+
   const hoursToDeparture = diffHours(flight.startDateTime, now);
   const hoursSinceArrival = diffHours(now, flight.endDateTime);
 
@@ -47,7 +50,7 @@ export class FlightStatusRefreshService {
   private readonly tripFacade = inject(TripFacade);
 
   refreshIfStale(tripId: string, reservation: FlightReservation, now = new Date()): void {
-    if (!reservation.flightNumber) return;
+    if (!reservation.flightNumber || !reservation.startDateTime) return;
 
     const phase = getRefreshPhase(reservation, now);
     const intervalMs = REFRESH_INTERVAL_MS[phase];
@@ -63,7 +66,7 @@ export class FlightStatusRefreshService {
 
   /** Bouton de rafraîchissement manuel : ignore la fraîcheur, toujours un vrai appel réseau. No-op tant que le n° de vol n'est pas encore renseigné. */
   forceRefresh(tripId: string, reservation: FlightReservation): Observable<FlightStatus> {
-    if (!reservation.flightNumber) return EMPTY;
+    if (!reservation.flightNumber || !reservation.startDateTime) return EMPTY;
 
     return this.api.getStatus$(reservation.flightNumber, reservation.startDateTime).pipe(
       tap((status) => this.tripFacade.updateFlightStatus(tripId, reservation, status, new Date())),

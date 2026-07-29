@@ -104,9 +104,12 @@ export class TimePickerClockComponent implements AfterViewInit {
             this.tempHour = String(initial.getHours()).padStart(2, '0');
             this.tempMinute = String(initial.getMinutes()).padStart(2, '0');
         } else {
-            const now = new Date();
-            this.tempHour = String(now.getHours()).padStart(2, '0');
-            this.tempMinute = String(now.getMinutes()).padStart(2, '0');
+            // Jamais l'heure actuelle par défaut (voir ROADMAP.md) : une
+            // heure non renseignée doit rester neutre (00:00) tant que
+            // l'utilisateur ne l'a pas vraiment choisie, même principe que
+            // le reste des heures d'activité/réservation.
+            this.tempHour = '00';
+            this.tempMinute = '00';
         }
 
         effect(() => {

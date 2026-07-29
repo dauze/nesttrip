@@ -5,7 +5,7 @@
         <label for="reservation-type" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-list text-sm"></i>Type
         </label>
-        <app-select id="reservation-type" label="Type" [options]="typeOptions" formControlName="type" class="w-full transparent-select" />
+        <app-select #typeSelect id="reservation-type" label="Type" [options]="typeOptions" formControlName="type" class="w-full transparent-select" />
       </div>
     </div>
     <div class="col-6 p-0 pl-1 min-w-0" formGroupName="booking">
@@ -13,7 +13,7 @@
         <label for="reservation-booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-bookmark text-sm"></i>Résa
         </label>
-        <app-select id="reservation-booking-status" label="Résa" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+        <app-select #bookingSelect id="reservation-booking-status" label="Résa" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
       </div>
     </div>
   </div>
@@ -85,8 +85,8 @@
           <i class="pi pi-calendar text-sm"></i>{{ dateLabels().startLabel }}
         </label>
         <div class="flex align-items-center gap-1">
-          <app-date-picker inputId="reservation-start-date" formControlName="startDate" class="flex-1 min-w-0 transparent-inputtext" />
-          <app-time-picker-dialog formControlName="startTime" class="flex-none" />
+          <app-date-picker #startDatePicker [label]="dateLabels().startLabel" inputId="reservation-start-date" formControlName="startDate" class="flex-1 min-w-0 transparent-inputtext" />
+          <app-time-picker-dialog #startTimePicker [label]="'Heure — ' + dateLabels().startLabel" formControlName="startTime" class="flex-none" />
         </div>
       </div>
     </div>
@@ -96,8 +96,8 @@
           <i class="pi pi-calendar-times text-sm"></i>{{ dateLabels().endLabel }}
         </label>
         <div class="flex align-items-center gap-1">
-          <app-date-picker inputId="reservation-end-date" formControlName="endDate" class="flex-1 min-w-0 transparent-inputtext" />
-          <app-time-picker-dialog formControlName="endTime" class="flex-none" />
+          <app-date-picker #endDatePicker [label]="dateLabels().endLabel" inputId="reservation-end-date" formControlName="endDate" class="flex-1 min-w-0 transparent-inputtext" />
+          <app-time-picker-dialog #endTimePicker [label]="'Heure — ' + dateLabels().endLabel" formControlName="endTime" class="flex-none" />
         </div>
       </div>
     </div>

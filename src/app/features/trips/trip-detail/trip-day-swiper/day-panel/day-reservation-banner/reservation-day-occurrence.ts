@@ -21,9 +21,13 @@ function startOfDay(date: Date): number {
  * intermédiaire). Ne renvoie rien si la réservation ne touche pas ce jour.
  */
 export function getReservationDayOccurrences(reservation: Reservation, dayId: Date): ReservationDayOccurrence[] {
+  // Pas de date renseignée : ne touche encore aucun jour (voir ROADMAP.md — même principe qu'une activité non placée, pas de bandeau tant que non daté).
+  const { startDateTime, endDateTime } = reservation;
+  if (!startDateTime || !endDateTime) return [];
+
   const day = startOfDay(dayId);
-  const startDay = startOfDay(reservation.startDateTime);
-  const endDay = startOfDay(reservation.endDateTime);
+  const startDay = startOfDay(startDateTime);
+  const endDay = startOfDay(endDateTime);
 
   if (day < startDay || day > endDay) return [];
 
@@ -33,25 +37,25 @@ export function getReservationDayOccurrences(reservation: Reservation, dayId: Da
 
   switch (reservation.type) {
     case 'hotel':
-      if (isStart) return [{ reservation, role: 'Check-in', time: reservation.startDateTime }];
-      if (isEnd) return [{ reservation, role: 'Check-out', time: reservation.endDateTime }];
-      if (isBetween) return [{ reservation, role: 'Nuit sur place', time: reservation.startDateTime }];
+      if (isStart) return [{ reservation, role: 'Check-in', time: startDateTime }];
+      if (isEnd) return [{ reservation, role: 'Check-out', time: endDateTime }];
+      if (isBetween) return [{ reservation, role: 'Nuit sur place', time: startDateTime }];
       return [];
     case 'flight': {
       const occurrences: ReservationDayOccurrence[] = [];
-      if (isStart) occurrences.push({ reservation, role: 'Départ', time: reservation.startDateTime });
-      if (isEnd && !isStart) occurrences.push({ reservation, role: 'Arrivée', time: reservation.endDateTime });
+      if (isStart) occurrences.push({ reservation, role: 'Départ', time: startDateTime });
+      if (isEnd && !isStart) occurrences.push({ reservation, role: 'Arrivée', time: endDateTime });
       return occurrences;
     }
     case 'carRental': {
       const occurrences: ReservationDayOccurrence[] = [];
-      if (isStart) occurrences.push({ reservation, role: 'Prise en charge', time: reservation.startDateTime });
-      if (isEnd) occurrences.push({ reservation, role: 'Restitution', time: reservation.endDateTime });
+      if (isStart) occurrences.push({ reservation, role: 'Prise en charge', time: startDateTime });
+      if (isEnd) occurrences.push({ reservation, role: 'Restitution', time: endDateTime });
       return occurrences;
     }
     case 'other':
-      if (isStart) return [{ reservation, role: 'Début', time: reservation.startDateTime }];
-      if (isEnd) return [{ reservation, role: 'Fin', time: reservation.endDateTime }];
-      return [{ reservation, role: 'En cours', time: reservation.startDateTime }];
+      if (isStart) return [{ reservation, role: 'Début', time: startDateTime }];
+      if (isEnd) return [{ reservation, role: 'Fin', time: endDateTime }];
+      return [{ reservation, role: 'En cours', time: startDateTime }];
   }
 }

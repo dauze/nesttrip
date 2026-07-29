@@ -14,6 +14,9 @@ import { ReservationDetailsComponent } from './reservation-details/reservation-d
 import { ReservationFilesComponent } from '../reservation-files/reservation-files.component';
 import { TagComponent } from '@app/shared/components/tag/tag.component';
 
+/** Laisse le temps à l'animation de dépli du panneau de se terminer avant de lancer le chaînage guidé (voir `startGuidedEntry`) — sinon les panneaux/dialogs CDK s'ancrent à un élément encore en cours de transition (`max-height`). Même valeur que `PANEL_COLLAPSE_DELAY_MS` dans ActivityCardComponent. */
+const PANEL_EXPAND_DELAY_MS = 300;
+
 /**
  * Carte réservation dépliable — même structure que `ActivityCardComponent`
  * (panel + header éditable + corps + fichiers), sans aucune des mécaniques
@@ -36,6 +39,7 @@ export class ReservationCardComponent {
   private readonly tripFacade = inject(TripFacade);
 
   private readonly cardContainer = viewChild.required<ElementRef<HTMLElement>>('cardContainer');
+  private readonly detailsComponent = viewChild.required<ReservationDetailsComponent>('details');
 
   readonly tripId = input.required<string>();
   readonly reservationId = input.required<string>();
@@ -50,11 +54,14 @@ export class ReservationCardComponent {
   /**
    * Catégorisation en cours/future/passée (voir ROADMAP.md, "Administratif") :
    * "passée" grise la carte, "en cours" affiche un tag — le cas par défaut
-   * ("future") ne porte aucune marque visuelle particulière.
+   * ("future") ne porte aucune marque visuelle particulière. "undated" :
+   * date(s) pas encore renseignée(s) (voir ROADMAP.md "Devise" — jamais
+   * préremplie à la création) — traité comme les activités non placées.
    */
-  readonly timeStatus = computed<'past' | 'current' | 'future'>(() => {
+  readonly timeStatus = computed<'past' | 'current' | 'future' | 'undated'>(() => {
     const reservation = this.reservation();
     if (!reservation) return 'future';
+    if (!reservation.startDateTime || !reservation.endDateTime) return 'undated';
     const now = Date.now();
     if (reservation.endDateTime.getTime() < now) return 'past';
     if (reservation.startDateTime.getTime() <= now) return 'current';
@@ -71,5 +78,11 @@ export class ReservationCardComponent {
     const reservation = this.reservation();
     if (!reservation) return;
     this.tripFacade.updateReservation(this.tripId(), { ...reservation, title: newTitle });
+  }
+
+  /** Mobile uniquement, déclenché juste après la création (voir ReservationsCreationService) : la carte démarre toujours repliée (`initCollapsed=true`), on la déplie d'abord pour que le chaînage guidé (ReservationDetailsComponent.startGuidedEntry) s'ancre correctement. */
+  startGuidedEntry(): void {
+    this.collapsed.set(false);
+    setTimeout(() => this.detailsComponent().startGuidedEntry(), PANEL_EXPAND_DELAY_MS);
   }
 }

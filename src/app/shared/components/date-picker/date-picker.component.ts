@@ -105,6 +105,8 @@ export class DatePickerComponent implements ControlValueAccessor {
   readonly range = input(false);
   readonly placeholder = input('Sélectionner une date');
   readonly inputId = input('');
+  /** Titre affiché en tête du panneau (ex. "Check-in"/"Check-out") — utile quand plusieurs `app-date-picker` sont ouverts l'un après l'autre par un chaînage de saisie guidée, pour savoir lequel est ouvert. Vide par défaut (pas affiché). */
+  readonly label = input('');
 
   /** Émis avec la valeur finale (Date en mode simple, [début, fin] en mode plage) quand une sélection se termine. */
   readonly selected = output<Date | [Date, Date]>();
@@ -210,6 +212,12 @@ export class DatePickerComponent implements ControlValueAccessor {
       this.close();
       return;
     }
+    this.open();
+  }
+
+  /** Ouverture programmatique du panneau (ex. chaînage de saisie guidée) — même logique que le clic sur le champ, voir `SelectComponent.openPanel`. */
+  openPanel(): void {
+    if (this.isDisabled() || this.overlayRef) return;
     this.open();
   }
 

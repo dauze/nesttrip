@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, OutputEmitterRef, signal, viewChild } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -70,9 +70,18 @@ function initialPlacesFrom(reservation: Reservation): SelectedPlaces {
 export class ReservationDetailsComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly tripId = input.required<string>();
   readonly reservation = input.required<Reservation>();
+
+  // Refs template pour le chaînage de saisie guidée mobile (Type → Résa → Début → Fin), voir startGuidedEntry().
+  private readonly typeSelect = viewChild.required<SelectComponent<ReservationType>>('typeSelect');
+  private readonly bookingSelect = viewChild.required<SelectComponent<BookingStatus>>('bookingSelect');
+  private readonly startDatePicker = viewChild.required<DatePickerComponent>('startDatePicker');
+  private readonly startTimePicker = viewChild.required<TimePickerDialogComponent>('startTimePicker');
+  private readonly endDatePicker = viewChild.required<DatePickerComponent>('endDatePicker');
+  private readonly endTimePicker = viewChild.required<TimePickerDialogComponent>('endTimePicker');
 
   readonly typeOptions = RESERVATION_TYPE_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
@@ -139,10 +148,10 @@ export class ReservationDetailsComponent {
 
       this.form.patchValue({
         type: r.type,
-        startDate: r.startDateTime,
-        startTime: r.startDateTime,
-        endDate: r.endDateTime,
-        endTime: r.endDateTime,
+        startDate: r.startDateTime ?? null,
+        startTime: r.startDateTime ?? null,
+        endDate: r.endDateTime ?? null,
+        endTime: r.endDateTime ?? null,
         notes: r.notes ?? '',
         price: r.price ?? { amount: 0, currency: this.tripFacade.getTripCurrency(this.tripId())() },
         booking: r.booking,
@@ -231,5 +240,51 @@ export class ReservationDetailsComponent {
     if (time) combined.setHours(time.getHours(), time.getMinutes(), 0, 0);
     else combined.setHours(0, 0, 0, 0);
     return combined;
+  }
+
+  /**
+   * Mobile uniquement, déclenché juste après la création d'une réservation
+   * (voir ReservationsCreationService) : ouvre successivement Type → Résa →
+   * date de début → heure de début → date de fin → heure de fin. Même
+   * principe que `ActivityFormComponent.startGuidedEntry` — dès qu'une étape
+   * est fermée SANS validation (backdrop/Échap sur un `app-select`,
+   * annulation d'un `app-time-picker-dialog`), le chaînage s'arrête net, le
+   * reste s'édite manuellement. Les champs spécifiques au type (lieu
+   * hôtel, compagnie du vol...) ne sont volontairement pas chaînés ici : trop
+   * hétérogènes d'un type à l'autre (voir le plan) — ils restent visibles
+   * juste au-dessus, à compléter manuellement.
+   */
+  startGuidedEntry(): void {
+    this.typeSelect().openPanel();
+    this.subscribeOnce(this.typeSelect().closed, ({ selected }) => {
+      if (!selected) return;
+
+      this.bookingSelect().openPanel();
+      this.subscribeOnce(this.bookingSelect().closed, ({ selected }) => {
+        if (!selected) return;
+
+        this.startDatePicker().openPanel();
+        this.subscribeOnce(this.startDatePicker().selected, () => {
+          this.startTimePicker().openDialog();
+          this.subscribeOnce(this.startTimePicker().closed, (start) => {
+            if (!start) return;
+
+            this.endDatePicker().openPanel();
+            this.subscribeOnce(this.endDatePicker().selected, () => {
+              this.endTimePicker().openDialog();
+            });
+          });
+        });
+      });
+    });
+  }
+
+  /** S'abonne à un `output()` pour une seule émission puis se désabonne — sécurisé contre la destruction du composant en plein chaînage (voir startGuidedEntry). */
+  private subscribeOnce<T>(emitter: OutputEmitterRef<T>, callback: (value: T) => void): void {
+    const subscription = emitter.subscribe((value) => {
+      subscription.unsubscribe();
+      callback(value);
+    });
+    this.destroyRef.onDestroy(() => subscription.unsubscribe());
   }
 }

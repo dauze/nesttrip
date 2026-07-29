@@ -23,8 +23,8 @@ export function reservationFromFb(r: ReservationFirebase): Reservation {
   const base = {
     id: r.id,
     title: r.title,
-    startDateTime: new Date(Number(r.startDateTime)),
-    endDateTime: new Date(Number(r.endDateTime)),
+    startDateTime: r.startDateTime ? new Date(Number(r.startDateTime)) : undefined,
+    endDateTime: r.endDateTime ? new Date(Number(r.endDateTime)) : undefined,
     referenceNumber: r.referenceNumber,
     notes: r.notes ?? '',
     files: r.files ?? [],
@@ -65,12 +65,12 @@ export function reservationToFb(r: Reservation): ReservationFirebase {
   const base = {
     id: r.id,
     title: r.title,
-    startDateTime: String(r.startDateTime.getTime()),
-    endDateTime: String(r.endDateTime.getTime()),
     notes: r.notes ?? '',
     files: r.files ?? [],
     links: r.links ?? [],
     booking: bookingToFb(r.booking),
+    ...(r.startDateTime ? { startDateTime: String(r.startDateTime.getTime()) } : {}),
+    ...(r.endDateTime ? { endDateTime: String(r.endDateTime.getTime()) } : {}),
     ...(r.referenceNumber ? { referenceNumber: r.referenceNumber } : {}),
     ...(r.price ? { price: r.price } : {}),
   };

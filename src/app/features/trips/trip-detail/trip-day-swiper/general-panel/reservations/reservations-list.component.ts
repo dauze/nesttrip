@@ -53,15 +53,29 @@ export class ReservationsListComponent {
       const pending = this.reservationFocusService.pending();
       if (!pending) return;
 
-      afterNextRender(() => {
-        const card = this.reservationCards().find((c) => c.reservationId() === pending.reservationId);
-        if (!card) return;
-
-        this.reservationFocusService.clear(pending.token);
-        card.collapsed.set(false);
-        card.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, { injector: this.injector });
+      afterNextRender(() => this.focusCardWhenReady(pending.reservationId, pending.token), { injector: this.injector });
     });
+  }
+
+  /**
+   * Retente sur quelques frames avant d'abandonner silencieusement — même
+   * raison que `DayScrollSyncService.focusActivityWhenReady` : ce composant
+   * vient parfois d'être monté à l'instant (bascule d'onglet juste avant),
+   * donc `reservationCards()` (viewChildren) peut ne pas encore refléter le
+   * tout premier rendu au moment du `afterNextRender`. Sans retry, la carte
+   * ciblée ne se dépliait/scrollait jamais dans ce cas.
+   */
+  private focusCardWhenReady(reservationId: string, token: number, attemptsLeft = 15): void {
+    const card = this.reservationCards().find((c) => c.reservationId() === reservationId);
+    if (!card) {
+      if (attemptsLeft <= 0) return;
+      requestAnimationFrame(() => this.focusCardWhenReady(reservationId, token, attemptsLeft - 1));
+      return;
+    }
+
+    this.reservationFocusService.clear(token);
+    card.collapsed.set(false);
+    card.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   /** Point d'entrée unique du "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */

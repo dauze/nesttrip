@@ -3,7 +3,7 @@
     <app-panel
         [appSelectable]="selectableRef()" #sel="appSelectable"
         appLongPress (longPress)="sel.onLongPress()"
-        [ngClass]="'booking ' + bookingMeta().className + (timeStatus() === 'past' ? ' reservation-past' : '')" [toggleable]="true" [(collapsed)]="collapsed">
+        [ngClass]="'booking ' + bookingMeta().className + (timeStatus() === 'past' ? ' reservation-past' : '') + (timeStatus() === 'undated' ? ' reservation-undated' : '')" [toggleable]="true" [(collapsed)]="collapsed">
       <div panelHeader class="flex align-items-center w-full">
         <app-checkbox
           class="nt-select-checkbox flex-shrink-0"
@@ -16,7 +16,7 @@
         }
       </div>
 
-      <app-reservation-details [tripId]="tripId()" [reservation]="reservation" />
+      <app-reservation-details #details [tripId]="tripId()" [reservation]="reservation" />
       <app-divider class="m-1" />
       <app-reservation-files [tripId]="tripId()" [reservation]="reservation" />
     </app-panel>

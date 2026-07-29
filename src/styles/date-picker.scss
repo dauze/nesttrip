@@ -28,6 +28,16 @@
   box-shadow: var(--nt-overlay-modal-shadow);
 }
 
+// Titre optionnel (ex. "Check-in"/"Check-out") — utile quand plusieurs
+// `app-date-picker` s'enchaînent via un chaînage de saisie guidée, pour
+// savoir lequel est ouvert (voir DatePickerComponent.label).
+.app-date-picker-panel__label {
+  margin-bottom: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
 .app-date-picker-panel__header {
   display: flex;
   align-items: center;
