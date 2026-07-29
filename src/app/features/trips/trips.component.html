@@ -1,5 +1,5 @@
 <app-save-status-bar />
-<div #toolbarRef class="app-toolbar">
+<div #toolbarRef class="app-toolbar" [style.--nt-chrome-gap.px]="chromeService.chromeGapPx()">
   <app-toolbar class="mt-1 ml-1 mr-1">
     <div toolbarStart class="w-3rem flex justify-content-center">
       @if (showBack()) {

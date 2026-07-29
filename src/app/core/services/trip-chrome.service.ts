@@ -80,6 +80,20 @@ export class TripChromeService {
   readonly headerStackHeight = computed(() => this.headerTop() + this.headerHeight());
 
   /**
+   * Gap courant (px) entre deux éléments de chrome fixed consécutifs
+   * (toolbar->header toujours ; header->barre des jours seulement hors
+   * `'mobile'`, où c'est plutôt header->contenu qui vaut ce gap) — même
+   * constante réutilisée dans les deux calculs ci-dessus
+   * (`headerTop`/`tabsNavTop`/`contentTopOffset`). Exposé pour que
+   * `.app-toolbar`/`.app-trip-header-fixed` puissent peindre un `box-shadow`
+   * de cette hauteur dans ce gap (voir leurs styles) : ce sont des éléments
+   * `position:fixed` DISJOINTS avec un intervalle non couvert entre eux, à
+   * travers lequel le contenu défilé en dessous (position:fixed lui aussi,
+   * plein écran) reste visible par transparence le temps de ces quelques px.
+   */
+  readonly chromeGapPx = computed(() => (this.mode() === 'mobile' ? STACKED_CHROME_GAP_PX : SPLIT_CHROME_GAP_PX));
+
+  /**
    * `top` fixe de la barre des jours quand elle passe en haut (layout
    * scindé, voir TripDetailComponent) : juste sous toolbar+header, avec un
    * gap-2 de respiration (voir `SPLIT_CHROME_GAP_PX`) plutôt que collée pile

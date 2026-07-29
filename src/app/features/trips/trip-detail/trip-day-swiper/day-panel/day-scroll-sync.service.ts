@@ -19,6 +19,18 @@ export interface DayScrollSyncConfig {
    * `updateMapFromScroll`/`focusActivity`/`trySnapActivity`.
    */
   isSplitLayout: () => boolean;
+  /**
+   * `TripChromeService.stickyContentTop()` — 0 partout SAUF en `'split-pinned'`
+   * (desktop) où toolbar+header+barre des jours ne se masquent JAMAIS au
+   * scroll (contrairement à `'mobile'`/`'split-hideable'`, où le scroll
+   * programmatique ci-dessous déclenche aussi `TripChromeService.setScrollTop`,
+   * qui les fait glisser hors champ). En layout scindé, ce chrome fixe joue
+   * exactement le même rôle de "bouclier" que la carte empilée en mode
+   * empilé (voir `isSplitLayout` ci-dessus) : sans le compter, une cible
+   * calculée pour arriver en haut du scrollport (y=0) arrive en fait
+   * DERRIÈRE ce chrome toujours visible, jamais réellement dans le champ.
+   */
+  getPinnedChromeOffset: () => number;
 }
 
 /**
@@ -228,12 +240,15 @@ export class DayScrollSyncService implements OnDestroy {
     // C'est le scroll actuel + l'espace total occupé par tes éléments fixes à l'écran.
     // Si la map et la timeline sont l'une sur l'autre dans le bloc sticky, stickyContainerHeight englobe déjà le tout.
     // Par sécurité, on s'assure de prendre au moins la hauteur de la map.
-    // En layout scindé (carte à gauche, PAS au-dessus de la liste), rien ne
-    // bloque le haut du scroll : un bouclier de la hauteur de la carte
-    // décalerait le déclenchement de toute sa hauteur (~70dvh), très en
-    // retard — juste une petite marge cohérente avec ACTIVITY_SCROLL_GAP.
+    // En layout scindé (carte à gauche, PAS au-dessus de la liste), la carte
+    // elle-même ne bloque plus rien en haut du scroll : un bouclier de sa
+    // hauteur décalerait le déclenchement de toute sa hauteur (~70dvh), très
+    // en retard. Le chrome fixe (toolbar+header+jours), lui, reste un vrai
+    // bouclier en `'split-pinned'` (desktop, jamais masqué au scroll) — voir
+    // `getPinnedChromeOffset` — d'où son ajout ici en plus de la petite marge
+    // ACTIVITY_SCROLL_GAP.
     const totalStickyShield = this.config.isSplitLayout()
-      ? this.ACTIVITY_SCROLL_GAP
+      ? this.config.getPinnedChromeOffset() + this.ACTIVITY_SCROLL_GAP
       : Math.max(stickyContainerHeight, mapHeight);
     const triggerLine = scrollY + totalStickyShield;
 
@@ -336,10 +351,11 @@ export class DayScrollSyncService implements OnDestroy {
     const stickyElement = this.config.getStickyMapEl();
 
     // En layout scindé, la carte est à côté (pas au-dessus) de la liste :
-    // aucune hauteur à soustraire pour "sortir de dessous" la carte, voir
-    // updateMapFromScroll ci-dessus pour le même raisonnement.
+    // aucune hauteur à soustraire pour "sortir de dessous" la carte — mais le
+    // chrome fixe (toolbar+header+jours) reste à soustraire en `'split-pinned'`
+    // (voir `getPinnedChromeOffset`), lui ne se masquant jamais au scroll.
     const stickyHeight = this.config.isSplitLayout()
-      ? 0
+      ? this.config.getPinnedChromeOffset()
       : stickyElement
         ? stickyElement.getBoundingClientRect().height
         : this.stickyHeight();
@@ -423,8 +439,10 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
-    // Même raisonnement que focusActivity ci-dessus : rien à soustraire en layout scindé.
-    const stickyHeight = this.config.isSplitLayout() ? 0 : stickyElement.getBoundingClientRect().height;
+    // Même raisonnement que focusActivity ci-dessus.
+    const stickyHeight = this.config.isSplitLayout()
+      ? this.config.getPinnedChromeOffset()
+      : stickyElement.getBoundingClientRect().height;
 
     const anchor = slideEl.scrollTop + stickyHeight;
 

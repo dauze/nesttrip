@@ -14,8 +14,13 @@
   left: 0.5rem;
   right: 0.5rem;
   z-index: var(--z-app-header);
-  padding: 0 0rem  0.5rem 0rem;
-  background: var(--nt-content-background);
+  padding: 0;
+  background: canvas;
+  // Même trick que .app-toolbar juste au-dessus (voir ce fichier) : peint le
+  // gap fixed non couvert jusqu'à l'élément suivant (barre des jours passée
+  // en haut hors 'mobile', simple contenu sinon) sans toucher au padding/
+  // margin existants — voir TripChromeService.chromeGapPx.
+  box-shadow: 0 var(--nt-chrome-gap, 0px) 0 0 canvas;
 }
 
 // Même inset gauche/droite que .app-trip-header-fixed juste au-dessus — la

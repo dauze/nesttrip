@@ -33,6 +33,7 @@ import { NewActivityDraftComponent } from './new-activity-draft/new-activity-dra
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { ViewportService } from '@app/core/services/viewport.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
 
 @Component({
   selector: 'app-day-panel',
@@ -58,6 +59,7 @@ export class DayPanelComponent {
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly focusService = inject(DayActivityFocusService);
   private readonly viewport = inject(ViewportService);
+  private readonly chromeService = inject(TripChromeService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
@@ -156,6 +158,7 @@ export class DayPanelComponent {
       getMapComponent: () => this.activeMapComponent(),
       getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
       isSplitLayout: () => this.viewport.isSplitLayout(),
+      getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
     });
 
     this.reorderService.connect({

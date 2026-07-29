@@ -4,7 +4,8 @@
       <div
         #headerWrapper
         class="app-trip-header-fixed"
-        [style.top.px]="chromeService.headerTop()">
+        [style.top.px]="chromeService.headerTop()"
+        [style.--nt-chrome-gap.px]="chromeService.chromeGapPx()">
         <app-trip-header
           [trip]="trip"
           [title]="tripTitle()"

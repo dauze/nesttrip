@@ -14,6 +14,10 @@
   right: 0;
   z-index: var(--z-app-toolbar);
   background: canvas;
+  // Peint le gap (fixed, non couvert) jusqu'au header voyage juste en dessous
+  // avec la même couleur que ce fond, sans toucher au moindre padding/margin
+  // (box-shadow est hors flux/hors boîte) — voir TripChromeService.chromeGapPx.
+  box-shadow: 0 var(--nt-chrome-gap, 0px) 0 0 canvas;
 }
 
 // Contrôle segmenté clair/sombre/système projeté en tête du menu réglages
