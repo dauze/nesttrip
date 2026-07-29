@@ -72,8 +72,11 @@
   position: sticky;
   // JAMAIS `0` en dur : voir la doc de `TripChromeService.stickyContentTop`
   // (colle sinon derrière le chrome fixe en layout desktop, qui ne se masque
-  // jamais au scroll contrairement au mobile).
-  top: var(--sticky-top-offset, 0px);
+  // jamais au scroll contrairement au mobile). `+ --nt-sticky-map-top-gap` :
+  // marge de respiration une fois le chrome masqué (mobile), voir sa doc
+  // dans tokens.scss — remis à `var(--sticky-top-offset, 0px)` seul (sans
+  // cette marge) dans le `@media` scindé plus bas.
+  top: calc(var(--sticky-top-offset, 0px) + var(--nt-sticky-map-top-gap, 0px));
   z-index: 10;
   background: canvas;
   // PAS de padding-top ici (relicat retiré — voir ROADMAP.md) : il s'ajoutait
@@ -172,6 +175,11 @@
   }
 
   .sticky-map {
+    // Pas de marge de respiration ici (contrairement au mode empilé,
+    // `--nt-sticky-map-top-gap`) : la hauteur ci-dessous est calculée au
+    // pixel près pour occuper tout l'espace vertical disponible, l'ajouter
+    // ferait déborder la carte en bas de l'écran.
+    top: var(--sticky-top-offset, 0px);
     // Hauteur concrète = point de départ de la chaîne flex/`height:100%`
     // jusqu'à `<google-map>` (voir `PanelComponent.fillHeight` et
     // trip-day-map.component.scss) : CSS normal, aucun `!important`

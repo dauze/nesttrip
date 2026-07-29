@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { clamp } from '@app/shared/utils/scroll-container';
 
-type ChromeKey = 'toolbar' | 'header' | 'tabsNav' | 'generalSubTabBar';
+type ChromeKey = 'toolbar' | 'header' | 'tabsNav' | 'generalSubTabBar' | 'generalSubTabSwitch';
 /**
  * `'mobile'` : barre des jours fixe en bas, jamais masquée (comportement
  * historique). `'split-hideable'` : layout scindé (voir ViewportService)
@@ -51,7 +51,9 @@ const STACKED_CHROME_GAP_PX = 4;
  */
 @Injectable()
 export class TripChromeService {
-  private readonly heights = signal<Record<ChromeKey, number>>({ toolbar: 0, header: 0, tabsNav: 0, generalSubTabBar: 0 });
+  private readonly heights = signal<Record<ChromeKey, number>>({
+    toolbar: 0, header: 0, tabsNav: 0, generalSubTabBar: 0, generalSubTabSwitch: 0,
+  });
   private readonly chromeEls = new Set<HTMLElement>();
   private currentTranslateY = 0;
   private readonly _mode = signal<ChromeMode>('mobile');
@@ -64,6 +66,15 @@ export class TripChromeService {
   readonly tabsNavHeight = computed(() => this.heights().tabsNav);
   /** Hauteur de la barre Activités/Réservations/Notes flottante mobile (voir `GeneralSubTabBarComponent`), 0 quand elle n'est pas montée (desktop, ou onglet jour) : réservée en `padding-bottom` par `GeneralPanelComponent` uniquement. */
   readonly generalSubTabBarHeight = computed(() => this.heights().generalSubTabBar);
+  /**
+   * Hauteur de la bascule Activités/Réservations/Notes INLINE desktop de
+   * `GeneralPanelComponent` (`.sub-tab-switch`, distincte de la barre
+   * flottante mobile ci-dessus) — sert à décaler `.sticky-map` du pool
+   * d'activités sous elle en layout scindé, où les deux sont sticky dans le
+   * même scrollport (contrairement à `.sticky-map` de la vue jour, qui n'a
+   * rien au-dessus d'elle).
+   */
+  readonly generalSubTabSwitchHeight = computed(() => this.heights().generalSubTabSwitch);
   /** Mode courant (voir `ChromeMode`), piloté par `setMode`. */
   readonly mode = this._mode.asReadonly();
 

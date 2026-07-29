@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, effect, inject, input, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { ReservationFocusService } from '@app/features/trips/trip-detail/reservation-focus.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { NotesComponent } from './notes/notes.component';
 import { TripActivitiesComponent } from './trip-activities/trip-activities.component';
 import { ReservationsListComponent } from './reservations/reservations-list.component';
@@ -25,9 +26,14 @@ export class GeneralPanelComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly chromeService = inject(TripChromeService);
 
   readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
+  /** Slide "Général" actuellement active dans le swiper — voir `TripActivitiesComponent.active`, qui décide si CE contexte possède la carte partagée (voir ROADMAP.md "Carte"). */
+  readonly active = input(false);
+
+  private readonly subTabSwitchRef = viewChild<ElementRef<HTMLElement>>('subTabSwitch');
 
   // Restaure le sous-onglet depuis l'URL (?tab=...) au premier rendu — voir
   // syncSubTabToUrl, qui l'y écrit à chaque changement, pour actualiser la
@@ -55,6 +61,23 @@ export class GeneralPanelComponent {
       trigger: () => this.onFabActivate(),
     });
     this.destroyRef.onDestroy(unregister);
+
+    // `.sub-tab-switch` est toujours présent dans le DOM (pas de `@if`,
+    // contrairement à `GeneralSubTabBarComponent`) : un `ResizeObserver` posé
+    // une seule fois au premier rendu suffit, pas besoin du pattern
+    // effect()+onCleanup utilisé là-bas pour un élément qui va et vient.
+    afterNextRender(() => {
+      const el = this.subTabSwitchRef()?.nativeElement;
+      if (!el) return;
+      const observer = new ResizeObserver(() =>
+        this.chromeService.registerHeight('generalSubTabSwitch', el.getBoundingClientRect().height),
+      );
+      observer.observe(el);
+      this.destroyRef.onDestroy(() => {
+        observer.disconnect();
+        this.chromeService.registerHeight('generalSubTabSwitch', 0);
+      });
+    });
 
     // Demande de navigation croisée (voir ReservationFocusService) : bascule
     // le sous-onglet dès qu'une bannière de réservation demande le focus,

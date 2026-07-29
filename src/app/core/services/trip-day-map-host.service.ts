@@ -9,10 +9,16 @@ import { TripDayMapComponent } from '@app/features/trips/trip-detail/trip-day-sw
  * ComponentRef, son état Angular et l'instance google.maps.Map sous-jacente
  * ne sont jamais détruits.
  */
+/** Contexte actuellement propriétaire de la carte partagée — voir `TripDayMapComponent.collapsed`, qui choisit `GoogleMapPanelService` ou `GeneralMapPanelService` selon cette valeur (fold state indépendant par contexte, voir ROADMAP.md "Carte"). */
+export type TripDayMapOwner = 'day' | 'general';
+
 @Injectable()
 export class TripDayMapHostService {
   private readonly mapComponent = signal<TripDayMapComponent | null>(null);
   readonly activeMap = this.mapComponent.asReadonly();
+
+  private readonly _currentOwner = signal<TripDayMapOwner | null>(null);
+  readonly currentOwner = this._currentOwner.asReadonly();
 
   /** Appelé une seule fois par TripDaySwiperComponent, propriétaire de l'instance. */
   register(component: TripDayMapComponent): void {
@@ -24,7 +30,13 @@ export class TripDayMapHostService {
    * Déclenche un resize Google Maps après déplacement, car l'API ne
    * recalcule pas sa géométrie automatiquement après un changement de parent DOM.
    */
-  moveTo(container: HTMLElement): void {
+  moveTo(container: HTMLElement, owner: TripDayMapOwner): void {
+    // Posé AVANT le early-return ci-dessous : un jour qui re-réclame la carte
+    // sur un container déjà correct (aucun déplacement DOM nécessaire) doit
+    // quand même remettre `currentOwner` à jour si le dernier propriétaire
+    // était le pool général.
+    this._currentOwner.set(owner);
+
     const map = this.mapComponent();
     if (!map) return;
 

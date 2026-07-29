@@ -146,7 +146,7 @@ export class DayPanelComponent {
       const map = this.mapHost.activeMap();
       if (!container || !map) return;
 
-      this.mapHost.moveTo(container);
+      this.mapHost.moveTo(container, 'day');
       this.scrollSync.attachMap(map);
     });
 

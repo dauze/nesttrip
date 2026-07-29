@@ -42,3 +42,15 @@
     display: none;
   }
 }
+
+// Layout scindé (voir ROADMAP.md "UI Desktop"/"Carte") : uniquement quand le
+// sous-onglet Activités est actif — `TripActivitiesComponent` gère lui-même
+// sa mise en page à 2 colonnes (carte à gauche/activités à droite, même
+// mécanique que day-panel.component.scss) et a donc besoin de toute la
+// largeur disponible, contrairement à Notes/Réservations qui restent en
+// colonne unique centrée (`--nt-content-max-width` ci-dessus, inchangé).
+@media (orientation: landscape) and (min-width: 700px) {
+  .general-panel-root--activities {
+    max-width: none;
+  }
+}

@@ -183,6 +183,18 @@
   --nt-layout-gap-stacked: 0.25rem;
   --nt-layout-gap-split: 0.5rem;
 
+  // Marge de respiration au-dessus de la carte épinglée (day-panel ET pool
+  // Général, `.sticky-map`) en mode empilé (mobile) : sans elle, `top:
+  // var(--sticky-top-offset,0px)` colle la carte EXACTEMENT au bord haut de
+  // l'écran une fois le chrome masqué — visuellement comme si elle dépassait
+  // de l'écran plutôt que de s'y arrêter avec une marge. Uniquement en mode
+  // empilé : en layout scindé, `.sticky-map` occupe une hauteur calculée
+  // précisément (`100dvh - ...`), ajouter cette marge là-bas la ferait
+  // déborder en bas — chaque `.sticky-map` remet donc `top` à
+  // `var(--sticky-top-offset,0px)` (sans cette marge) dans son `@media`
+  // scindé (voir day-panel.component.scss/trip-activities.component.scss).
+  --nt-sticky-map-top-gap: 0.25rem;
+
   // Mouvement — courbe d'accélération dupliquée telle quelle dans
   // styles.scss (transitions de navigation, dispatch-overlay) et les
   // composants d'overlay : un seul jeton de référence.

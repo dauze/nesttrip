@@ -41,3 +41,90 @@
 .trip-activities__day-label {
   text-transform: capitalize;
 }
+
+// Empilé par défaut (mobile) : pas besoin de réordonner (2 blocs déjà dans le
+// bon ordre visuel en DOM simple, contrairement à day-panel.component.scss
+// qui en entrelace 4) — MAIS `display:contents` reste nécessaire sur
+// `.trip-activities-map-group` pour que `.sticky-map` devienne un enfant
+// DIRECT de `.trip-activities-body` (grand, toute la liste d'activités en
+// dessous) plutôt que confiné dans un groupe qui ne contient QUE la carte :
+// un parent dont la hauteur == la hauteur de l'enfant sticky laisse zéro
+// marge de manœuvre pour "coller" (le bord bas du parent défile derrière le
+// point d'ancrage dès le premier pixel de scroll) — la carte semble alors ne
+// jamais s'épingler du tout, elle défile normalement avec le reste.
+.trip-activities-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-layout-gap-stacked, 0.25rem);
+}
+
+.trip-activities-map-group,
+.trip-activities-activities-group {
+  display: contents;
+}
+
+// Même mécanique que `.sticky-map` de day-panel.component.scss, avec un
+// ajustement : la bascule Activités/Réservations/Notes desktop
+// (`.sub-tab-switch` de GeneralPanelComponent) est TOUJOURS sticky
+// au-dessus, dans le même scrollport — sa hauteur doit donc s'ajouter au
+// `top` (voir TripChromeService.generalSubTabSwitchHeight).
+.sticky-map {
+  position: sticky;
+  // `+ --nt-sticky-map-top-gap` : marge de respiration une fois le chrome
+  // masqué (mobile, voir sa doc dans tokens.scss et day-panel.component.scss)
+  // — remise à sa valeur sans cette marge dans le `@media` scindé plus bas.
+  top: calc(var(--sticky-top-offset, 0px) + var(--general-sub-tab-switch-height, 0px) + var(--nt-sticky-map-top-gap, 0px));
+  z-index: 10;
+  background: canvas;
+  box-shadow: var(--nt-overlay-popover-shadow);
+}
+
+// Layout scindé (desktop ou mobile paysage, voir ROADMAP.md "UI Desktop" et
+// ViewportService.isSplitLayout — même seuil dupliqué ici, comme
+// day-panel.component.scss le fait déjà pour lui-même) : transposition
+// directe du bloc scindé de day-panel.component.scss.
+@media (orientation: landscape) and (min-width: 700px) {
+  .trip-activities-body {
+    flex-direction: row;
+    align-items: stretch;
+    gap: var(--nt-layout-gap-split, 0.5rem);
+  }
+
+  // Redeviennent de VRAIES boîtes (colonnes flex indépendantes en hauteur)
+  // en layout scindé, où la carte est réellement à côté de la liste et non
+  // plus empilée au-dessus — `display:contents` (mode empilé) n'a de sens
+  // que quand ce sont les MÊMES enfants qui se réordonnent dans une seule
+  // colonne, voir la doc plus haut.
+  .trip-activities-map-group,
+  .trip-activities-activities-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nt-layout-gap-split, 0.5rem);
+    min-width: 0;
+  }
+
+  .trip-activities-map-group {
+    flex: 1 1 auto;
+  }
+
+  .trip-activities-activities-group {
+    flex: 0 1 32rem;
+  }
+
+  .sticky-map {
+    // Pas de marge de respiration ici (contrairement au mode empilé) : la
+    // hauteur ci-dessous occupe précisément tout l'espace vertical
+    // disponible, l'ajouter ferait déborder la carte en bas de l'écran.
+    top: calc(var(--sticky-top-offset, 0px) + var(--general-sub-tab-switch-height, 0px));
+    height: calc(100dvh - var(--chrome-top-offset, 0px) - var(--general-sub-tab-switch-height, 0px) - 1.5rem);
+  }
+
+  // Sans point géolocalisé (pool vide ou filtré à zéro résultat) : masque la
+  // colonne carte et recentre la colonne activités, même fallback que
+  // `.day-panel-body--no-map`.
+  .trip-activities-body--no-map .trip-activities-activities-group {
+    flex: 1 1 auto;
+    max-width: var(--nt-content-max-width);
+    margin-inline: auto;
+  }
+}

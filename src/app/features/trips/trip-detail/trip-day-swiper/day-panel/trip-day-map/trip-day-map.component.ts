@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
+import { GeneralMapPanelService } from '@app/core/services/general-map-panel.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ThemeService } from '@app/core/services/theme.service';
+import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { environment } from '@environments/environment';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
@@ -19,10 +21,20 @@ export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
-  // Suit l'état partagé du service (permet à DayPanelComponent de forcer le
-  // collapse pendant un drag), tout en restant localement modifiable via le
-  // toggle du panneau (voir l'effet ci-dessous qui repropage vers le service).
-  readonly collapsed = linkedSignal(() => this.googleMapPanelService.isCollapsed());
+  private readonly generalMapPanelService = inject(GeneralMapPanelService);
+  private readonly mapHost = inject(TripDayMapHostService);
+  // Suit l'état partagé du service courant (GoogleMapPanelService pour la
+  // vue jour, GeneralMapPanelService pour le pool "Général" — voir
+  // TripDayMapHostService.currentOwner, fold state volontairement
+  // indépendant entre les deux contextes, voir ROADMAP.md "Carte"), tout en
+  // restant localement modifiable via le toggle du panneau (voir l'effet
+  // ci-dessous qui repropage vers le bon service). Se réaligne sur le
+  // service courant dès que `currentOwner()` change de valeur.
+  readonly collapsed = linkedSignal(() =>
+    this.mapHost.currentOwner() === 'general'
+      ? this.generalMapPanelService.isCollapsed()
+      : this.googleMapPanelService.isCollapsed(),
+  );
   zoom = input(13);
   readonly focusZoom = input(13);
   /** Layout scindé (carte à gauche, voir ROADMAP.md "UI Desktop") : le panel s'étire pleine hauteur (`PanelComponent.fillHeight`) et la carte suit via `height="100%"` — `32dvh` empilé (mobile) sinon. */
@@ -65,7 +77,12 @@ export class TripDayMapComponent {
 
   constructor() {
     effect(() => {
-      this.googleMapPanelService.setCollapse(this.collapsed());
+      const value = this.collapsed();
+      if (this.mapHost.currentOwner() === 'general') {
+        this.generalMapPanelService.setCollapse(value);
+      } else {
+        this.googleMapPanelService.setCollapse(value);
+      }
     });
 
     effect(() => {

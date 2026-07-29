@@ -15,8 +15,7 @@ Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans 
 
 Ordre d'exécution prévu pour le reste :
 2. **UX/Interactions** restantes (redirection single-trip, barre sticky, max-width des champs, préremplissages, saisie clavier calendrier).
-3. **Carte** (carte pliée dans Général, clarté visuelle carte superposée).
-4. **Activités** (widget horaire simplifié, affichage multi-jours).
+3. **Activités** (widget horaire simplifié, affichage multi-jours).
 
 Tout ce qui a déjà été livré (avec le détail des correctifs) est listé dans **✅ Déjà fait**, tout en bas.
 
@@ -36,13 +35,10 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### UI Desktop
 
 - Vue calendrier (reporté, pas assez cadré)
-- La carte doit être déplié et sur le coté aussi dans l'onglet général en vue desktop, et replié par défaut dans la vue mobile
-
 
 ### Carte
 
 - Gérer le cas Asie : alternative à Google Maps (non prioritaire)
-- Carte à rajouter pliée par défaut dans le pool d'activité (onglet "Général") qui permet de voir toutes les activités du voyage. à mettre en place la même nnavigation sur la carte au scroll sur les activité que dans le day. Attention à gérer le cas du scroll avec le filtre ville et le filtre chronologique ! 
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
 
 ### Activités
@@ -62,8 +58,11 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 
 ### I18n (non prioritaire)
 
+- Variabiliser tous les libellés de l'application dans un fichier de propriété
+- faire renaming de tout pour avoir un truc stylé : exemple "Nouvelle aventure" 
 - Internationalisation de l'app (textes)
-- Gestion de la devise par défaut en fonction de la position géographique
+- Gestion de la devise par défaut qui sera affiché à l'utilisateur en fonction d'ou il vient, rajouter pay d'origine ? 
+- Gérer la devise automatiquement dans les activité / réservationds en fonctione du lieu de la destination
 
 ### Collaborateurs (non prioritaire)
 
@@ -77,8 +76,31 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 
 - paramétrer la récup des infos du trafic d'avion
 - la barre sticky Note, reservation, activité doit avoir une annimation pour l'affichage, il faut qu'elle arrive du bas, qu'elle soit en box shadow pour pas voir le tour et surtout qu'edlle soit bien centré
-- la dialog du Prix n'a pas la zone du montant centré verticallement, ce qui n'est pas beau, à travailler 
+- la dialog du Prix n'a pas la zone du montant centré verticallement, ce qui n'est pas beau, à travailler
+- La bar "Notes - Réservation - Activitées" devrait être mieux en sticky pour pas qu'on voit la liste en dessous scroller sur portable. Sur PC elle a un trop grand gap
+- Rajouter "devise :" devent dans le header du voyage
+- Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire
 
+- Renommer "Réservation" en "Logistique"
+- Renommer type "hôtel" en "Logement"
+- Rajouter le type "Train"
+- Customiser les bars pour mettre des couleurs spécifique en fonction du type : "Logement", "vol", "location", etc a conserver dans les couleurs du logo de l'onglet Logistiques
+- Possibilité d'ajouter une reservation depuis un jour : le clique sur "Ajouter" ouvre une liste qui permet de choisir "Activité" ou "Avions" ou "Logement" ou "Autre" : Si l'utilisateur clique sur "Avions" ou "Logement" ou "Autre" => on débranche dans généré, onglet "Logistique" avec une activité créé avec le bon type, et on continue la cinématique de création
+- L'onglet "Logistique" doit évoluer pour avoir un tri par "type" ou par "chronologie" + bar de recherche comme l'onglet activités
+- A la création d'un type Logistique, on doit avoir la cinématique qui demande dabord le type en premier : 
+  - si c'est un Logement, alors on chaine sur la demande de saisir un nom placeid via le composant de saisie de liste google : 
+      - Si l'utilisateur saisie un libellé qui n'est pas une place google et clique sur OK, on le prend comme titre, puis on chaine sur la demande d'adresse via le même composant placeid.
+      - Si il saisi une donnée google, alors on récupère le placeid, on le met comme titre
+    - Ensuite, on chaine dans tous les cas sur la saisie existante de Résa, checkin, checkout, prix
+    Rmq : il faut plus afficher la zone "Hotel", elle doit être supprimée car elle fait doublon avec le titre 
+  - Si c'est un vol, alors on doit chainer sur la demande de saisie du numéro de vol via un nouveau dialog, puis la date de début. Une fois ces infos, on appelle l'api de flig et on récupère l'heure de début, la date de fin, la companie, les horaires, l'aeroport de départ et d'arrivé, prix. On renseigne tout dans la fiche. Le nom de la fiche est alimenté par "Vol ({FlightNumer}) - {departure.name} - {arrival.name}
+  - Si c'est une location de voiture, on chaine sur "Résa", le jour de prise en charge, lheure de prise en charge, le jour de restitution, l'heure de restitution, le nom de la location, prix. On alimente le titre par "Location voiture - {{companie name }}" si il l'a renseigné, "Location voiture" sinon 
+  - (Nouveau type) Si c'est un train, chainer sur Résa, Ville départ (via composant google), date aller, heure aller, Ville arriver (via composant google), date retour, heure retour, prix
+- Améliorer le sous menu"Logistique" pour qu'il fasse plus fondu, via un accordéon par exemple ? 
+
+- le contour des jour dans l'onglet "général" doit être un tout piti peu plus épai que les cartes des activités 
+- le bouton flotant : trouver une solution : déplaceable ? sur le coté qui sort ? Faut trouver mieux 
+- Le bouton "Chronologie / Lieu" doit ressembler à un switch avec le rond que sélectionner que le celui pas en couleur 
 
 ### Bugs / fixes
 
@@ -96,13 +118,19 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Le choix de l'heure de début dans la réservation ne chaine pas sur la date de fin lorsque l'on clique sur l'heure et pas sur le "OK, et la date de fin est alimenté avec lh'eure de début à tort
 - si je clique 2 fois sur ajouter, la carte d'ajout ne fonctionne plus idem pour les activité en mode ordinateur, à corriger : on doit positionné le focus sur l'activité en cours de création si elle existe déjà
 - le clique sur le panneau pour un hotel/ transport dirige vers l'onglet réservation et ouvre bien la bonne réservation, mais il ne ne scroll pas pour centrer la réserviation à tord
+- Sur la popup pour saisir un élément de google pour le titre et les notes, le scroll doit se faire sur le contenu, pas sur toute la opoup, de tel sort que le titre doit toujours être affiché en haut. La croix doit être à droite et le titre en gras aussi 
+- La création d'une activité l'a créé en double 
+- le drag and drop depuis général a assigné 2 fois l'activité + a perdu le titre
+- le onblur bleu n'est pa jolie sur le clqiue des trip (et surement d'autres cliques)
+- Agrandir taille du bouton 
+
 
 ### Qualité / process
 
 - Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e (Playwright) : socle en place le 2026-07-28 (compte de test Firebase Auth dédié, `npm run e2e`) — parcours 1 (login) et 2 (création de trip) couverts, parcours 3 à 7 (activité, form jour, dispatch, réservation, suppression) en backlog, voir `.claude/skills/nesttrip-e2e/SKILL.md`.
 - empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ? — **en pause** : décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer, pas lancé dans ce lot.
-- Il fazudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là
+- Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là
 
 ## ✅ Déjà fait
 
@@ -306,3 +334,4 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
   - **Suite retours utilisateur, 4e passe (2026-07-29)** : encore 2 relicats du même genre — `padding-top: 0.5rem` sur `.sticky-map` (mobile) s'ajoutait par-dessus le `gap` entre la timeline et la carte, gonflant spécifiquement cet écart à plus que gap-1 (retiré, l'espacement avec l'élément précédent est déjà géré par le `gap` de `.day-panel-body`) ; `mb-2` sur `<app-toolbar>` (`TripsComponent`) créait un écart entre la toolbar et le header voyage jamais voulu par le système de gap actuel (retiré, les deux sont désormais flush). Carte à moitié vide sur mobile (jour avec activités très dispersées) : investigué une 2e fois sans réussir à reproduire — reste ouvert, voir la section "Bugs / fixes" pour les détails demandés à l'utilisateur pour la retrouver.
   - **Suite retours utilisateur, 5e passe (2026-07-29)** : correction de la passe précédente — toolbar/header voyage ne devaient pas devenir flush (0 gap), mais suivre le même gap-1 empilé/gap-2 scindé que le reste (`TripChromeService.headerTop`, nouveau, réutilise `STACKED_CHROME_GAP_PX`/`SPLIT_CHROME_GAP_PX`). Barre des jours : insets gauche/droite (`left-0 right-0`, bords collés à l'écran) remplacés par le même 0.5rem que `.app-trip-header-fixed`/`.tab-content-wrapper` (nouvelle classe `.app-trip-tabs-nav-fixed`), seul élément fixe du groupe à ne pas le reproduire jusqu'ici. Double écart bandeau réservation → carte/activités quand le bandeau est vide (aucune réservation ce jour-là) : `.day-panel-body`/`.day-panel-activities-group` posent un `gap` entre TOUS leurs enfants directs, y compris un enfant "vide" (0 hauteur mais toujours présent dans le flux flex) — `DayReservationBannerComponent` passe désormais en `display:none` (host binding) plutôt que juste visuellement vide quand `occurrences().length === 0`, pour ne plus consommer de `gap` du tout dans ce cas.
   - Carte (mobile, vue jour) : rendu partiellement vide/blanc sur une partie de la largeur signalé par l'utilisateur (jour avec activités très dispersées géographiquement, zoom "vue d'ensemble" très arrière). Investigué le 2026-07-29 (Playwright, container recréé avec des lieux Google dispersés Europe/Asie/Océanie) : le dimensionnement du conteneur `.sticky-map`/`google-map` est confirmé correct (largeur interne = largeur du conteneur, le correctif `resize` trigger de `DayScrollSyncService` fonctionne), impossible de reproduire le rendu à moitié vide tel que décrit. Hypothèse non confirmée : édge case Google Maps (tuiles raster, fallback vector→raster déjà observé dans cet environnement) à zoom très arrière combiné à un centre/bbox calculé par `computeOverviewCamera` (trip-day-map.component.ts) qui ne couvrirait pas toute la largeur d'un conteneur mobile étroit et haut. À reproduire avec plus de détail avant de corriger : arrive-t-il systématiquement sur ce jour précis ? Persiste-t-il après quelques secondes (tuiles encore en chargement ?) ou après une interaction (pan/zoom) ?
+- Carte dans le pool d'activités de l'onglet "Général" : repliée par défaut sur mobile, dépliée et positionnée en colonne latérale sticky sur desktop (même mécanique de layout scindé que la vue jour), avec le suivi caméra au scroll identique à un jour — recalculé quel que soit le mode de tri actif ("Chronologie"/"Ville") ou le filtre de recherche. Réutilise l'instance UNIQUE de carte partagée avec la vue jour (`TripDayMapHostService`, désormais avec un `currentOwner: 'day' | 'general'`) et le même moteur de scroll-sync (`DayScrollSyncService`, une instance dédiée par montage du sous-onglet Activités). Fold state volontairement indépendant de la vue jour (`GeneralMapPanelService`, nouveau — la vue jour reste toujours dépliée par défaut, inchangée) : son défaut suit le viewport (`linkedSignal` sur `!ViewportService.isSplitLayout()`), tout en restant modifiable manuellement entre deux franchissements de seuil desktop/mobile.

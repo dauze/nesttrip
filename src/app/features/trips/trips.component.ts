@@ -14,6 +14,7 @@ import { TripDataSource } from '@app/core/infra/firebase/services/trip-data-sour
 import { FileService } from '@app/core/services/file.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { GeneralMapPanelService } from '@app/core/services/general-map-panel.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
@@ -43,6 +44,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
     ActivityDispatchService,
     TripChromeService,
     GoogleMapPanelService,
+    GeneralMapPanelService,
     GooglePhotoService,
     GooglePlaceService,
     PhotoViewerService,
