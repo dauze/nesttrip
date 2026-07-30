@@ -17,3 +17,27 @@
     background: var(--nt-content-hover-background);
   }
 }
+
+.logistic-header__title-computed {
+  min-width: 0;
+}
+
+// Même gabarit que `.activity-header__pencil` (ActivityHeaderComponent) : un
+// texte simple (pas un champ) n'invite pas à taper dedans, le crayon reste le
+// seul point d'entrée explicite pour l'éditer.
+.logistic-header__pencil {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+}

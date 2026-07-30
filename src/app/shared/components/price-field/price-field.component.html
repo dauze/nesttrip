@@ -1,6 +1,6 @@
 @if (viewport.isMobile()) {
   <div class="price-field-trigger" role="button" tabindex="0" (click)="openDialog()" (keydown.enter)="openDialog()">
-    @if (displayAmount()) {
+    @if (displayAmount() !== null) {
       <span class="price-field-trigger__value">{{ displayAmount() }} {{ currencyLabel() }}</span>
     } @else {
       <span class="price-field-trigger__placeholder">Ajouter un prix</span>

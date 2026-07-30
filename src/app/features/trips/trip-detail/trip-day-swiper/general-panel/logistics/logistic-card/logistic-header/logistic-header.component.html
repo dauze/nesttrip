@@ -11,6 +11,19 @@
         (click)="openLogementTitleDialog($event)">
         {{ titleValue() || typeMeta[logistic().type].label }}
       </button>
+    } @else if (hasComputedTitle()) {
+      <div class="flex align-items-center gap-1 min-w-0">
+        <span class="logistic-header__title-computed font-semibold text-base white-space-nowrap overflow-hidden text-overflow-ellipsis">
+          {{ titleValue() || typeMeta[logistic().type].label }}
+        </span>
+        <button
+          type="button"
+          class="logistic-header__pencil flex-shrink-0"
+          aria-label="Modifier le titre"
+          (click)="openComputedTitleEditDialog($event)">
+          <i class="pi pi-pencil"></i>
+        </button>
+      </div>
     } @else {
       <input
         type="text"

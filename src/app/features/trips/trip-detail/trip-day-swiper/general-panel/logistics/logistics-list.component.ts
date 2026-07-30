@@ -18,11 +18,15 @@ const SORT_MODES: SortMode[] = ['type', 'chrono'];
 /** Ordre d'affichage fixe des sections en tri "Type" — celui de `LOGISTIC_TYPE_META`. */
 const TYPE_ORDER = Object.keys(LOGISTIC_TYPE_META) as LogisticType[];
 
-interface TypeGroup {
-  type: LogisticType;
-  meta: LogisticTypeMeta;
-  logistics: Logistic[];
-}
+/**
+ * Une ligne de la vue "Type" : soit un en-tête de section, soit une carte.
+ * Volontairement une liste PLATE (une seule boucle `@for`, voir le template)
+ * plutôt que des groupes imbriqués avec leur propre `@for` par section —
+ * voir `typeRows` pour la raison (régression du 2026-07-30).
+ */
+type TypeRow =
+  | { kind: 'header'; type: LogisticType; meta: LogisticTypeMeta; count: number }
+  | { kind: 'item'; logistic: Logistic };
 
 function matchesSearch(title: string, term: string): boolean {
   if (!term) return true;
@@ -84,14 +88,38 @@ export class LogisticsListComponent {
   /** Chronologique + recherche : liste plate inchangée. */
   readonly chronoLogistics = computed(() => this.filtered());
 
-  /** Type + recherche : sections dans l'ordre fixe de LOGISTIC_TYPE_META, masquées si vides, ordre chronologique conservé à l'intérieur (déjà celui de `filtered()`). */
-  readonly typeGroups = computed<TypeGroup[]>(() => {
+  /**
+   * Type + recherche : une liste PLATE de lignes (en-tête de section ou
+   * carte), sections dans l'ordre fixe de LOGISTIC_TYPE_META, masquées si
+   * vides, ordre chronologique conservé à l'intérieur (déjà celui de
+   * `filtered()`). Une seule boucle `@for` sur ce tableau (voir le template)
+   * — PAS des groupes imbriqués avec chacun leur propre `@for` par type :
+   * quand le type d'un élément change (ex. cinématique guidée qui commence
+   * par choisir "Vol"), il change de section. Avec des `@for` imbriqués, la
+   * section de destination n'existait pas forcément l'instant d'avant (0
+   * élément de ce type) — Angular détruit alors la carte de l'ANCIENNE
+   * section et en recrée une NOUVELLE dans la section qui vient d'apparaître,
+   * même avec `track logistic.id` (le tracking ne dédoublonne qu'AU SEIN
+   * d'une même boucle, pas entre deux boucles différentes). Ça coupait net
+   * la cinématique guidée en cours (son `ViewContainerRef`, donc tout dialog
+   * CDK ouvert dessus, est détruit avec l'ancienne instance) — reproduit et
+   * confirmé via Playwright (le dialog "Numéro de vol" se fermait de
+   * lui-même, `dialogRef.closed` émettant `undefined`, juste après la
+   * sélection du type dans la cinématique guidée). Une seule boucle plate
+   * (`track` par id de carte, id préfixé pour les en-têtes) : Angular
+   * détecte un simple DÉPLACEMENT de la même entité trackée et déplace le
+   * nœud DOM/l'instance de composant au lieu de la détruire.
+   */
+  readonly typeRows = computed<TypeRow[]>(() => {
     const items = this.filtered();
-    return TYPE_ORDER.map((type) => ({
-      type,
-      meta: LOGISTIC_TYPE_META[type],
-      logistics: items.filter((r) => r.type === type),
-    })).filter((group) => group.logistics.length > 0);
+    const rows: TypeRow[] = [];
+    for (const type of TYPE_ORDER) {
+      const group = items.filter((r) => r.type === type);
+      if (!group.length) continue;
+      rows.push({ kind: 'header', type, meta: LOGISTIC_TYPE_META[type], count: group.length });
+      for (const logistic of group) rows.push({ kind: 'item', logistic });
+    }
+    return rows;
   });
 
   readonly matchCount = computed(() => this.filtered().length);

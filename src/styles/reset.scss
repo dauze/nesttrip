@@ -16,6 +16,16 @@
   box-sizing: border-box;
 }
 
+// Flash de tap bleu par défaut de WebKit/Blink mobile sur tout élément
+// cliquable — un calque de rendu à PART de `outline`/`:focus-visible`
+// (voir plus bas), qui ne le supprime pas : persistait sur mobile (carte de
+// voyage cliquable d'accueil-trip notamment) malgré l'anneau de focus déjà
+// neutralisé. Retiré partout, `:focus-visible` reste le seul indicateur de
+// focus voulu.
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 :root {
   --p-font-family: 'Plus Jakarta Sans', sans-serif;
   font-family: var(--p-font-family), serif;
@@ -32,6 +42,17 @@ body {
   padding-bottom: 50px;
   margin-top: 0.3rem;
   color: var(--nt-text-color);
+}
+
+// Anneau de focus clavier/clic thémé (`--nt-focus-ring-*`, tokens.scss),
+// remplace le anneau bleu par défaut du navigateur sur tout élément
+// focusable custom (cartes cliquables `role="button"` + `tabindex="0"`,
+// ex. accueil-trip, panel...) sans rien retirer pour les champs de
+// formulaire natifs (déjà stylés via leur propre `box-shadow`, voir
+// form-fields.scss).
+:focus-visible {
+  outline: var(--nt-focus-ring-width) var(--nt-focus-ring-style) var(--nt-focus-ring-color);
+  outline-offset: var(--nt-focus-ring-offset);
 }
 
 // Garde-fou global : le `min-width: 24rem` posé localement sur `.app-content`

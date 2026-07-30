@@ -29,4 +29,13 @@
 
 .logistics-list__type-header {
   padding: 0 0.25rem;
+
+  // Liste plate (voir la doc de `typeRows`, `logistics-list.component.ts`) :
+  // le `gap` uniforme du conteneur ne distingue plus "gap entre carte et
+  // en-tête suivant" de "gap entre 2 cartes" — cet espace additionnel avant
+  // chaque en-tête (sauf le tout premier) restaure la séparation visuelle
+  // entre sections qu'offrait l'ancien wrapper par groupe (`gap-3`).
+  &:not(:first-child) {
+    margin-top: 0.5rem;
+  }
 }

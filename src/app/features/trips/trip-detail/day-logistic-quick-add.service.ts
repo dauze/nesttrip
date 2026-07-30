@@ -20,7 +20,8 @@ export class DayLogisticQuickAddService {
   private readonly tripFacade = inject(TripFacade);
   private readonly logisticFocusService = inject(LogisticFocusService);
 
-  create(type: LogisticType): void {
+  /** `dayDate` : jour depuis lequel le menu "Ajouter" a été ouvert (voir ROADMAP.md, "La date de début d'une réservation doit être positionnée soit sur le jour cliqué") — préremplit la date de début, jamais l'heure. */
+  create(type: LogisticType, dayDate?: Date): void {
     const tripId = this.tripFacade.activeTrip()?.id;
     if (!tripId) return;
 
@@ -31,9 +32,15 @@ export class DayLogisticQuickAddService {
       files: [],
       links: [],
       booking: { status: BookingStatus.NOT_NEEDED },
+      ...(dayDate ? { startDateTime: dateOnly(dayDate) } : {}),
     };
 
     this.tripFacade.createLogistic(tripId, logistic);
     this.logisticFocusService.requestFocus(logistic.id, true);
   }
+}
+
+/** Ne garde que le jour calendaire (minuit local) : l'heure ne doit jamais être préremplie (voir ROADMAP.md). */
+function dateOnly(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

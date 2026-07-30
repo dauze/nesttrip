@@ -33,6 +33,7 @@ import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
     SelectionActionBarComponent,
   ],
   templateUrl: 'accueil-trip.component.html',
+  styleUrl: 'accueil-trip.component.scss',
   // Une instance dédiée (voir SelectionModeService) : le mode sélection de
   // cet écran ne doit jamais se mélanger avec celui de trip-detail.
   providers: [SelectionModeService],

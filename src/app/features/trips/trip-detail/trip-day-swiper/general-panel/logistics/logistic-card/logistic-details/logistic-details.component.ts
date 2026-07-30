@@ -196,6 +196,27 @@ export class LogisticDetailsComponent {
       this.selectedPlaces.set(initialPlacesFrom(r));
     });
 
+    // Préremplissage fin ← début (voir ROADMAP.md, "La date de fin d'une
+    // réservation doit être alimentée de la date de début" / "L'heure de fin
+    // doit être alimentée de l'heure de début") : seulement si la fin n'est
+    // pas déjà renseignée, jamais si l'utilisateur l'a déjà éditée
+    // indépendamment. `{emitEvent:false}` : le contrôle enfant émet AVANT que
+    // le `FormGroup` parent (souscrit juste après, `debounceTime`) n'agrège
+    // le changement — cette valeur est donc déjà incluse dans le commit
+    // débounce déclenché par la sélection de la date/heure de début, pas
+    // besoin d'un commit séparé. Ne se déclenche jamais sur le `patchValue`
+    // de resynchronisation ci-dessus (posé avec `emitEvent:false` lui aussi).
+    this.form.controls.startDate.valueChanges.pipe(takeUntilDestroyed()).subscribe((startDate) => {
+      if (startDate && !this.form.controls.endDate.value) {
+        this.form.controls.endDate.setValue(startDate, { emitEvent: false });
+      }
+    });
+    this.form.controls.startTime.valueChanges.pipe(takeUntilDestroyed()).subscribe((startTime) => {
+      if (startTime && !this.form.controls.endTime.value) {
+        this.form.controls.endTime.setValue(startTime, { emitEvent: false });
+      }
+    });
+
     this.form.valueChanges.pipe(
       tap(() => { this.hasUnflushedLocalEdit = true; }),
       debounceTime(300),

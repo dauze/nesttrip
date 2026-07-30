@@ -61,9 +61,13 @@ export class LogisticsCreationService {
   private createLogistic(type: LogisticType, skipTypeStep: boolean): void {
     const id = crypto.randomUUID();
 
-    // Pas de date/heure préremplie (voir ROADMAP.md) : reste vide jusqu'à ce
-    // que la cinématique guidée (ou l'édition manuelle) la renseigne — même
-    // principe que les heures d'une activité.
+    // Heure jamais préremplie (voir ROADMAP.md) : reste vide jusqu'à ce que
+    // la cinématique guidée (ou l'édition manuelle) la renseigne — même
+    // principe que les heures d'une activité. La DATE de début, elle, est
+    // préremplie avec le début du voyage (créé depuis le "+" du sous-onglet
+    // Logistique, donc pas rattachée à un jour précis — voir
+    // `DayLogisticQuickAddService` pour l'équivalent "+" d'un jour, qui
+    // préremplit avec ce jour précis à la place).
     const logistic: Logistic = {
       id,
       type,
@@ -71,12 +75,21 @@ export class LogisticsCreationService {
       files: [],
       links: [],
       booking: { status: BookingStatus.NOT_NEEDED },
+      ...(this.tripStartDate() ? { startDateTime: this.tripStartDate() } : {}),
     };
 
     this.tripFacade.createLogistic(this.config.getTripId(), logistic);
     this.creatingId.set(id);
 
     afterNextRender(() => this.focusNewCardWhenReady(id, skipTypeStep), { injector: this.injector });
+  }
+
+  /** Ne garde que le jour calendaire (minuit local) : l'heure ne doit jamais être préremplie (voir ROADMAP.md). */
+  private tripStartDate(): Date | undefined {
+    const days = this.tripFacade.activeTrip()?.days ?? [];
+    if (!days.length) return undefined;
+    const earliest = days.reduce((min, d) => (d.id < min ? d.id : min), days[0].id);
+    return new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate());
   }
 
   /**

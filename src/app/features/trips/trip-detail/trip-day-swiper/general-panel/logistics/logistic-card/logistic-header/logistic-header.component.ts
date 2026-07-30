@@ -9,14 +9,24 @@ import {
   TitleEditDialogData,
   TitleEditDialogResult,
 } from '@app/shared/components/activity-card/activity-header/title-edit-dialog/title-edit-dialog.component';
+import {
+  SimpleTextEntryDialogComponent,
+  SimpleTextEntryDialogData,
+} from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
 
 /**
- * Header d'une carte réservation : icône du type + titre. Texte libre pour
- * tous les types SAUF `'logement'` — le lieu Google d'un logement n'a plus de
- * champ "adresse" séparé (voir ROADMAP.md, ex-`LogementFieldsComponent`
- * supprimé, doublon avec le titre) : cliquer sur le titre d'un logement rouvre
- * `TitleEditDialogComponent` (texte libre OU sélection Google), qui remonte
- * soit un nouveau titre seul, soit un titre + un `PlaceSummary` complet.
+ * Header d'une carte réservation : icône du type + titre. Comportement du
+ * titre selon le type (voir ROADMAP.md, "Trouver un moyen élégant de ne pas
+ * mettre le titre en première zone de saisie") :
+ * - `'logement'` : pas de champ "adresse" séparé, cliquer sur le titre rouvre
+ *   `TitleEditDialogComponent` (texte libre OU sélection Google), qui remonte
+ *   soit un nouveau titre seul, soit un titre + un `PlaceSummary` complet.
+ * - `'flight'`/`'train'` : titre calculé automatiquement par la cinématique
+ *   guidée (ex. "Vol (AF1234) - CDG - JFK") — texte simple en lecture seule
+ *   plutôt qu'un champ éditable, pour ne pas laisser croire qu'il faut le
+ *   renseigner ; un crayon dédié ouvre `SimpleTextEntryDialogComponent` pour
+ *   l'écraser manuellement si besoin.
+ * - `'carRental'`/`'other'` : texte libre, inchangé.
  */
 @Component({
   selector: 'app-logistic-header',
@@ -37,6 +47,7 @@ export class LogisticHeaderComponent {
 
   readonly typeMeta = LOGISTIC_TYPE_META;
   readonly isLogement = computed(() => this.logistic().type === 'logement');
+  readonly hasComputedTitle = computed(() => this.logistic().type === 'flight' || this.logistic().type === 'train');
 
   /**
    * Valeur locale découplée du signal `logistic` — un snapshot distant reçu
@@ -117,6 +128,26 @@ export class LogisticHeaderComponent {
 
       this.titleValue.set(result.text);
       this.titleEdited.emit(result.text);
+    });
+  }
+
+  /** Vol/Train uniquement (voir hasComputedTitle) : override manuel du titre calculé automatiquement. */
+  openComputedTitleEditDialog(event: Event): void {
+    event.stopPropagation();
+
+    const dialogRef = this.dialogService.open<string | undefined, SimpleTextEntryDialogData>(
+      SimpleTextEntryDialogComponent,
+      {
+        data: { initialValue: this.titleValue(), placeholder: this.typeMeta[this.logistic().type].label, title: 'Titre', optional: true },
+        panelClass: 'app-wide-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+      },
+    );
+
+    dialogRef.closed.subscribe((result) => {
+      if (result === undefined) return;
+      this.titleValue.set(result);
+      this.titleEdited.emit(result);
     });
   }
 }

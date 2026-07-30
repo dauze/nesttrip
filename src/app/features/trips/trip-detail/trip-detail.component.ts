@@ -95,7 +95,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     ...(Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][]).map(([type, meta]) => ({
       label: meta.label,
       icon: meta.icon,
-      command: () => this.dayLogisticQuickAdd.create(type),
+      command: () => this.dayLogisticQuickAdd.create(type, new Date(this.activeDay())),
     })),
   ]);
 
