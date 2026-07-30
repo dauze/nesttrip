@@ -1,0 +1,13 @@
+<div class="flex flex-column gap-2">
+  <app-place-autocomplete-field
+    label="Ville de départ"
+    placeholder="Rechercher une ville..."
+    [initialPlace]="initialDeparturePlace()"
+    (placeSelected)="departurePlaceSelected.emit($event)" />
+
+  <app-place-autocomplete-field
+    label="Ville d'arrivée"
+    placeholder="Rechercher une ville..."
+    [initialPlace]="initialArrivalPlace()"
+    (placeSelected)="arrivalPlaceSelected.emit($event)" />
+</div>

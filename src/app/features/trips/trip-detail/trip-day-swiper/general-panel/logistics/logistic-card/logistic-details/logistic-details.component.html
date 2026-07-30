@@ -20,7 +20,6 @@
 
   @switch (selectedType()) {
     @case ('logement') {
-      <app-logement-fields [initialPlace]="currentPlaces().place" (placeSelected)="onPlaceSelected('place', $event)" />
       <app-logistic-place-info [place]="currentPlaces().place" />
     }
     @case ('flight') {
@@ -70,6 +69,15 @@
       <app-logistic-place-info [place]="currentPlaces().pickupPlace" />
       <app-logistic-place-info [place]="currentPlaces().dropoffPlace" />
     }
+    @case ('train') {
+      <app-train-fields
+        [initialDeparturePlace]="currentPlaces().departurePlace"
+        [initialArrivalPlace]="currentPlaces().arrivalPlace"
+        (departurePlaceSelected)="onPlaceSelected('departurePlace', $event)"
+        (arrivalPlaceSelected)="onPlaceSelected('arrivalPlace', $event)" />
+      <app-logistic-place-info [place]="currentPlaces().departurePlace" />
+      <app-logistic-place-info [place]="currentPlaces().arrivalPlace" />
+    }
     @case ('other') {
       <app-generic-fields [initialPlace]="currentPlaces().place" (placeSelected)="onPlaceSelected('place', $event)" />
       <app-logistic-place-info [place]="currentPlaces().place" />
@@ -107,7 +115,7 @@
     <label for="logistic-price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-euro text-sm"></i>Prix
     </label>
-    <app-price-field inputId="logistic-price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-full min-w-0" />
+    <app-price-field #priceField inputId="logistic-price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-full min-w-0" />
   </div>
 
   @if (showDeadline()) {

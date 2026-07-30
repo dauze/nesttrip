@@ -5,10 +5,11 @@
         class="day-logistic-banner__item flex flex-column gap-1 w-full"
         role="button"
         tabindex="0"
+        [style.border-left-color]="'var(' + typeMeta[occurrence.logistic.type].colorVar + ')'"
         (click)="onTap(occurrence.logistic.id)"
         (keydown.enter)="onTap(occurrence.logistic.id)">
         <div class="flex align-items-center gap-2 w-full">
-          <i [class]="typeMeta[occurrence.logistic.type].icon + ' text-lg flex-shrink-0'"></i>
+          <i [class]="typeMeta[occurrence.logistic.type].icon + ' text-lg flex-shrink-0'" [style.color]="'var(' + typeMeta[occurrence.logistic.type].colorVar + ')'"></i>
           <span class="day-logistic-banner__role flex-shrink-0 text-sm font-semibold">{{ occurrence.role }}</span>
           <span class="day-logistic-banner__title flex-1 min-w-0 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">
             {{ occurrence.logistic.title }}

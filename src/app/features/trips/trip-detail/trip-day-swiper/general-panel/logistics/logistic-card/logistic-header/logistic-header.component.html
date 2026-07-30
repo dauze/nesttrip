@@ -1,19 +1,28 @@
 <div class="logistic-header__row flex align-items-center gap-2 w-full min-w-0">
-  <div class="logistic-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
-    <i [class]="'pi text-xl nt-text-muted ' + typeMeta[logistic().type].icon"></i>
+  <div class="logistic-header__thumb flex-shrink-0 border-round overflow-hidden flex align-items-center justify-content-center" [style.background-color]="'color-mix(in srgb, var(' + typeMeta[logistic().type].colorVar + ') 16%, transparent)'">
+    <i [class]="'pi text-xl ' + typeMeta[logistic().type].icon" [style.color]="'var(' + typeMeta[logistic().type].colorVar + ')'"></i>
   </div>
 
   <div class="logistic-header__meta flex flex-column flex-1 min-w-0 gap-1">
-    <input
-      type="text"
-      class="nt-inline-field w-full font-semibold text-base"
-      [value]="titleValue()"
-      [placeholder]="typeMeta[logistic().type].label"
-      (input)="onTitleInput($any($event.target).value)"
-      (blur)="onTitleBlur()"
-      (focus)="onTitleFocus($event)"
-      (click)="$event.stopPropagation()"
-      (keydown)="$event.stopPropagation()" />
+    @if (isLogement()) {
+      <button
+        type="button"
+        class="logistic-header__title-button nt-inline-field w-full font-semibold text-base"
+        (click)="openLogementTitleDialog($event)">
+        {{ titleValue() || typeMeta[logistic().type].label }}
+      </button>
+    } @else {
+      <input
+        type="text"
+        class="nt-inline-field w-full font-semibold text-base"
+        [value]="titleValue()"
+        [placeholder]="typeMeta[logistic().type].label"
+        (input)="onTitleInput($any($event.target).value)"
+        (blur)="onTitleBlur()"
+        (focus)="onTitleFocus($event)"
+        (click)="$event.stopPropagation()"
+        (keydown)="$event.stopPropagation()" />
+    }
 
     <span class="nt-text-muted text-xs flex align-items-center gap-1">
       <i class="pi pi-calendar logistic-header__meta-icon"></i>

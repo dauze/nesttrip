@@ -1,0 +1,44 @@
+/* ---------------------------------------------------------------------
+ * Tiroir mobile de `app-menu` (voir ROADMAP.md, menu "Ajouter" d'un jour) :
+ * `MenuComponent` ouvre son panneau via `@angular/cdk/overlay`, dont les
+ * éléments (backdrop, pane) sont ajoutés dans `.cdk-overlay-container`, en
+ * dehors de l'arbre de vue du composant hôte — ces classes doivent donc
+ * rester globales, même topologie que `.app-select-overlay--mobile` dans
+ * select.scss (dont ce fichier reprend le langage visuel à l'identique).
+ * ------------------------------------------------------------------- */
+
+.app-menu-backdrop--mobile {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(var(--nt-blur-backdrop));
+}
+
+.app-menu-overlay--mobile {
+  width: 100%;
+}
+
+.app-menu-overlay--mobile .app-menu-panel {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  border-radius: var(--nt-overlay-modal-border-radius) var(--nt-overlay-modal-border-radius) 0 0;
+  box-shadow: var(--nt-overlay-modal-shadow);
+  padding: 0.5rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  border: none;
+  overflow: hidden auto;
+
+  transition: transform 200ms ease;
+  transform: translateY(0);
+
+  @starting-style {
+    transform: translateY(100%);
+  }
+}
+
+.app-menu-overlay--mobile .app-menu-panel__item {
+  justify-content: center;
+  text-align: center;
+  padding: 0.75rem;
+}

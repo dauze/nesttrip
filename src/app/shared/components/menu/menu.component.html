@@ -1,5 +1,8 @@
 <ng-template #panel>
   <div class="app-menu-panel flex flex-column">
+    @if (viewport.isMobile() && title()) {
+      <div class="app-menu-panel__title">{{ title() }}</div>
+    }
     <ng-content select="[menuTop]" />
     @for (group of items(); track $index) {
       @if (group.items) {

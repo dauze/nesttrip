@@ -1,7 +1,7 @@
 import { PlaceSummary } from '@core/models/place.dto';
 import { BookingFirebase, FileFirebase, PriceFirebase } from './activity.dto';
 
-export type LogisticType = 'logement' | 'flight' | 'carRental' | 'other';
+export type LogisticType = 'logement' | 'flight' | 'carRental' | 'train' | 'other';
 
 export interface LogisticLinkFirebase {
   label: string;
@@ -51,6 +51,12 @@ export interface CarRentalLogisticFirebase extends LogisticBaseFirebase {
   dropoffPlace?: PlaceSummary;
 }
 
+export interface TrainLogisticFirebase extends LogisticBaseFirebase {
+  type: 'train';
+  departurePlace?: PlaceSummary;
+  arrivalPlace?: PlaceSummary;
+}
+
 export interface OtherLogisticFirebase extends LogisticBaseFirebase {
   type: 'other';
   place?: PlaceSummary;
@@ -60,4 +66,5 @@ export type LogisticFirebase =
   | LogementLogisticFirebase
   | FlightLogisticFirebase
   | CarRentalLogisticFirebase
+  | TrainLogisticFirebase
   | OtherLogisticFirebase;

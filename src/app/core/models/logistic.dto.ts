@@ -1,7 +1,7 @@
 import { PlaceSummary } from './place.dto';
 import { Booking } from '@app/shared/components/activity-card/activity.model';
 
-export type LogisticType = 'logement' | 'flight' | 'carRental' | 'other';
+export type LogisticType = 'logement' | 'flight' | 'carRental' | 'train' | 'other';
 
 export interface LogisticFile {
   url: string;
@@ -70,6 +70,12 @@ export interface CarRentalLogistic extends LogisticBase {
   dropoffPlace?: PlaceSummary;
 }
 
+export interface TrainLogistic extends LogisticBase {
+  type: 'train';
+  departurePlace?: PlaceSummary;
+  arrivalPlace?: PlaceSummary;
+}
+
 export interface OtherLogistic extends LogisticBase {
   type: 'other';
   place?: PlaceSummary;
@@ -79,4 +85,5 @@ export type Logistic =
   | LogementLogistic
   | FlightLogistic
   | CarRentalLogistic
+  | TrainLogistic
   | OtherLogistic;

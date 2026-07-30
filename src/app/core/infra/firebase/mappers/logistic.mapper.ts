@@ -55,6 +55,8 @@ export function logisticFromFb(r: LogisticFirebase): Logistic {
         pickupPlace: r.pickupPlace,
         dropoffPlace: r.dropoffPlace,
       };
+    case 'train':
+      return { ...base, type: 'train', departurePlace: r.departurePlace, arrivalPlace: r.arrivalPlace };
     case 'other':
       return { ...base, type: 'other', place: r.place };
   }
@@ -96,6 +98,13 @@ export function logisticToFb(r: Logistic): LogisticFirebase {
         ...(r.company ? { company: r.company } : {}),
         ...(r.pickupPlace ? { pickupPlace: r.pickupPlace } : {}),
         ...(r.dropoffPlace ? { dropoffPlace: r.dropoffPlace } : {}),
+      };
+    case 'train':
+      return {
+        ...base,
+        type: 'train',
+        ...(r.departurePlace ? { departurePlace: r.departurePlace } : {}),
+        ...(r.arrivalPlace ? { arrivalPlace: r.arrivalPlace } : {}),
       };
     case 'other':
       return {

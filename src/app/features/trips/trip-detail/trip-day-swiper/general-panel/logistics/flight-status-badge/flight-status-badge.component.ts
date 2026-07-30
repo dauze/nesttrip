@@ -25,7 +25,7 @@ function badgeMetaFor(flight: FlightLogistic): BadgeMeta {
 }
 
 /**
- * Badge de statut vol (voir Logistic.md Phase 4) — affiché à la fois sur
+ * Badge de statut vol (voir Reservation.md Phase 4) — affiché à la fois sur
  * la bannière jour et dans le sous-menu Réservations. Le polling automatique
  * (voir `FlightStatusRefreshService.refreshIfStale`) ne tourne QUE tant que
  * ce composant est monté (donc visible) : `effect()` + `onCleanup` démarre/

@@ -12,7 +12,7 @@ function diffHours(a: Date, b: Date): number {
 
 /**
  * Phase de rafraîchissement d'un vol selon sa proximité temporelle — voir
- * Logistic.md Phase 4. `frozen` : plus d'intérêt à rafraîchir 2h après
+ * Reservation.md Phase 4. `frozen` : plus d'intérêt à rafraîchir 2h après
  * l'arrivée prévue. `auto-live`/`auto-daily` : polling automatique de plus
  * en plus fréquent à l'approche du vol. `manual` : trop loin dans le temps,
  * seul le bouton de rafraîchissement manuel fonctionne.
@@ -44,7 +44,13 @@ export const REFRESH_INTERVAL_MS: Record<RefreshPhase, number | null> = {
  * reçoivent la mise à jour gratuitement via `onSnapshot` (cache Firestore
  * partagé, voir `LogisticPersistenceService.updateFlightStatus`).
  */
-@Injectable({ providedIn: 'root' })
+// Pas `providedIn: 'root'` : dépend de `TripFacade`, lui-même scopé à
+// `/trips` (voir TripsComponent.providers) — un root singleton qui dépend
+// d'un service component-scopé n'a de garantie de fonctionner que si sa
+// toute première construction a lieu depuis un contexte qui a ce provider
+// dans sa chaîne d'ancêtres, ce qui n'est pas fiable (NG0201/NG0200 observés
+// en pratique). Fourni explicitement au même niveau que TripFacade.
+@Injectable()
 export class FlightStatusRefreshService {
   private readonly api = inject(FlightStatusApiService);
   private readonly tripFacade = inject(TripFacade);

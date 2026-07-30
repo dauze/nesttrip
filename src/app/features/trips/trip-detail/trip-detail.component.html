@@ -48,11 +48,12 @@
       @if (!selectionService.active()) {
         <app-floating-add-button
           [icon]="fabIcon()"
-          [badge]="true"
+          [badge]="activeDay() === 'notes'"
           [ariaLabel]="fabAriaLabel()"
           [bottomOffset]="chromeService.tabsNavBottomReserve() + chromeService.generalSubTabBarHeight()"
           (activate)="onFabActivate()" />
       }
+      <app-menu #dayAddMenu title="Ajouter" [items]="dayAddMenuItems()" />
 
       <!-- Même contrainte hors-swiper, uniquement sur l'onglet "Général" (voir
            GeneralSubTabBarComponent) — masqué pendant le mode sélection pour

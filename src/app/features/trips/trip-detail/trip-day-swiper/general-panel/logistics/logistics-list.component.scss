@@ -1,1 +1,32 @@
 :host { display: block; }
+
+// Même pattern que trip-activities.component.scss (icône loupe + bouton
+// "effacer" superposés à l'intérieur de l'input).
+.logistics-list__search {
+  position: relative;
+  min-width: 12rem;
+}
+
+.logistics-list__search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.logistics-list__search-input {
+  padding-left: 2.25rem !important;
+  padding-right: 2.25rem !important;
+}
+
+.logistics-list__search-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.15rem;
+  transform: translateY(-50%);
+}
+
+.logistics-list__type-header {
+  padding: 0 0.25rem;
+}

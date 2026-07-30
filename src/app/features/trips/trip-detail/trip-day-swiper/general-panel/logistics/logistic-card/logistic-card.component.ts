@@ -7,6 +7,7 @@ import { SelectableDirective } from '@app/shared/directives/selectable.directive
 import { LongPressDirective } from '@app/shared/directives/long-press.directive';
 import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { PlaceSummary } from '@core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
 import { BOOKING_STATUS_META } from '@app/shared/components/activity-card/activity.constants';
 import { LogisticHeaderComponent } from './logistic-header/logistic-header.component';
@@ -80,9 +81,16 @@ export class LogisticCardComponent {
     this.tripFacade.updateLogistic(this.tripId(), { ...logistic, title: newTitle });
   }
 
-  /** Mobile uniquement, déclenché juste après la création (voir LogisticsCreationService) : la carte démarre toujours repliée (`initCollapsed=true`), on la déplie d'abord pour que le chaînage guidé (LogisticDetailsComponent.startGuidedEntry) s'ancre correctement. */
-  startGuidedEntry(): void {
+  /** Logement uniquement (voir LogisticHeaderComponent.isLogement) : sélection Google faite via le dialog titre. */
+  onHeaderPlaceSelected(place: PlaceSummary): void {
+    const logistic = this.logistic();
+    if (!logistic || logistic.type !== 'logement') return;
+    this.tripFacade.updateLogistic(this.tripId(), { ...logistic, place });
+  }
+
+  /** Déclenché juste après la création (voir LogisticsCreationService) : la carte démarre toujours repliée (`initCollapsed=true`), on la déplie d'abord pour que le chaînage guidé (LogisticDetailsComponent.startGuidedEntry) s'ancre correctement. `skipTypeStep` : le type est déjà connu (création depuis le menu "Ajouter" d'un jour, voir DayLogisticQuickAddService), la 1ère étape "Type" est sautée. */
+  startGuidedEntry(skipTypeStep = false): void {
     this.collapsed.set(false);
-    setTimeout(() => this.detailsComponent().startGuidedEntry(), PANEL_EXPAND_DELAY_MS);
+    setTimeout(() => this.detailsComponent().startGuidedEntry(skipTypeStep), PANEL_EXPAND_DELAY_MS);
   }
 }

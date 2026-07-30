@@ -241,6 +241,15 @@
   --nt-blue-500: #1570ef;
   --nt-yellow-500: #f79009;
 
+  // Couleurs d'identité par type logistique (voir LOGISTIC_TYPE_META.colorVar)
+  // — teintes choisies pour ne pas entrer en collision avec le teal primaire
+  // ni avec les couleurs de statut ci-dessus.
+  --nt-logistic-logement: #8B5CF6;
+  --nt-logistic-flight: #06B6D4;
+  --nt-logistic-carrental: #84CC16;
+  --nt-logistic-train: #EC4899;
+  --nt-logistic-other: #78716C;
+
   // "Secondary"/neutre (Button, Tag...) — PAS un simple alias vers
   // --nt-surface-100/200/300 : ces primitives gardent la même convention de
   // numérotation (100 = toujours clair) dans les DEUX modes, alors qu'en
@@ -321,6 +330,12 @@
   --nt-blue-500: #53b1fd;
   --nt-yellow-500: #fdb022;
 
+  --nt-logistic-logement: #A78BFA;
+  --nt-logistic-flight: #22D3EE;
+  --nt-logistic-carrental: #A3E635;
+  --nt-logistic-train: #F472B6;
+  --nt-logistic-other: #A8A29E;
+
   --nt-secondary-bg: var(--nt-surface-800);
   --nt-secondary-hover-bg: var(--nt-surface-700);
   --nt-secondary-active-bg: var(--nt-surface-600);
@@ -383,6 +398,12 @@
   --nt-green-500: #12b76e;
   --nt-blue-500: #1570ef;
   --nt-yellow-500: #f79009;
+
+  --nt-logistic-logement: #8B5CF6;
+  --nt-logistic-flight: #06B6D4;
+  --nt-logistic-carrental: #84CC16;
+  --nt-logistic-train: #EC4899;
+  --nt-logistic-other: #78716C;
 
   --nt-secondary-bg: var(--nt-surface-100);
   --nt-secondary-hover-bg: var(--nt-surface-200);

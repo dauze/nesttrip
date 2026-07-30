@@ -20,6 +20,7 @@ import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
+import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
 import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 
@@ -49,6 +50,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
     GooglePlaceService,
     PhotoViewerService,
     UserProfileService,
+    FlightStatusRefreshService,
   ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',

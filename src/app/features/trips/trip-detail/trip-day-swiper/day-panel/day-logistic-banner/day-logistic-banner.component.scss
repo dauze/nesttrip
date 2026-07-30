@@ -17,6 +17,8 @@
 .day-logistic-banner__item {
   appearance: none;
   border: none;
+  border-left-width: 0.25rem;
+  border-left-style: solid;
   cursor: pointer;
   text-align: left;
   padding: 0.5rem 0.75rem;

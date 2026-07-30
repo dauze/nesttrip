@@ -53,6 +53,12 @@ export function getLogisticDayOccurrences(logistic: Logistic, dayId: Date): Logi
       if (isEnd) occurrences.push({ logistic, role: 'Restitution', time: endDateTime });
       return occurrences;
     }
+    case 'train': {
+      const occurrences: LogisticDayOccurrence[] = [];
+      if (isStart) occurrences.push({ logistic, role: 'Départ', time: startDateTime });
+      if (isEnd && !isStart) occurrences.push({ logistic, role: 'Arrivée', time: endDateTime });
+      return occurrences;
+    }
     case 'other':
       if (isStart) return [{ logistic, role: 'Début', time: startDateTime }];
       if (isEnd) return [{ logistic, role: 'Fin', time: endDateTime }];

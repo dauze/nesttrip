@@ -47,7 +47,7 @@ export const CURRENCY_OPTIONS = [
 /**
  * Hébergement/Transport exclus des choix proposés à la création/édition
  * (désormais couverts par les réservations transverses — hôtel/vol/location,
- * voir Logistic.md) : l'enum et `ACTIVITY_TYPE_META` gardent ces valeurs
+ * voir Reservation.md) : l'enum et `ACTIVITY_TYPE_META` gardent ces valeurs
  * intactes pour ne pas casser les activités déjà existantes de ce type.
  */
 const HIDDEN_ACTIVITY_TYPES: ActivityType[] = [ActivityType.HEBERGEMENT, ActivityType.TRANSPORT];
