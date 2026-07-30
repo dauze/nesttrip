@@ -2,7 +2,7 @@ import { Trip } from '@app/features/trips/trip.model';
 import { TripFirebase } from '../models/trip.dto';
 import { activityFromFb, activityToFb } from './activity.mapper';
 import { dayActivityInstanceFromFb, dayActivityInstanceToFb } from './day-activity-instance.mapper';
-import { reservationFromFb, reservationToFb } from './reservation.mapper';
+import { logisticFromFb, logisticToFb } from './logistic.mapper';
 
 export function tripFromFb(data: TripFirebase): Trip {
   return {
@@ -13,11 +13,11 @@ export function tripFromFb(data: TripFirebase): Trip {
     })),
     activities: Object.values(data.activities ?? {}).map((a) => activityFromFb(a)),
     dayActivityInstances: Object.values(data.dayActivityInstances ?? {}).map((a) => dayActivityInstanceFromFb(a)),
-    reservations: Object.values(data.reservations ?? {}).map((r) => reservationFromFb(r)),
+    logistics: Object.values(data.logistics ?? {}).map((r) => logisticFromFb(r)),
   };
 }
 
-/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`defaultCurrency` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/reservationToFb. */
+/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`defaultCurrency` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/logisticToFb. */
 export function tripToFb(data: Trip): TripFirebase {
   const { placeId, defaultCurrency, ...rest } = data;
   return {
@@ -36,8 +36,8 @@ export function tripToFb(data: Trip): TripFirebase {
     dayActivityInstances: Object.fromEntries(
       data.dayActivityInstances.map((a) => [a.id, dayActivityInstanceToFb(a)]),
     ),
-    reservations: Object.fromEntries(
-      data.reservations.map((r) => [r.id, reservationToFb(r)]),
+    logistics: Object.fromEntries(
+      data.logistics.map((r) => [r.id, logisticToFb(r)]),
     ),
   };
 }

@@ -1,0 +1,23 @@
+<app-panel header="Logistique" class="logistics-list">
+  <div class="flex flex-column gap-2">
+    @if (logistics().length === 0 && !creationService.draftActive()) {
+      <app-message
+        severity="info"
+        icon="pi pi-info-circle"
+        text="Aucun élément logistique pour l'instant, n'hésitez pas à en créer avec le bouton +."
+        class="w-full" />
+    } @else {
+      <div class="flex flex-column gap-2">
+        @for (logistic of logistics(); track logistic.id) {
+          <app-logistic-card [tripId]="tripId()" [logisticId]="logistic.id" [initCollapsed]="true" />
+        }
+      </div>
+    }
+
+    @if (creationService.draftActive()) {
+      <app-new-logistic-draft
+        (confirmed)="creationService.confirmDraft($event)"
+        (cancelled)="creationService.cancelDraft()" />
+    }
+  </div>
+</app-panel>

@@ -14,7 +14,7 @@ import {
   ViewContainerRef
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
-import { DayReservationBannerComponent } from './day-reservation-banner/day-reservation-banner.component';
+import { DayLogisticBannerComponent } from './day-logistic-banner/day-logistic-banner.component';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
@@ -41,7 +41,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TimelineComponent, ActivityCardComponent, PanelComponent, MessageComponent, SkeletonComponent,
-    NewActivityDraftComponent, DayReservationBannerComponent,
+    NewActivityDraftComponent, DayLogisticBannerComponent,
   ],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',

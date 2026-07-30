@@ -97,7 +97,7 @@ export class NewTripComponent {
       days: this.buildDays(dateDebut, dateFin),
       activities: [],
       dayActivityInstances: [],
-      reservations: [],
+      logistics: [],
       notes: this.buildNote(),
       ownerId: user.uid,
       members: {

@@ -31,7 +31,7 @@
       }
     </div>
     <div class="day-panel-activities-group">
-      <app-day-reservation-banner class="day-panel-banner" [tripId]="tripId()" [dayId]="dayId()" />
+      <app-day-logistic-banner class="day-panel-banner" [tripId]="tripId()" [dayId]="dayId()" />
       <app-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
       (afterToggle)="onActivitiesPanelToggled()" class="activities-column">
         <div panelHeader class="flex align-items-center gap-2">

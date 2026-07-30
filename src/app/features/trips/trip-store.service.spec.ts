@@ -5,7 +5,7 @@ import { TripStore } from './trip-store.service';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
-import { ReservationPersistenceService } from '@app/core/infra/firebase/services/persistence/reservation-persistence.service';
+import { LogisticPersistenceService } from '@app/core/infra/firebase/services/persistence/logistic-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
@@ -57,7 +57,7 @@ describe('TripStore', () => {
         { provide: ActivityPersistenceService, useValue: activityWriter },
         { provide: DayActivityInstancePersistenceService, useValue: instanceWriter },
         { provide: DayActivitiesPersistenceService, useValue: fakeWriter() },
-        { provide: ReservationPersistenceService, useValue: fakeWriter() },
+        { provide: LogisticPersistenceService, useValue: fakeWriter() },
         { provide: NotesPersistenceService, useValue: fakeWriter() },
         {
           provide: TripPersistenceService,
@@ -147,7 +147,7 @@ describe('TripStore', () => {
           days: [],
           activities: [],
           dayActivityInstances: [],
-          reservations: [],
+          logistics: [],
           notes: { id: 'n1', items: [] },
           defaultCurrency: 'EUR',
           ...overrides,

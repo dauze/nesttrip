@@ -1,0 +1,27 @@
+<div class="logistic-header__row flex align-items-center gap-2 w-full min-w-0">
+  <div class="logistic-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
+    <i [class]="'pi text-xl nt-text-muted ' + typeMeta[logistic().type].icon"></i>
+  </div>
+
+  <div class="logistic-header__meta flex flex-column flex-1 min-w-0 gap-1">
+    <input
+      type="text"
+      class="nt-inline-field w-full font-semibold text-base"
+      [value]="titleValue()"
+      [placeholder]="typeMeta[logistic().type].label"
+      (input)="onTitleInput($any($event.target).value)"
+      (blur)="onTitleBlur()"
+      (focus)="onTitleFocus($event)"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()" />
+
+    <span class="nt-text-muted text-xs flex align-items-center gap-1">
+      <i class="pi pi-calendar logistic-header__meta-icon"></i>
+      @if (logistic().startDateTime || logistic().endDateTime) {
+        {{ logistic().startDateTime | date:'dd/MM HH:mm' }} → {{ logistic().endDateTime | date:'dd/MM HH:mm' }}
+      } @else {
+        Date à renseigner
+      }
+    </span>
+  </div>
+</div>

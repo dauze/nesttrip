@@ -1,7 +1,7 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 
-export type GeneralCreationSubTab = 'activities' | 'notes' | 'reservations';
+export type GeneralCreationSubTab = 'activities' | 'notes' | 'logistics';
 
 export interface GeneralCreationTarget {
   activeSubTab: Signal<GeneralCreationSubTab>;

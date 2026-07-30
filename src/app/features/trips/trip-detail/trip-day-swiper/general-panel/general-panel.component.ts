@@ -2,27 +2,27 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { ActivatedRoute, Router } from '@angular/router';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
-import { ReservationFocusService } from '@app/features/trips/trip-detail/reservation-focus.service';
+import { LogisticFocusService } from '@app/features/trips/trip-detail/logistic-focus.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { NotesComponent } from './notes/notes.component';
 import { TripActivitiesComponent } from './trip-activities/trip-activities.component';
-import { ReservationsListComponent } from './reservations/reservations-list.component';
+import { LogisticsListComponent } from './logistics/logistics-list.component';
 import { Notes } from './notes/notes.model';
 
-type GeneralSubTab = 'notes' | 'activities' | 'reservations';
-const SUB_TABS: GeneralSubTab[] = ['notes', 'activities', 'reservations'];
+type GeneralSubTab = 'notes' | 'activities' | 'logistics';
+const SUB_TABS: GeneralSubTab[] = ['notes', 'activities', 'logistics'];
 
 @Component({
   selector: 'app-general-panel',
   standalone: true,
-  imports: [NotesComponent, TripActivitiesComponent, ReservationsListComponent, SelectButtonComponent],
+  imports: [NotesComponent, TripActivitiesComponent, LogisticsListComponent, SelectButtonComponent],
   templateUrl: './general-panel.component.html',
   styleUrl: './general-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GeneralPanelComponent {
   private readonly fabTarget = inject(TripCreationTargetService);
-  private readonly reservationFocusService = inject(ReservationFocusService);
+  private readonly logisticFocusService = inject(LogisticFocusService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -42,13 +42,13 @@ export class GeneralPanelComponent {
 
   readonly subTabOptions: SelectButtonOption<GeneralSubTab>[] = [
     { label: 'Activités', value: 'activities', icon: 'pi pi-map-marker' },
-    { label: 'Réservations', value: 'reservations', icon: 'pi pi-bookmark' },
+    { label: 'Logistique', value: 'logistics', icon: 'pi pi-bookmark' },
     { label: 'Notes', value: 'notes', icon: 'pi pi-clipboard' }
   ];
 
   private readonly activitiesRef = viewChild(TripActivitiesComponent);
   private readonly notesRef = viewChild(NotesComponent);
-  private readonly reservationsRef = viewChild(ReservationsListComponent);
+  private readonly logisticsRef = viewChild(LogisticsListComponent);
 
   constructor() {
     // Singleton (un seul onglet "Général") : enregistré une fois pour toute
@@ -79,14 +79,14 @@ export class GeneralPanelComponent {
       });
     });
 
-    // Demande de navigation croisée (voir ReservationFocusService) : bascule
+    // Demande de navigation croisée (voir LogisticFocusService) : bascule
     // le sous-onglet dès qu'une bannière de réservation demande le focus,
-    // que ce sous-onglet soit déjà monté ou non (ReservationsListComponent
+    // que ce sous-onglet soit déjà monté ou non (LogisticsListComponent
     // consomme ensuite la requête une fois monté).
     effect(() => {
-      if (this.reservationFocusService.pending()) {
-        this.activeSubTab.set('reservations');
-        this.syncSubTabToUrl('reservations');
+      if (this.logisticFocusService.pending()) {
+        this.activeSubTab.set('logistics');
+        this.syncSubTabToUrl('logistics');
       }
     });
   }
@@ -119,8 +119,8 @@ export class GeneralPanelComponent {
       case 'notes':
         this.notesRef()?.addItem();
         break;
-      case 'reservations':
-        this.reservationsRef()?.triggerCreate();
+      case 'logistics':
+        this.logisticsRef()?.triggerCreate();
         break;
       default:
         this.activitiesRef()?.triggerCreate();

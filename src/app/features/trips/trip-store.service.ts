@@ -4,11 +4,11 @@ import { Trip, Day, TripMember } from './trip.model';
 import { Activity, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
-import { FlightReservation, FlightStatus, Reservation } from '@core/models/reservation.dto';
+import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dto';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
-import { ReservationPersistenceService } from '@app/core/infra/firebase/services/persistence/reservation-persistence.service';
+import { LogisticPersistenceService } from '@app/core/infra/firebase/services/persistence/logistic-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -20,7 +20,7 @@ type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
 type PoolActivityEntities = Record<string, PoolActivity>;
 type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
-type ReservationEntities = Record<string, Reservation>;
+type LogisticEntities = Record<string, Logistic>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
 
 /** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
@@ -39,7 +39,7 @@ export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService);
   private readonly dayActivityInstancePersistenceService = inject(DayActivityInstancePersistenceService);
   private readonly dayActivitiesPersistenceService = inject(DayActivitiesPersistenceService);
-  private readonly reservationPersistenceService = inject(ReservationPersistenceService);
+  private readonly logisticPersistenceService = inject(LogisticPersistenceService);
   private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
@@ -63,8 +63,8 @@ export class TripStore {
     // Même mécanisme anti-flicker que les activités, pour les réservations
     // (un seul writer débouncé ici, contrairement au couple pool/instances).
     effect(() => {
-      if (!this.reservationPersistenceService.syncing()) {
-        this._pendingReservationIds.set(new Set());
+      if (!this.logisticPersistenceService.syncing()) {
+        this._pendingLogisticIds.set(new Set());
       }
     });
   }
@@ -80,7 +80,7 @@ export class TripStore {
       this.activityPersistenceService,
       this.dayActivityInstancePersistenceService,
       this.dayActivitiesPersistenceService,
-      this.reservationPersistenceService,
+      this.logisticPersistenceService,
       this.notesPersistenceService,
     ];
     if (writers.some((w) => w.hasError())) return 'error';
@@ -115,14 +115,14 @@ export class TripStore {
    */
   readonly _pendingActivityIds = signal<Set<string>>(new Set());
   /** @internal — pool plat de TOUTES les réservations (hôtel/vol/location/autre) connues, quel que soit le trip */
-  readonly _reservations = signal<ReservationEntities>({});
-  /** @internal — TOUTES les réservations d'un trip, sans ordre particulier (voir `allReservationsSorted` côté façade pour l'ordre chronologique) */
-  readonly _tripReservations = signal<Record<string, string[]>>({});
+  readonly _logistics = signal<LogisticEntities>({});
+  /** @internal — TOUTES les réservations d'un trip, sans ordre particulier (voir `allLogisticsSorted` côté façade pour l'ordre chronologique) */
+  readonly _tripLogistics = signal<Record<string, string[]>>({});
   /**
    * @internal — même rôle que `_pendingActivityIds`, pour les réservations
-   * (writer débouncé indépendant, voir `ReservationPersistenceService`).
+   * (writer débouncé indépendant, voir `LogisticPersistenceService`).
    */
-  readonly _pendingReservationIds = signal<Set<string>>(new Set());
+  readonly _pendingLogisticIds = signal<Set<string>>(new Set());
   /** @internal */
   readonly _notesItems = signal<Record<string, Item>>({});
   /** @internal */
@@ -168,8 +168,8 @@ export class TripStore {
       // skeleton de chargement) réactif à CHAQUE édition d'activité.
       activities: [],
       dayActivityInstances: [],
-      // Même raison : les réservations se consomment via `getAllReservations(tripId)`.
-      reservations: [],
+      // Même raison : les réservations se consomment via `getAllLogistics(tripId)`.
+      logistics: [],
     };
   });
 
@@ -369,65 +369,65 @@ export class TripStore {
 
   // ── Sélecteurs mémorisés — Réservations ───────────────────────────────────
 
-  private readonly reservationById = new Map<string, Signal<Reservation>>();
-  private readonly allReservationsByTrip = new Map<string, Signal<Reservation[]>>();
+  private readonly logisticById = new Map<string, Signal<Logistic>>();
+  private readonly allLogisticsByTrip = new Map<string, Signal<Logistic[]>>();
 
-  getReservation(reservationId: string): Signal<Reservation> {
-    if (!this.reservationById.has(reservationId)) {
-      this.reservationById.set(
-        reservationId,
-        computed(() => this._reservations()[reservationId]),
+  getLogistic(logisticId: string): Signal<Logistic> {
+    if (!this.logisticById.has(logisticId)) {
+      this.logisticById.set(
+        logisticId,
+        computed(() => this._logistics()[logisticId]),
       );
     }
-    return this.reservationById.get(reservationId)!;
+    return this.logisticById.get(logisticId)!;
   }
 
-  /** Toutes les réservations d'un trip, sans tri (voir `TripFacade.allReservationsSorted` pour l'ordre chronologique). */
-  getAllReservations(tripId: string): Signal<Reservation[]> {
-    if (!this.allReservationsByTrip.has(tripId)) {
-      this.allReservationsByTrip.set(
+  /** Toutes les réservations d'un trip, sans tri (voir `TripFacade.allLogisticsSorted` pour l'ordre chronologique). */
+  getAllLogistics(tripId: string): Signal<Logistic[]> {
+    if (!this.allLogisticsByTrip.has(tripId)) {
+      this.allLogisticsByTrip.set(
         tripId,
         computed(() => {
-          const ids = this._tripReservations()[tripId] ?? [];
-          const map = this._reservations();
-          return ids.map((id) => map[id]).filter((r): r is Reservation => !!r);
+          const ids = this._tripLogistics()[tripId] ?? [];
+          const map = this._logistics();
+          return ids.map((id) => map[id]).filter((r): r is Logistic => !!r);
         }),
       );
     }
-    return this.allReservationsByTrip.get(tripId)!;
+    return this.allLogisticsByTrip.get(tripId)!;
   }
 
   // ── Commandes — Réservations ───────────────────────────────────────────────
 
-  createReservation(tripId: string, reservation: Reservation): void {
-    this._reservations.update((r) => ({ ...r, [reservation.id]: reservation }));
-    this._tripReservations.update((t) => ({
+  createLogistic(tripId: string, logistic: Logistic): void {
+    this._logistics.update((r) => ({ ...r, [logistic.id]: logistic }));
+    this._tripLogistics.update((t) => ({
       ...t,
-      [tripId]: [...(t[tripId] ?? []), reservation.id],
+      [tripId]: [...(t[tripId] ?? []), logistic.id],
     }));
-    this.markReservationPending(reservation.id);
-    this.reservationPersistenceService.create(tripId, reservation).catch((err) => {
+    this.markLogisticPending(logistic.id);
+    this.logisticPersistenceService.create(tripId, logistic).catch((err) => {
       console.error('[TripStore] Erreur création réservation Firestore :', err);
     });
   }
 
-  updateReservation(tripId: string, reservation: Reservation): void {
-    this._reservations.update((r) => ({ ...r, [reservation.id]: reservation }));
-    this.markReservationPending(reservation.id);
-    this.reservationPersistenceService.queueUpdate(tripId, reservation);
+  updateLogistic(tripId: string, logistic: Logistic): void {
+    this._logistics.update((r) => ({ ...r, [logistic.id]: logistic }));
+    this.markLogisticPending(logistic.id);
+    this.logisticPersistenceService.queueUpdate(tripId, logistic);
   }
 
-  removeReservation(tripId: string, reservationId: string): void {
-    this._reservations.update((r) => {
+  removeLogistic(tripId: string, logisticId: string): void {
+    this._logistics.update((r) => {
       const copy = { ...r };
-      delete copy[reservationId];
+      delete copy[logisticId];
       return copy;
     });
-    this._tripReservations.update((t) => ({
+    this._tripLogistics.update((t) => ({
       ...t,
-      [tripId]: (t[tripId] ?? []).filter((id) => id !== reservationId),
+      [tripId]: (t[tripId] ?? []).filter((id) => id !== logisticId),
     }));
-    this.reservationPersistenceService.remove(tripId, reservationId).catch((err) => {
+    this.logisticPersistenceService.remove(tripId, logisticId).catch((err) => {
       console.error('[TripStore] Erreur suppression réservation Firestore :', err);
     });
   }
@@ -437,30 +437,30 @@ export class TripStore {
    * `FlightStatusRefreshService`) : n'affecte aucun autre champ de la
    * réservation. Écriture DIRECTE (pas `queueUpdate`/le writer débouncé) :
    * le pending marqué ici ne peut donc pas compter sur l'`effect()` du
-   * constructeur (qui surveille `reservationPersistenceService.syncing()`,
+   * constructeur (qui surveille `logisticPersistenceService.syncing()`,
    * lequel ne passe jamais à `true` pour cette écriture) — il est retiré
    * explicitement une fois la promesse résolue, pas par ce mécanisme partagé.
    */
-  updateFlightStatus(tripId: string, reservation: FlightReservation, status: FlightStatus, statusFetchedAt: Date): void {
-    this._reservations.update((r) => ({ ...r, [reservation.id]: { ...reservation, status, statusFetchedAt } }));
-    this.markReservationPending(reservation.id);
-    this.reservationPersistenceService.updateFlightStatus(tripId, reservation.id, status, statusFetchedAt)
+  updateFlightStatus(tripId: string, logistic: FlightLogistic, status: FlightStatus, statusFetchedAt: Date): void {
+    this._logistics.update((r) => ({ ...r, [logistic.id]: { ...logistic, status, statusFetchedAt } }));
+    this.markLogisticPending(logistic.id);
+    this.logisticPersistenceService.updateFlightStatus(tripId, logistic.id, status, statusFetchedAt)
       .catch((err) => {
         console.error('[TripStore] Erreur mise à jour statut vol Firestore :', err);
       })
-      .finally(() => this.unmarkReservationPending(reservation.id));
+      .finally(() => this.unmarkLogisticPending(logistic.id));
   }
 
-  private markReservationPending(id: string): void {
-    this._pendingReservationIds.update((s) => {
+  private markLogisticPending(id: string): void {
+    this._pendingLogisticIds.update((s) => {
       const copy = new Set(s);
       copy.add(id);
       return copy;
     });
   }
 
-  private unmarkReservationPending(id: string): void {
-    this._pendingReservationIds.update((s) => {
+  private unmarkLogisticPending(id: string): void {
+    this._pendingLogisticIds.update((s) => {
       if (!s.has(id)) return s;
       const copy = new Set(s);
       copy.delete(id);
@@ -496,7 +496,7 @@ export class TripStore {
     });
     this._tripDays.update((map) => ({ ...map, [trip.id]: dayKeys }));
     this._tripActivities.update((map) => ({ ...map, [trip.id]: [] }));
-    this._tripReservations.update((map) => ({ ...map, [trip.id]: [] }));
+    this._tripLogistics.update((map) => ({ ...map, [trip.id]: [] }));
 
     // _notesItems + _tripNotesItems : items des notes (vides à la création)
     const itemIds = trip.notes.items.map((note) => note.id);

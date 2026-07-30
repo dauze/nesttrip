@@ -6,7 +6,7 @@ import { FlightState, FlightStatusResponse } from './flight-status.dto';
  * status". Valeurs observées : 'Unknown' | 'Expected' | 'CheckIn' | 'Boarding'
  * | 'GateClosed' | 'Departed' | 'EnRoute' | 'Approaching' | 'Arrived' |
  * 'Delayed' | 'Canceled' | 'Diverted'. À VALIDER/ajuster une fois testé sur
- * de vrais vols (voir Reservation.md Phase 4, étape de validation) : ce
+ * de vrais vols (voir Logistic.md Phase 4, étape de validation) : ce
  * mapping est une première approximation raisonnable, pas une garantie
  * exhaustive de toutes les valeurs possibles de l'API.
  */

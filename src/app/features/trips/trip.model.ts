@@ -1,5 +1,5 @@
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
-import { Reservation } from '@core/models/reservation.dto';
+import { Logistic } from '@core/models/logistic.dto';
 import { Notes } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 export type TripRole = 'owner' | 'editor';
@@ -15,7 +15,7 @@ export interface Trip {
   /** Instances réelles (form) rattachées aux jours, référencées par Day.activityIds. */
   dayActivityInstances: DayActivityInstance[];
   /** Réservations transverses (hôtel/vol/location/autre), indépendantes des jours. */
-  reservations: Reservation[];
+  logistics: Logistic[];
   notes: Notes;
   placeId?: string;
   /** Devise par défaut du voyage, préremplie à la création d'une nouvelle activité/réservation (voir ROADMAP.md "Devise") — n'affecte jamais les éléments déjà créés. */

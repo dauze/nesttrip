@@ -1,0 +1,26 @@
+:host { display: block; }
+
+.booking {
+  border-left-width: 0.4rem;
+  border-left-color: var(--booking-status-color);
+}
+
+// Réservation déjà terminée (endDateTime < maintenant) — voir
+// LogisticCardComponent.timeStatus / ROADMAP.md "Administratif". Même
+// traitement que .not-dispatched côté activités (activity-card.component.scss) :
+// contour en pointillés + grisée, pour un langage visuel cohérent entre les
+// deux listes.
+.logistic-past {
+  opacity: 0.55;
+  border-style: dashed;
+  border-left-style: inset;
+}
+
+// Date(s) pas encore renseignée(s) (voir LogisticCardComponent.timeStatus) :
+// même contour en pointillés que .logistic-past/.not-dispatched, SANS
+// l'opacité réduite — il ne s'agit pas d'un élément "terminé" à discrétiser,
+// au contraire on veut inciter à la compléter, donc rester bien visible.
+.logistic-undated {
+  border-style: dashed;
+  border-left-style: inset;
+}

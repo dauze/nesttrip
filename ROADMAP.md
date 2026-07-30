@@ -80,6 +80,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - La bar "Notes - Réservation - Activitées" devrait être mieux en sticky pour pas qu'on voit la liste en dessous scroller sur portable. Sur PC elle a un trop grand gap
 - Rajouter "devise :" devent dans le header du voyage
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire
+- supprimer le défilement sur la carte au vu scroll mais plutôt le faire au ralenti comme cinématique dans l'onget applications
 
 - Renommer "Réservation" en "Logistique"
 - Renommer type "hôtel" en "Logement"
@@ -118,7 +119,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Le choix de l'heure de début dans la réservation ne chaine pas sur la date de fin lorsque l'on clique sur l'heure et pas sur le "OK, et la date de fin est alimenté avec lh'eure de début à tort
 - si je clique 2 fois sur ajouter, la carte d'ajout ne fonctionne plus idem pour les activité en mode ordinateur, à corriger : on doit positionné le focus sur l'activité en cours de création si elle existe déjà
 - le clique sur le panneau pour un hotel/ transport dirige vers l'onglet réservation et ouvre bien la bonne réservation, mais il ne ne scroll pas pour centrer la réserviation à tord
-- Sur la popup pour saisir un élément de google pour le titre et les notes, le scroll doit se faire sur le contenu, pas sur toute la opoup, de tel sort que le titre doit toujours être affiché en haut. La croix doit être à droite et le titre en gras aussi 
+- Sur la popup pour saisir un élément de google pour le titre et les notes, le scroll doit se faire sur le contenu, pas sur toute la opoup, de tel sort que le titre doit toujours être affiché en haut. La croix doit être à droite et le titre en gras aussi, et les bouton OK ou annulé doivent toujours être au dessus du clavier 
 - La création d'une activité l'a créé en double 
 - le drag and drop depuis général a assigné 2 fois l'activité + a perdu le titre
 - le onblur bleu n'est pa jolie sur le clqiue des trip (et surement d'autres cliques)

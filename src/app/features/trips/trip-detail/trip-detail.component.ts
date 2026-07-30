@@ -20,7 +20,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
-import { ReservationFocusService } from './reservation-focus.service';
+import { LogisticFocusService } from './logistic-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
@@ -51,7 +51,7 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   // les DayPanelComponent du swiper, pour une sélection persistante d'un
   // onglet à l'autre.
   providers: [
-    TripCreationTargetService, DayActivityFocusService, ReservationFocusService,
+    TripCreationTargetService, DayActivityFocusService, LogisticFocusService,
     SelectionModeService, TripItemDeletionService,
   ],
 })
@@ -65,7 +65,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly viewport = inject(ViewportService);
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);
-  private readonly reservationFocusService = inject(ReservationFocusService);
+  private readonly logisticFocusService = inject(LogisticFocusService);
   protected readonly selectionService = inject(SelectionModeService);
   private readonly itemDeletionService = inject(TripItemDeletionService);
 
@@ -110,7 +110,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.activeDay() !== 'notes') return 'pi pi-map-marker';
     switch (this.fabTarget.general()?.activeSubTab()) {
       case 'notes': return 'pi pi-clipboard';
-      case 'reservations': return 'pi pi-bookmark';
+      case 'logistics': return 'pi pi-bookmark';
       default: return 'pi pi-map-marker';
     }
   });
@@ -119,7 +119,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.activeDay() !== 'notes') return 'Ajouter une activité';
     switch (this.fabTarget.general()?.activeSubTab()) {
       case 'notes': return 'Ajouter une note';
-      case 'reservations': return 'Ajouter une réservation';
+      case 'logistics': return 'Ajouter un élément logistique';
       default: return 'Ajouter une activité';
     }
   });
@@ -237,13 +237,13 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       this.updateFragment(pending.dayId);
     });
 
-    // Demande de navigation croisée symétrique (voir ReservationFocusService)
+    // Demande de navigation croisée symétrique (voir LogisticFocusService)
     // : tap sur une bannière de réservation depuis un jour bascule ici sur
     // l'onglet Général — GeneralPanelComponent (sous-onglet) puis
-    // ReservationsListComponent (ouverture du dialog d'édition) consomment
+    // LogisticsListComponent (ouverture du dialog d'édition) consomment
     // ensuite la même requête, chacun à son échelle.
     effect(() => {
-      const pending = this.reservationFocusService.pending();
+      const pending = this.logisticFocusService.pending();
       if (!pending || this.activeDay() === 'notes') return;
 
       this.activeDay.set('notes');

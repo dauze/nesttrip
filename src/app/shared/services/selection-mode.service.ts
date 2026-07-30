@@ -9,7 +9,7 @@ export type SelectableItemRef =
   | { kind: 'trip'; id: string }
   | { kind: 'poolActivity'; id: string }
   | { kind: 'dayActivityInstance'; id: string; dayId: Date }
-  | { kind: 'reservation'; id: string }
+  | { kind: 'logistic'; id: string }
   | { kind: 'noteItem'; id: string };
 
 export function selectableItemKey(ref: SelectableItemRef): string {

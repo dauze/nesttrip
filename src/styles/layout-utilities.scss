@@ -29,7 +29,7 @@
  * de la même échelle zinc, pas une variable réévaluée par mode.
  *
  * `text-orange-500` (utilisé pour le style "échéance proche" dans
- * activity-form/reservation-details) n'est volontairement PAS repris
+ * activity-form/logistic-details) n'est volontairement PAS repris
  * ici : la variable `--p-orange-500` qu'il référençait n'a jamais été
  * définie nulle part dans le projet — la classe n'avait donc déjà aucun
  * effet visuel avant cette migration (la couleur retombe sur l'héritée).
