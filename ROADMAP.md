@@ -18,7 +18,8 @@ Décisions prises avec l'utilisateur le 2026-07-30 :
 Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur).
 
 Décisions prises avec l'utilisateur le 2026-07-31 (section "UX / Interactions") :
-- **Cinématique carte du pool Général** : décorrélation totale du scroll (contrairement à la vue jour, inchangée) — tour lent point à point sur 2s d'inactivité, retour en douceur à la vue d'ensemble sur toute action ailleurs sur la page, mise en pause (sans jamais forcer la caméra) sur toute action directement sur la carte, reprise du tour là où il en était après 2s. Détail complet dans "✅ Déjà fait".
+- **Cinématique carte du pool Général** : décorrélation totale du scroll (contrairement à la vue jour, inchangée) — tour lent point à point sur 2s d'inactivité, mise en pause (sans jamais forcer la caméra) sur toute action directement sur la carte, reprise du tour là où il en était après 2s. Détail complet dans "✅ Déjà fait".
+  - **Correctif (2026-07-31)** : le retour à la vue d'ensemble sur toute action "ailleurs sur la page" (scroll du pool, clic sur une carte d'activité, recherche, tri...) a été retiré — retour utilisateur : ce comportement initial gênait, la cinématique ne doit se mettre en pause QUE sur une action directement sur la carte, jamais ailleurs (`GeneralMapCinematicService` : suppression de `onPageAction`/`onRootPointerDown` et des écouteurs scroll/`pointerdown` associés).
 - **Bouton "+"** : le même menu à 7 entrées (Activité + 5 types Logistique + Note) s'ouvre désormais partout, jour ET onglet Général — l'ancienne création directe contextuelle du "+" sur Général est retirée.
 
 Ordre d'exécution prévu pour le reste :
@@ -50,8 +51,6 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 
 ### Activités
 
-- Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
-- Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
@@ -86,6 +85,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire (non prioritaire)
 - le bouton flotant : trouver une solution : déplaceable ? sur le coté qui sort ? Faut trouver mieux (non prioritaire)
 - Je ne me sert pa pour l'instant de deadline (non prioritaire)
+- Modifier les icones sur la carte, pas de chiffre, un truc plus stylé, laz photo et le nom ? 
 
 
 ### Bugs / fixes
@@ -116,7 +116,8 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
 
 ## ✅ Déjà fait
-
+- Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
+- Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suppression multi-sélection unifiée (activités, réservations, notes, accueil-trip) : long-press + drawer sur mobile, checkbox toujours visible sur PC, `SelectionModeService` transverse + `TripItemDeletionService`
 - Skeleton loading
 - Refacto du style vers PrimeNG (composants + usage cohérent)

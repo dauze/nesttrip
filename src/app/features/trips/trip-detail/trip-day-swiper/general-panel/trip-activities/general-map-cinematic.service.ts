@@ -7,9 +7,6 @@ export interface GeneralMapCinematicConfig {
   isExpanded: () => boolean;
   getPoints: () => DayMapPoint[];
   getMapComponent: () => TripDayMapComponent | null;
-  getSlideEl: () => HTMLElement | null;
-  /** Hôte de `TripActivitiesComponent` — pour détecter une action "page" (voir `onRootPointerDown`), l'onglet Général dans son ensemble n'étant pas surveillé. */
-  getPageRootEl: () => HTMLElement | null;
 }
 
 type Phase = 'idle-at-overview' | 'touring' | 'returning-to-overview' | 'paused-by-map';
@@ -41,7 +38,10 @@ const MS_PER_ZOOM_LEVEL = 600;
  * `cameraFollowEnabled`) — machine à états dédiée, voir ROADMAP.md "UX /
  * Interactions" pour le comportement cible détaillé avec l'utilisateur.
  *
- * 4 états :
+ * 3 états (une action ailleurs sur la page — scroll du pool, clic sur une
+ * carte d'activité, recherche, tri... — n'a AUCUN effet sur la cinématique,
+ * seule une action DIRECTEMENT sur la carte la met en pause, retour
+ * utilisateur) :
  * - `idle-at-overview` : repos, caméra sur la vue d'ensemble (tous les
  *   points, `TripDayMapComponent.computeOverviewCamera`).
  * - `touring` : promenade lente point à point (réutilise
@@ -50,25 +50,22 @@ const MS_PER_ZOOM_LEVEL = 600;
  *   plutôt que par la position de scroll) — `SEGMENT_MS` volontairement bien
  *   plus lent que l'ancien suivi en direct (retour utilisateur), avec une
  *   légère pause (`DWELL_MS`) sur chaque point atteint avant d'enchaîner.
- * - `returning-to-overview` : retour en douceur vers la vue d'ensemble,
- *   depuis l'état caméra ACTUEL (`TripDayMapComponent.getCameraState`), fin
- *   de tour ou action "page" (scroll du pool, clic sur une carte d'activité,
- *   recherche, tri...).
  * - `paused-by-map` : action DIRECTEMENT sur la carte (drag, zoom, clic
  *   marqueur) — l'automatisme se fige, la caméra n'est JAMAIS touchée
  *   (l'utilisateur garde la main), `tourPointIndex` retient où en était le
  *   tour pour reprendre exactement là après 2s d'inactivité (pas de retour à
  *   la vue d'ensemble, pas de redémarrage au point 1).
  *
- * Détection d'action à 2 niveaux (voir `attachMap`/`startListening`) :
- * - carte : `dragstart` (Google Maps, jamais émis par nos propres
- *   `moveCamera` programmatiques, contrairement à `zoom_changed` — évite une
- *   boucle d'auto-déclenchement) + `wheel`/`touchstart` natifs sur le
- *   conteneur de la carte (zoom molette/pincement, eux aussi strictement
- *   utilisateur) + clic marqueur (`activitySelected`).
- * - page (hors carte) : scroll natif du pool + `pointerdown` sur l'hôte de
- *   `TripActivitiesComponent`, en excluant tout ce qui vient du conteneur de
- *   la carte (déjà couvert par le mécanisme "carte" ci-dessus).
+ * `returning-to-overview` : retour en douceur vers la vue d'ensemble
+ * uniquement en fin de tour (dernier point atteint) — plus jamais déclenché
+ * par une action "page", voir ci-dessus.
+ *
+ * Détection d'action sur la carte uniquement (voir `attachMap`) :
+ * `dragstart` (Google Maps, jamais émis par nos propres `moveCamera`
+ * programmatiques, contrairement à `zoom_changed` — évite une boucle
+ * d'auto-déclenchement) + `wheel`/`touchstart` natifs sur le conteneur de la
+ * carte (zoom molette/pincement, eux aussi strictement utilisateur) + clic
+ * marqueur (`activitySelected`).
  */
 @Injectable()
 export class GeneralMapCinematicService implements OnDestroy {
@@ -81,8 +78,6 @@ export class GeneralMapCinematicService implements OnDestroy {
   private dwellTimer?: number;
   private wakeLockSentinel: WakeLockSentinel | null = null;
 
-  private slideEl: HTMLElement | null = null;
-  private rootEl: HTMLElement | null = null;
   private mapGoogleListeners: google.maps.MapsEventListener[] = [];
   private mapSubscription?: { unsubscribe: () => void };
   private mapContainerEl: HTMLElement | null = null;
@@ -92,12 +87,6 @@ export class GeneralMapCinematicService implements OnDestroy {
   }
 
   startListening(): void {
-    this.slideEl = this.config.getSlideEl();
-    this.slideEl?.addEventListener('scroll', this.onPageAction, { passive: true });
-
-    this.rootEl = this.config.getPageRootEl();
-    this.rootEl?.addEventListener('pointerdown', this.onRootPointerDown, { passive: true });
-
     this.scheduleIdle();
   }
 
@@ -131,21 +120,6 @@ export class GeneralMapCinematicService implements OnDestroy {
     this.mapContainerEl?.removeEventListener('touchstart', this.onMapAction);
     this.mapContainerEl = null;
   }
-
-  private readonly onRootPointerDown = (event: PointerEvent): void => {
-    const mapEl = this.mapContainerEl;
-    if (mapEl && event.target instanceof Node && mapEl.contains(event.target)) return;
-    this.onPageAction();
-  };
-
-  /** Action ailleurs sur la page (pas la carte) : retour en douceur à la vue d'ensemble, puis le minuteur de 2s repart — la cinématique reprendra du point 1. */
-  private readonly onPageAction = (): void => {
-    if (!this.config.isActive()) return;
-    clearTimeout(this.idleTimer);
-    this.generation++;
-    this.tourPointIndex = 0;
-    this.returnToOverview(this.generation);
-  };
 
   /** Action directement sur la carte : fige l'automatisme SANS toucher à la caméra, l'utilisateur garde la main — reprise du tour là où il en était après 2s d'inactivité. */
   private readonly onMapAction = (): void => {
@@ -370,7 +344,5 @@ export class GeneralMapCinematicService implements OnDestroy {
     this.releaseWakeLock();
     this.mapSubscription?.unsubscribe();
     this.detachMapListeners();
-    this.slideEl?.removeEventListener('scroll', this.onPageAction);
-    this.rootEl?.removeEventListener('pointerdown', this.onRootPointerDown);
   }
 }

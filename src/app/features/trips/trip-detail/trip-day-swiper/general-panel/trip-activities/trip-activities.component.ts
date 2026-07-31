@@ -240,8 +240,6 @@ export class TripActivitiesComponent {
       isExpanded: () => !this.mapCollapsed(),
       getPoints: () => this.generalMapPoints(),
       getMapComponent: () => this.activeMapComponent(),
-      getSlideEl: () => this.getSlideEl(),
-      getPageRootEl: () => this.elRef.nativeElement,
     });
 
     afterNextRender(() => {

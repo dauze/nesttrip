@@ -4,7 +4,7 @@
         [appSelectable]="selectableRef()" #sel="appSelectable"
         appLongPress (longPress)="sel.onLongPress()"
         [ngClass]="'booking ' + bookingMeta().className + (timeStatus() === 'past' ? ' logistic-past' : '') + (timeStatus() === 'undated' ? ' logistic-undated' : '')" [toggleable]="true" [(collapsed)]="collapsed">
-      <div panelHeader class="flex align-items-center w-full">
+      <div panelHeader class="flex align-items-center gap-2 w-full">
         <app-checkbox
           class="nt-select-checkbox flex-shrink-0"
           [checked]="sel.isSelected()"

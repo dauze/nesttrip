@@ -3,6 +3,7 @@ export const environment = {
   apiUrl: '',
   googleMapsApiKey: '',
   googleMapsMapId: '',
+  flightsApiKey: '',
   firebase: {
     apiKey: '',
     authDomain: '',
