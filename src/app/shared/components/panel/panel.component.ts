@@ -55,6 +55,7 @@ export interface PanelToggleEvent {
     class: 'app-panel',
     '[class.app-panel--fill-height]': 'fillHeight()',
     '[class.app-panel--thick-border]': 'thickBorder()',
+    '[class.app-panel--collapsed]': 'collapsed()',
   },
 })
 export class PanelComponent {

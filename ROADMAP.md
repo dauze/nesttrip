@@ -43,6 +43,8 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### UI Desktop
 
 - Vue calendrier (reporté, pas assez cadré)
+- Améliorer la vue jour, le résumé de la journé est trop étiré là
+- Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop, pas cool 
 
 ### Carte
 
@@ -85,27 +87,23 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire (non prioritaire)
 - le bouton flotant : trouver une solution : déplaceable ? sur le coté qui sort ? Faut trouver mieux (non prioritaire)
 - Je ne me sert pa pour l'instant de deadline (non prioritaire)
-- Modifier les icones sur la carte, pas de chiffre, un truc plus stylé, laz photo et le nom ? 
+- Modifier les icones sur la carte, pas de chiffre, un truc plus stylé, la photo et le nom de l'activité plutot ? 
 
 
 ### Bugs / fixes
 
+- Tu utilises les bonnes API de google pour le scoll sur la carte ? Car l'affichage n'est pas fluide sur la vu ordi fv
 - Depuis le pool, problème de drag and drop maison : si je prend une activité qui est sous le calendrier, le calendrier s'ouvre et la position du drag est mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
-- mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle
+- mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle : sur cddrag il y a pas d'annimation des cartes qui se déplace pour laiosser la place à la carte en survol
 - l'ouverture du calendrier sur le drag and drop dans la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
-- Vue "lieux" (tri par ville, fusion des doublons de même placeId — onglet Activités) : ne pas afficher la couleur de statut de réservation ni le pictogramme trombone sur une carte qui représente plusieurs activités fusionnées — n'a pas de sens sur un agrégat.
 - Clignotement des photos d'activité : l'image précédente s'affiche brièvement avant la nouvelle. en dessous, beug connu de la librairie en mode loading ? 
 - Bouton flottant d'ajout : ne doit pas rester positionné au-dessus du clavier mobile quand celui-ci est ouvert mais doit suivre le clavier pour pouvoir cliquer sur valider 
 - Pull-to-refresh sur l'écran swiper : toujours cassé malgré le correctif `overscroll-behavior`/`overflow` déjà tenté (voir "Déjà fait") — diagnostic : le scroll du haut est intercepté par Swiper avant d'atteindre le pull-to-refresh natif.
-- changeDetection: ChangeDetectionStrategy.OnPush doit pas etre supprimé car par défaut dans angular 22 ? 
-- La création d'une activité l'a créé en double 
-- le drag and drop depuis général a assigné 2 fois l'activité + a perdu le titre
-- Le multiclique dans l'onglet Logistique créé plusieurs instances non remplit sur PC, c'est pas bien, il faut que ça refocus comme sur les autres onglets
-- Il manque un padding entre la case à cocher det le drag and drop sur mobile des logistiques
-- le clique sur l'image ne fonctionne plus 
-- Sur la vue desktop, si on replit la carte, elle prend quand même toute la page, voir comment faire, la focrcer ouverte ? 
+- le clique sur l'image ne fonctionne plus — pas reproduit lors de la revue du 2026-07-31 (`ActivityHeaderComponent.openPhotoViewer`/`PhotoViewerService` semblent corrects dans le code actuel) ; à reconfirmer avec un cas précis (quelle carte, quel appareil) si ça persiste.
+- Cinématique carte du pool (`GeneralMapCinematicService`) : à la toute première fois où le tour part de la vue d'ensemble vers la 1ère activité (juste après dépli de la carte), le déplacement saute directement sans la courbe (parabole) attendue — précisé par l'utilisateur le 2026-07-31, voir décisions en tête de fichier. Aux tours suivants (boucle complète général → 1er point), l'animation se joue correctement. Piste non confirmée : `enterTour`/`followFromOverview` sont pourtant identiques à chaque passage — suspect le resize Google Maps différé d'une frame (`TripDayMapHostService.moveTo`, déclenché juste avant `GeneralMapCinematicService.attachMap` dans le même effect de `TripActivitiesComponent`) qui pourrait laisser la carte dans un état interne pas totalement stabilisé au moment du tout premier tween — à instrumenter en conditions réelles (devtools performance) pour confirmer avant de corriger à l'aveugle.
+- think border ne fonctionne pas du dtout dur le panel 
 
 ### Qualité / process
 
@@ -116,6 +114,13 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
 
 ## ✅ Déjà fait
+- **Lot de correctifs bugs, 2026-07-31** :
+  - Sélection d'un vol via l'API (chaînage guidé mobile Logistique) : les infos récupérées (compagnie, aéroports, horaires) n'apparaissaient pas dans le formulaire — `LogisticDetailsComponent.guidedFlight()` écrivait le résultat du lookup directement dans le store (`tripFacade.updateLogistic`) mais jamais dans l'état local (`form`/`selectedPlaces`) que le template lit réellement, et l'effect qui resynchronise habituellement l'un depuis l'autre est volontairement suppressé pendant `guidedFlowActive`. Ajout d'un miroir local (`form.patchValue(..., {emitEvent:false})` + `selectedPlaces.update(...)`) juste après l'écriture store, qui évite aussi qu'un commit débounce ultérieur (déclenché par l'étape Résa suivante, sur le même form) n'écrase la donnée fraîchement récupérée avec les anciennes valeurs locales vides.
+  - Vue "Lieux" : la couleur de statut de réservation (bord gauche) et le pictogramme trombone n'ont de sens que rapportés à un jour précis, pas dans une vue organisée par lieu — `ActivityCardComponent.hideBookingMeta`, posé sur TOUTES les cartes de cette vue (fusionnées ou non, retour utilisateur du 2026-07-31 : masquer seulement sur les cartes fusionnées créait une incohérence, certaines cartes gardant la couleur et pas d'autres), masque désormais les deux partout dans cette vue — la classe `.booking` (bord gauche 0.4rem) n'est simplement plus posée du tout dans ce cas, la carte retombe sur le contour hairline par défaut de `app-panel`. Un premier essai avait gardé la largeur 0.4rem avec une couleur neutralisée : régression relevée par l'utilisateur (2026-07-31) — ce bord gauche épais, même gris, entrait en concurrence visuelle avec le contour légèrement plus épais du panel de groupe "ville" (`thickBorder`) censé rester la seule bordure "plus large" de la hiérarchie ; retiré entièrement, pas seulement neutralisé.
+  - Création d'une activité en double (bouton "+" du pool général, mobile) : contrairement à `DayActivityCreationService`/`LogisticsCreationService`, `TripActivitiesCreationService` n'avait aucun garde-fou contre un double-tap ouvrant deux `TitleEditDialogComponent` en parallèle — ajout du même principe (`mobileDialogOpen`), le temps que le tiroir soit ouvert.
+  - Carte repliée (vue jour desktop, layout scindé) qui gardait `height: 100%` même repliée, laissant un grand vide sous son header : `PanelComponent` expose maintenant une classe hôte `app-panel--collapsed`, et la règle `fillHeight` (`panel.component.scss`) l'exclut désormais.
+  - Activité créée depuis le pool puis aussitôt glissée sur un jour : créée en double sur ce jour (retour utilisateur du 2026-07-31, confirmé deux fois). Un premier correctif sur `TripFacade.mergeFromRemote` (garde anti-flicker manquante sur `_dayActivityIds`, gardée car réelle mais insuffisante) n'a pas suffi — cause racine trouvée par instrumentation (repro Playwright réelle, geste pointerdown/move/up simulé) : l'`effect()` de `ActivityDayDispatchOverlayComponent` qui exécute la commande réelle (`tripFacade.dispatchActivity`) à la lecture de `ActivityDispatchService.dropRequested()` se réexécutait DEUX FOIS pour EXACTEMENT le même objet requête, alors que `handlePointerUp` n'appelle `dropRequested.set(...)` qu'une seule fois par dépose — `dropRequested` ne repasse à `null` (fin du cycle) que bien après, à la toute fin de l'animation de la bulle (`finish()`, ~250 à 900ms plus tard), laissant une fenêtre où un second passage de l'effect (redéclenché par n'importe quel autre changement de signal traité dans le même cycle Angular) relit la même requête encore en place et redéclenche `dispatchActivity` une deuxième fois. Corrigé par une garde d'idempotence sur l'identité de l'objet requête (`lastDispatchedReq`) dans cet effect : `dispatchActivity` ne peut plus être appelé deux fois pour la même requête, quel que soit le nombre de fois où l'effect se réexécute entre-temps. Reproduit puis vérifié corrigé en conditions réelles (Playwright, geste de drag simulé de bout en bout).
+  - Vérifiés sans correctif nécessaire : `ChangeDetectionStrategy.OnPush` est bien posé sur les 74 composants du projet (aucune régression) ; le multi-clic sur le "+" de l'onglet Logistique est déjà protégé par `LogisticsCreationService.creatingId` ; le padding case à cocher/poignée de drag évoqué pour les logistiques mobile ne s'applique plus (poignée de drag retirée avec le tri 100% automatique des réservations, voir plus haut).
 - Vue vidéo avec animation qui parcourt le voyage (non prioritaire)
 - Bouton "œil" pour visu avec animation vue macro (non prioritaire)
 - Suppression multi-sélection unifiée (activités, réservations, notes, accueil-trip) : long-press + drawer sur mobile, checkbox toujours visible sur PC, `SelectionModeService` transverse + `TripItemDeletionService`

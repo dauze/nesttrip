@@ -169,9 +169,24 @@ export class ActivityDayDispatchOverlayComponent {
     // La demande de dispatch réelle est émise par le service ; c'est ici,
     // dans un contexte qui a accès au TripFacade (fourni au niveau de la
     // route trips), qu'on l'exécute réellement contre le store.
+    //
+    // Garde `lastDispatchedReq` (identité d'objet, pas juste une valeur
+    // "vide/non-vide") : confirmé par instrumentation (repro Playwright) que
+    // cet effect peut se réexécuter DEUX FOIS avec exactement le même objet
+    // `req` (`handlePointerUp` n'appelle pourtant `dropRequested.set(...)`
+    // qu'une seule fois) — `dropRequested` ne repasse à `null` que bien plus
+    // tard, à la fin de l'animation de la bulle (`finish()`, potentiellement
+    // 250 à 900ms après selon `expandDurationMs`/`DROP_DURATION`), laissant
+    // une fenêtre où un second passage de l'effect (retriggé par n'importe
+    // quel autre changement de signal traité dans le même cycle) relisait la
+    // même requête encore en place et redéclenchait `dispatchActivity` une
+    // deuxième fois — d'où l'activité placée deux fois sur le même jour (voir
+    // ROADMAP.md, "l'activité est créée en double sur ce jour").
+    let lastDispatchedReq: unknown = null;
     effect(() => {
       const req = this.dispatchService.dropRequested();
-      if (!req) return;
+      if (!req || req === lastDispatchedReq) return;
+      lastDispatchedReq = req;
       this.tripFacade.dispatchActivity(req.tripId, req.activityId, req.origin, new Date(req.dayKey));
     });
 

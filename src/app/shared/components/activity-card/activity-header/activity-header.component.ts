@@ -36,6 +36,8 @@ export class ActivityHeaderComponent {
   readonly dayId = input.required<Date | undefined>();
   readonly isPlacedNowhere = input.required<boolean>();
   readonly assignedPlacements = input.required<{ dayId: Date; instanceId: string }[]>();
+  /** Vue "Ville" (voir ActivityCardComponent.hideBookingMeta) : masque le trombone, qui n'a de sens que rapporté à un jour précis. */
+  readonly hideBookingMeta = input(false);
 
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
@@ -67,7 +69,7 @@ export class ActivityHeaderComponent {
     return refs && refs.length > 0 ? refs[0] : null;
   });
 
-  readonly hasFiles = computed(() => (this.activity().files?.length ?? 0) > 0);
+  readonly hasFiles = computed(() => !this.hideBookingMeta() && (this.activity().files?.length ?? 0) > 0);
 
   constructor() {
      runOnceReady(this.activity, (a) => this.titleControl.setValue(a.title, { emitEvent: false }));

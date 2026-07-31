@@ -6,7 +6,7 @@
     <app-panel
         [appSelectable]="selectableRef()" #sel="appSelectable"
         appLongPress (longPress)="sel.onLongPress()"
-        [ngClass]="'trip booking ' + bookingMeta().className"
+        [ngClass]="hideBookingMeta() ? 'trip' : 'trip booking ' + bookingMeta().className"
         [toggleable]="true"
         [instant]="panelInstant()"
         [(collapsed)]="collapsed">
@@ -23,6 +23,7 @@
           [dayId] = "dayId()"
           [assignedPlacements] = "assignedPlacements()"
           [isPlacedNowhere]="isPlacedNowhere()"
+          [hideBookingMeta]="hideBookingMeta()"
           (placeSelected)="onPlaceSelected($event)"
           (titleEdited)="onTitleChanged($event)"
           (placementClicked)="onPlacementClicked($event)" />

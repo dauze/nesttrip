@@ -377,10 +377,30 @@ export class TripFacade {
     }
 
     // 3. Références jour -> instances
+    // Même logique anti-flicker que le pool/les instances ci-dessus, mais
+    // absente jusqu'ici : `DayActivitiesPersistenceService` (écriture
+    // debouncée, ~300ms) n'a pas forcément encore confirmé l'ajout local
+    // d'une instance sur ce jour (`syncDayActivityIds`, déclenché par
+    // `dispatchActivity`/`attachPoolActivityToDay`) qu'un snapshot distant
+    // ENTRE-TEMPS (déclenché par n'importe quelle autre écriture du trip, ex.
+    // la création de l'activité de pool elle-même) peut arriver et ne pas
+    // encore la contenir — remplacer purement et simplement par
+    // `day.activityIds` la faisait alors disparaître localement, laissant une
+    // fenêtre où un second geste (ou le retour du snapshot suivant) pouvait
+    // la faire réapparaître en double (voir ROADMAP.md, "l'activité est créée
+    // en double sur ce jour"). On réinjecte donc les ids PENDING encore
+    // absents du snapshot distant, à la suite de celui-ci — jamais de doublon
+    // possible (un id déjà dans `day.activityIds` n'est jamais réinjecté), et
+    // l'ajout ponctuel disparaît de lui-même dès que le snapshot suivant
+    // confirme l'écriture (l'id devient alors partie de `day.activityIds`).
     const newDayActivityIds: Record<string, string[]> = {};
+    const localDayActivityIdsBefore = this.store._dayActivityIds();
     for (const day of trip.days) {
       const dayKey = day.id.toISOString();
-      newDayActivityIds[dayKey] = [...day.activityIds];
+      const remoteIds = day.activityIds;
+      const localIds = localDayActivityIdsBefore[dayKey] ?? [];
+      const pendingLocalOnly = localIds.filter((id) => pendingIds.has(id) && !remoteIds.includes(id));
+      newDayActivityIds[dayKey] = pendingLocalOnly.length ? [...remoteIds, ...pendingLocalOnly] : [...remoteIds];
     }
 
     this.store._poolActivities.set(newPoolActivities);

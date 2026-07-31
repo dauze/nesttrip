@@ -1,8 +1,9 @@
 :host { display: block; }
-.booking    { 
+.booking    {
     border-left-width: 0.4rem;
-    border-left-color: var(--booking-status-color); 
+    border-left-color: var(--booking-status-color);
 }
+
 // `app-panel` est écrit directement dans CE template (pas du contenu
 // projeté), donc porte le même attribut de scope Angular que `.not-dispatched`
 // — contrairement à l'ancien `.p-panel` (une classe posée par PrimeNG sur un

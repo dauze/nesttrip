@@ -66,7 +66,13 @@
 // vaut `none`, qui n'empêche pas `flex:1` de dicter la hauteur — seul le
 // bref instant d'une animation de dépli/repli reste borné par le contenu
 // mesuré, ce qui est le comportement voulu (une transition, pas un saut).
-:host(.app-panel--fill-height) {
+//
+// `:not(.app-panel--collapsed)` : replié, le panel ne doit plus réserver
+// `height: 100%` (voir ROADMAP.md, "si on replie la carte, elle prend quand
+// même toute la page") — sinon le host garde la pleine hauteur de la colonne
+// desktop même si son contenu est visuellement réduit à 0, laissant un grand
+// vide sous le header repliable.
+:host(.app-panel--fill-height):not(.app-panel--collapsed) {
   display: flex;
   flex-direction: column;
   height: 100%;

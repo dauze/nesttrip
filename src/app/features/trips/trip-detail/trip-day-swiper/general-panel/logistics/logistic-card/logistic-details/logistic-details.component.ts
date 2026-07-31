@@ -385,6 +385,29 @@ export class LogisticDetailsComponent {
           ...(lookup.scheduledDepartureTime ? { startDateTime: lookup.scheduledDepartureTime } : {}),
           ...(lookup.scheduledArrivalTime ? { endDateTime: lookup.scheduledArrivalTime } : {}),
         });
+
+        // Miroir dans l'état local (form + selectedPlaces) de ce qui vient
+        // d'être écrit directement dans le store ci-dessus : le formulaire lit
+        // `currentPlaces()`/`form` (pas `logistic()`), et l'effect qui
+        // resynchronise habituellement l'un depuis l'autre est suppressé tant
+        // que `guidedFlowActive` vaut `true` (voir sa doc) — sans ce miroir,
+        // les champs restaient visuellement vides malgré l'écriture réussie,
+        // et la prochaine étape du chaînage (Résa, qui touche au même `form`)
+        // aurait de toute façon déclenché un `commit()` débounce écrasant
+        // cette écriture avec les anciennes valeurs locales (vides). `{emitEvent:
+        // false}` : la persistance de ces valeurs est déjà faite ci-dessus, pas
+        // besoin d'un second commit débounce en parallèle de celui-là.
+        if (lookup.departureAirportName) {
+          this.selectedPlaces.update((s) => ({ ...s, departureAirport: this.syntheticPlace(lookup.departureAirportName!) }));
+        }
+        if (lookup.arrivalAirportName) {
+          this.selectedPlaces.update((s) => ({ ...s, arrivalAirport: this.syntheticPlace(lookup.arrivalAirportName!) }));
+        }
+        this.form.patchValue({
+          ...(lookup.airline ? { airline: lookup.airline } : {}),
+          ...(lookup.scheduledDepartureTime ? { startDate: lookup.scheduledDepartureTime, startTime: lookup.scheduledDepartureTime } : {}),
+          ...(lookup.scheduledArrivalTime ? { endDate: lookup.scheduledArrivalTime, endTime: lookup.scheduledArrivalTime } : {}),
+        }, { emitEvent: false });
       }
       if (!(await this.guidedBooking())) return;
       this.priceField().openDialog();

@@ -91,6 +91,18 @@ export class ActivityCardComponent {
    */
   readonly assignedPlacementsOverride = input<{ dayId: Date; instanceId: string }[] | undefined>(undefined);
 
+  /**
+   * Fourni par `TripActivitiesComponent` pour TOUTES les cartes de la vue
+   * "Ville" (tri par lieu), fusionnées ou non : la couleur de statut de
+   * réservation (bord gauche) et le pictogramme trombone n'ont de sens que
+   * rapportés à un jour précis, pas dans une vue organisée par lieu — les
+   * masquer sur une seule carte "représentante" d'un groupe fusionné et pas
+   * sur les autres cartes de la même vue créait une incohérence visuelle
+   * (voir ROADMAP.md, retour utilisateur du 2026-07-31). `false` par défaut
+   * (comportement normal partout ailleurs : jour, pool général).
+   */
+  readonly hideBookingMeta = input(false);
+
   /** En contexte jour, `activityId` est un instanceId ; en contexte pool (vue générale), un poolId. */
   readonly activity = computed(() =>
     this.dayId()

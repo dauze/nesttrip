@@ -49,6 +49,20 @@ export class TripActivitiesCreationService {
   /** Desktop uniquement : `NewActivityDraftComponent` est affiché tant que ce signal est vrai. */
   readonly draftActive = signal(false);
 
+  /**
+   * Mobile uniquement : `true` tant que le tiroir de saisie du titre est
+   * ouvert — sans ce garde-fou, un double-tap rapide sur le "+" (le temps que
+   * le premier tiroir se peigne réellement) ouvrait un second
+   * `TitleEditDialogComponent` en parallèle, et une confirmation de chacun
+   * créait deux `PoolActivity` distinctes pour le même geste (voir
+   * ROADMAP.md, "la création d'une activité l'a créé en double") — même
+   * classe de course que celle déjà corrigée sur `DayActivityCreationService`/
+   * `LogisticsCreationService` (`creatingInstanceId`/`creatingId`), sauf qu'ici
+   * la fenêtre à protéger est AVANT la création (l'ouverture du dialog), pas
+   * après.
+   */
+  private mobileDialogOpen = false;
+
   /** Branche le service sur cette instance de TripActivitiesComponent — à appeler une seule fois (constructeur). */
   connect(config: TripActivitiesCreationConfig): void {
     this.config = config;
@@ -57,6 +71,7 @@ export class TripActivitiesCreationService {
   /** Point d'entrée unique du bouton "+" du pool général. */
   startCreation(): void {
     if (this.viewport.isMobile()) {
+      if (this.mobileDialogOpen) return;
       this.startMobileCreation();
     } else {
       this.draftActive.set(true);
@@ -75,6 +90,7 @@ export class TripActivitiesCreationService {
   }
 
   private startMobileCreation(): void {
+    this.mobileDialogOpen = true;
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
@@ -85,6 +101,7 @@ export class TripActivitiesCreationService {
     );
 
     dialogRef.closed.subscribe((result) => {
+      this.mobileDialogOpen = false;
       if (!result) return; // croix : rien n'est créé
 
       const creation: CreationTitle =
