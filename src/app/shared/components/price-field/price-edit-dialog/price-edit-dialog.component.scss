@@ -40,7 +40,22 @@
 // trouve un élément réellement focusable (même remarque que TimePickerDialogComponent,
 // autoFocus ciblé sur `input[aria-label="Heures"]`).
 :host ::ng-deep .price-edit-dialog__amount {
+  // `app-input-number` (hôte de cet `<input>`) est en `display:block;
+  // width:100%` (voir son propre composant) : il remplit donc toute la
+  // largeur de `.price-edit-dialog__body`, ce qui rend le `align-items:
+  // center` du body sans effet visible sur LUI. C'est cet `<input>`, plus
+  // étroit (`width` ci-dessous) mais laissé en `inline-block` par défaut,
+  // qui doit être recentré dans cet espace — `margin:0 auto` ne fonctionne
+  // qu'en `display:block`.
+  display: block;
   width: min(16rem, 100%);
+  margin: 0 auto;
   text-align: center;
   font-size: 2rem;
+  // `line-height:normal` (hérité, form-fields.scss ne le fixe pas) réserve
+  // un espace sous la ligne de base pour d'éventuelles descendantes (g, y,
+  // p...) qu'un montant (chiffres + séparateur décimal uniquement) n'utilise
+  // jamais — à `font-size` aussi grand, ce vide non centré vertical devient
+  // visible (le "0" paraissait décalé vers le haut de la zone de saisie).
+  line-height: 1;
 }

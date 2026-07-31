@@ -30,7 +30,11 @@
  * "Annuler"/"OK" en pied de panneau (voir chaque composant) — uniformité
  * demandée explicitement par l'utilisateur, ne pas réintroduire un pattern
  * différent (ex. plein écran forcé, header avec OK inline) pour un futur
- * tiroir de ce type sans repasser par cette discussion.
+ * tiroir de ce type sans repasser par cette discussion. Le header
+ * titre/croix suit désormais la même position que `<app-dialog-frame>`
+ * (titre à gauche, croix de fermeture à droite) — uniformisation demandée
+ * le 2026-07-31 sur TOUS les dialogs de l'app, y compris ceux-ci qui avaient
+ * jusque-là la croix à gauche.
  * ------------------------------------------------------------------- */
 
 // Prix : panneau compact, taille de contenu (montant + devise, toujours
@@ -44,13 +48,17 @@
 // de résultats), hauteur AUTO plafonnée par `dvh` — PAS plein écran forcé :
 // avec seulement 1 ligne de note ou 2 suggestions, le panneau reste petit,
 // il ne grandit que si le contenu (texte tapé, `NotesEditDialogComponent` ;
-// liste de résultats, `TitleEditDialogComponent`) en a besoin. Le scroll
-// au-delà de `max-height` est géré par l'élément scrollable interne de
-// chaque composant (`overflow-y:auto` posé sur le `<textarea>` ou la liste,
-// pas ici) — cette classe ne fait que plafonner l'enveloppe globale.
+// liste de résultats, `TitleEditDialogComponent`) en a besoin. PAS
+// d'`overflow-y:auto` ici (contrairement à une version précédente) : ça
+// créait une 2e surface de scroll (le panneau ENTIER, en plus de la liste/du
+// textarea), ce qui pouvait faire défiler la popup entière au lieu du seul
+// contenu — le titre en haut n'était alors plus garanti visible. On reste
+// sur `overflow: hidden` (hérité de `.app-dialog-panel`, dialog.scss) :
+// header/pied restent des enfants flex statiques (jamais scrollés), seul
+// l'élément scrollable interne de chaque composant (`overflow-y:auto` posé
+// sur le `<textarea>` ou la liste) absorbe le dépassement, via la chaîne
+// `min-height:0` posée sur chaque ancêtre flex (voir chaque composant).
 .cdk-overlay-pane.app-dialog-panel.app-wide-dialog-panel {
   width: min(32rem, calc(100vw - 2rem));
   max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
-  overflow-x: hidden;
 }

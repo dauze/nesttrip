@@ -56,7 +56,7 @@ export class TimePickerClockComponent implements AfterViewInit {
     readonly isDurationMode = this.data.mode === 'duration';
 
     /** Libellé fourni par l'appelant (`TimePickerDialogComponent.label`), sinon générique selon le mode. */
-    readonly header = this.data.label || (this.isDurationMode ? 'Sélectionner une durée' : 'Sélectionner une heure');
+    readonly header = this.data.label || (this.isDurationMode ? 'Durée' : 'Heure');
 
     /** Durée : toujours clavier. Heure : cadran par défaut, bascule possible via le bouton clavier. */
     viewMode = signal<'clock' | 'keyboard'>(this.isDurationMode ? 'keyboard' : 'clock');

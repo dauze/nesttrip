@@ -62,6 +62,18 @@ export class TripDayMapComponent {
       colorScheme: this.isDarkMode() ? 'DARK' : 'LIGHT',
       disableDefaultUI: false,
       gestureHandling: 'greedy',
+      // Sans ce flag, le zoom fractionnaire est désactivé PAR DÉFAUT sur une
+      // carte raster (activé par défaut seulement en vectoriel) — chaque
+      // `zoom` non entier calculé par `followScroll`/`computeCinematicZoom`
+      // (ex. 11.73) est alors silencieusement ARRONDI à l'entier le plus
+      // proche par l'API AVANT rendu, transformant toute courbe de zoom
+      // continue (parabole comprise) en une poignée de sauts discrets entre
+      // niveaux entiers — exactement les "sauts"/"pas une courbe du tout"
+      // remontés par l'utilisateur, quelle que soit la formule JS utilisée
+      // en amont. Cette app bascule déjà en raster dans cet environnement
+      // (voir le warning console "Falling back to Raster" et
+      // ROADMAP.md "Warnings de dépréciation Google Maps").
+      isFractionalZoomEnabled: true,
     };
   });
 
@@ -99,8 +111,22 @@ export class TripDayMapComponent {
       }
 
       this.lastPointsKey = key;
-      const first = pts[0];
-      this.center.set({ lat: first.latitude, lng: first.longitude });
+
+      // NE JAMAIS écraser `center` ici, ni pour 'general' ni pour 'day'.
+      // `center`/`zoom` sont liés en réactif au template (`[center]="center()"`),
+      // donc un simple `.set()` ici percute la caméra INDÉPENDAMMENT de tout
+      // appel impératif (`moveCameraTo`/`moveCamera`) : ce recentrage sur le
+      // 1er point, pensé à l'origine comme centre par défaut avant tout
+      // scroll/tour, gagnait la course contre la vue d'ensemble posée par le
+      // système dédié à chaque contexte dès que `points` changeait (montage,
+      // tri, filtre...) — `GeneralMapCinematicService.attachMap` pour
+      // 'general', `DayScrollSyncService.updateMapFromScroll` (via `wakeLoop`)
+      // pour 'day' — d'où la caméra qui semblait "sauter" sur un point (voire
+      // rester bloquée dessus, zoom orphelin d'un tour interrompu) au lieu de
+      // rester/partir de la vue d'ensemble — retour utilisateur, voir
+      // ROADMAP.md. Les DEUX contextes ont désormais leur propre système
+      // établissant la caméra correcte à l'activation ; ce recentrage par
+      // défaut n'est plus nécessaire nulle part.
     });
   }
 
@@ -151,22 +177,42 @@ export class TripDayMapComponent {
     });
   }
 
+  /** Lecture directe de l'état caméra courant — utilisé par `GeneralMapCinematicService` pour tweener depuis un état arbitraire (pas forcément un point/l'overview connus à l'avance), voir sa doc. */
+  getCameraState(): { center: google.maps.LatLngLiteral; zoom: number } | null {
+    const map = this.mapRef()?.googleMap;
+    const center = map?.getCenter();
+    const zoom = map?.getZoom();
+    if (!center || zoom === undefined) return null;
+    return { center: center.toJSON(), zoom };
+  }
+
+  /** Déplacement caméra direct (sans easing propre) — le tween éventuel est piloté par l'appelant, voir `GeneralMapCinematicService`. */
+  moveCameraTo(center: google.maps.LatLngLiteral, zoom: number): void {
+    const map = this.mapRef()?.googleMap;
+    if (!map) return;
+    map.moveCamera({ center, zoom });
+  }
+
   followScroll(from: DayMapPoint, to: DayMapPoint, t: number): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
+    const clampedT = Math.min(1, Math.max(0, t));
+
     // Trajectoire non-linéaire : accélère entre 2 activités, ralentit à
     // l'approche de chacune, plutôt qu'une vitesse de caméra constante
     // calquée telle quelle sur la vitesse de scroll (voir ROADMAP.md).
-    const eased = this.easeInOutQuad(Math.min(1, Math.max(0, t)));
+    const eased = this.easeInOutCubic(clampedT);
 
     const targetCenter = {
       lat: this.lerp(from.latitude, to.latitude, eased),
       lng: this.lerp(from.longitude, to.longitude, eased),
     };
 
-    // Calcul du recul
-    const targetZoom = this.computeCinematicZoom(from, to, eased);
+    // Calcul du recul — piloté par `clampedT` (BRUT), pas `eased` : voir la
+    // doc de `zoomEnvelope`, le zoom a volontairement son propre rythme,
+    // découplé de celui du déplacement.
+    const targetZoom = this.computeCinematicZoom(from, to, clampedT);
 
     // MOVE CAMERA : La magie vectorielle opère ici en une seule passe ultra-rapide
     map.moveCamera({
@@ -181,12 +227,27 @@ export class TripDayMapComponent {
    * sur `point` au fur et à mesure du scroll — voir `DayPanelComponent.updateMapFromScroll`
    * pour le calcul de `t` (0 en haut du jour, 1 quand la 1re activité est
    * "atteinte", où `followScroll` prend ensuite le relai).
+   *
+   * Ni easing arbitraire ni tente/parabole retentée à l'aveugle cette fois
+   * (retours utilisateur précédents, voir ROADMAP.md) : demande explicite —
+   * réutiliser EXACTEMENT la 2e moitié de la courbe d'un segment point-à-point
+   * (`followScroll`/`computeCinematicZoom`, confirmée "parfaite"), le point
+   * milieu (t=0.5 du segment, où le dézoom est maximal) faisant office de vue
+   * d'ensemble. Dérivation :
+   * - position (`easeInOutCubic`, 2e branche pour t≥0.5) : en substituant
+   *   t=0.5+0.5s et en ramenant sur [0,1], `2·easeInOutCubic(0.5+0.5s)-1`
+   *   se simplifie en `1-(1-s)³` — un ease-OUT cubique standard.
+   * - zoom (`4t(1-t)`, même substitution) : se simplifie en `1-s²` comme
+   *   fraction de dézoom restant, donc `s²` comme fraction de zoom déjà
+   *   "regagné" — un ease-IN quadratique.
+   * Mêmes formules (sens inverse) dans `GeneralMapCinematicService.returnToOverview`.
    */
   followFromOverview(points: DayMapPoint[], point: DayMapPoint, t: number): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
-    const eased = this.easeInOutQuad(Math.min(1, Math.max(0, t)));
+    const s = Math.min(1, Math.max(0, t));
+    const easedPosition = 1 - Math.pow(1 - s, 3);
 
     const overview = this.computeOverviewCamera(points) ?? {
       center: { lat: point.latitude, lng: point.longitude },
@@ -194,10 +255,10 @@ export class TripDayMapComponent {
     };
 
     const targetCenter = {
-      lat: this.lerp(overview.center.lat, point.latitude, eased),
-      lng: this.lerp(overview.center.lng, point.longitude, eased),
+      lat: this.lerp(overview.center.lat, point.latitude, easedPosition),
+      lng: this.lerp(overview.center.lng, point.longitude, easedPosition),
     };
-    const targetZoom = this.lerp(overview.zoom, this.focusZoom(), eased);
+    const targetZoom = this.lerp(overview.zoom, this.focusZoom(), s * s);
 
     map.moveCamera({ center: targetCenter, zoom: targetZoom });
   }
@@ -208,9 +269,10 @@ export class TripDayMapComponent {
    * (asynchrone, nécessite un cycle "idle" avant de pouvoir relire le zoom) —
    * formule standard de calcul de zoom à partir d'une bbox lat/lng et d'une
    * taille de viewport en pixels, ce qui la rend utilisable en synchrone dans
-   * la boucle de scroll.
+   * la boucle de scroll. Public : réutilisé par `GeneralMapCinematicService`
+   * pour la vue d'ensemble du pool (même calcul, mêmes points).
    */
-  private computeOverviewCamera(points: DayMapPoint[]): { center: google.maps.LatLngLiteral; zoom: number } | null {
+  computeOverviewCamera(points: DayMapPoint[]): { center: google.maps.LatLngLiteral; zoom: number } | null {
     if (!points.length) return null;
     if (points.length === 1) {
       return { center: { lat: points[0].latitude, lng: points[0].longitude }, zoom: this.focusZoom() };
@@ -285,47 +347,77 @@ export class TripDayMapComponent {
     return Math.max(1, Math.min(latZoom, lngZoom, ZOOM_MAX));
   }
 
-  private easeInOutQuad(t: number): number {
-    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  /**
+   * Ease-in-out CUBIC (pas quad) : ralentit plus franchement à l'approche de
+   * chaque point (et au départ) qu'une simple parabole quad — voir
+   * ROADMAP.md "UX / Interactions", retour utilisateur "il faut vraiment que
+   * ce soit ralenti entre l'approche des points".
+   */
+  private easeInOutCubic(t: number): number {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
-  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
+  /**
+   * Amplitude du dézoom cinématique entre 2 points : zoom RÉEL nécessaire
+   * pour que les 2 points tiennent dans le cadre (même formule bbox->zoom
+   * que `computeOverviewCamera`/`getBoundsZoomLevel`, même marge), plafonnée
+   * à `MAX_ZOOM_DROP` — un premier retrait total du plafond (l'ancien
+   * `MAX_ZOOM_DROP = 1.8` était ridiculement insuffisant sur de longues
+   * distances) s'est révélé légèrement trop généreux à son tour sur de très
+   * longues distances (retour utilisateur, Bruxelles -> Paris) : replafonné
+   * à une valeur bien plus généreuse que l'origine, mais pas illimitée.
+   * Public : réutilisé par `GeneralMapCinematicService` pour faire durer un
+   * segment proportionnellement à son amplitude de dézoom (voir sa doc —
+   * une transition à durée FIXE quelle que soit la distance ne laissait pas
+   * aux tuiles Google Maps le temps de charger sur un gros dézoom, d'où un
+   * rendu qui semblait "sauter" au lieu de transitionner).
+   */
+  estimateZoomDrop(from: DayMapPoint, to: DayMapPoint): number {
     const baseZoom = this.focusZoom();
-    
-    // 1. Calcul de la distance réelle
+
     const distanceMeters = this.haversineDistance(
       from.latitude, from.longitude,
       to.latitude, to.longitude
     );
+    if (distanceMeters < 50) return 0;
 
-    // 2. Configuration fine de l'effet selon la distance
-    // Si les points sont à moins de 50 mètres, aucun dézoom nécessaire (valeur 0)
-    if (distanceMeters < 50) {
-      return baseZoom;
-    }
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    const PADDING_PX = 64;
+    const width = Math.max(1, rect.width - PADDING_PX * 2);
+    const height = Math.max(1, rect.height - PADDING_PX * 2);
+    const OVERVIEW_ZOOM_BUFFER = 0.4;
+    const MAX_ZOOM_DROP = 6;
 
-    // Le dézoom croît avec la distance réelle, sur une échelle logarithmique
-    // (comme le zoom Google Maps lui-même : chaque niveau double/divise par 2
-    // l'étendue visible) plutôt qu'un barème par paliers — sans quoi 4km et
-    // 50km finissent avec exactement le même dézoom max, ce qui n'a pas de
-    // sens. REF_DISTANCE_METERS est la distance en dessous de laquelle aucun
-    // dézoom notable n'est nécessaire ; MAX_ZOOM_DROP plafonne l'effet pour
-    // rester un dip cinématique ponctuel, pas un vrai fit-bounds — sur de
-    // très longues distances (ex. 50km) on ne veut pas dézoomer massivement,
-    // juste suggérer le trajet.
-    const REF_DISTANCE_METERS = 300;
-    const ZOOM_DROP_PER_DOUBLING = 0.28;
-    const MAX_ZOOM_DROP = 1.8;
+    const minLat = Math.min(from.latitude, to.latitude);
+    const maxLat = Math.max(from.latitude, to.latitude);
+    const minLng = Math.min(from.longitude, to.longitude);
+    const maxLng = Math.max(from.longitude, to.longitude);
 
-    const zoomDrop = Math.min(
-      MAX_ZOOM_DROP,
-      Math.max(0, ZOOM_DROP_PER_DOUBLING * Math.log2(distanceMeters / REF_DISTANCE_METERS)),
-    );
+    const idealZoom = this.getBoundsZoomLevel(minLat, maxLat, minLng, maxLng, width, height) - OVERVIEW_ZOOM_BUFFER;
+    return Math.min(MAX_ZOOM_DROP, Math.max(0, baseZoom - idealZoom));
+  }
 
-    // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
-    const arc = 4 * t * (1 - t);
+  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
+    const baseZoom = this.focusZoom();
+    const zoomDrop = this.estimateZoomDrop(from, to);
+    return baseZoom - (zoomDrop * this.zoomEnvelope(t));
+  }
 
-    return baseZoom - (zoomDrop * arc);
+  /**
+   * Enveloppe de dézoom, pilotée par `t` BRUT (pas `eased`, voir
+   * `followScroll`) — parabole `4t(1-t)` : lisse (dérivée nulle SEULEMENT au
+   * sommet, pas de palier plat), pente la plus raide pile au départ/à
+   * l'arrivée. Historique : une tente linéaire (pic anguleux, retirée) puis
+   * une rampe+palier (retour utilisateur : "un dézoom-rezoom en carré", le
+   * palier donnait une impression figée/carrée plutôt qu'une vraie courbe,
+   * voir ROADMAP.md) ont chacune été essayées et retirées. Piloter cette
+   * parabole par `t` BRUT (pas `eased`, contrairement aux tout premiers
+   * essais) reste le vrai correctif : sans ça, la parabole d'une valeur déjà
+   * elle-même "ease-in-out" créait une double distorsion, perçue comme un
+   * dézoom décorrélé du déplacement.
+   */
+  private zoomEnvelope(t: number): number {
+    return 4 * t * (1 - t);
   }
 
   private haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {

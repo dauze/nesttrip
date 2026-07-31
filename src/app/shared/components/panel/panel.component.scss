@@ -6,6 +6,10 @@
   color: var(--nt-text-color);
 }
 
+:host(.app-panel--thick-border) {
+  border-width: var(--nt-border-width-thick);
+}
+
 .app-panel__header {
   padding: 0.5rem;
   font-weight: 600;

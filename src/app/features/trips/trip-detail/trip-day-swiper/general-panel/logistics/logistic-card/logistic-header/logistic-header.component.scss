@@ -9,15 +9,6 @@
   font-size: 0.65rem;
 }
 
-.logistic-header__title-button {
-  text-align: left;
-  cursor: pointer;
-
-  &:hover {
-    background: var(--nt-content-hover-background);
-  }
-}
-
 .logistic-header__title-computed {
   min-width: 0;
 }

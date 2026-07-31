@@ -54,6 +54,7 @@ export interface PanelToggleEvent {
   host: {
     class: 'app-panel',
     '[class.app-panel--fill-height]': 'fillHeight()',
+    '[class.app-panel--thick-border]': 'thickBorder()',
   },
 })
 export class PanelComponent {
@@ -69,6 +70,15 @@ export class PanelComponent {
    * autre appelant (défaut `false`, comportement historique inchangé).
    */
   readonly fillHeight = input(false);
+  /**
+   * Optionnel : bordure `--nt-border-width-thick` au lieu du hairline par
+   * défaut — utilisé par les conteneurs de groupe (ville/jour/à-assigner) du
+   * pool d'activités de l'onglet Général, pour les distinguer visuellement
+   * des `ActivityCardComponent` qu'ils contiennent (même composant `app-panel`
+   * pour les deux, voir ROADMAP.md "UX / Interactions"). N'affecte aucun
+   * autre appelant (défaut `false`).
+   */
+  readonly thickBorder = input(false);
 
   readonly beforeToggle = output<PanelToggleEvent>();
   readonly afterToggle = output<PanelToggleEvent>();

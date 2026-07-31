@@ -20,6 +20,17 @@ export interface DayScrollSyncConfig {
    */
   isSplitLayout: () => boolean;
   /**
+   * Optionnel, `true` par défaut si absent (vue jour, comportement historique
+   * inchangé) : quand `false`, `tick()` détecte toujours le scroll (idle
+   * threshold/garde-fou anti-emballement inchangés) mais n'appelle plus
+   * `updateMapFromScroll` — utilisé par le pool d'activités de l'onglet
+   * Général (`TripActivitiesComponent`), dont la caméra est désormais pilotée
+   * par un service dédié (`GeneralMapCinematicService`, voir ROADMAP.md "UX /
+   * Interactions") totalement décorrélé du scroll, plutôt que par ce suivi en
+   * direct.
+   */
+  cameraFollowEnabled?: () => boolean;
+  /**
    * `TripChromeService.stickyContentTop()` — 0 partout SAUF en `'split-pinned'`
    * (desktop) où toolbar+header+barre des jours ne se masquent JAMAIS au
    * scroll (contrairement à `'mobile'`/`'split-hideable'`, où le scroll
@@ -125,6 +136,24 @@ export class DayScrollSyncService implements OnDestroy {
     // Nouveau jour = nouveau budget pour le garde-fou anti-emballement (voir tick()).
     this.frameBudget = 0;
 
+    // Force le PROCHAIN tick() à recalculer la caméra même si le scrollY de
+    // CE jour est déjà à la même valeur qu'avant (typiquement 0) : `tick()`
+    // n'appelle `updateMapFromScroll` que quand `scrollY !== lastScrollY`,
+    // hérité du dernier passage de la boucle rAF sur CETTE instance — jour
+    // préchargé (`TripDaySwiperComponent.preloadAround`) et déjà retombé idle
+    // à `lastScrollY = 0` PENDANT qu'il était encore inactif (`tick()` lit le
+    // scroll indépendamment de `isActive()`, seul `updateMapFromScroll` le
+    // vérifie) — en passant d'un jour à l'autre, ce jour redevient actif avec
+    // un scrollY toujours à 0, donc `tick()` ne voit AUCUN changement et ne
+    // rappelle jamais `updateMapFromScroll` : la carte partagée garde alors la
+    // caméra laissée par le contexte précédent au lieu de se recentrer sur ses
+    // propres points — retour utilisateur ("positionnée en mode random" en
+    // arrivant sur un jour). `-1` (valeur impossible pour un vrai scrollTop)
+    // garantit que la comparaison échoue au prochain tick, quel que soit le
+    // scrollY réel.
+    this.lastScrollY = -1;
+    this.wakeLoop();
+
     // Reconnexion de l'événement de clic sur un marqueur
     this.mapSubscription?.unsubscribe();
     this.mapSubscription = map.activitySelected.subscribe((point) => {
@@ -154,14 +183,19 @@ export class DayScrollSyncService implements OnDestroy {
     });
     this.mapObserver.observe(map.elementRef.nativeElement);
 
-    // Correction d'affichage de l'API Google Maps après transfert du DOM
+    // Correction d'affichage de l'API Google Maps après transfert du DOM :
+    // un simple `setCenter` sur SA PROPRE position actuelle (`getCenter()`,
+    // pas `map.center()` — ce signal Angular n'est plus jamais réécrit par
+    // personne depuis que le recentrage "1er point" par défaut a été retiré,
+    // voir `TripDayMapComponent`, il resterait figé sur sa valeur initiale
+    // et écraserait la vraie caméra déjà posée par `updateMapFromScroll`)
+    // suffit à forcer le repaint, sans repositionner la caméra.
     setTimeout(() => {
       const nativeMap = map.googleMap;
       if (nativeMap) {
         google.maps.event.trigger(nativeMap, 'resize');
-        if (map.center()) {
-          nativeMap.setCenter(map.center());
-        }
+        const center = nativeMap.getCenter();
+        if (center) nativeMap.setCenter(center);
       }
     }, 50);
   }
@@ -205,7 +239,7 @@ export class DayScrollSyncService implements OnDestroy {
     if (currentScrollY !== this.lastScrollY) {
       this.lastScrollY = currentScrollY;
       this.idleFrames = 0;
-      this.updateMapFromScroll(currentScrollY);
+      if (this.config.cameraFollowEnabled?.() ?? true) this.updateMapFromScroll(currentScrollY);
     } else {
       this.idleFrames++;
     }
@@ -267,7 +301,13 @@ export class DayScrollSyncService implements OnDestroy {
       if (!firstPoint) return;
 
       const scrollAtFirst = Math.max(0, firstOffset.top - totalStickyShield);
-      const t = scrollAtFirst > 0 ? Math.min(1, Math.max(0, scrollY / scrollAtFirst)) : 1;
+      // Cas dégénéré (bouclier — carte sticky + chrome — aussi haut ou plus
+      // que la position de la 1re carte, ex. jour très court avec peu
+      // d'activités) : `scrollAtFirst <= 0` forçait `t=1` (zoom complet sur
+      // le 1er point) même à `scrollY=0`, empêchant la vue d'ensemble de
+      // jamais s'afficher à l'arrivée sur un tel jour — l'utilisateur n'a
+      // pourtant pas scrollé, `scrollY<=0` doit rester la vue d'ensemble.
+      const t = scrollAtFirst > 0 ? Math.min(1, Math.max(0, scrollY / scrollAtFirst)) : (scrollY <= 0 ? 0 : 1);
 
       this.config.getMapComponent()?.followFromOverview(this.config.getDayMapPoints(), firstPoint, t);
       return;
@@ -403,6 +443,14 @@ export class DayScrollSyncService implements OnDestroy {
   }
 
   private readonly onSlideScroll = (): void => {
+    // Réveille aussi la boucle rAF (comme wheel/touch) : un drag de la
+    // scrollbar desktop déclenche un `scroll` natif SANS `wheel`/`touch`, donc
+    // sans cet appel la boucle — si déjà retombée idle — ne redémarre jamais
+    // et le suivi caméra en direct (tick()/updateMapFromScroll) ne voit pas
+    // le scroll. Même correctif déjà en place côté chrome, voir
+    // TripDaySwiperComponent.onSlideScroll.
+    this.wakeLoop();
+
     if (!this.config.isActive() || this.isTouching || this.isAutoScrolling) {
       return;
     }

@@ -67,14 +67,21 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
  * depuis `gridStart`, quel que soit le mois affiché.
  *
  * Saisie clavier (desktop uniquement, `!viewport.isMobile()` — voir
- * ROADMAP.md) : un vrai `<input>` texte remplace le bouton déclencheur, à
- * côté d'un bouton icône séparé qui ouvre/ferme le calendrier
- * (`toggle()`, inchangé). Volontairement DEUX éléments distincts plutôt que
- * de faire aussi ouvrir le panneau au focus de l'input : le clic sur un
- * jour dans le panneau (portail CDK, hors de cet arbre de vue) fait perdre
- * le focus à l'input AVANT que le clic ne soit traité, ce qui aurait
- * déclenché la validation du texte tapé en plein milieu d'une sélection à
- * la souris — les deux interactions restent donc totalement indépendantes.
+ * ROADMAP.md) : un vrai `<input>` texte remplace le bouton déclencheur, avec
+ * une icône calendrier DÉCORATIVE en suffixe (`.app-date-picker__icon`,
+ * `pointer-events:none`) plutôt qu'un bouton séparé — un clic n'importe où
+ * dans le champ (`onFieldClick`) ouvre le panneau, jamais ne le ferme (seule
+ * une sélection de jour/Escape/clic extérieur ferme). Avant ce choix, le
+ * panneau restait volontairement DEUX éléments distincts (input + bouton
+ * icône) pour éviter qu'un focus déclenché par un clic sur un jour du
+ * panneau (portail CDK, hors de cet arbre de vue) ne fasse perdre le focus à
+ * l'input AVANT que ce clic ne soit traité, ce qui aurait déclenché la
+ * validation d'un texte tapé en plein milieu d'une sélection à la souris —
+ * ce risque est marginal (il faudrait cliquer un jour du panneau PENDANT un
+ * drag de sélection de texte dans le champ) et accepté ici pour matcher le
+ * comportement demandé (voir ROADMAP.md "UX / Interactions") ; `onFieldClick`
+ * n'ouvre que si le panneau n'est pas déjà ouvert (`!overlayRef`), jamais de
+ * fermeture via ce même clic.
  * `draftText` porte le texte en cours d'édition (`null` = pas en édition,
  * l'input affiche alors `displayText()`) ; à la perte de focus
  * (`commitDraft`), le texte est parsé (`dd/MM/yyyy`, ou `dd/MM/yyyy -
@@ -352,6 +359,12 @@ export class DatePickerComponent implements ControlValueAccessor {
   protected onInputFocus(target: HTMLInputElement): void {
     this.draftText.set(this.displayText());
     target.select();
+  }
+
+  /** Clic n'importe où dans le champ desktop (voir la doc de classe) : ouvre le panneau, ne le ferme jamais via ce même clic. */
+  protected onFieldClick(): void {
+    if (this.isDisabled() || this.overlayRef) return;
+    this.open();
   }
 
   protected onInputEnter(target: HTMLInputElement): void {

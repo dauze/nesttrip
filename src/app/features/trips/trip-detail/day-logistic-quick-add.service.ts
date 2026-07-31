@@ -5,10 +5,11 @@ import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LogisticFocusService } from './logistic-focus.service';
 
 /**
- * Création d'un élément logistique depuis le menu "Ajouter" d'un jour (voir
- * `TripDetailComponent.dayAddMenuItems`, ROADMAP.md) — type déjà connu
- * (choisi dans le menu), contrairement à `LogisticsCreationService` qui le
- * redemande en première étape. Crée l'entité puis délègue TOUTE la
+ * Création d'un élément logistique depuis le menu "Ajouter" (voir
+ * `TripDetailComponent.addMenuItems`, ROADMAP.md — atteignable depuis un jour
+ * OU depuis l'onglet Général, `dayDate` absent dans ce 2e cas) — type déjà
+ * connu (choisi dans le menu), contrairement à `LogisticsCreationService` qui
+ * le redemande en première étape. Crée l'entité puis délègue TOUTE la
  * navigation croisée (bascule vers l'onglet Général, sous-onglet Logistique,
  * dépli/scroll de la carte) à `LogisticFocusService`, déjà câblé pour ça côté
  * `TripDetailComponent`/`GeneralPanelComponent`/`LogisticsListComponent` —

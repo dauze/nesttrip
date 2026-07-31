@@ -15,18 +15,19 @@ import {
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
 
 /**
- * Header d'une carte réservation : icône du type + titre. Comportement du
- * titre selon le type (voir ROADMAP.md, "Trouver un moyen élégant de ne pas
- * mettre le titre en première zone de saisie") :
- * - `'logement'` : pas de champ "adresse" séparé, cliquer sur le titre rouvre
+ * Header d'une carte réservation : icône du type + titre. Titre toujours en
+ * lecture seule + crayon dédié (voir ROADMAP.md "UX / Interactions",
+ * uniformisé le 2026-07-31 — auparavant seuls Vol/Train avaient ce pattern,
+ * Logement était un bouton pleine largeur et Location voiture/Autre un champ
+ * texte édité inline) :
+ * - `'logement'` : pas de champ "adresse" séparé, le crayon rouvre
  *   `TitleEditDialogComponent` (texte libre OU sélection Google), qui remonte
  *   soit un nouveau titre seul, soit un titre + un `PlaceSummary` complet.
  * - `'flight'`/`'train'` : titre calculé automatiquement par la cinématique
- *   guidée (ex. "Vol (AF1234) - CDG - JFK") — texte simple en lecture seule
- *   plutôt qu'un champ éditable, pour ne pas laisser croire qu'il faut le
- *   renseigner ; un crayon dédié ouvre `SimpleTextEntryDialogComponent` pour
- *   l'écraser manuellement si besoin.
- * - `'carRental'`/`'other'` : texte libre, inchangé.
+ *   guidée (ex. "Vol (AF1234) - CDG - JFK") — le crayon ouvre
+ *   `SimpleTextEntryDialogComponent` pour l'écraser manuellement si besoin.
+ * - `'carRental'`/`'other'` : texte libre, même dialog que Vol/Train
+ *   (`openTitleTextDialog`) au lieu d'un champ édité inline.
  */
 @Component({
   selector: 'app-logistic-header',
@@ -47,56 +48,22 @@ export class LogisticHeaderComponent {
 
   readonly typeMeta = LOGISTIC_TYPE_META;
   readonly isLogement = computed(() => this.logistic().type === 'logement');
-  readonly hasComputedTitle = computed(() => this.logistic().type === 'flight' || this.logistic().type === 'train');
 
   /**
-   * Valeur locale découplée du signal `logistic` — un snapshot distant reçu
-   * pendant la frappe ne doit jamais écraser une saisie en cours (même
-   * garde-fou que `ActivityHeaderComponent.titleControl`/
-   * `LogisticDetailsComponent.hasUnflushedLocalEdit`). Contrairement à un
-   * simple `runOnceReady` (qui ne synchronise qu'une seule fois, à la toute
-   * première valeur) : le titre peut être posé de l'EXTÉRIEUR de ce
-   * composant à tout moment par la cinématique guidée de
-   * `LogisticDetailsComponent` (`applyTitle`/`onPlaceSelected`, un composant
-   * frère) — `runOnceReady` seul laissait alors le bouton/l'input figé sur
-   * sa valeur de création (souvent vide), jamais mis à jour par la suite.
+   * Valeur locale découplée du signal `logistic` — le titre peut être posé
+   * de l'EXTÉRIEUR de ce composant à tout moment par la cinématique guidée
+   * de `LogisticDetailsComponent` (`applyTitle`/`onPlaceSelected`, un
+   * composant frère), donc un simple `input()` ne suffit pas. Pas de
+   * garde-fou "saisie en cours" nécessaire ici (contrairement à
+   * `ActivityHeaderComponent.titleControl`) : l'édition passe désormais
+   * toujours par un dialog (voir la doc de classe), qui garde son propre
+   * brouillon local tant qu'il est ouvert — jamais de frappe en direct dans
+   * ce composant qu'un snapshot distant pourrait écraser.
    */
   readonly titleValue = signal('');
 
-  private hasUnflushedLocalEdit = false;
-  private lastSyncedLogisticId: string | undefined;
-
   constructor() {
-    effect(() => {
-      const r = this.logistic();
-      if (this.hasUnflushedLocalEdit && r.id === this.lastSyncedLogisticId) return;
-      this.lastSyncedLogisticId = r.id;
-      this.titleValue.set(r.title);
-    });
-  }
-
-  onTitleInput(value: string): void {
-    this.hasUnflushedLocalEdit = true;
-    this.titleValue.set(value);
-  }
-
-  onTitleBlur(): void {
-    this.hasUnflushedLocalEdit = false;
-    const trimmed = this.titleValue().trim();
-    if (this.logistic().title === trimmed) return;
-    this.titleEdited.emit(trimmed);
-  }
-
-  /**
-   * Laisse le clavier virtuel finir son animation d'ouverture avant de
-   * scroller (sinon le calcul de position utilise encore la hauteur de
-   * viewport d'avant clavier et le champ reste caché dessous) — même délai
-   * que `PANEL_COLLAPSE_DELAY_MS` ailleurs dans le projet pour la même
-   * raison (attendre la fin d'une animation avant de mesurer/agir).
-   */
-  onTitleFocus(event: FocusEvent): void {
-    const target = event.target as HTMLElement;
-    setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    effect(() => this.titleValue.set(this.logistic().title));
   }
 
   /** Logement uniquement (voir isLogement) : ouvre le même dialog titre-ou-lieu-Google que pour une activité, au lieu de l'édition inline. */
@@ -131,8 +98,8 @@ export class LogisticHeaderComponent {
     });
   }
 
-  /** Vol/Train uniquement (voir hasComputedTitle) : override manuel du titre calculé automatiquement. */
-  openComputedTitleEditDialog(event: Event): void {
+  /** Tous les types sauf Logement (voir isLogement) : titre libre ou calculé (Vol/Train) édité via un simple champ texte, sans recherche Google. */
+  openTitleTextDialog(event: Event): void {
     event.stopPropagation();
 
     const dialogRef = this.dialogService.open<string | undefined, SimpleTextEntryDialogData>(

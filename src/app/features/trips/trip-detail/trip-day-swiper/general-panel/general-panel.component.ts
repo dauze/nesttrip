@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { LogisticFocusService } from '@app/features/trips/trip-detail/logistic-focus.service';
+import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { NotesComponent } from './notes/notes.component';
 import { TripActivitiesComponent } from './trip-activities/trip-activities.component';
@@ -23,6 +24,7 @@ const SUB_TABS: GeneralSubTab[] = ['notes', 'activities', 'logistics'];
 export class GeneralPanelComponent {
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly logisticFocusService = inject(LogisticFocusService);
+  private readonly notesFocusService = inject(NotesFocusService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -47,18 +49,18 @@ export class GeneralPanelComponent {
   ];
 
   private readonly activitiesRef = viewChild(TripActivitiesComponent);
-  private readonly notesRef = viewChild(NotesComponent);
-  private readonly logisticsRef = viewChild(LogisticsListComponent);
 
   constructor() {
     // Singleton (un seul onglet "Général") : enregistré une fois pour toute
     // la durée de vie du composant — voir TripCreationTargetService, lu par
-    // le "+" flottant unique porté par TripDetailComponent.
+    // le menu "Ajouter" unique porté par TripDetailComponent (entrée
+    // "Activité", voir ROADMAP.md "UX / Interactions" — le "+" ouvre
+    // désormais toujours ce menu, plus de création directe contextuelle ici).
     const unregister = this.fabTarget.registerGeneral({
       activeSubTab: this.activeSubTab,
       subTabOptions: this.subTabOptions,
       selectSubTab: (tab) => this.selectSubTab(tab),
-      trigger: () => this.onFabActivate(),
+      createActivity: () => this.activitiesRef()?.triggerCreate(),
     });
     this.destroyRef.onDestroy(unregister);
 
@@ -89,6 +91,17 @@ export class GeneralPanelComponent {
         this.syncSubTabToUrl('logistics');
       }
     });
+
+    // Demande de navigation croisée symétrique (voir NotesFocusService,
+    // entrée "Note" du menu "Ajouter") : bascule sur le sous-onglet Notes,
+    // que ce sous-onglet soit déjà monté ou non (NotesComponent consomme
+    // ensuite la requête une fois monté, voir son constructeur).
+    effect(() => {
+      if (this.notesFocusService.pending()) {
+        this.activeSubTab.set('notes');
+        this.syncSubTabToUrl('notes');
+      }
+    });
   }
 
   selectSubTab(tab: GeneralSubTab | undefined): void {
@@ -111,19 +124,5 @@ export class GeneralPanelComponent {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
-  }
-
-  /** Point d'entrée unique du "+" flottant : redirige vers la création d'activité, de réservation ou de note selon le sous-onglet actif. */
-  private onFabActivate(): void {
-    switch (this.activeSubTab()) {
-      case 'notes':
-        this.notesRef()?.addItem();
-        break;
-      case 'logistics':
-        this.logisticsRef()?.triggerCreate();
-        break;
-      default:
-        this.activitiesRef()?.triggerCreate();
-    }
   }
 }

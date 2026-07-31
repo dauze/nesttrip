@@ -7,7 +7,8 @@ export interface GeneralCreationTarget {
   activeSubTab: Signal<GeneralCreationSubTab>;
   subTabOptions: SelectButtonOption<GeneralCreationSubTab>[];
   selectSubTab: (tab: GeneralCreationSubTab) => void;
-  trigger: () => void;
+  /** Crée une activité de pool (sans jour) — voir `TripDetailComponent.addMenuItems`, entrée "Activité" quand on est sur l'onglet Général. */
+  createActivity: () => void;
 }
 
 /**

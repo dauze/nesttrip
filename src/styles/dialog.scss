@@ -23,6 +23,26 @@
 // (deux classes) gagne par spécificité, peu importe l'ordre de chargement —
 // vérifié empiriquement : `max-width:100%` de `.cdk-overlay-pane` l'emportait
 // bien sur notre `max-width` sans ce renfort.
+// `<cdk-dialog-container>` (CDK, injecté entre le panneau et le composant
+// ouvert) est nativement en `display:block` (voir le CSS du package
+// `@angular/cdk/dialog`) : un composant enfant qui grandit plus que l'espace
+// disponible débordait donc silencieusement (`overflow:visible` par défaut
+// sur ce conteneur CDK) au lieu d'être contraint puis de scroller en
+// interne — seul le panneau (`overflow:hidden` ci-dessous) finissait par
+// couper le rendu, cachant le pied de page. En repassant ce conteneur en
+// `flex column`, un composant enfant avec `flex:1 1 auto; min-height:0;`
+// (voir dialog-frame.component.scss et les tiroirs "champ dédié",
+// field-edit-dialogs.scss) devient un vrai flex item : il se voit attribuer
+// la hauteur RÉELLEMENT disponible (calculée par le panneau, lui-même
+// plafonné par `max-height` ci-dessous) au lieu de la hauteur de son
+// contenu, ce qui permet à SON PROPRE scroll interne de prendre le relais
+// correctement.
+.cdk-overlay-pane.app-dialog-panel > cdk-dialog-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .cdk-overlay-pane.app-dialog-panel {
   display: flex;
   flex-direction: column;

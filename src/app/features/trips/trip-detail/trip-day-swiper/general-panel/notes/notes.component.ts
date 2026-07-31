@@ -1,4 +1,5 @@
-import {Component, inject, input, ChangeDetectionStrategy, computed, signal} from '@angular/core';
+import {Component, inject, input, ChangeDetectionStrategy, computed, effect, signal} from '@angular/core';
+import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { FormsModule } from '@angular/forms';
@@ -28,12 +29,26 @@ import { CardComponent } from '@app/shared/components/card/card.component';
 })
 export class NotesComponent {
   private readonly tripFacade = inject(TripFacade);
+  private readonly notesFocusService = inject(NotesFocusService);
 
   readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
   readonly NotesType = NotesType;
   readonly items = computed(() => this.tripFacade.getNotesItems(this.tripId())());
   readonly activePointId = signal<string | null>(null);
+
+  constructor() {
+    // Demande de navigation croisée (voir NotesFocusService, entrée "Note"
+    // du menu "Ajouter" — ROADMAP.md "UX / Interactions") : consomme dès que
+    // ce composant est monté (bascule d'onglet déjà faite par
+    // TripDetailComponent/GeneralPanelComponent, voir leurs effects).
+    effect(() => {
+      const pending = this.notesFocusService.pending();
+      if (!pending) return;
+      this.notesFocusService.clear(pending.token);
+      this.addItem();
+    });
+  }
 
   selectableRef(itemId: string): SelectableItemRef {
     return { kind: 'noteItem', id: itemId };
@@ -47,7 +62,7 @@ export class NotesComponent {
     this.tripFacade.reorderItems(this.tripId(), items.map(a => a.id));
   }
 
-  /** Point d'entrée pour le bouton "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
+  /** Point d'entrée pour l'entrée "Note" du menu "Ajouter" (voir NotesFocusService, atteignable depuis n'importe quel onglet — jour ou Général). */
   addItem(): void {
    const newItem: Item = {
       id: crypto.randomUUID(),

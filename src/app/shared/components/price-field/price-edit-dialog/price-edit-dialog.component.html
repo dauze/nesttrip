@@ -1,5 +1,6 @@
 <div class="price-edit-dialog flex flex-column">
-  <div class="price-edit-dialog__row flex align-items-center gap-2 flex-shrink-0">
+  <div class="price-edit-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="price-edit-dialog__title">{{ data.title }}</span>
     <app-button
       icon="pi pi-times"
       [rounded]="true"
@@ -8,7 +9,6 @@
       class="flex-shrink-0"
       aria-label="Fermer"
       (click)="cancel()" />
-    <span class="price-edit-dialog__title">{{ data.title }}</span>
   </div>
 
   <div class="price-edit-dialog__body flex flex-column align-items-center justify-content-center gap-3">

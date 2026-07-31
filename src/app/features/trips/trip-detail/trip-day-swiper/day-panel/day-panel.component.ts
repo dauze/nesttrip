@@ -99,12 +99,26 @@ export class DayPanelComponent {
   });
 
   constructor() {
-    // 1. Gestionnaire réactif pour mettre à jour les points de la carte
+    // 1. Gestionnaire réactif pour mettre à jour les points de la carte.
+    // `moveTo` est répété ici (idempotent, early-return si déjà le bon
+    // conteneur) juste avant `points.set`, et TOUT le corps de l'effect est
+    // gardé derrière la disponibilité de `container` — même correctif que
+    // `TripActivitiesComponent` (voir sa doc, ROADMAP.md "UX / Interactions") :
+    // `#stickyMap` n'existe dans le DOM que sous `@if (activities().length > 0)`,
+    // donc au tout premier passage où `dayMapPoints()` devient non-vide,
+    // `stickyMap()` pouvait encore valoir `undefined` — l'ancien effect
+    // séparé plus bas (moveTo/attachMap) n'avait alors pas encore eu la
+    // chance de positionner `mapHost.currentOwner()` à `'day'`, laissant
+    // l'effect interne de `TripDayMapComponent` (qui recentre sur le 1er
+    // point à chaque changement de `points`, sauf si `currentOwner` vaut
+    // déjà le bon contexte) lire une valeur périmée — la vue d'ensemble
+    // initiale du jour n'apparaissait plus au premier montage.
     effect(() => {
       const map = this.activeMapComponent();
-      if (map) {
-        map.points.set(this.dayMapPoints());
-      }
+      const container = this.stickyMap()?.nativeElement;
+      if (!map || !container) return;
+      this.mapHost.moveTo(container, 'day');
+      map.points.set(this.dayMapPoints());
     });
 
     // Visibilité du clone de suivi réactive à l'escalade — pas seulement

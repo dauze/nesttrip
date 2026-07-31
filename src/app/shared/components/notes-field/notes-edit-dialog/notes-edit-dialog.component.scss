@@ -1,12 +1,26 @@
 // Plus de hauteur imposée ici (voir field-edit-dialogs.scss,
 // `.app-wide-dialog-panel`) : le panneau CDK se dimensionne à son contenu.
-// `position:sticky` sur le header reste une protection défensive si jamais
-// le panneau (garde-fou `overflow-y:auto`, field-edit-dialogs.scss) doit
-// scroller malgré tout — le cas normal est que `.notes-edit-dialog__textarea`
-// gère SON PROPRE scroll interne une fois sa `max-height` atteinte (voir
-// plus bas), donc le panneau ne devrait jamais avoir à le faire.
+// `:host` en `flex:1 1 auto`/`min-height:0` (voir aussi le `flex column`
+// posé sur `<cdk-dialog-container>` dans dialog.scss, indispensable pour
+// que cette valeur soit un vrai flex item plutôt qu'un enfant de bloc
+// ordinaire) : cette chaîne permet au `<textarea>` (seul, via son propre
+// `overflow-y:auto`, voir plus bas) de se réduire et scroller LUI-MÊME
+// quand le contenu dépasse le `max-height` du panneau
+// (dialog.scss/field-edit-dialogs.scss) — le panneau lui-même n'a plus
+// besoin de scroller, ce qui garantit header/pied (statiques, jamais
+// scrollés) toujours visibles. `flex-grow` ne joue que s'il y a de l'espace
+// à distribuer (panneau contraint par son `max-height`) : à contenu court,
+// le tiroir reste petit comme avant.
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.notes-edit-dialog {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .notes-edit-dialog__row {
@@ -44,14 +58,16 @@
   // (TextareaDirective) grandit ensuite avec le contenu via
   // `el.style.height = scrollHeight`.
   min-height: calc(1.5em + 2rem);
-  // Plafond = hauteur du panneau (`100dvh - 2rem`, field-edit-dialogs.scss)
-  // moins header (~3.25rem) et footer Annuler/OK (~3.25rem). Au-delà, ce
-  // `<textarea>` scrolle LUI-MÊME (`overflow-y:auto` prime sur `.app-textarea
-  // {overflow:hidden}` par défaut, form-fields.scss, grâce à la spécificité
-  // du sélecteur scopé) : le navigateur garde nativement le curseur visible
-  // pendant la frappe, sans le bricolage JS "scroller le panneau parent"
-  // essayé avant (voir la doc du composant sur pourquoi ça ne marchait pas).
-  max-height: calc(100dvh - 8.5rem);
+  // Pas de `max-height` calculée en dur : le flex column parent (voir
+  // `:host` plus haut) réduit ce `<textarea>` à l'espace réellement
+  // disponible sous le header et au-dessus du pied Annuler/OK (jusqu'au
+  // plancher `min-height` ci-dessus), sans avoir à estimer leur hauteur.
+  // Au-delà, ce `<textarea>` scrolle LUI-MÊME (`overflow-y:auto` prime sur
+  // `.app-textarea {overflow:hidden}` par défaut, form-fields.scss, grâce à
+  // la spécificité du sélecteur scopé) : le navigateur garde nativement le
+  // curseur visible pendant la frappe, sans le bricolage JS "scroller le
+  // panneau parent" essayé avant (voir la doc du composant sur pourquoi ça
+  // ne marchait pas).
   overflow-y: auto;
 
   &::placeholder {

@@ -25,6 +25,7 @@ import { ViewportService } from '@app/core/services/viewport.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
 import { LogisticFocusService } from './logistic-focus.service';
+import { NotesFocusService } from './notes-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
@@ -54,10 +55,10 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   // le mode sélection multiple transverse (voir SelectableDirective) —
   // partagés par le panneau Général (activités/réservations/notes) ET tous
   // les DayPanelComponent du swiper, pour une sélection persistante d'un
-  // onglet à l'autre. DayLogisticQuickAddService : même topologie, pour le
-  // menu "Ajouter" d'un jour (voir dayAddMenuItems ci-dessous).
+  // onglet à l'autre. DayLogisticQuickAddService/NotesFocusService : même
+  // topologie, pour le menu "Ajouter" (voir addMenuItems ci-dessous).
   providers: [
-    TripCreationTargetService, DayActivityFocusService, LogisticFocusService,
+    TripCreationTargetService, DayActivityFocusService, LogisticFocusService, NotesFocusService,
     SelectionModeService, TripItemDeletionService, DayLogisticQuickAddService,
   ],
 })
@@ -72,6 +73,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);
   private readonly logisticFocusService = inject(LogisticFocusService);
+  private readonly notesFocusService = inject(NotesFocusService);
   protected readonly selectionService = inject(SelectionModeService);
   private readonly itemDeletionService = inject(TripItemDeletionService);
   private readonly dayLogisticQuickAdd = inject(DayLogisticQuickAddService);
@@ -80,23 +82,44 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
-  private readonly dayAddMenu = viewChild.required<MenuComponent>('dayAddMenu');
+  private readonly addMenu = viewChild.required<MenuComponent>('addMenu');
   private readonly fabElementRef = viewChild(FloatingAddButtonComponent, { read: ElementRef });
 
   /**
-   * Options du menu "Ajouter" d'un jour (voir ROADMAP.md) : Activité (chemin
-   * inchangé, `fabTarget.triggerDay`) puis les 5 types logistiques dans
-   * l'ordre de `LOGISTIC_TYPE_META` — création directe (type déjà connu, voir
-   * `DayLogisticQuickAddService`) suivie de la cinématique guidée propre au
-   * type une fois la carte atteinte côté onglet Général.
+   * Options du menu "Ajouter", UNIFORME quel que soit l'onglet actif — jour
+   * ou Général (voir ROADMAP.md "UX / Interactions", uniformisé le
+   * 2026-07-31 : auparavant le "+" de l'onglet Général créait directement
+   * l'élément du sous-onglet actif, sans ce menu) : Activité, les 5 types
+   * logistiques dans l'ordre de `LOGISTIC_TYPE_META`, puis Note.
+   * - Activité : sur un jour, chemin inchangé (`fabTarget.triggerDay`) ; sur
+   *   Général, bascule le sous-onglet Activités puis crée une activité de
+   *   pool (`GeneralCreationTarget.createActivity`).
+   * - Types logistiques : `DayLogisticQuickAddService.create` fonctionne déjà
+   *   indépendamment de l'onglet de départ (il crée l'élément puis délègue
+   *   toute la navigation croisée à `LogisticFocusService`) — la date du jour
+   *   n'est préremplie que si on part effectivement d'un jour.
+   * - Note : `NotesFocusService.requestCreate` (même schéma de navigation
+   *   croisée que les types logistiques), atteignable depuis n'importe où.
    */
-  protected readonly dayAddMenuItems = computed<AppMenuItem[]>(() => [
-    { label: 'Activité', icon: 'pi pi-map-marker', command: () => this.fabTarget.triggerDay(this.activeDay()) },
+  protected readonly addMenuItems = computed<AppMenuItem[]>(() => [
+    {
+      label: 'Activité',
+      icon: 'pi pi-map-marker',
+      command: () => {
+        if (this.activeDay() !== 'notes') {
+          this.fabTarget.triggerDay(this.activeDay());
+          return;
+        }
+        this.fabTarget.general()?.selectSubTab('activities');
+        this.fabTarget.general()?.createActivity();
+      },
+    },
     ...(Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][]).map(([type, meta]) => ({
       label: meta.label,
       icon: meta.icon,
-      command: () => this.dayLogisticQuickAdd.create(type, new Date(this.activeDay())),
+      command: () => this.dayLogisticQuickAdd.create(type, this.activeDay() !== 'notes' ? new Date(this.activeDay()) : undefined),
     })),
+    { label: 'Note', icon: 'pi pi-clipboard', command: () => this.notesFocusService.requestCreate() },
   ]);
 
   readonly activeDay = signal<string>('notes');
@@ -124,40 +147,19 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   ]);
 
   /**
-   * "+" flottant UNIQUE (voir TripCreationTargetService) : sur l'onglet
-   * "Général", son icône/libellé suivent le sous-onglet actif de
-   * `GeneralPanelComponent` (activités vs réservations vs notes) ; sur un
-   * jour, icône générique "ajouter" — le clic ouvre un choix entre plusieurs
-   * types (voir dayAddMenuItems, ROADMAP.md), plus une simple création
-   * d'activité directe.
+   * "+" flottant UNIQUE (voir TripCreationTargetService), icône/libellé
+   * génériques désormais quel que soit l'onglet actif : le clic ouvre
+   * toujours le même menu "Ajouter" (voir addMenuItems, ROADMAP.md "UX /
+   * Interactions") — plus de création directe contextuelle sur l'onglet
+   * Général.
    */
-  protected readonly fabIcon = computed(() => {
-    if (this.activeDay() !== 'notes') return 'pi pi-plus';
-    switch (this.fabTarget.general()?.activeSubTab()) {
-      case 'notes': return 'pi pi-clipboard';
-      case 'logistics': return 'pi pi-bookmark';
-      default: return 'pi pi-map-marker';
-    }
-  });
+  protected readonly fabIcon = 'pi pi-plus';
+  protected readonly fabAriaLabel = 'Ajouter';
 
-  protected readonly fabAriaLabel = computed(() => {
-    if (this.activeDay() !== 'notes') return 'Ajouter';
-    switch (this.fabTarget.general()?.activeSubTab()) {
-      case 'notes': return 'Ajouter une note';
-      case 'logistics': return 'Ajouter un élément logistique';
-      default: return 'Ajouter une activité';
-    }
-  });
-
-  /** Sur un jour : ouvre le menu "Ajouter" (Activité/Vol/Logement/Location voiture/Train/Autre, voir dayAddMenuItems) ancré sur le bouton "+" lui-même plutôt que de créer directement une activité — voir ROADMAP.md. */
+  /** Ouvre le menu "Ajouter" (Activité/Vol/Logement/Location voiture/Train/Autre/Note, voir addMenuItems) ancré sur le bouton "+" lui-même — même comportement sur un jour ET sur l'onglet Général. */
   protected onFabActivate(): void {
-    if (this.activeDay() === 'notes') {
-      this.fabTarget.general()?.trigger();
-      return;
-    }
-
     const anchor = this.fabElementRef()?.nativeElement;
-    if (anchor) this.dayAddMenu().toggleAt(anchor);
+    if (anchor) this.addMenu().toggleAt(anchor);
   }
 
   protected onSelectionCancel(): void {

@@ -4,38 +4,18 @@
   </div>
 
   <div class="logistic-header__meta flex flex-column flex-1 min-w-0 gap-1">
-    @if (isLogement()) {
+    <div class="flex align-items-center gap-1 min-w-0">
+      <span class="logistic-header__title-computed font-semibold text-base white-space-nowrap overflow-hidden text-overflow-ellipsis">
+        {{ titleValue() || typeMeta[logistic().type].label }}
+      </span>
       <button
         type="button"
-        class="logistic-header__title-button nt-inline-field w-full font-semibold text-base"
-        (click)="openLogementTitleDialog($event)">
-        {{ titleValue() || typeMeta[logistic().type].label }}
+        class="logistic-header__pencil flex-shrink-0"
+        aria-label="Modifier le titre"
+        (click)="isLogement() ? openLogementTitleDialog($event) : openTitleTextDialog($event)">
+        <i class="pi pi-pencil"></i>
       </button>
-    } @else if (hasComputedTitle()) {
-      <div class="flex align-items-center gap-1 min-w-0">
-        <span class="logistic-header__title-computed font-semibold text-base white-space-nowrap overflow-hidden text-overflow-ellipsis">
-          {{ titleValue() || typeMeta[logistic().type].label }}
-        </span>
-        <button
-          type="button"
-          class="logistic-header__pencil flex-shrink-0"
-          aria-label="Modifier le titre"
-          (click)="openComputedTitleEditDialog($event)">
-          <i class="pi pi-pencil"></i>
-        </button>
-      </div>
-    } @else {
-      <input
-        type="text"
-        class="nt-inline-field w-full font-semibold text-base"
-        [value]="titleValue()"
-        [placeholder]="typeMeta[logistic().type].label"
-        (input)="onTitleInput($any($event.target).value)"
-        (blur)="onTitleBlur()"
-        (focus)="onTitleFocus($event)"
-        (click)="$event.stopPropagation()"
-        (keydown)="$event.stopPropagation()" />
-    }
+    </div>
 
     <span class="nt-text-muted text-xs flex align-items-center gap-1">
       <i class="pi pi-calendar logistic-header__meta-icon"></i>

@@ -21,6 +21,7 @@ import { ViewportService } from '@app/core/services/viewport.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { getScrollContainer } from '@app/shared/utils/scroll-container';
 import { TripActivitiesCreationService } from './trip-activities-creation.service';
+import { GeneralMapCinematicService } from './general-map-cinematic.service';
 import { DayScrollSyncService } from '../../day-panel/day-scroll-sync.service';
 import { NewActivityDraftComponent } from '../../day-panel/new-activity-draft/new-activity-draft.component';
 
@@ -69,10 +70,12 @@ function matchesSearch(title: string, address: string | undefined, term: string)
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Une instance de DayScrollSyncService par montage (détruite/recréée à
-  // chaque va-et-vient sur le sous-onglet Activités, voir le @switch de
-  // GeneralPanelComponent) : même portée que pour un DayPanelComponent.
-  providers: [TripActivitiesCreationService, DayScrollSyncService],
+  // Une instance de DayScrollSyncService/GeneralMapCinematicService par
+  // montage (détruite/recréée à chaque va-et-vient sur le sous-onglet
+  // Activités, voir le @switch de GeneralPanelComponent) : même portée que
+  // pour un DayPanelComponent. GeneralMapCinematicService : caméra du pool
+  // décorrélée du scroll, voir sa doc (ROADMAP.md "UX / Interactions").
+  providers: [TripActivitiesCreationService, DayScrollSyncService, GeneralMapCinematicService],
 })
 export class TripActivitiesComponent {
   private readonly tripFacade = inject(TripFacade);
@@ -87,6 +90,7 @@ export class TripActivitiesComponent {
   private readonly viewport = inject(ViewportService);
   private readonly chromeService = inject(TripChromeService);
   protected readonly scrollSync = inject(DayScrollSyncService);
+  private readonly mapCinematic = inject(GeneralMapCinematicService);
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
@@ -162,15 +166,15 @@ export class TripActivitiesComponent {
       getSearchTerm: () => this.searchTerm(),
     });
 
-    effect(() => {
-      const map = this.activeMapComponent();
-      if (map) map.points.set(this.generalMapPoints());
-    });
-
     // Quand ce contexte devient actif (slide Général + sous-onglet
     // Activités), on récupère l'instance UNIQUE de la carte (partagée avec
     // la vue jour, voir TripDayMapHostService) et on la déplace physiquement
     // dans notre conteneur sticky — même mécanique que DayPanelComponent.
+    // Pas de dépendance à `generalMapPoints()` ici volontairement : ne doit
+    // tourner qu'au (re)montage de cet onglet, pas à chaque activité
+    // ajoutée/filtrée (`mapCinematic.attachMap` y re-snapperait sinon la
+    // caméra sur la vue d'ensemble à chaque changement, pas seulement au
+    // (re)montage).
     effect(() => {
       if (!this.active()) return;
       const container = this.stickyMap()?.nativeElement;
@@ -179,6 +183,35 @@ export class TripActivitiesComponent {
 
       this.mapHost.moveTo(container, 'general');
       this.scrollSync.attachMap(map);
+      this.mapCinematic.attachMap(map);
+    });
+
+    // `map.points` synchronisé à chaque changement de `generalMapPoints()`
+    // (nouvelle activité, filtre, tri...). Cause racine trouvée par
+    // instrumentation (logs temporaires) : `#stickyMap` n'existe dans le DOM
+    // que sous `@if (hasMapPoints())` (voir le template), qui dépend des
+    // MÊMES données que `generalMapPoints()` — sur le tout premier passage
+    // où `generalMapPoints()` devient non-vide, `stickyMap()` (viewChild)
+    // pouvait donc encore valoir `undefined` (rendu Angular du `@if` pas
+    // encore reflété), sautant l'appel `moveTo` (qui positionne
+    // `mapHost.currentOwner()` à `'general'`, lu par l'effect interne de
+    // `TripDayMapComponent` pour savoir s'il doit ignorer l'ancien
+    // recentrage "1er point", le pool étant géré par
+    // `GeneralMapCinematicService` désormais) MAIS PAS `points.set` (pas de
+    // garde dessus) — laissant passer un saut de caméra sur le 1er point au
+    // montage/tri/filtre, avant même que la vue d'ensemble n'ait sa chance
+    // (retour utilisateur, confirmé par log `currentOwner=null` au moment de
+    // ce `points.set()`). Corrigé en gardant TOUT le corps de l'effect
+    // (`points.set` inclus) derrière la même condition `container` que
+    // `moveTo` : `stickyMap()` étant un signal lu ici, l'effect se
+    // redéclenche automatiquement dès que l'élément apparaît réellement
+    // dans le DOM.
+    effect(() => {
+      const map = this.activeMapComponent();
+      const container = this.stickyMap()?.nativeElement;
+      if (!map || !container) return;
+      this.mapHost.moveTo(container, 'general');
+      map.points.set(this.generalMapPoints());
     });
 
     this.scrollSync.connect({
@@ -195,10 +228,25 @@ export class TripActivitiesComponent {
       // d'un simple @media 768px, pas du ChromeMode) : il faut donc ajouter
       // sa hauteur au bouclier.
       getPinnedChromeOffset: () => this.chromeService.stickyContentTop() + this.chromeService.generalSubTabSwitchHeight(),
+      // La caméra du pool est pilotée par GeneralMapCinematicService, décorrélée
+      // du scroll (voir ROADMAP.md "UX / Interactions") — DayScrollSyncService
+      // continue de gérer ici attachMap/focusActivity/le snap de fin de liste,
+      // mais plus du tout la caméra.
+      cameraFollowEnabled: () => false,
+    });
+
+    this.mapCinematic.connect({
+      isActive: () => this.active(),
+      isExpanded: () => !this.mapCollapsed(),
+      getPoints: () => this.generalMapPoints(),
+      getMapComponent: () => this.activeMapComponent(),
+      getSlideEl: () => this.getSlideEl(),
+      getPageRootEl: () => this.elRef.nativeElement,
     });
 
     afterNextRender(() => {
       this.scrollSync.startListening();
+      this.mapCinematic.startListening();
     });
   }
 

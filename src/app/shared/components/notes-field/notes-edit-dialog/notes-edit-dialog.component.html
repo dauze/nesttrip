@@ -1,5 +1,6 @@
 <div class="notes-edit-dialog flex flex-column">
-  <div class="notes-edit-dialog__row flex align-items-center gap-2 flex-shrink-0">
+  <div class="notes-edit-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="notes-edit-dialog__title">{{ data.title }}</span>
     <app-button
       icon="pi pi-times"
       [rounded]="true"
@@ -8,7 +9,6 @@
       class="flex-shrink-0"
       aria-label="Fermer"
       (click)="cancel()" />
-    <span class="notes-edit-dialog__title">{{ data.title }}</span>
   </div>
 
   <textarea

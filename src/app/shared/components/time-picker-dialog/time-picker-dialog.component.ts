@@ -63,7 +63,7 @@ export class TimePickerDialogComponent
     /** 'duration' désactive le cadran horloge (une durée n'est pas une heure sur 24h) : saisie clavier uniquement. */
     readonly mode = input<TimePickerMode>('time');
 
-    /** Titre du dialog mobile (ex. "Sélectionner l'heure de début") — retombe sur un libellé générique selon `mode` si non fourni, voir TimePickerClockComponent. */
+    /** Titre du dialog mobile (ex. "Heure de début") — court, même registre que les autres dialogs (Titre, Notes, Prix) ; retombe sur un libellé générique selon `mode` si non fourni, voir TimePickerClockComponent. */
     readonly label = input<string>('');
 
     currentDate = signal<Date | null>(null);
