@@ -41,9 +41,16 @@
       }
     </div>
 
-    <button type="button" class="tab day-badge" [class.active]="!expanded()" (click)="goBackToDay()">
+    <button
+      type="button"
+      class="tab day-badge"
+      [class.active]="!expanded()"
+      (click)="goBackToDay()"
+      (dblclick)="openDayCalendar()">
       <i class="pi pi-calendar"></i>
       <span class="label">{{ activeDayLabel() }}</span>
     </button>
   </div>
 </div>
+
+<app-day-picker-sheet [tabs]="dayTabs()" (daySelected)="onDaySelected($event)" />

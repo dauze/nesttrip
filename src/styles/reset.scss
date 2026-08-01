@@ -42,6 +42,7 @@ body {
   padding-bottom: 50px;
   margin-top: 0.3rem;
   color: var(--nt-text-color);
+  background-color: var(--nt-page-background);
 }
 
 // Anneau de focus clavier/clic thémé (`--nt-focus-ring-*`, tokens.scss),
@@ -106,6 +107,7 @@ html.trip-detail-active body {
 app-trip-day-swiper,
 app-trip-tabs-nav,
 app-mobile-trip-nav,
+app-day-picker-sheet,
 app-day-panel,
 app-trip-day-map,
 app-timeline,

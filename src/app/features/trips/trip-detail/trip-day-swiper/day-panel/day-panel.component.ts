@@ -95,6 +95,7 @@ export class DayPanelComponent {
         latitude: a.latitude!,
         longitude: a.longitude!,
         order: i + 1,
+        photoRef: a.photoRefs?.[0],
       }));
   });
 

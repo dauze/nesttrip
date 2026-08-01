@@ -113,6 +113,13 @@
   --nt-content-border-color: var(--nt-surface-200);
   --nt-content-border-radius: var(--nt-radius-md);
 
+  // Fond de page (body, toolbar, carte épinglée en mode empilé) — distinct de
+  // `--nt-content-background` (cartes/panels) pour qu'on distingue visuellement
+  // les cartes du fond, dans les deux modes (voir ROADMAP.md "UX / Interactions" :
+  // le fond blanc en mode clair ne se différenciait pas des cartes, elles aussi
+  // blanches).
+  --nt-page-background: var(--nt-surface-50);
+
   // Overlays (dialog, popover/select/autocomplete...)
   --nt-overlay-background: var(--nt-surface-0);
   --nt-overlay-border-color: var(--nt-surface-200);
@@ -305,6 +312,7 @@
   --nt-content-background: var(--nt-surface-900);
   --nt-content-hover-background: var(--nt-surface-800);
   --nt-content-border-color: var(--nt-surface-700);
+  --nt-page-background: var(--nt-surface-950);
 
   --nt-overlay-background: var(--nt-surface-900);
   --nt-overlay-border-color: var(--nt-surface-700);
@@ -377,6 +385,7 @@
   --nt-content-background: var(--nt-surface-0);
   --nt-content-hover-background: var(--nt-surface-100);
   --nt-content-border-color: var(--nt-surface-200);
+  --nt-page-background: var(--nt-surface-50);
 
   --nt-overlay-background: var(--nt-surface-0);
   --nt-overlay-border-color: var(--nt-surface-200);
@@ -423,10 +432,10 @@
 
 :root[data-theme='dark'] {
   // `color-scheme: light dark` (posé plus haut) laisse le navigateur choisir
-  // la branche en fonction de la préférence OS — ce qui pilote aussi bien les
-  // couleurs système CSS (`Canvas`, voir day-panel/trip-detail/trips.component.scss)
-  // que `light-dark()` (voir plus haut, layout-utilities.scss). Sans ce
-  // réglage explicite, un choix de thème manuel dans l'appli n'avait aucun
+  // la branche en fonction de la préférence OS — ce qui pilote aussi bien le
+  // rendu natif (scrollbars, contrôles de formulaire, fond d'overscroll
+  // mobile) que `light-dark()` (voir plus haut, layout-utilities.scss). Sans
+  // ce réglage explicite, un choix de thème manuel dans l'appli n'avait aucun
   // effet sur ces deux mécanismes : ils continuaient de suivre le thème du
   // système/navigateur quoi qu'il arrive (voir ROADMAP.md).
   color-scheme: dark;

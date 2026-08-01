@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { DayPickerSheetComponent } from './day-picker-sheet/day-picker-sheet.component';
 
 /** Icônes des 4 tabs Résumé/Activités/Logistique/Listes (voir `TripDetailComponent.tabs`) — `TripTab` ne porte pas d'icône, propre à cette barre. */
 const GENERAL_TAB_ICONS: Record<string, string> = {
@@ -33,7 +34,7 @@ const GENERAL_TAB_ICONS: Record<string, string> = {
 @Component({
   selector: 'app-mobile-trip-nav',
   standalone: true,
-  imports: [],
+  imports: [DayPickerSheetComponent],
   templateUrl: './mobile-trip-nav.component.html',
   styleUrl: './mobile-trip-nav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,6 +49,7 @@ export class MobileTripNavComponent {
 
   private readonly wrapperRef = viewChild<ElementRef<HTMLElement>>('wrapper');
   private readonly dayStripRef = viewChild<ElementRef<HTMLElement>>('dayStrip');
+  private readonly dayCalendar = viewChild(DayPickerSheetComponent);
 
   protected readonly generalTabs = computed(() => this.tabs().filter(t => !t.dayNumber));
   protected readonly dayTabs = computed(() => this.tabs().filter(t => !!t.dayNumber));
@@ -141,5 +143,16 @@ export class MobileTripNavComponent {
     const first = this.generalTabs()[0];
     if (!first) return;
     this.selectTab(first);
+  }
+
+  /** Double-clic sur le badge "Jour N" : ouvre le calendrier des jours du voyage (voir ROADMAP.md "UX / Interactions"). */
+  protected openDayCalendar(): void {
+    this.dayCalendar()?.open();
+  }
+
+  /** Un jour hors voyage ne peut pas être sélectionné dans ce calendrier (grille limitée aux jours du trip) : la recherche ne peut donc pas échouer en usage normal. */
+  protected onDaySelected(date: Date): void {
+    const tab = this.dayTabs().find(t => new Date(t.id).toDateString() === date.toDateString());
+    if (tab) this.selectTab(tab);
   }
 }

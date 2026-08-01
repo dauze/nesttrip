@@ -78,7 +78,7 @@
   // cette marge) dans le `@media` scindé plus bas.
   top: calc(var(--sticky-top-offset, 0px) + var(--nt-sticky-map-top-gap, 0px));
   z-index: 10;
-  background: canvas;
+  background: var(--nt-page-background);
   // PAS de padding-top ici (relicat retiré — voir ROADMAP.md) : il s'ajoutait
   // par-dessus le `gap` de `.day-panel-body` entre la timeline et la carte,
   // gonflant spécifiquement CET écart au-delà de gap-1/gap-2. L'espacement

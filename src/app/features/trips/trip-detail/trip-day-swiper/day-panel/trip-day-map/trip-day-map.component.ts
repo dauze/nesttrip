@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, injec
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { ThemeService } from '@app/core/services/theme.service';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { ViewportService } from '@app/core/services/viewport.service';
@@ -20,6 +21,10 @@ export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
+  private readonly photoService = inject(GooglePhotoService);
+  /** URL résolue (blob) par `photoRef` — voir l'effect de chargement dans le constructeur et `markerContent`. Chaîne vide = échec, traité comme "pas de photo". */
+  private readonly photoUrls = signal<Record<string, string>>({});
+  private readonly requestedPhotoRefs = new Set<string>();
   /** `protected` : lu depuis le template pour basculer `[toggleable]`/`[bare]` selon le contexte (voir trip-day-map.component.html). */
   protected readonly mapHost = inject(TripDayMapHostService);
   // Contexte 'general' (pool, uniquement l'onglet Résumé désormais — voir
@@ -135,8 +140,31 @@ export class TripDayMapComponent {
       // établissant la caméra correcte à l'activation ; ce recentrage par
       // défaut n'est plus nécessaire nulle part.
     });
+
+    // Miniature photo Google sur les markers (voir ROADMAP.md "UX /
+    // Interactions", remplace le numéro partout) : charge paresseusement
+    // l'URL (blob, via GooglePhotoService — mise en cache par ref au niveau
+    // du service, partagée avec le reste de l'app) de toute ref pas encore
+    // demandée dès qu'elle apparaît dans `points()`, sans jamais re-fetcher.
+    effect(() => {
+      for (const point of this.points()) {
+        const ref = point.photoRef;
+        if (!ref || this.requestedPhotoRefs.has(ref)) continue;
+        this.requestedPhotoRefs.add(ref);
+        this.photoService.getPhotoUrl$(ref, 96).subscribe((url) => {
+          this.photoUrls.update((map) => ({ ...map, [ref]: url }));
+        });
+      }
+    });
   }
 
+  /**
+   * Vignette photo Google à la place du numéro (voir ROADMAP.md "UX /
+   * Interactions") : si une photo est résolue pour ce point, un cercle avec
+   * la miniature ; sinon (pas de photo Google, ou pas encore chargée, ou
+   * échec) un `PinElement` classique mais SANS `glyphText` — le numéro
+   * disparaît partout, y compris en fallback.
+   */
   markerContent(point: DayMapPoint): HTMLElement {
     // Protection indispensable au cas où Google Maps n'est pas encore totalement instancié dans le DOM
     if (typeof google === 'undefined' || !google.maps || !google.maps.marker) {
@@ -144,15 +172,55 @@ export class TripDayMapComponent {
     }
 
     const isSelected = point.activityId === this.selectedActivityId();
+    const photoUrl = point.photoRef ? this.photoUrls()[point.photoRef] : undefined;
+
+    if (photoUrl) {
+      return this.buildPhotoMarker(photoUrl, isSelected);
+    }
+
     // PinElement étend HTMLElement : on le retourne directement plutôt que
-    // sa propriété `.element`, dépréciée par l'API Google Maps.
+    // sa propriété `.element`, dépréciée par l'API Google Maps. Toujours en
+    // couleur primary (pin "classique", pas de rouge) : la distinction
+    // sélectionné/non sélectionné passe uniquement par la taille ici.
+    // `glyphColor` DOIT être posé explicitement : sans `glyphText`/`glyph`,
+    // PinElement affiche quand même un petit rond central avec sa couleur par
+    // défaut (rouge Google), qui ressortait comme un point rouge résiduel au
+    // milieu du pin même une fois `background`/`borderColor` recolorés.
     return new google.maps.marker.PinElement({
-      glyphText: String(point.order),
-      glyphColor: '#ffffff',
-      background: isSelected ? '#e53935' : '#3f51b5',
-      borderColor: isSelected ? '#b71c1c' : '#283593',
+      background: 'var(--nt-primary-color)',
+      borderColor: 'var(--nt-primary-active-color)',
+      glyphColor: 'var(--nt-primary-color)',
       scale: isSelected ? 1.2 : 1,
     });
+  }
+
+  /**
+   * Marker "vignette" custom : construit hors du renderer Angular
+   * (`document.createElement`, styles posés en inline), donc pas de CSS
+   * scopé du composant qui s'y applique — voir `markerContent`.
+   */
+  private buildPhotoMarker(url: string, isSelected: boolean): HTMLElement {
+    const size = isSelected ? 44 : 36;
+    const borderColor = isSelected ? '#e53935' : 'var(--nt-primary-color)';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      border: ${isSelected ? 3 : 2}px solid ${borderColor};
+      overflow: hidden;
+      box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
+      background: #ffffff;
+    `;
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block;';
+    wrapper.appendChild(img);
+
+    return wrapper;
   }
 
   onMarkerClick(point: DayMapPoint): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, effect, inject, input, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, input, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from '@app/shared/components/card/card.component';
@@ -14,6 +14,8 @@ import { TripCollaboratorsComponent } from '../../../trip-collaborators/trip-col
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { GeneralMapCinematicService } from '../trip-activities/general-map-cinematic.service';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
+import { TripTasksTileComponent } from './trip-tasks-tile/trip-tasks-tile.component';
 
 /** Types Logistique comptés comme "transport" par la tuile Résumé (décision utilisateur du 2026-08-01, voir ROADMAP.md) — exclut Logement et Autre. */
 const TRANSPORT_LOGISTIC_TYPES: LogisticType[] = ['flight', 'train', 'carRental'];
@@ -33,7 +35,7 @@ const TRANSPORT_LOGISTIC_TYPES: LogisticType[] = ['flight', 'train', 'carRental'
 @Component({
   selector: 'app-trip-summary',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, SkeletonComponent, SelectComponent, TripHeaderComponent, TripCollaboratorsComponent],
+  imports: [ReactiveFormsModule, CardComponent, SkeletonComponent, SelectComponent, TripHeaderComponent, TripCollaboratorsComponent, TripTasksTileComponent],
   templateUrl: './trip-summary.component.html',
   styleUrl: './trip-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +51,8 @@ export class TripSummaryComponent {
   protected readonly tripFacade = inject(TripFacade);
   private readonly mapHost = inject(TripDayMapHostService);
   private readonly mapCinematic = inject(GeneralMapCinematicService);
+  private readonly dayActivityFocusService = inject(DayActivityFocusService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly mapContainerRef = viewChild<ElementRef<HTMLElement>>('mapContainer');
   private readonly headerRef = viewChild(TripHeaderComponent);
@@ -75,19 +79,24 @@ export class TripSummaryComponent {
   readonly currencyOptions = CURRENCY_OPTIONS;
   readonly currencyControl = this.fb.nonNullable.control<string>('EUR');
 
-  /** Toutes les instances placées sur un jour du trip (une activité posée sur 2 jours compte 2 fois — décision actée, cohérent avec la somme des dépenses ci-dessous). */
-  private readonly allPlacedActivities = computed(() => {
+  /**
+   * Toutes les instances placées sur un jour du trip (une activité posée sur 2 jours
+   * compte 2 fois — décision actée, cohérent avec la somme des dépenses ci-dessous),
+   * avec le jour de placement conservé (nécessaire pour la navigation au clic sur la
+   * carte, voir `mapClickSub` dans le constructeur, et pour la tuile Tâches, voir `TripTasksTileComponent`).
+   */
+  readonly allPlacedActivities = computed(() => {
     const trip = this.tripFacade.activeTrip();
     if (!trip || trip.id !== this.tripId()) return [];
     return trip.days
       .slice()
       .sort((a, b) => a.id.getTime() - b.id.getTime())
-      .flatMap(day => this.tripFacade.getDayActivities(day.id)());
+      .flatMap(day => this.tripFacade.getDayActivities(day.id)().map(activity => ({ dayId: day.id, activity })));
   });
 
   /** Somme de tous les montants, devise de chaque activité ignorée (décision actée le 2026-08-01) — affichée avec le symbole de la devise du trip. */
   readonly totalExpense = computed(() =>
-    this.allPlacedActivities().reduce((sum, activity) => sum + (activity.price?.amount || 0), 0),
+    this.allPlacedActivities().reduce((sum, { activity }) => sum + (activity.price?.amount || 0), 0),
   );
 
   readonly currencySymbol = computed(() => {
@@ -106,20 +115,26 @@ export class TripSummaryComponent {
   /** Points de la carte, ordonnés chronologiquement (par jour) — voir `allPlacedActivities`. */
   readonly generalMapPoints = computed<DayMapPoint[]>(() =>
     this.allPlacedActivities()
-      .filter(a => a.placeId && a.latitude && a.longitude)
-      .map((a, i) => ({
+      .filter(({ activity }) => activity.placeId && activity.latitude && activity.longitude)
+      .map(({ dayId, activity: a }, i) => ({
         activityId: a.id,
         placeId: a.placeId!,
         name: a.title,
         latitude: a.latitude!,
         longitude: a.longitude!,
         order: i + 1,
+        photoRef: a.photoRefs?.[0],
+        dayId: dayId.toISOString(),
       })),
   );
 
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
 
+  private mapClickSub?: { unsubscribe: () => void };
+
   constructor() {
+    this.destroyRef.onDestroy(() => this.mapClickSub?.unsubscribe());
+
     effect(() => {
       this.currencyControl.setValue(this.tripFacade.getTripCurrency(this.tripId())(), { emitEvent: false });
     });
@@ -144,6 +159,17 @@ export class TripSummaryComponent {
 
       this.mapHost.moveTo(container, 'general');
       this.mapCinematic.attachMap(map);
+
+      // Clic sur une activité de la carte -> navigation vers le bon jour (voir
+      // ROADMAP.md "UX / Interactions") : même pattern que
+      // `DayScrollSyncService.attachMap` (`map.activitySelected.subscribe`),
+      // ré-abonné à chaque (ré)attachement de l'instance de carte partagée.
+      // N'affecte pas le comportement existant (clic centre la carte, voir
+      // `TripDayMapComponent.onMarkerClick`), qui reste géré en interne.
+      this.mapClickSub?.unsubscribe();
+      this.mapClickSub = map.activitySelected.subscribe((point) => {
+        if (point.dayId) this.dayActivityFocusService.requestFocus(point.dayId, point.activityId);
+      });
     });
 
     // `map.points` synchronisé à chaque changement de `generalMapPoints()` —

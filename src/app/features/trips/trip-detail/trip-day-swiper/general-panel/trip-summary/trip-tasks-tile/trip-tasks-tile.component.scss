@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.trip-tasks-tile__item {
+  appearance: none;
+  border: none;
+  border-left-width: 0.25rem;
+  border-left-style: solid;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--nt-content-border-radius, 0.5rem);
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+  font-size: 0.875rem;
+  transition: background-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--nt-content-hover-background);
+  }
+}
