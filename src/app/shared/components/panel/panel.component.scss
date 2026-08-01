@@ -7,7 +7,7 @@
 }
 
 :host(.app-panel--thick-border) {
-  border-width: var(--nt-border-width-thick);
+  border-width: var(--nt-border-width-group);
 }
 
 // `bare` (voir panel.component.ts) : aucun chrome propre, le contenu projeté

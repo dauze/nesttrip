@@ -241,7 +241,8 @@ export class DayReorderService implements OnDestroy {
       if (c.activity()?.id !== drag.activityId) c.clearShiftOffset();
     }
 
-    if (drag.targetIndex !== drag.fromIndex) {
+    const reordered = drag.targetIndex !== drag.fromIndex;
+    if (reordered) {
       const ids = this.config.getActivities().map(a => a.id);
       const [movedId] = ids.splice(drag.fromIndex, 1);
       ids.splice(drag.targetIndex, 0, movedId);
@@ -255,6 +256,18 @@ export class DayReorderService implements OnDestroy {
     this.settleCard(drag);
     this.restoreCollapseSnapshot();
     queueMicrotask(() => this.scrollSync.wakeLoop());
+
+    // Scroll jusqu'à la carte déplacée à sa nouvelle position (voir
+    // ROADMAP.md, "il faut scroller sur l'activité drop en tête") : seulement
+    // si l'ordre a réellement changé (sinon rien n'a bougé), et après deux
+    // rAF pour laisser le re-dépli déclenché par `restoreCollapseSnapshot()`
+    // (cartes remises à leur état pré-drag, souvent dépliées) se peindre —
+    // sans cette attente, `focusActivity` mesurerait encore la géométrie
+    // "toutes cartes repliées" du drag, pas la position finale réelle.
+    if (reordered) {
+      const movedId = drag.activityId;
+      requestAnimationFrame(() => requestAnimationFrame(() => this.scrollSync.focusActivity(movedId)));
+    }
   };
 
   /** Sort réellement la carte du flux (sur place, voir `leaveFlowHidden`) et fait apparaître un clone SOUS LE DOIGT (voir `grabOffsetX/Y`, pas sa position mesurée après collapse) hors du swiper (voir ActivityDispatchService.registerDragPortal), puis fige les offsets des voisines pour le hit-test. */

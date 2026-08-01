@@ -59,7 +59,8 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour -> A voir comment faire techniquement car on saisie que 1 horaire actuellement 
-- Cohabitation entre le drag-and-drop libre (réorganisation manuelle des activités d'un jour) et un mode "par horaires" (tri automatique selon l'heure saisie) : pas de solution élégante trouvée pour gérer les deux sans réglage explicite — philosophie du produit : simplicité, pas de paramétrage, doit rester intuitif par défaut. À détailler via une question UX concrète avant d'implémenter (voir `.claude/skills/nesttrip-roadmap/SKILL.md`).
+- Si l'utilisateur créé ou modifie des date, il faut la placer chronologiquement. Si l'utilisateur drag un drop une activité qui n'a pas de date, la trier normalement. Si l'utilisateur créé une activité sans date, la mettre au début.: Donc si il créé une activité, la positionner au début et pas à la fin
+- Dans le day des activity, il faudrait mettre les transports entre les différentes activités
 
 ### Nouveau voyage / IA (non prioritaire)
 
@@ -87,27 +88,46 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### UX / Interactions
 
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire (non prioritaire)
-- le bouton flotant : trouver une solution : déplaceable ? sur le coté qui sort ? Faut trouver mieux (non prioritaire)
-
-
+- le bouton flotant : fais comme sur facebook, une annimation dui bouton qui se déplace un peut sur le coté pour laisser l'utilisateur cliquer sur le chevron 
+- Renommer logistique en Logement & Transport
+- Rajouter les types de transport préférer en fonction des distances des trajets pour le calcul des distances sur le résumé du voyage, dans trip header en dessous des dates
+  - Les transport doivent être "à pied si temsp en dessous de .. min, velo entre tant et tant de minutes, train sinon. Il faudrait pouvoir donner des intervalles et des modes de transport préféré, pour le calcul des distances. Il faut faire un truc simple à utiliser, mais paramétrable si on veut, j'ai besoin de ton aide pour bien faire et surtout avoir une valeur par defaut facile 
+- Dans les train ,renommer "Ville de départ et "ville d'arrivée" en "gare de départ" et "gare d'arrivé" : pour les avions ,check qu'il met bien l'aeroport 
+- Si on créé un Logistique, ou Liste depuis un jour, après la cinématique de remplissage des données, revenir au jour ou on était
+- Prérenseigner une liste de to take à la création d'un voyage 
+- Rajouter des attributions sur tout pour pouvoir mettres des trajets, hotel et des transports + mettre une note "si le transport et partagé, mettre le prix unitaire'
+  - Cela serait par defaut assigné à tous les voyageurs mais on pourrait en enlever
+  - Dans le calcul du prix, compter que ceux ou le voyageur est sur les trajets et les activités
+- Ajouter les fichier depuis la vue d'ensemble et améliorer le tab, en l'état il ne sert pas à grand chose
+- Améliorer nouveau voyage pour faire le même comportement que sur activité en mode mobile : 
+  - le clique sur ville / pay ouvre composant pour saisie google 
+  - le clique sur nom du voyage ouvre le composant de texte simple
+  - Lorsque l'on arrive sur l'écran de nouveau voyage, ouvrir le composant de saisie google
+  - Implémenter le chainage ville, nom du voyage puis date du voyage. Dès que l'on a saisie les dates, faire "Créer le voyage"
+- Améliorer nouveau voyage en mode desktop : positionner le curseur sur Ville / pays 
+- A la connexion : 
+  - si on a pas de voyage, aller directement sur l'onglet "Nouveaux voyage
+  - Si on a un voyage actif, aller directement sur ce voyage. Un voyage actif est un voyage dont la date du jour fait parti d'un des intervale de jour d'un voyage
+  - Si on a plusieurs voyages non actifs, aller sur l'accueil comme actuellement
+- Accelerer un peu l'annimation sur la carte de résumé
+- La gestion des retour dois faire retour à la position d'avant 
+- Enlever "autre"
+- Ecrit trop petit le libellé de la bar 
+- Dans Liste, l'attribuer à une activité et mettre un badge sur l'activité associé 
+- Modifier le logo du train dnas un item logistique
+- Clique sur date + heure du header d'une activité ou autre doit ouvrir le calendrier pour modifier l'élément
+- Rajouter un contrôle sur la date de fin qui ne doit pas être inferieur à la date de début quand il y a intervale
+- Rajouter une recherche dans l'onget Listes
+- Rajouter filtre mon planning et celui de tout le l'équipe
+- Rajouter les transports / hotel des notification directement dans la vu d'ensemble
+- mettre la durée à --:-- si l'utilisateur n'as pas saisi de valeur ou qu'elle n'a pas été calculée
 
 ### Bugs / fixes
-
-- Depuis le pool, problème de drag and drop maison : si je prend une activité qui est sous le calendrier, le calendrier s'ouvre et la position du drag est mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne. Cas poiur le repproduire : créer 10 activitées sur le pull, puis saisir la derniere carte qui est tout en bas : le calendrier s'est ouvert et l'annimation de la ball s'est bien fait. Maintenant, comme le calendrier s'est ouvert sous la boule, on est directement positionné sur un jour : 
-  - Résultat attendu, l'activité se créé dasn le jour
-  - Résultat produit, le calendrier se faire et l'annimation d'annulation s'execute.
-  En fait, si le calendrier s'ouvre sous la boule ou on est positionné, la boule n'est pas détecté comme tétant sur le calendrier sauf si on sort la boule du calendrier et que l'on revient sur celui-ci
-- mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle : sur cddrag il y a pas d'annimation des cartes qui se déplace pour laisser la place à la carte en survol
-- Une fois le drag and drop fait sur un jour d'une activité, il faut scrolle sur l'activité drop en tete
-- Composant de saisie de date : mettre une annimation sur les aiguilles qui tourne lorsque l'on navigue du choix de l'heure au choix des minutes, l'éguille doit tourner de la position des heure à l'équille de la position des minutes 
-- Clignotement des photos d'activité : l'image précédente s'affiche brièvement avant la nouvelle. en dessous, beug connu de la librairie en mode loading ? 
-- Pull-to-refresh sur l'écran swiper : toujours cassé malgré le correctif `overscroll-behavior`/`overflow` déjà tenté (voir "Déjà fait") — diagnostic : le scroll du haut est intercepté par Swiper avant d'atteindre le pull-to-refresh natif.
-- think border ne fonctionne pas sur  le pool d'activité, la bordure du panel des jours doit être légèrement plus épaisse que celle des carte des activités : cela fonctionnait avant masi il y a eu une régression
-- Sur le pool d'activité, les cartes qui sont "a assigner" doivent avoir un border left en pointillé de la même couleur que les autres border left, pas un border left noir 
-- La modification du nom du trip ne doit pas rafraichir toute la page depuis le résumé, il faut le mettre en signal dans tripfacade comme les autres élement pour pas rafraichir tout l'objet trip
-- Les popup font la taille de l'écran et ne prennent pas en compte le clavier sur mobile
-- il faut uniformiser tous les padding sur les données des formulaire des activités : Type et résa on 0.25rem de padding partout, Début, fin et durée n'en on pas du tout, et pris=x à 0.25rem en top et bottom : mettre 0.25rem partout. Uniformiser avec les même valeurs sur ordinateur également
-- Le bouton "Ajouter piece jointe" est un peu large sur l'activité, il faudrait qu'il fasse la même largeur que le p-chip quand il y a un fichier de déposé
+- A l'ajout d'un train, la cinématique de remplissage ne fonctionne pas
+- Les dates de dé"but et de fin dans l'onglet résumé ne sont pas raffraisi en dynamique et la création modifie l'objet trip de facade à tord
+- Les boutons du switch de classement ne semble pas centrées
+- Lorsque je drag and drop une activité depuis le pool d'activitgé, il ne faut pas que ça redirige sur le jour (contrairement au drag dasn drop sur un jour précis, ou la, il faut que ça le fasse)
+- Lorsque l'on débranche et scroll sur l'écran de logistique, l'ouverture fonctionne mais le scroll jusqu'à l'élément de logistique ne fonctionne pas
 
 ### Qualité / process
 
@@ -118,6 +138,23 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
 
 ## ✅ Déjà fait
+- **Session Bugs / fixes, 2026-08-01/02** : les 12 items de cette section, avec un aller-retour de retours utilisateur sur certains (détails ci-dessous).
+  - **Drag-and-drop pool, survol raté quand le calendrier s'ouvre sous la boule** : un premier correctif (réévaluer le survol depuis `registerDayCells` avec la dernière position connue du pointeur) s'est révélé insuffisant — confirmé encore cassé par l'utilisateur. Cause racine réelle trouvée par repro Playwright instrumentée (geste pointerdown/hold/pointerup réel, sans mouvement) : pendant toute l'animation d'ouverture du sheet (croissance CSS de `height`, ~300-650ms), les rects des cellules jour sont une **cible mouvante** — `ActivityDayDispatchOverlayComponent.sheetExpanded` bascule à `true` dès le DÉBUT de cette transition (pour la déclencher), pas une fois "pleinement déployé" comme l'affirmait son commentaire ; `startEdgeAutoScroll` s'appuyait dessus pour armer sa zone de détection de bord, donc tournait (et re-capturait les rects, et parfois auto-scrollait) tout au long de l'animation, sur une géométrie qui n'avait pas fini de bouger. Nouveau signal dédié `sheetSettled` (bascule à `true` seulement au `transitionend` réel de la hauteur du sheet), utilisé par `startEdgeAutoScroll` à la place de `sheetExpanded`. `bindSheetTransitionEnd` capture aussi désormais les transitions individuelles (en cascade, `transitionDelay`) de chaque cellule jour, pas seulement celle du sheet. Reproduit puis vérifié corrigé en conditions réelles (Playwright, geste de bout en bout : l'activité apparaît bien sur le jour ciblé).
+  - **Animation cdkDrag manquante (notes/todos)** : il manquait la règle CSS `.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) { transition: transform ... }` (`src/styles/animations.scss`) — CDK réordonne bien les cartes survolées via un `transform` inline pendant le drag, mais sans transition dessus tant que cette règle n'est pas fournie par l'appli.
+  - **Scroll auto sur l'activité déposée après un drag-and-drop** : deux cas distincts.
+    - Inter-jours (calendrier) : `TripStore.dispatchActivity`/`attachPoolActivityToDay` retournent l'id de l'instance déposée ; `ActivityDayDispatchOverlayComponent` appelle `DayActivityFocusService.requestFocus(dayKey, instanceId)` juste après (même mécanisme que la navigation croisée déjà utilisée par la carte Résumé), ce qui bascule sur le bon jour ET scrolle vers l'activité une fois ce jour actif.
+    - Intra-jour (réorganisation manuelle par poignée, cartes dépliées) : cas remonté séparément par l'utilisateur (rien ne scrollait après un drop, ex. carte 1 déplacée en position 4 dans une liste de 4) — `DayReorderService.handleDragPointerUp` ne faisait qu'un `wakeLoop()` (suivi caméra) après le règlement du drag, jamais de scroll réel. Ajout d'un appel à `DayScrollSyncService.focusActivity(movedId)` (2 `requestAnimationFrame` après `restoreCollapseSnapshot()`, pour laisser le re-dépli des cartes se peindre avant de mesurer la position finale), uniquement si l'ordre a réellement changé.
+  - **Aiguilles du cadran horaire sans animation** : deux itérations.
+    - Un premier correctif (transition CSS sur `transform`/`height`/`top` ensemble) donnait un mouvement de redimensionnement pendant la rotation plutôt qu'un vrai balayage — retour utilisateur : l'aiguille doit tourner jusqu'à la position sans jamais changer de taille, pivot toujours fixe au centre. Corrigé : seule `transform` est désormais animée (200ms) ; `height`/`top` (longueur du cadran, différente heures/minutes) changent instantanément, dans la même frame que le nouvel angle — l'aiguille tourne donc à longueur constante autour de son pivot fixe (`transform-origin: center bottom`).
+    - Retour utilisateur suivant : la pastille bleue (`.clock-selector`, mise en avant de l'heure/minute sélectionnée) devait rester accrochée à la pointe de l'aiguille et balayer le même arc (passer par toutes les heures intermédiaires), pas rejoindre sa nouvelle position en ligne droite — elle était positionnée via `left`/`top` calculés en trigonométrie puis transitionnés indépendamment (interpolation en corde, pas en arc). Corrigé en la faisant porter par un `.clock-selector-arm` invisible, avec EXACTEMENT la même géométrie que `.clock-hand` (même `[ngStyle]="handStyle"` posé sur les deux, même transition) — la pastille, enfant positionné à la pointe de cet arm, est donc structurellement garantie de suivre l'aiguille à l'identique en toutes circonstances.
+  - **Clignotement des photos d'activité (visionneuse plein écran)** : le filtre `placeholderSrc` de PhotoSwipe (`PhotoViewerService`) renvoyait toujours la miniature de la photo cliquée, pour TOUS les slides — alors que PhotoSwipe ne prévoit un placeholder image que pour le tout premier slide (`content.slide.isFirstSlide`). En swipant vers une autre photo, l'ancienne miniature s'affichait donc comme placeholder le temps que la vraie image charge. Non un bug de la librairie : un filtre applicatif qui outrepassait sa propre règle.
+  - **Pull-to-refresh cassé sur l'écran swiper** — **à tester** (retour utilisateur explicite : laisser en l'état tant que non confirmé sur un vrai mobile, pas de nouvelle tentative pour l'instant) : cause réelle trouvée dans Swiper (`onTouchMove`, `swiper-core.mjs`) — avec `threshold` à 0 (défaut), Swiper appelle `preventDefault()` dès le premier pixel de mouvement, avant même d'avoir assez de données (~5px) pour déterminer si le geste est horizontal ou vertical ; un seul `preventDefault()` sur un touchmove désengage définitivement le geste natif de pull-to-refresh pour tout le reste du geste, même si Swiper se rend compte juste après que c'était un scroll vertical. `threshold: 10` (`TripDaySwiperComponent.setupSwiper`) fait sortir `onTouchMove` avant ce premier appel tant que la direction n'est pas connue — geste natif non simulable via Playwright, donc non vérifiable en conditions réelles depuis cet environnement.
+  - **Bordure épaisse des panels de groupe (pool, vue ville/jour/à-assigner) invisible** : la règle CSS était syntaxiquement correcte (`:host(.app-panel--thick-border)`), le bug était une différence trop subtile (1px hairline vs 2px thick) pour se lire comme "plus épaisse" — vérifié par capture d'écran/mesure de style calculé (Playwright). Nouveau token dédié `--nt-border-width-group` (3px, `tokens.scss`), distinct de `--nt-border-width-thick` (2px, toujours utilisé par le chevron d'`app-panel`).
+  - **Border-left noir sur les cartes "à assigner"** : `.not-dispatched > app-panel` réécrivait `border-left-style: inset` (effet biseauté assombri du navigateur) par-dessus le `border-style: dashed` posé sur les 3 autres côtés — retiré, le bord gauche reste `dashed` comme le reste, dans la couleur de statut normale.
+  - **Modification du titre du trip qui rafraîchissait toute la page** : `TripStore.updateTripTitle` écrivait directement dans `_trips` (comme `updateTripCurrency` avant son propre correctif), ce qui faisait recalculer `activeTrip()` (nouvelle référence de `trip.days` à CHAQUE frappe) et donc tout ce qui en dépend dans l'app. Même traitement que la devise : signal dédié `_tripTitle` + sélecteur `getTripTitle(tripId)`, `updateTripTitle(tripId, title)` ne touche plus `_trips`. `TripHeaderComponent`/`TripsComponent.toolbarTitle` lisent désormais ce sélecteur (ou l'input `title` déjà fourni) au lieu de `trip()?.title`/`activeTrip()?.title`.
+  - **Popups plein écran, clavier mobile ignoré** — **à tester** (retour utilisateur explicite, même raison que le pull-to-refresh) : nouveau `VisualViewportService` (root, instancié au bootstrap comme `ThemeService`) tient à jour `--nt-visual-viewport-height` (`window.visualViewport.height`, pas `100vh`/`100dvh` — vérifié que `dvh` ne suit pas l'ouverture du clavier virtuel de façon fiable) ; consommée par `.cdk-global-overlay-wrapper` (recentrage) et `max-height` des panneaux (`dialog.scss`/`field-edit-dialogs.scss`) — clavier virtuel non simulable via Playwright, donc non vérifiable en conditions réelles depuis cet environnement.
+  - **Padding non uniforme du formulaire d'activité** : Début/Fin/Durée (`.custom-time-input-trigger`, `.time-fields--flat .time-box`), Prix mobile (`.price-field-trigger`, qui n'avait du padding qu'en haut/bas) et Deadline (`.app-date-picker__trigger`/`.app-date-picker__input`, oubliée dans un premier correctif — retour utilisateur) passent au même padding que Type/Résa/Prix desktop (`.compact-form .app-select__trigger`/`.app-input-text`, déjà uniformes). Valeur exprimée via le token existant `--nt-layout-gap-stacked` (`tokens.scss`, déjà la référence pour ce même 0.25rem ailleurs dans l'app, ex. `.gap-1`) plutôt qu'en dur comme un premier essai — retour utilisateur. Vérifié par mesure de style calculé (Playwright) sur les 7 champs (mobile et desktop), y compris la zone Deadline en contexte réel (statut "à réserver").
+  - **Bouton "Ajouter" (pièce jointe) trop large** : passe en bouton icône seule (`size="small"`, sans `label`) dès qu'au moins un fichier est déjà déposé, pour se rapprocher de la largeur d'un `app-chip` au lieu de rester un bouton pleine largeur à côté des chips de fichiers.
 - **UX / Interactions, lot du 2026-08-01** : cinq items non prioritaires restants de cette section.
   - **Icônes de carte** : `TripDayMapComponent.markerContent` affiche désormais une vignette (miniature de la 1re photo Google de l'activité, `GooglePhotoService`, cercle bordé coloré selon sélection) à la place du numéro, sur la carte du jour ET celle du pool (Résumé) — `DayMapPoint` porte un `photoRef?` optionnel peuplé par `DayPanelComponent`/`TripSummaryComponent` ; fallback (pas de photo/pas encore chargée/échec) sur le `PinElement` existant mais sans `glyphText` (plus de numéro nulle part).
   - **Tuile "Tâches"** (`TripTasksTileComponent`, nouveau, sous `trip-summary/trip-tasks-tile/`) : pleine largeur sous les tuiles Dépenses/Résumé, agrège activités à réserver/en liste d'attente (`DayActivityFocusService`) et réservations logistiques à réserver (`LogisticFocusService`), triées deadline d'abord (peu importe le statut, la plus proche en premier — décision actée le jour même, y compris pour une activité en liste d'attente avec deadline) puis logements à réserver / transports à réserver / activités à réserver / liste d'attente sans deadline ; masquée si vide.

@@ -107,8 +107,23 @@ export class TripsComponent {
     return /^\/trips\/.+/.test(url);
   });
 
-  /** Remplace "NestTrip" par le nom du voyage sur l'écran de détail (voir ROADMAP.md "UX / Interactions") — garde-fou de longueur simple (CSS ellipsis, voir styleUrl) plutôt qu'une troncature JS, le titre complet reste dispo au survol via l'attribut `title`. */
-  readonly toolbarTitle = computed(() => (this.showBack() ? this.tripFacade.activeTrip()?.title || 'NestTrip' : 'NestTrip'));
+  /**
+   * Remplace "NestTrip" par le nom du voyage sur l'écran de détail (voir
+   * ROADMAP.md "UX / Interactions") — garde-fou de longueur simple (CSS
+   * ellipsis, voir styleUrl) plutôt qu'une troncature JS, le titre complet
+   * reste dispo au survol via l'attribut `title`.
+   *
+   * Id de trip extrait de l'URL (pas de `activeTrip()?.id`) : `getTripTitle`
+   * est un signal dédié, indépendant de `activeTrip()` (voir
+   * TripStore._tripTitle) — passer par `activeTrip()` ne serait-ce que pour
+   * son `id` réintroduirait une dépendance à CE signal, donc un recalcul de
+   * `toolbarTitle` à chaque mutation du trip actif (pas seulement son titre).
+   */
+  readonly toolbarTitle = computed(() => {
+    if (!this.showBack()) return 'NestTrip';
+    const id = (this.currentUrl() ?? '').match(/^\/trips\/([^/?]+)/)?.[1];
+    return (id ? this.tripFacade.getTripTitle(id)() : '') || 'NestTrip';
+  });
 
   readonly menuItems: AppMenuItem[] = [
     {

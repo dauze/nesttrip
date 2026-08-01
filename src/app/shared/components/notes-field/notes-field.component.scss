@@ -14,8 +14,7 @@
 .notes-field-trigger {
   display: -webkit-box;
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0.5rem 0;
+  padding: var(--nt-layout-gap-stacked);
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

@@ -200,6 +200,23 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       spaceBetween: 8,
       longSwipesRatio: 0.45,
       longSwipesMs: 250,
+      // Pull-to-refresh natif cassé sur cet écran (voir ROADMAP.md) : cause
+      // trouvée dans Swiper lui-même (swiper-core.mjs, onTouchMove) — avec le
+      // `threshold` par défaut (0), Swiper appelle `e.preventDefault()` dès le
+      // tout premier pixel de mouvement, AVANT même d'avoir assez de données
+      // (~5px cumulés) pour déterminer si le geste est un swipe horizontal ou
+      // un scroll vertical (`data.isScrolling`, calculé seulement une fois ce
+      // seuil atteint). Une fois `preventDefault()` appelé une seule fois sur
+      // un touchmove, Chrome désengage définitivement le geste natif "tirer
+      // pour actualiser" pour toute la suite du geste, même si Swiper se rend
+      // compte juste après que c'était un scroll vertical et n'y touche plus.
+      // En relevant `threshold` à une valeur qui dépasse ce seuil de
+      // détection, `onTouchMove` sort désormais AVANT le premier
+      // `preventDefault()` tant que la direction n'est pas connue, et une fois
+      // connue, un geste vertical retourne sans jamais l'appeler — 10px reste
+      // imperceptible pour un vrai swipe volontaire entre jours (bien plus de
+      // 10px de déplacement).
+      threshold: 10,
       cssMode: false,
       injectStyles: [`
         .swiper {

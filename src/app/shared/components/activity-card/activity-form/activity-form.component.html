@@ -71,7 +71,7 @@
         <app-divider class="m-1" />
         <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
           <div class="flex flex-column gap-1 w-full min-w-0">
-            <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'text-orange-500' : 'nt-text-muted'">
+            <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'nt-text-warning' : 'nt-text-muted'">
               <i class="pi pi-calendar text-xs"></i>Deadline
             </label>
             <app-date-picker inputId="booking-deadline" formControlName="deadline" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
@@ -84,7 +84,7 @@
   <app-divider class="m-1" />
   
   <!-- NOTES -->
-  <div class="flex flex-column gap-2 mb-2">
+  <div class="flex flex-column gap-1">
     <label for="form-notes" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes
     </label>

@@ -1,5 +1,14 @@
-// Le déclencheur (`.custom-time-input-trigger`) n'a pas de style dédié : il
-// hérite du contexte où il est placé (voir les usages dans activity-form).
 // Les styles du cadran vivent désormais dans time-picker-clock/ (Phase 7c de
 // la sortie de PrimeNG, voir PRIMENG_MIGRATION.md), le contenu réel du
 // dialog une fois séparé du déclencheur.
+//
+// `.custom-time-input-trigger` : seul consommateur de ce composant côté
+// mobile, activity-form (voir aussi logistic-details, même formulaire
+// "compact") — même padding que les autres champs de ce formulaire
+// (`.app-select__trigger`/`.app-input-text`, voir `.compact-form` dans
+// utilities.scss, `--nt-layout-gap-stacked`) : ce déclencheur n'avait jusqu'ici
+// AUCUN padding propre, contrairement aux autres champs (voir ROADMAP.md,
+// "uniformiser tous les padding sur les données des formulaire des activités").
+.custom-time-input-trigger {
+  padding: var(--nt-layout-gap-stacked);
+}

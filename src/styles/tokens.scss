@@ -162,6 +162,14 @@
   // le reste du thème.
   --nt-border-width-hairline: 0.0625rem;
   --nt-border-width-thick: 0.125rem;
+  // Distincte de `--nt-border-width-thick` (2px, utilisée ailleurs pour le
+  // chevron d'`app-panel` — un composant partagé, pas question d'y toucher) :
+  // le panel de groupe (ville/jour/à-assigner) du pool d'activités doit se
+  // distinguer visuellement des cartes d'activité qu'il contient, elles-mêmes
+  // en `--nt-border-width-hairline` (1px) — un écart d'1px (hairline vs
+  // thick) s'est révélé imperceptible à l'oeil (vérifié via capture d'écran),
+  // d'où cette 3e valeur dédiée, plus nettement plus épaisse.
+  --nt-border-width-group: 0.1875rem;
 
   // Flou de fond (backdrop-filter) — une seule valeur pour tous les
   // masques/tiroirs (dialog, select mobile, date-picker mobile,

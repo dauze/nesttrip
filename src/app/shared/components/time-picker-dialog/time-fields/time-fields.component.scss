@@ -41,7 +41,12 @@
         width: 2em;
         height: auto;
 
-        padding: 0;
+        // Même padding que les autres champs du formulaire "compact" sur
+        // ordinateur (`.app-select__trigger`/`.app-input-text`, voir
+        // `.compact-form`/`--nt-layout-gap-stacked` dans utilities.scss/
+        // tokens.scss) — voir ROADMAP.md, "uniformiser ... sur ordinateur
+        // également".
+        padding: var(--nt-layout-gap-stacked);
 
         border: none;
         border-radius: var(--nt-radius-sm);

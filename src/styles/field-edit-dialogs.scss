@@ -19,11 +19,15 @@
  * rapport à `.app-dialog-panel` (largeur, hauteur max, overflow) — tout le
  * reste (centrage, fond, ombre, coins arrondis, animation d'entrée) reste
  * hérité de la règle de base, déjà correcte partout ailleurs dans l'app.
- * `max-height: calc(100dvh - 2rem)` réserve la même marge (1rem) en haut/bas
- * qu'en largeur (`calc(100vw - 2rem)`) — cohérent une fois le panneau centré
- * et à sa taille maximale ; `100dvh` (pas `100vh`) suit le rétrécissement du
- * clavier virtuel, donc le panneau reste centré dans l'espace RESTANT
- * au-dessus du clavier une fois celui-ci ouvert.
+ * `max-height` réserve la même marge (1rem) en haut/bas qu'en largeur
+ * (`calc(100vw - 2rem)`) — cohérent une fois le panneau centré et à sa taille
+ * maximale. `--nt-visual-viewport-height` (VisualViewportService), pas
+ * `100dvh` : vérifié que `dvh` ne suit PAS le rétrécissement du clavier
+ * virtuel sur tous les navigateurs (contrairement à ce qu'affirmait ce
+ * commentaire jusqu'ici) — seul `visualViewport` le fait de façon fiable, voir
+ * dialog.scss pour la même variable posée sur `.cdk-global-overlay-wrapper`
+ * (nécessaire aussi pour que le panneau reste CENTRÉ dans l'espace restant,
+ * pas seulement plafonné en hauteur).
  *
  * Les trois tiroirs (`app-price-dialog-panel`, `app-wide-dialog-panel` pour
  * notes/titre) partagent volontairement l'anatomie et les boutons
@@ -41,7 +45,7 @@
 // court) — juste plus étroit que le `max-width` par défaut (28rem).
 .cdk-overlay-pane.app-dialog-panel.app-price-dialog-panel {
   width: min(22rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(var(--nt-visual-viewport-height, 100dvh) - 2rem);
 }
 
 // Notes / titre (recherche Google) : plus large (zone d'écriture ou liste
@@ -60,5 +64,5 @@
 // `min-height:0` posée sur chaque ancêtre flex (voir chaque composant).
 .cdk-overlay-pane.app-dialog-panel.app-wide-dialog-panel {
   width: min(32rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(var(--nt-visual-viewport-height, 100dvh) - 2rem);
 }

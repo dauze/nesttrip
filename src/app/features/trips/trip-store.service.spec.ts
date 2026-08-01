@@ -175,6 +175,46 @@ describe('TripStore', () => {
     });
   });
 
+  describe('updateTripTitle — signal dédié, indépendant de _trips/activeTrip', () => {
+    function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
+      store._trips.set({
+        [tripId]: {
+          id: tripId,
+          ville: 'Paris',
+          title: 'Voyage',
+          ownerId: 'u1',
+          members: {},
+          days: [],
+          activities: [],
+          dayActivityInstances: [],
+          logistics: [],
+          notes: { id: 'n1', items: [] },
+          defaultCurrency: 'EUR',
+          ...overrides,
+        },
+      });
+      store._activeTripId.set(tripId);
+    }
+
+    it("met à jour getTripTitle() sans changer la référence de _trips ni de activeTrip()", () => {
+      seedTrip();
+      const tripsBefore = store._trips();
+      const activeTripBefore = store.activeTrip();
+
+      store.updateTripTitle(tripId, 'Nouveau titre');
+
+      expect(store.getTripTitle(tripId)()).toBe('Nouveau titre');
+      expect(store._trips()).toBe(tripsBefore);
+      expect(store.activeTrip()).toBe(activeTripBefore);
+    });
+
+    it("retombe sur trip.title tant qu'aucun renommage n'a été fait, puis '' à défaut", () => {
+      seedTrip({ title: 'Voyage au Japon' });
+      expect(store.getTripTitle(tripId)()).toBe('Voyage au Japon');
+      expect(store.getTripTitle('trip-inconnu')()).toBe('');
+    });
+  });
+
   describe('createActivity — création pool + instance en une commande', () => {
     it("compose immédiatement la vue du jour à partir du form de l'instance et de l'identité du pool", () => {
       store.createActivity(tripId, dayId, poolActivity(), instance());

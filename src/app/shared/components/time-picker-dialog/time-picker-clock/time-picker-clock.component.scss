@@ -108,6 +108,21 @@
     transform-origin: center bottom;
 
     z-index: 2;
+
+    /*
+     * Anime UNIQUEMENT la rotation (transform) : `height`/`top` (longueur du
+     * cadran, différente entre heures et minutes — voir `handStyle`) changent
+     * SANS transition, instantanément, dans la même frame que le nouvel
+     * angle. L'aiguille tourne donc autour de son pivot fixe (`transform-origin:
+     * center bottom`, ancré au centre du cadran) à longueur CONSTANTE
+     * pendant tout le mouvement — jamais de rétrécissement/agrandissement
+     * visible en cours de rotation, contrairement à une première version qui
+     * transitionnait aussi `height`/`top` en parallèle (l'aiguille semblait
+     * alors se redimensionner PENDANT le balayage plutôt que tourner
+     * proprement). Coupée pendant un drag réel (voir .is-dragging) pour que
+     * l'aiguille suive le doigt sans latence.
+     */
+    transition: transform 200ms ease;
 }
 
 .keyboard-fields {
@@ -136,8 +151,34 @@
     }
 }
 
+// Porteuse invisible de la pastille bleue (`.clock-selector` ci-dessous) :
+// géométrie (top/height/transform) strictement IDENTIQUE à `.clock-hand`
+// (même `[ngStyle]="handStyle"` posé dessus dans le template) — la pastille,
+// enfant positionné à sa pointe, reste ainsi accrochée à l'aiguille et
+// balaie le même arc qu'elle en tournant (donc passe par toutes les heures
+// intermédiaires) au lieu de rejoindre sa nouvelle position en ligne droite
+// (ce que faisait une version précédente, positionnée directement en `left`/
+// `top` calculés en trigonométrie puis transitionnés indépendamment).
+.clock-selector-arm {
+    position: absolute;
+
+    left: 50%;
+    width: 0;
+
+    transform-origin: center bottom;
+
+    z-index: 4;
+
+    // Même raison que .clock-hand : seule la rotation anime, la longueur
+    // (top/height, différente heures/minutes) change sans transition.
+    transition: transform 200ms ease;
+}
+
 .clock-selector {
     position: absolute;
+
+    top: 0;
+    left: 0;
 
     width: 2.35rem;
     height: 2.35rem;
@@ -152,4 +193,11 @@
     z-index: 5;
 
     pointer-events: none;
+}
+
+.clock-face.is-dragging {
+    .clock-hand,
+    .clock-selector-arm {
+        transition: none;
+    }
 }

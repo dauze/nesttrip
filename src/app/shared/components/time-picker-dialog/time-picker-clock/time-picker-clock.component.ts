@@ -525,55 +525,6 @@ export class TimePickerClockComponent implements AfterViewInit {
         };
     }
 
-    get selectorPosition() {
-
-        let angle: number;
-        let radius: number;
-
-        if (this.selectionMode === 'hour') {
-
-            const hour =
-                Number(this.tempHour);
-
-            angle =
-                (hour % 12) * 30;
-
-            radius =
-                hour >= 1 && hour <= 12
-                    ? this.getInnerRadius()
-                    : this.getOuterRadius();
-
-        } else {
-
-            angle =
-                Number(this.tempMinute) * 6;
-
-            radius = this.getOuterRadius();
-        }
-
-        const center =
-            this.getClockCenter();
-
-        const radians =
-            (angle - 90) *
-            Math.PI / 180;
-
-        const x =
-            center +
-            radius *
-            Math.cos(radians);
-
-        const y =
-            center +
-            radius *
-            Math.sin(radians);
-
-        return {
-            left: `${x}px`,
-            top: `${y}px`
-        };
-    }
-
     private getClockSize(): number {
 
         return this.clockSize();

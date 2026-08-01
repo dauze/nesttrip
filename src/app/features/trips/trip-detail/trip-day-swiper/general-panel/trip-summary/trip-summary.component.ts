@@ -69,8 +69,9 @@ export class TripSummaryComponent {
    */
   readonly tripTitle = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
+    if (!id) return '';
     const fromList = this.tripFacade.trips().find(t => t.id === id);
-    return fromList?.title ?? this.tripFacade.activeTrip()?.title ?? '';
+    return fromList?.title ?? this.tripFacade.getTripTitle(id)();
   });
 
   /** Carte partagée avec la vue jour/l'ancien onglet Activités, "prêtée" à ce contexte tant qu'il est actif. */
@@ -199,9 +200,7 @@ export class TripSummaryComponent {
   }
 
   protected onTitleChange(title: string): void {
-    const trip = this.tripFacade.activeTrip();
-    if (!trip) return;
-    this.tripFacade.updateTripTitle({ ...trip, title });
+    this.tripFacade.updateTripTitle(this.tripId(), title);
   }
 
   /**

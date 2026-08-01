@@ -63,7 +63,7 @@ export class TripHeaderComponent {
     const dialogRef = this.dialogService.open<string | undefined, SimpleTextEntryDialogData>(
       SimpleTextEntryDialogComponent,
       {
-        data: { initialValue: this.trip()?.title ?? this.title(), placeholder: 'Titre du voyage', title: 'Titre' },
+        data: { initialValue: this.title(), placeholder: 'Titre du voyage', title: 'Titre' },
         panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
       },
@@ -82,8 +82,7 @@ export class TripHeaderComponent {
 
   protected onTitleBlur(value: string): void {
     const trimmed = value.trim();
-    const current = this.trip()?.title ?? this.title();
-    if (!trimmed || trimmed === current) return;
+    if (!trimmed || trimmed === this.title()) return;
     this.titleChange.emit(trimmed);
   }
 

@@ -7,6 +7,7 @@ import { Day } from '@app/features/trips/trip.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { DispatchBallContentService } from './dispatch-ball-content.service';
 import { DispatchHoverEscalationService } from './dispatch-hover-escalation.service';
 
@@ -80,6 +81,7 @@ export class ActivityDayDispatchOverlayComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly ballContentService = inject(DispatchBallContentService);
   private readonly hoverEscalation = inject(DispatchHoverEscalationService);
+  private readonly dayFocusService = inject(DayActivityFocusService);
 
   readonly days = input<Day[]>([]);
   /** Jour (ou 'notes') actuellement visible dans le swiper, utilisé comme zone de dépose de secours quand le calendrier est rétracté. */
@@ -103,8 +105,33 @@ export class ActivityDayDispatchOverlayComponent {
   protected readonly formed = signal(false);
   /** true une fois le texte tassé (fin de la phase 1) : la miniature quitte le flux et remplit toute la bulle (phase 2). */
   protected readonly thumbFilled = signal(false);
-  /** true une fois le calendrier pleinement déployé (morph terminé) : gouverne désormais son affichage par CSS simple. */
+  /**
+   * Passe à `true` DÈS le déclenchement de la transition CSS de croissance du
+   * sheet (voir `openSheet`) — pas une fois "pleinement déployé" malgré son
+   * nom, contrairement à ce qu'affirmait ce commentaire jusqu'ici : c'est
+   * cette bascule elle-même (via la classe CSS qu'elle pilote, voir le
+   * template) qui DÉMARRE l'animation. Piloter l'affichage/les transitions
+   * CSS déclaratives (`--expanded`, stagger des jours). Pour un "vraiment
+   * stabilisé", voir `sheetSettled` ci-dessous — ne JAMAIS réutiliser CE
+   * signal pour décider si les rects des cellules sont fiables (voir sa doc).
+   */
   protected readonly sheetExpanded = signal(false);
+  /**
+   * `true` seulement une fois la transition CSS de hauteur du sheet
+   * RÉELLEMENT terminée (`bindSheetTransitionEnd`) — contrairement à
+   * `sheetExpanded`, qui bascule dès le DÉBUT de cette même transition (pour
+   * la déclencher). Sert à ne jamais activer l'auto-scroll de bord de grille
+   * (`startEdgeAutoScroll`) tant que le sheet est encore en train de
+   * grandir : sans cette distinction, la zone de détection de bord tournait
+   * sur les rects de `#grid`/des cellules jour PENDANT qu'ils bougeaient
+   * encore (le sheet monte depuis 0), un faux déclenchement d'auto-scroll qui
+   * recapturait des rects sans arrêt sur une cible mouvante — empêchant le
+   * survol de jamais se stabiliser sur la bonne cellule quand le doigt reste
+   * immobile pendant toute l'ouverture (voir ROADMAP.md, "le calendrier
+   * s'ouvre sous la boule, la boule n'est pas détectée comme étant sur le
+   * calendrier").
+   */
+  private readonly sheetSettled = signal(false);
   /**
    * Hauteur exacte (px) de la vraie barre d'onglets/nav, en direct via
    * `TripChromeService.tabsNavHeight()` (déjà tenue à jour par ResizeObserver
@@ -164,7 +191,11 @@ export class ActivityDayDispatchOverlayComponent {
       const req = this.dispatchService.dropRequested();
       if (!req || req === lastDispatchedReq) return;
       lastDispatchedReq = req;
-      this.tripFacade.dispatchActivity(req.tripId, req.activityId, req.origin, new Date(req.dayKey));
+      const instanceId = this.tripFacade.dispatchActivity(req.tripId, req.activityId, req.origin, new Date(req.dayKey));
+      // Demande de scroll vers l'activité tout juste déposée, une fois le
+      // jour cible actif — DayPanelComponent la consomme dès qu'il le
+      // devient (préchargement possible avant, voir DayActivityFocusService).
+      this.dayFocusService.requestFocus(req.dayKey, instanceId);
     });
 
     // Bascule "remplissage" de la miniature clonée (voir cloneOriginHeaderInto) :
@@ -188,6 +219,7 @@ export class ActivityDayDispatchOverlayComponent {
       untracked(() => {
         if (phase === 'lifted') {
           this.sheetExpanded.set(false);
+          this.sheetSettled.set(false);
           this.playFormAnimation();
           this.openSheet();
           this.startEdgeAutoScroll();
@@ -199,11 +231,13 @@ export class ActivityDayDispatchOverlayComponent {
           this.stopEdgeAutoScroll();
           this.hoverEscalation.clearLeaveTimer();
           this.sheetExpanded.set(false);
+          this.sheetSettled.set(false);
           this.playReturnAnimation();
         } else if (phase === 'deescalating') {
           this.stopEdgeAutoScroll();
           this.hoverEscalation.clearLeaveTimer();
           this.sheetExpanded.set(false);
+          this.sheetSettled.set(false);
           this.playDeescalateAnimation();
         }
       });
@@ -284,7 +318,7 @@ export class ActivityDayDispatchOverlayComponent {
         return;
       }
       const grid = this.gridRef()?.nativeElement;
-      if (grid && this.sheetExpanded()) {
+      if (grid && this.sheetSettled()) {
         const rect = grid.getBoundingClientRect();
         const { y } = this.dispatchService.pointer();
         if (y - rect.top < EDGE_SCROLL_ZONE) {
@@ -345,7 +379,19 @@ export class ActivityDayDispatchOverlayComponent {
     if (!sheet) return;
     this.sheetTransitionListenerBound = true;
     sheet.addEventListener('transitionend', (e: TransitionEvent) => {
-      if (e.propertyName === 'height' && e.target === sheet) this.captureCellRects();
+      if (e.propertyName === 'height' && e.target === sheet) {
+        this.sheetSettled.set(true);
+        this.captureCellRects();
+        return;
+      }
+      // Transition d'entrée EN CASCADE d'une cellule jour (voir le template,
+      // `transitionDelay`/`.dispatch-overlay__day--in`) qui vient de finir de
+      // bouger (transform/opacity) — bulle jusqu'à `sheet`, capturée ici en
+      // plus de la transition de hauteur du sheet lui-même : sur un mois
+      // complet de jours, le dernier peut finir d'arriver bien après elle.
+      if (e.propertyName === 'transform' || e.propertyName === 'opacity') {
+        this.captureCellRects();
+      }
     });
   }
 
@@ -599,6 +645,7 @@ export class ActivityDayDispatchOverlayComponent {
     this.currentBallAnimation.finished
       .then(() => {
         this.sheetExpanded.set(false);
+        this.sheetSettled.set(false);
         this.finishAfterSheetClose(DROP_DURATION);
       })
       .catch(() => {

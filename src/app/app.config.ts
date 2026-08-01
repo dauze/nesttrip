@@ -16,6 +16,7 @@ import localeFr from '@angular/common/locales/fr';
 import { registerLocaleData } from '@angular/common';
 import { GoogleMapsLoaderService } from './core/services/google-maps-loader.service';
 import { ThemeService } from './core/services/theme.service';
+import { VisualViewportService } from './core/services/visual-viewport.service';
 import { onViewTransitionCreated } from './core/navigation/route-transition';
 import { UserProfileRepository } from './core/infra/firebase/services/user-profile-repository';
 import { FirebaseUserProfileRepository } from './core/infra/firebase/services/firebase-user-profile-repository';
@@ -44,6 +45,13 @@ export const appConfig: ApplicationConfig = {
     // qu'aucun composant ne l'injecte.
     provideAppInitializer(() => {
       inject(ThemeService);
+    }),
+    // Même raison que ThemeService ci-dessus : un service root ne s'instancie
+    // qu'à sa première injection — sans ce hook, `--nt-visual-viewport-height`
+    // (voir dialog.scss) resterait absente tant qu'aucun composant ne
+    // l'injecte, laissant les tout premiers dialogs ouverts sans ce garde-fou.
+    provideAppInitializer(() => {
+      inject(VisualViewportService);
     }),
     FirebaseUserProfileRepository,
     { provide: UserProfileRepository, useExisting: FirebaseUserProfileRepository },

@@ -43,6 +43,21 @@
   min-height: 0;
 }
 
+// Centre le panneau dans l'espace RÉELLEMENT visible plutôt que la pleine
+// hauteur d'écran (défaut CDK) : `--nt-visual-viewport-height` (voir
+// VisualViewportService) suit l'ouverture du clavier virtuel mobile, ce que
+// `100%`/`100vh`/`100dvh` ne font pas de façon fiable sur tous les
+// navigateurs — sans ça, le panneau restait centré sur la hauteur d'écran
+// AVANT ouverture du clavier, donc visuellement décalé/coupé une fois celui-ci
+// affiché (voir ROADMAP.md, "les popup ... ne prennent pas en compte le
+// clavier sur mobile"). Ne cible QUE la stratégie de centrage par défaut de
+// `Dialog.open()` (`GlobalPositionStrategy`) — les overlays à position
+// connectée (select, date-picker, autocomplete) ne passent pas par cette
+// classe et gèrent déjà leur propre repositionnement via CDK.
+.cdk-global-overlay-wrapper {
+  height: var(--nt-visual-viewport-height, 100%);
+}
+
 .cdk-overlay-pane.app-dialog-panel {
   display: flex;
   flex-direction: column;
@@ -50,9 +65,12 @@
   // `calc(100v* - 2rem)` (pas `95vw`/`85vh`) : une marge en pourcentage de
   // viewport rétrécit avec l'écran (2.5vw ne fait que 8px sur un mobile de
   // 320px) — avec un calc(), la marge minimale (1rem de chaque côté) reste
-  // constante quelle que soit la taille d'écran.
+  // constante quelle que soit la taille d'écran. `--nt-visual-viewport-height`
+  // (voir la règle `.cdk-global-overlay-wrapper` ci-dessus) plutôt que `100vh` :
+  // même besoin de tenir compte du clavier virtuel pour la hauteur MAX, pas
+  // seulement le centrage.
   max-width: min(28rem, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
+  max-height: calc(var(--nt-visual-viewport-height, 100vh) - 2rem);
   border-radius: var(--nt-overlay-modal-border-radius);
   background: var(--nt-overlay-background);
   color: var(--nt-text-color);

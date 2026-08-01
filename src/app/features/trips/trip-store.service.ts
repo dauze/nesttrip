@@ -137,6 +137,16 @@ export class TripStore {
    * `getTripCurrency`.
    */
   readonly _tripCurrency = signal<Record<string, string>>({});
+  /**
+   * @internal — titre par trip, séparé de `_trips` pour la même raison que
+   * `_tripCurrency` ci-dessus (voir `getTripTitle`) : un renommage ne doit
+   * pas faire recalculer `activeTrip()` (et donc reconstruire `trip.days` —
+   * nouvelle référence de tableau à CHAQUE édition — propagé à tout ce qui en
+   * dépend, ex. `TripDaySwiperComponent`) juste pour un changement de titre
+   * (voir ROADMAP.md, "la modification du nom du trip ne doit pas rafraichir
+   * toute la page").
+   */
+  readonly _tripTitle = signal<Record<string, string>>({});
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
@@ -247,6 +257,7 @@ export class TripStore {
   private readonly poolActivityViewById = new Map<string, Signal<Activity>>();
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
   private readonly tripCurrencyByTrip = new Map<string, Signal<string>>();
+  private readonly tripTitleByTrip = new Map<string, Signal<string>>();
 
   /** Devise par défaut du trip — voir `_tripCurrency` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.defaultCurrency` (valeur d'hydratation) puis 'EUR'. */
   getTripCurrency(tripId: string): Signal<string> {
@@ -257,6 +268,17 @@ export class TripStore {
       );
     }
     return this.tripCurrencyByTrip.get(tripId)!;
+  }
+
+  /** Titre du trip — voir `_tripTitle` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.title` (valeur d'hydratation) tant qu'aucun renommage n'a eu lieu. */
+  getTripTitle(tripId: string): Signal<string> {
+    if (!this.tripTitleByTrip.has(tripId)) {
+      this.tripTitleByTrip.set(
+        tripId,
+        computed(() => this._tripTitle()[tripId] ?? this._trips()[tripId]?.title ?? ''),
+      );
+    }
+    return this.tripTitleByTrip.get(tripId)!;
   }
 
   /** Les instances (form) rattachées à un jour, composées avec l'identité de leur activité de pool. */
@@ -515,23 +537,20 @@ export class TripStore {
     });
   }
 
-  updateTripTitle(trip: Trip): void {
-    // 1. Hydratation optimiste locale
-    this._trips.update((trips) => ({
-      ...trips,
-      [trip.id]: trip
-    }));
+  updateTripTitle(tripId: string, title: string): void {
+    // 1. Signal dédié (voir `_tripTitle`), pas `_trips`.
+    this._tripTitle.update((map) => ({ ...map, [tripId]: title }));
 
     this._tripsResult.update((list) =>
       list?.map(item =>
-        item.id === trip.id
-          ? { ...item, title: trip.title }
+        item.id === tripId
+          ? { ...item, title }
           : item
       ) ?? []
     );
 
     // 2. Persistance Firestore
-    this.tripPersistenceService.updateTripTitle(trip).catch((err) => {
+    this.tripPersistenceService.updateTripTitle(tripId, title).catch((err) => {
       console.error('[TripStore] Erreur update trip Firestore :', err);
     });
   }
@@ -638,14 +657,15 @@ export class TripStore {
     this.syncDayActivityIds(tripId, dayId);
   }
 
-  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité de pool elle-même. */
-  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): void {
+  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité de pool elle-même. Retourne l'id de l'instance créée. */
+  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): string {
     const instance: DayActivityInstance = {
       id: crypto.randomUUID(),
       activityId: poolId,
       ...defaultInstanceForm(this.getTripCurrency(tripId)()),
     };
     this.addDayActivityInstance(tripId, targetDayId, instance);
+    return instance.id;
   }
 
   /**
@@ -688,13 +708,16 @@ export class TripStore {
    * `origin === 'pool'` crée un nouveau placement (attach), `origin === 'day'`
    * déplace le placement existant — `activityId` vaut respectivement le poolId
    * ou l'instanceId selon l'origine (voir `ActivityCardComponent.buildDraggedInfo`).
+   * Retourne l'id de l'instance déposée sur le jour cible (le nouvel id créé
+   * pour 'pool', `activityId` lui-même pour 'day') — utilisé par l'overlay
+   * pour demander le scroll vers cette instance une fois le jour actif.
    */
-  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): void {
+  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): string {
     if (origin === 'pool') {
-      this.attachPoolActivityToDay(tripId, activityId, targetDayId);
-    } else {
-      this.moveDayActivityInstance(tripId, activityId, targetDayId);
+      return this.attachPoolActivityToDay(tripId, activityId, targetDayId);
     }
+    this.moveDayActivityInstance(tripId, activityId, targetDayId);
+    return activityId;
   }
 
   /** Met à jour l'identité/les fichiers d'une activité de pool : se répercute sur toutes ses instances (elles ne stockent que le form). */

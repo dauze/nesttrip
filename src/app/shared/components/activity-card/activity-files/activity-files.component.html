@@ -1,4 +1,4 @@
-<div class="flex flex-column gap-2">
+<div class="flex flex-column gap-1">
   <span class="nt-text-muted text-sm flex align-items-center gap-1">
     <i class="pi pi-paperclip text-xs"></i>Fichiers
   </span>
@@ -10,7 +10,7 @@
     </div>
   }
 
-  <div class="flex flex-wrap gap-2 align-items-center">
+  <div class="flex flex-wrap gap-1 align-items-center">
     @for (file of activity().files; track file.path; let i = $index) {
       <app-chip
         [icon]="fileIcon(file.name)"
@@ -28,9 +28,10 @@
       hidden
       (change)="onFileSelect($event)" />
     <app-button
-      label="Ajouter"
+      [label]="(activity().files?.length ?? 0) > 0 ? '' : 'Ajouter'"
       icon="pi pi-upload"
       severity="secondary"
+      size="small"
       [rounded]="true"
       (click)="fileInput.click()" />
   </div>

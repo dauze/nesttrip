@@ -71,8 +71,8 @@ export class TripFacade {
     this.store.saveTrip(trip);
   }
 
-  updateTripTitle(trip: Trip): void {
-    this.store.updateTripTitle(trip);
+  updateTripTitle(tripId: string, title: string): void {
+    this.store.updateTripTitle(tripId, title);
   }
 
   updateTripCurrency(tripId: string, currency: string): void {
@@ -100,9 +100,9 @@ export class TripFacade {
     this.store.createGeneralActivity(tripId, poolActivity);
   }
 
-  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour, sans toucher au pool. */
-  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): void {
-    this.store.attachPoolActivityToDay(tripId, poolId, targetDayId);
+  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour, sans toucher au pool. Retourne l'id de l'instance créée. */
+  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): string {
+    return this.store.attachPoolActivityToDay(tripId, poolId, targetDayId);
   }
 
   /** Déplace une instance existante d'un jour à l'autre (garde son form). */
@@ -134,9 +134,9 @@ export class TripFacade {
     this.store.reorderActivities(tripId, dayId, ids);
   }
 
-  /** Point d'entrée du drag-and-drop : crée un placement (origin 'pool') ou déplace l'instance existante (origin 'day'). */
-  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): void {
-    this.store.dispatchActivity(tripId, activityId, origin, targetDayId);
+  /** Point d'entrée du drag-and-drop : crée un placement (origin 'pool') ou déplace l'instance existante (origin 'day'). Retourne l'id de l'instance déposée. */
+  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): string {
+    return this.store.dispatchActivity(tripId, activityId, origin, targetDayId);
   }
 
   createLogistic(tripId: string, logistic: Logistic): void {
@@ -182,6 +182,8 @@ export class TripFacade {
   getNotesItems = this.store.getNotesItems.bind(this.store);
   /** Devise par défaut du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripCurrency). */
   getTripCurrency = this.store.getTripCurrency.bind(this.store);
+  /** Titre du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTitle). */
+  getTripTitle = this.store.getTripTitle.bind(this.store);
   // 1. Exposer le sélecteur et la commande
   getTripMembers = this.store.getTripMembers.bind(this.store);
   getLogistic = this.store.getLogistic.bind(this.store);

@@ -8,9 +8,15 @@
 // projeté), donc porte le même attribut de scope Angular que `.not-dispatched`
 // — contrairement à l'ancien `.p-panel` (une classe posée par PrimeNG sur un
 // élément interne à SA PROPRE vue), pas besoin de `::ng-deep` ici.
+// `border-left-style` reste `dashed` (hérité de la ligne au-dessus, pas
+// réécrit ici) : un `inset` posé par erreur ici rendait ce bord gauche avec
+// l'effet biseauté/assombri du navigateur (border-style: inset), qui masque
+// la couleur de statut réservation (`--booking-status-color`, voir `.booking`
+// ci-dessus) sous un liseré qui paraît noir — au lieu du même pointillé que
+// les 3 autres côtés, dans la même couleur que le bord gauche plein des
+// autres cartes.
 .not-dispatched > app-panel {
   border-style: dashed;
-  border-left-style: inset;
 }
 
 // Empêche le scroll tactile natif de concurrencer le drag manuel (pool ou

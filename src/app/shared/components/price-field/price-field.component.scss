@@ -10,7 +10,11 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0.25rem 0;
+  // Toutes valeurs confondues (pas seulement haut/bas) : même padding que les
+  // autres champs du formulaire "compact" (`--nt-layout-gap-stacked`, voir
+  // tokens.scss/utilities.scss) — voir ROADMAP.md, "uniformiser tous les
+  // padding sur les données des formulaire des activités".
+  padding: var(--nt-layout-gap-stacked);
   font-size: 1rem;
   cursor: pointer;
 }

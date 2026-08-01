@@ -22,10 +22,18 @@
 // cas.
 .compact-form.compact-form {
   .app-select__trigger,
-  .app-input-text {
-    padding: 0.25rem;
+  .app-input-text,
+  .app-date-picker__trigger {
+    padding: var(--nt-layout-gap-stacked);
     min-width: 0;
     width: auto;
+  }
+
+  // Padding réservé pour l'icône calendrier (voir date-picker.component.scss)
+  // repris après le raccourci `padding` ci-dessus, qui l'écraserait sinon.
+  .app-date-picker__input {
+    padding: var(--nt-layout-gap-stacked);
+    padding-right: 2rem;
   }
 
   .app-select__chevron {
