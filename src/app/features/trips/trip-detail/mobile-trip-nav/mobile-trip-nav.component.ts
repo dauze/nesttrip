@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
-import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 
 /** Icônes des 3 tabs Activités/Logistique/Listes (voir `TripDetailComponent.tabs`) — `TripTab` ne porte pas d'icône, propre à cette barre. */
@@ -39,7 +38,6 @@ const GENERAL_TAB_ICONS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MobileTripNavComponent {
-  private readonly dispatchService = inject(ActivityDispatchService);
   private readonly chromeService = inject(TripChromeService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -99,20 +97,19 @@ export class MobileTripNavComponent {
       });
     });
 
-    // Intégration drag-and-drop (voir ActivityDispatchService) : UNIQUEMENT la
-    // géométrie de repli (`registerNavBarElement`), jamais
-    // `registerNavBarCloneSource` — sur mobile, le calendrier de dépose
-    // apparaît directement, sans réplique/FLIP de cette barre (décidé avec
-    // l'utilisateur, voir ROADMAP.md "UX / Interactions" ; le mécanisme de
-    // repli lui-même tolère déjà nativement l'absence de source de clone).
+    // Hauteur réelle de la barre (bande de jours + bar), tenue à jour par
+    // ResizeObserver : sert entre autres au calendrier de dépose (voir
+    // ActivityDayDispatchOverlayComponent.collapsedHeight) pour superposer sa
+    // barre repliée à la vraie barre mobile, qui n'a pas de réplique/clone
+    // ici — sur mobile, le calendrier de dépose apparaît directement, sans
+    // réplique/FLIP de cette barre (décidé avec l'utilisateur, voir
+    // ROADMAP.md "UX / Interactions").
     effect((onCleanup) => {
       const el = this.wrapperRef()?.nativeElement;
       if (!el) {
         this.chromeService.registerHeight('tabsNav', 0);
         return;
       }
-
-      this.dispatchService.registerNavBarElement(el);
 
       const observer = new ResizeObserver(() => {
         this.chromeService.registerHeight('tabsNav', el.getBoundingClientRect().height);

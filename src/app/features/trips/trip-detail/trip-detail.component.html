@@ -72,7 +72,7 @@
     <app-trip-detail-skeleton class="skeleton-overlay"/>
   }
 
-  <app-activity-day-dispatch-overlay [days]="sortedDays()" [tabs]="tabs()" [activeDayId]="activeDay()" />
+  <app-activity-day-dispatch-overlay [days]="sortedDays()" [activeDayId]="activeDay()" />
 
   <!-- Voir ActivityDispatchService.registerDragPortal : point d'ancrage hors du
        swiper de jours (dont un ancêtre `swiper-slide` applique transform/filter,

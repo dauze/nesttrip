@@ -4,11 +4,10 @@ import {
 } from '@angular/core';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { Day } from '@app/features/trips/trip.model';
-import { TripTab } from '@app/features/trips/trip-detail/trip-tab.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { DispatchBallContentService } from './dispatch-ball-content.service';
-import { DispatchReplicaService } from './dispatch-replica.service';
 import { DispatchHoverEscalationService } from './dispatch-hover-escalation.service';
 
 interface MonthGroup {
@@ -35,12 +34,12 @@ const DAY_DRAG_EXPAND_DURATION_MS = 250;
 const EDGE_SCROLL_ZONE = 56;
 const EDGE_SCROLL_SPEED = 8;
 /**
- * Durée de la "montée" du calendrier (croissance du sheet, effacement de la
- * réplique, apparition de la grille) : les trois animations partagent cette
- * même durée, calculée à chaque décrochage à partir de la distance réelle
- * (px) parcourue par le sheet, pour rester à vitesse constante quelle que
- * soit la hauteur d'écran — sans quoi un grand écran (plus de px à parcourir
- * en 50vh) ferait paraître le morph plus rapide qu'un petit.
+ * Durée de la "montée"/"descente" du calendrier (croissance du sheet depuis
+ * 0 jusqu'à 50vh, apparition de la grille — voir `openSheet`) : calculée à
+ * chaque décrochage à partir de la distance réelle (px) parcourue par le
+ * sheet (toujours 0 → 50vh désormais), pour rester à vitesse constante quelle
+ * que soit la hauteur d'écran — sans quoi un grand écran (plus de px à
+ * parcourir en 50vh) ferait paraître le morph plus rapide qu'un petit.
  */
 const EXPAND_DURATION_BASE_MS = 300;
 const EXPAND_DURATION_PX_FACTOR_MS = 0.7;
@@ -72,19 +71,17 @@ function easeInOutCubic(t: number): number {
   imports: [CommonModule, ButtonComponent],
   templateUrl: './activity-day-dispatch-overlay.component.html',
   styleUrl: './activity-day-dispatch-overlay.component.scss',
-  // Une instance par overlay (pas root) : voir la doc des 3 services.
-  providers: [DispatchBallContentService, DispatchReplicaService, DispatchHoverEscalationService],
+  // Une instance par overlay (pas root) : voir la doc des 2 services.
+  providers: [DispatchBallContentService, DispatchHoverEscalationService],
 })
 export class ActivityDayDispatchOverlayComponent {
   protected readonly dispatchService = inject(ActivityDispatchService);
+  private readonly chromeService = inject(TripChromeService);
   private readonly tripFacade = inject(TripFacade);
   private readonly ballContentService = inject(DispatchBallContentService);
-  protected readonly replica = inject(DispatchReplicaService);
   private readonly hoverEscalation = inject(DispatchHoverEscalationService);
 
   readonly days = input<Day[]>([]);
-  /** Mêmes onglets que app-trip-tabs-nav (Général + jours), pour en afficher une réplique identique au repos. */
-  readonly tabs = input<TripTab[]>([]);
   /** Jour (ou 'notes') actuellement visible dans le swiper, utilisé comme zone de dépose de secours quand le calendrier est rétracté. */
   readonly activeDayId = input<string>('');
 
@@ -92,7 +89,6 @@ export class ActivityDayDispatchOverlayComponent {
   private readonly gridRef = viewChild<ElementRef<HTMLElement>>('grid');
   private readonly ballRef = viewChild<ElementRef<HTMLElement>>('ball');
   private readonly ballContentRef = viewChild<ElementRef<HTMLElement>>('ballContent');
-  private readonly replicaNavRef = viewChild<ElementRef<HTMLElement>>('replicaNav');
   // `read: ElementRef` est indispensable ici : ces éléments portent le
   // composant `app-button`, donc sans lui, la référence résout vers
   // l'instance du composant (pas d'`.nativeElement`) et non vers l'élément
@@ -109,9 +105,17 @@ export class ActivityDayDispatchOverlayComponent {
   protected readonly thumbFilled = signal(false);
   /** true une fois le calendrier pleinement déployé (morph terminé) : gouverne désormais son affichage par CSS simple. */
   protected readonly sheetExpanded = signal(false);
-  /** Hauteur exacte (px) de la vraie barre d'onglets, mesurée à chaque décrochage : permet au clone de la superposer au pixel près avant de grandir. */
-  protected readonly collapsedHeight = signal(56);
-  /** Durée (ms) partagée par la croissance du sheet, l'effacement de la réplique et la montée de la grille — voir `EXPAND_DURATION_BASE_MS`. */
+  /**
+   * Hauteur exacte (px) de la vraie barre d'onglets/nav, en direct via
+   * `TripChromeService.tabsNavHeight()` (déjà tenue à jour par ResizeObserver
+   * pour la barre desktop ET la barre mobile morphing, voir sa doc). Sert
+   * UNIQUEMENT à dimensionner la zone invisible de détection de survol
+   * pré-escalade (`--bar-visible` seul, voir le scss) : le calendrier
+   * lui-même (`--active`) ne s'appuie plus sur cette hauteur pour son
+   * animation — il monte toujours depuis 0 (bas d'écran), voir `openSheet`.
+   */
+  protected readonly collapsedHeight = computed(() => this.chromeService.tabsNavHeight() || 56);
+  /** Durée (ms) partagée par la croissance du sheet et la montée de la grille — voir `EXPAND_DURATION_BASE_MS`. */
   protected readonly expandDurationMs = signal(700);
 
   protected readonly monthGroups = computed<MonthGroup[]>(() => this.groupByMonth(this.days()));
@@ -135,35 +139,8 @@ export class ActivityDayDispatchOverlayComponent {
   private sheetTransitionListenerBound = false;
 
   constructor() {
-    // Amorce le clone + la hauteur repliée UNE FOIS que la vraie barre s'est
-    // enregistrée (voir `ActivityDispatchService.registerNavBarCloneSource`),
-    // pas au premier rendu DE CE composant : `TripTabsNavComponent` n'est
-    // monté qu'une fois le trip chargé (async, derrière un `@if`), donc
-    // potentiellement APRÈS le premier rendu de cet overlay — un
-    // `afterNextRender` one-shot ici s'exécutait alors trop tôt (avant que
-    // `registerNavBarCloneSource` n'ait jamais été appelé), et ne se
-    // redéclenchant jamais, l'amorçage échouait silencieusement pour le
-    // reste de la session. En réagissant au signal d'enregistrement lui-même,
-    // l'amorçage a lieu au bon moment quel que soit l'ordre de montage. Aucun
-    // drag n'est en cours à cet instant (aucun risque pour le
-    // MutationObserver de Swiper, voir la note détaillée dans `openSheet` sur
-    // pourquoi on ne reclone JAMAIS pendant un cdkDrag pré-escalade) : sans
-    // cet amorçage, l'aperçu "barre repliée" affiché dès le tout premier
-    // cdkDrag de la session (`sheetVisible`/`--bar-visible`, voir
-    // ActivityDispatchService) restait vide et à la hauteur par défaut
-    // (56px, celle du fallback CSS) tant qu'aucune escalade réelle
-    // (`openSheet`) n'avait encore eu lieu — d'où le contenu tronqué observé
-    // uniquement au tout premier survol de la barre, jamais ensuite.
     this.hoverEscalation.connect({
       getSheetEl: () => this.sheetRef()?.nativeElement ?? null,
-    });
-
-    let replicaPreviewPrimed = false;
-    effect(() => {
-      const cloneSource = this.dispatchService.getNavBarCloneSource();
-      if (!cloneSource || replicaPreviewPrimed) return;
-      replicaPreviewPrimed = true;
-      this.primeReplicaPreview();
     });
 
     // La demande de dispatch réelle est émise par le service ; c'est ici,
@@ -188,32 +165,6 @@ export class ActivityDayDispatchOverlayComponent {
       if (!req || req === lastDispatchedReq) return;
       lastDispatchedReq = req;
       this.tripFacade.dispatchActivity(req.tripId, req.activityId, req.origin, new Date(req.dayKey));
-    });
-
-    // Synchronise sur le clone courant les classes pilotées par les signaux
-    // d'animation (le clone étant du DOM brut, pas du template Angular, rien
-    // ne les lui applique automatiquement).
-    effect(() => {
-      const expanded = this.sheetExpanded();
-      const flipped = this.replica.flippedDayIds();
-      const root = this.replica.getCloneRoot();
-      if (!root) return;
-
-      // Les onglets Activités/Logistique/Listes (aucun `dayNumber`, voir
-      // TripTab) n'ont pas d'équivalent dans la grille : ils s'effacent pour
-      // de bon à l'expansion, où qu'ils soient (visibles ou scrollés hors
-      // champ — dans ce dernier cas l'effet est simplement invisible, sans
-      // conséquence).
-      const nonDayIds = new Set(this.tabs().filter(t => !t.dayNumber).map(t => t.id));
-      root.querySelectorAll<HTMLElement>('[data-tab-id]').forEach(el => {
-        const id = el.dataset['tabId'];
-        if (!id) return;
-        if (nonDayIds.has(id)) {
-          el.classList.toggle('dispatch-overlay__replica-tab--out', expanded);
-          return;
-        }
-        el.classList.toggle('dispatch-overlay__replica-tab--flipped', flipped.has(id));
-      });
     });
 
     // Bascule "remplissage" de la miniature clonée (voir cloneOriginHeaderInto) :
@@ -243,19 +194,16 @@ export class ActivityDayDispatchOverlayComponent {
         } else if (phase === 'dropping') {
           this.stopEdgeAutoScroll();
           this.hoverEscalation.clearLeaveTimer();
-          this.replica.cancelTabFlip();
           this.playDropAnimation();
         } else if (phase === 'returning') {
           this.stopEdgeAutoScroll();
           this.hoverEscalation.clearLeaveTimer();
           this.sheetExpanded.set(false);
-          this.replica.cancelTabFlip();
           this.playReturnAnimation();
         } else if (phase === 'deescalating') {
           this.stopEdgeAutoScroll();
           this.hoverEscalation.clearLeaveTimer();
           this.sheetExpanded.set(false);
-          this.replica.cancelTabFlip();
           this.playDeescalateAnimation();
         }
       });
@@ -359,81 +307,34 @@ export class ActivityDayDispatchOverlayComponent {
     }
   }
 
-  /**
-   * Clone + mesure la barre repliée, sans rien d'autre (pas d'expansion, pas
-   * de FLIP de la grille) : appelé une fois à l'amorçage (constructeur, via
-   * `afterNextRender`, aucun drag en cours donc aucun risque pour le
-   * MutationObserver de Swiper) ET à chaque décrochage réel (`openSheet`,
-   * phase 'lifted') — jamais entre les deux, voir la note détaillée dans
-   * `openSheet`.
-   */
-  private primeReplicaPreview(): void {
-    const replicaContainer = this.replicaNavRef()?.nativeElement;
-    if (replicaContainer) this.replica.cloneNavBarInto(replicaContainer);
-
-    const navRect = this.dispatchService.getNavBarRect();
-    if (navRect) this.collapsedHeight.set(navRect.height);
-  }
-
-  // ── Ouverture du calendrier : la barre d'onglets grandit sur elle-même ────
+  // ── Ouverture du calendrier : monte depuis rien, tout en bas de l'écran ───
   //
-  // Le clone (#replicaNav + #grid dans #sheet) est un composant à part,
-  // caché en `display:none` au repos et positionné EXACTEMENT comme la
-  // vraie barre (fixed left/right/bottom). Au décrochage, il ne fait que
-  // passer en `display:flex` à la même hauteur mesurée que la vraie barre —
-  // rigoureusement identique, donc rien ne se voit. Ce n'est qu'ensuite,
-  // une fois cet état "invisible" réellement peint, qu'on bascule la classe
-  // qui fait grandir sa hauteur en transition CSS pure (pas de FLIP/WAAPI) :
-  // la barre s'étire donc littéralement sur place, ancrée en bas.
+  // Le sheet (#grid dans #sheet) est caché en `display:none` au repos. Au
+  // décrochage, il passe en `display:flex` à hauteur 0 (voir `--active` en
+  // scss) — rigoureusement invisible, ancré en bas — puis, une fois cet état
+  // réellement peint, on bascule la classe qui le fait grandir jusqu'à 50vh
+  // en transition CSS pure (pas de FLIP/WAAPI) : il monte donc littéralement
+  // depuis le bas de l'écran. La fermeture (voir le phase-effect du
+  // constructeur, qui retire `--expanded`) est le mouvement strictement
+  // inverse : il redescend à 0 et disparaît, sans palier intermédiaire.
   private openSheet(): void {
-    // Le (re)clonage ne se fait QU'ici et à l'amorçage initial
-    // (`primeReplicaPreview`, voir le constructeur), jamais dès que la barre
-    // repliée devient un simple survol pré-escalade (`sheetVisible`) : un
-    // remplacement du sous-arbre DOM de #replicaNav à CHAQUE début de
-    // cdkDrag dans un jour — même les réordonnancements qui n'escaladent
-    // jamais vers le calendrier — se faisait repérer par le
-    // MutationObserver de Swiper (`observeParents`/`observeSlideChildren`
-    // dans TripDaySwiperComponent, qui observe le sous-arbre entier d'un
-    // ancêtre commun, donc aussi cette barre sœur) et déclenchait un
-    // `update()` en pleine séquence de pointeur, cassant le drag maison
-    // (retour immédiat au moindre pointermove, swipe qui récupère le
-    // geste). Ici, une seule fois par décrochage réel (phase 'lifted'),
-    // c'est sans risque : re-mesurer/re-cloner à chaque vraie escalade
-    // garde la réplique fidèle à un éventuel scroll entre-temps.
-    this.primeReplicaPreview();
-
     const expandedHeightPx = window.innerHeight * EXPANDED_HEIGHT_VH_RATIO;
-    const travelPx = Math.max(0, expandedHeightPx - this.collapsedHeight());
-    const duration = EXPAND_DURATION_BASE_MS + travelPx * EXPAND_DURATION_PX_FACTOR_MS;
+    const duration = EXPAND_DURATION_BASE_MS + expandedHeightPx * EXPAND_DURATION_PX_FACTOR_MS;
     this.expandDurationMs.set(Math.round(
       Math.min(EXPAND_DURATION_MAX_MS, Math.max(EXPAND_DURATION_MIN_MS, duration)),
     ));
 
-    // Les onglets de jours actuellement visibles dans la barre repliée
-    // doivent être mesurés MAINTENANT, avant que quoi que ce soit ne bouge :
-    // c'est leur position/taille de départ pour le FLIP qui les transforme
-    // en boutons de la grille.
-    const flipTargets = this.replica.captureVisibleTabFlipTargets(this.tabs());
-    this.replica.flippedDayIds.set(new Set(flipTargets.keys()));
-
     this.bindSheetTransitionEnd();
 
     // Double rAF : sans ce délai, le navigateur peut fusionner "apparition à
-    // hauteur repliée" et "croissance" dans le même recalcul de style, et la
+    // hauteur 0" et "croissance" dans le même recalcul de style, et la
     // transition CSS ne se joue tout simplement pas (aucun état de départ
     // n'a jamais été peint pour qu'elle ait quelque chose à animer).
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (this.phase() !== 'lifted') return;
         this.sheetExpanded.set(true);
-        requestAnimationFrame(() => {
-          this.captureCellRects();
-          // Le grid final est layouté (sa largeur ne dépend pas de la
-          // hauteur du sheet encore en train de grandir) : on peut donc
-          // déjà lire la position finale de chaque bouton et lancer le FLIP
-          // sans attendre la fin de la transition CSS de hauteur.
-          this.replica.runTabFlip(flipTargets, this.cellRefs());
-        });
+        requestAnimationFrame(() => this.captureCellRects());
       });
     });
   }
@@ -479,9 +380,8 @@ export class ActivityDayDispatchOverlayComponent {
     this.ballContentService.resetForNewDrag();
     this.stopTravelFollow();
 
-    // Une seule fois par décrochage (comme cloneNavBarInto — voir la note
-    // dans openSheet sur le MutationObserver de Swiper) : le contenu de la
-    // bulle n'est plus reconstruit à la main, c'est un clone DOM du vrai
+    // Une seule fois par décrochage : le contenu de la bulle n'est plus
+    // reconstruit à la main, c'est un clone DOM du vrai
     // <app-activity-header> de la carte.
     const ballContent = this.ballContentRef()?.nativeElement;
     if (ballContent) {
@@ -710,8 +610,8 @@ export class ActivityDayDispatchOverlayComponent {
    * Attend la fermeture CSS du calendrier (même durée dynamique que
    * l'ouverture, cf. `expandDurationMs`) avant d'appeler `finish()` : sinon
    * `finish()` bascule `isVisible` à `false` — donc le sheet en
-   * `display: none` — pendant que la réplique/la grille sont encore en train
-   * de s'animer, ce qui les coupe net au lieu de les laisser finir.
+   * `display: none` — pendant que la grille est encore en train de
+   * redescendre, ce qui la coupe net au lieu de la laisser finir.
    * `alreadyElapsedMs` est la durée déjà écoulée en parallèle de cette
    * fermeture CSS (l'animation de la bulle elle-même) — voir les deux
    * appelants (`playDropAnimation`/`playReturnAnimation`) pour leur calcul
@@ -826,7 +726,7 @@ export class ActivityDayDispatchOverlayComponent {
             // en parallèle du retour de la bulle — mais sa durée dynamique
             // (`expandDurationMs`) dépasse maintenant celle, fixe, de la
             // bulle. On complète l'attente avant `finish()` pour ne pas
-            // couper la réplique/la grille en plein milieu de leur retour.
+            // couper la grille en plein milieu de sa redescente.
             this.finishAfterSheetClose(RETURN_TRAVEL_DURATION + RETURN_EXPAND_DURATION);
           })
           .catch(() => {

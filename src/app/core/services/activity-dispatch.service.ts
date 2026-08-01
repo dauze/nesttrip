@@ -143,43 +143,6 @@ export class ActivityDispatchService {
   private readonly onContextMenuBound = (e: Event) => e.preventDefault();
 
   // ── Ancrages géométriques ────────────────────────────────────────────────
-  // Enregistré une fois par TripTabsNavComponent : permet à l'overlay de
-  // connaître, à la demande, le rectangle de départ de son animation
-  // d'ouverture (la barre d'onglets). En `signal` (pas un simple champ) :
-  // TripTabsNavComponent n'est monté qu'une fois le trip chargé
-  // (async, derrière un `@if`), donc potentiellement APRÈS le premier rendu
-  // de l'overlay — un `afterNextRender` one-shot côté overlay peut donc
-  // s'exécuter alors que cet élément n'existe pas encore. En signal, l'overlay
-  // peut réagir au moment réel de l'enregistrement plutôt qu'à un instant fixe.
-  private readonly navBarElSignal = signal<HTMLElement | null>(null);
-
-  registerNavBarElement(el: HTMLElement): void {
-    this.navBarElSignal.set(el);
-  }
-
-  getNavBarRect(): DOMRect | null {
-    return this.navBarElSignal()?.getBoundingClientRect() ?? null;
-  }
-
-  /**
-   * Élément source pour le clone DOM de la réplique affichée par l'overlay
-   * (voir ActivityDayDispatchOverlayComponent.cloneNavBarInto) : le `<p-tabs>`
-   * interne, pas `navBarEl` (le host `app-trip-tabs-nav`, qui porte les
-   * classes utilitaires de positionnement `fixed bottom-0 left-0 right-0`
-   * posées par le parent — les cloner ferait fuir le clone hors de son
-   * conteneur `.dispatch-overlay__replica`). Même remarque qu'au-dessus sur
-   * le choix d'un signal plutôt qu'un champ simple.
-   */
-  private readonly navBarCloneSourceSignal = signal<HTMLElement | null>(null);
-
-  registerNavBarCloneSource(el: HTMLElement): void {
-    this.navBarCloneSourceSignal.set(el);
-  }
-
-  getNavBarCloneSource(): HTMLElement | null {
-    return this.navBarCloneSourceSignal();
-  }
-
   /**
    * Point d'ancrage `position:fixed` hors du swiper de jours (enregistré une
    * fois par TripDetailComponent, en frère de app-activity-day-dispatch-overlay)
