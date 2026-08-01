@@ -16,7 +16,7 @@ import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
 import { FloatingAddButtonComponent } from '@app/shared/components/floating-add-button/floating-add-button.component';
-import { GeneralSubTabBarComponent } from './general-sub-tab-bar/general-sub-tab-bar.component';
+import { MobileTripNavComponent } from './mobile-trip-nav/mobile-trip-nav.component';
 import { SelectionActionBarComponent } from '@app/shared/components/selection-action-bar/selection-action-bar.component';
 import { SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
@@ -29,6 +29,8 @@ import { NotesFocusService } from './notes-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
+/** Ids des 3 tabs de premier niveau Activités/Logistique/Listes (voir `tabs`) — tout le reste de `activeDay()` est un id de jour (ISO). */
+const GENERAL_TAB_IDS = ['activities', 'logistics', 'notes'];
 
 @Component({
   selector: 'app-trip-detail',
@@ -42,7 +44,7 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
     FloatingAddButtonComponent,
-    GeneralSubTabBarComponent,
+    MobileTripNavComponent,
     SelectionActionBarComponent,
     MenuComponent,
   ],
@@ -87,18 +89,20 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   /**
    * Options du menu "Ajouter", UNIFORME quel que soit l'onglet actif — jour
-   * ou Général (voir ROADMAP.md "UX / Interactions", uniformisé le
-   * 2026-07-31 : auparavant le "+" de l'onglet Général créait directement
-   * l'élément du sous-onglet actif, sans ce menu) : Activité, les 5 types
-   * logistiques dans l'ordre de `LOGISTIC_TYPE_META`, puis Note.
-   * - Activité : sur un jour, chemin inchangé (`fabTarget.triggerDay`) ; sur
-   *   Général, bascule le sous-onglet Activités puis crée une activité de
-   *   pool (`GeneralCreationTarget.createActivity`).
+   * ou l'un des 3 tabs Activités/Logistique/Listes (voir ROADMAP.md "UX /
+   * Interactions") : Activité, les 5 types logistiques dans l'ordre de
+   * `LOGISTIC_TYPE_META`, puis Liste.
+   * - Activité : sur un jour, chemin inchangé (`fabTarget.trigger`) ; sur le
+   *   tab Activités, idem (`fabTarget.trigger('activities')`) ; sur
+   *   Logistique/Listes, bascule d'abord vers le tab Activités PUIS pose une
+   *   demande de création différée (`requestCreateOnMount`, consommée par
+   *   `TripActivitiesComponent` une fois monté — même schéma que
+   *   NotesFocusService/LogisticFocusService).
    * - Types logistiques : `DayLogisticQuickAddService.create` fonctionne déjà
    *   indépendamment de l'onglet de départ (il crée l'élément puis délègue
    *   toute la navigation croisée à `LogisticFocusService`) — la date du jour
    *   n'est préremplie que si on part effectivement d'un jour.
-   * - Note : `NotesFocusService.requestCreate` (même schéma de navigation
+   * - Liste : `NotesFocusService.requestCreate` (même schéma de navigation
    *   croisée que les types logistiques), atteignable depuis n'importe où.
    */
   protected readonly addMenuItems = computed<AppMenuItem[]>(() => [
@@ -106,23 +110,28 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       label: 'Activité',
       icon: 'pi pi-map-marker',
       command: () => {
-        if (this.activeDay() !== 'notes') {
-          this.fabTarget.triggerDay(this.activeDay());
+        if (this.activeDay() === 'activities') {
+          this.fabTarget.trigger('activities');
           return;
         }
-        this.fabTarget.general()?.selectSubTab('activities');
-        this.fabTarget.general()?.createActivity();
+        if (!GENERAL_TAB_IDS.includes(this.activeDay())) {
+          this.fabTarget.trigger(this.activeDay());
+          return;
+        }
+        this.fabTarget.requestCreateOnMount('activities');
+        const index = this.tabs().findIndex(t => t.id === 'activities');
+        this.onTabSelected({ id: 'activities', index });
       },
     },
     ...(Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][]).map(([type, meta]) => ({
       label: meta.label,
       icon: meta.icon,
-      command: () => this.dayLogisticQuickAdd.create(type, this.activeDay() !== 'notes' ? new Date(this.activeDay()) : undefined),
+      command: () => this.dayLogisticQuickAdd.create(type, GENERAL_TAB_IDS.includes(this.activeDay()) ? undefined : new Date(this.activeDay())),
     })),
-    { label: 'Note', icon: 'pi pi-clipboard', command: () => this.notesFocusService.requestCreate() },
+    { label: 'Liste', icon: 'pi pi-clipboard', command: () => this.notesFocusService.requestCreate() },
   ]);
 
-  readonly activeDay = signal<string>('notes');
+  readonly activeDay = signal<string>('activities');
   private initializedTripId: string | null = null;
   readonly currentDayIndex = signal(0);
 
@@ -141,8 +150,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       .sort((a, b) => a.id.getTime() - b.id.getTime()) ?? []
   );
 
+  /**
+   * Activités/Logistique/Listes sont désormais 3 tabs/slides de premier
+   * niveau (au lieu d'un unique onglet "Général" avec switch interne, voir
+   * ROADMAP.md "UX / Interactions") — même ordre qu'avant (ce bloc précède
+   * toujours les jours). `id: 'notes'` gardé tel quel en interne pour
+   * "Listes" (NotesFocusService, fragment d'URL...) : seul le libellé change.
+   */
   readonly tabs = computed<TripTab[]>(() => [
-    { id: 'notes', label: 'Général' },
+    { id: 'activities', label: 'Activités' },
+    { id: 'logistics', label: 'Logistique' },
+    { id: 'notes', label: 'Listes' },
     ...this.sortedDays().map(d => this.formatDayTab(d.id)),
   ]);
 
@@ -156,7 +174,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly fabIcon = 'pi pi-plus';
   protected readonly fabAriaLabel = 'Ajouter';
 
-  /** Ouvre le menu "Ajouter" (Activité/Vol/Logement/Location voiture/Train/Autre/Note, voir addMenuItems) ancré sur le bouton "+" lui-même — même comportement sur un jour ET sur l'onglet Général. */
+  /** Ouvre le menu "Ajouter" (Activité/Vol/Logement/Location voiture/Train/Autre/Liste, voir addMenuItems) ancré sur le bouton "+" lui-même — même comportement sur un jour ET sur les tabs Activités/Logistique/Listes. */
   protected onFabActivate(): void {
     const anchor = this.fabElementRef()?.nativeElement;
     if (anchor) this.addMenu().toggleAt(anchor);
@@ -178,12 +196,13 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
 
     // Traduit le layout (ViewportService) en mode chrome (voir TripChromeService.ChromeMode) :
-    // pas de layout scindé -> comportement mobile historique ; layout scindé
-    // + assez de hauteur (desktop) -> chrome jamais masqué ; layout scindé
-    // mais viewport bas (mobile paysage) -> la barre des jours (en haut)
-    // rejoint le groupe qui se masque au scroll (voir TripTabsNavComponent).
+    // `isMobileChrome` (portrait OU appareil tactile même en paysage — voir sa
+    // doc) -> barre de nav morphing bas d'écran, comportement "mobile"
+    // historique ; sinon (vrai desktop, pointeur fin) -> layout scindé, chrome
+    // jamais masqué si assez de hauteur, ou rejoint le groupe qui se masque au
+    // scroll sinon (fenêtre desktop basse).
     effect(() => {
-      if (!this.viewport.isSplitLayout()) {
+      if (this.viewport.isMobileChrome()) {
         this.chromeService.setMode('mobile');
       } else {
         this.chromeService.setMode(this.viewport.isChromePinned() ? 'split-pinned' : 'split-hideable');
@@ -253,7 +272,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
 
     // Demande de navigation croisée (voir DayActivityFocusService) : un clic
-    // sur une date depuis l'onglet Général (pool d'activités) bascule ici sur
+    // sur une date depuis le tab Activités (pool d'activités) bascule ici sur
     // le jour ciblé, exactement comme onTabSelected/onSwiperActiveIdChange.
     // Si le jour ciblé est déjà actif, rien à faire ici : c'est
     // DayPanelComponent qui consomme la requête (et scroll) une fois actif.
@@ -269,17 +288,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
     // Demande de navigation croisée symétrique (voir LogisticFocusService)
     // : tap sur une bannière de réservation depuis un jour bascule ici sur
-    // l'onglet Général — GeneralPanelComponent (sous-onglet) puis
-    // LogisticsListComponent (ouverture du dialog d'édition) consomment
-    // ensuite la même requête, chacun à son échelle.
+    // le tab Logistique — LogisticsListComponent (ouverture du dialog
+    // d'édition) consomme ensuite la même requête.
     effect(() => {
       const pending = this.logisticFocusService.pending();
-      if (!pending || this.activeDay() === 'notes') return;
+      if (!pending || this.activeDay() === 'logistics') return;
 
-      this.activeDay.set('notes');
-      const index = this.tabs().findIndex(t => t.id === 'notes');
+      this.activeDay.set('logistics');
+      const index = this.tabs().findIndex(t => t.id === 'logistics');
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
-      this.updateFragment('notes');
+      this.updateFragment('logistics');
     });
   }
 
@@ -353,7 +371,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const applyChanges = () => {
       for (const day of toDelete) this.facade.removeDay(trip.id, day.id);
       for (const day of toAdd) this.facade.addDay(trip.id, day);
-      this.activeDay.set('notes');
+      this.activeDay.set('activities');
       setTimeout(() => this.tabsNavRef()?.scrollIntoView(0), 100);
     };
 
@@ -383,7 +401,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
     const day = trip.days.find(d => new Date(d.id).toDateString() === today);
-    return day ? day.id.toISOString() : 'notes';
+    return day ? day.id.toISOString() : 'activities';
   }
 
   private buildDays(start: Date, end: Date, existingDays: Day[]): Day[] {
@@ -413,8 +431,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return existingDays.filter(d => !newIds.has(d.id.getTime()));
   }
 
+  /**
+   * Généralisé pour couvrir aussi les 3 tabs Activités/Logistique/Listes (pas
+   * seulement les jours, `#day-N`) : sans ça, un refresh de page sur
+   * Logistique/Listes retombait toujours sur le tab par défaut — régression
+   * introduite en dissolvant `GeneralPanelComponent` (qui persistait le
+   * sous-onglet via `?tab=`), corrigée en unifiant sur ce même mécanisme de
+   * fragment.
+   */
   private getDayIdFromFragment(fragment: string | null): string | null {
     if (!fragment) return null;
+    if (GENERAL_TAB_IDS.includes(fragment)) return fragment;
 
     const match = fragment.match(/^day-(\d+)$/);
     if (!match) return null;
@@ -424,9 +451,13 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return day ? day.id.toISOString() : null;
   }
 
-  private updateFragment(dayId: string): void {
-    const dayNumber = this.sortedDays().findIndex(d => d.id.toISOString() === dayId) + 1;
+  private updateFragment(tabId: string): void {
     const basePath = this.location.path(false);
+    if (GENERAL_TAB_IDS.includes(tabId)) {
+      this.location.replaceState(`${basePath}#${tabId}`);
+      return;
+    }
+    const dayNumber = this.sortedDays().findIndex(d => d.id.toISOString() === tabId) + 1;
     this.location.replaceState(dayNumber > 0 ? `${basePath}#day-${dayNumber}` : basePath);
   }
 }

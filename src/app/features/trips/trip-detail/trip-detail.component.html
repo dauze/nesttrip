@@ -19,19 +19,24 @@
         </app-trip-header>
       </div>
 
-      <!-- Layout scindé (desktop / mobile paysage, voir ViewportService) :
-           la barre des jours passe sticky juste sous toolbar+header au lieu
-           de flotter en bas (décision produit, voir ROADMAP.md "UI Desktop"). -->
-      <!-- `class.top-0` n'est PAS utilisable ici : l'utilitaire `.top-0` pose
-           `top: 0 !important` (layout-utilities.scss), qui écraserait la
-           valeur dynamique posée juste en dessous par `[style.top.px]`. -->
-      <app-trip-tabs-nav
-        class="fixed app-trip-tabs-nav-fixed z-5"
-        [class.bottom-0]="!viewport.isSplitLayout()"
-        [style.top.px]="viewport.isSplitLayout() ? chromeService.tabsNavTop() : null"
-        [tabs]="tabs()"
-        [activeId]="activeDay()"
-        (tabSelected)="onTabSelected($event)" />
+      <!-- Vrai desktop (pointeur fin, voir ViewportService.isMobileChrome) :
+           la barre des jours reste sticky juste sous toolbar+header, comme
+           avant (décision produit, voir ROADMAP.md "UI Desktop"). Mobile
+           (portrait OU paysage tactile) : barre morphing bas d'écran, voir
+           MobileTripNavComponent (ROADMAP.md "UX / Interactions"). -->
+      @if (!viewport.isMobileChrome()) {
+        <app-trip-tabs-nav
+          class="fixed app-trip-tabs-nav-fixed z-5"
+          [style.top.px]="chromeService.tabsNavTop()"
+          [tabs]="tabs()"
+          [activeId]="activeDay()"
+          (tabSelected)="onTabSelected($event)" />
+      } @else {
+        <app-mobile-trip-nav
+          [tabs]="tabs()"
+          [activeId]="activeDay()"
+          (tabSelected)="onTabSelected($event)" />
+      }
 
       <app-trip-day-swiper
         [trip]="trip"
@@ -49,17 +54,10 @@
         <app-floating-add-button
           [icon]="fabIcon"
           [ariaLabel]="fabAriaLabel"
-          [bottomOffset]="chromeService.tabsNavBottomReserve() + chromeService.generalSubTabBarHeight()"
+          [bottomOffset]="chromeService.tabsNavBottomReserve()"
           (activate)="onFabActivate()" />
       }
       <app-menu #addMenu title="Ajouter" [items]="addMenuItems()" />
-
-      <!-- Même contrainte hors-swiper, uniquement sur l'onglet "Général" (voir
-           GeneralSubTabBarComponent) — masqué pendant le mode sélection pour
-           la même raison que le "+" flottant ci-dessus. -->
-      @if (activeDay() === 'notes' && !selectionService.active()) {
-        <app-general-sub-tab-bar [bottomOffset]="chromeService.tabsNavBottomReserve()" />
-      }
 
       <!-- Même contrainte hors-swiper que le "+" flottant ci-dessus. -->
       <app-selection-action-bar

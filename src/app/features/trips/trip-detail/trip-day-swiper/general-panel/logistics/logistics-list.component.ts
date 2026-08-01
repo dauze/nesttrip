@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, effect, inject, input, signal, viewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { CardComponent } from '@app/shared/components/card/card.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
@@ -40,13 +40,14 @@ function matchesSearch(title: string, term: string): boolean {
  * la fin, inchangé) ou "Type" (regroupement Logement/Vol/Location voiture/
  * Train/Autre, ordre fixe, section masquée si vide), plus une barre de
  * recherche (titre). Pas de bouton "Ajouter" local, la création passe
- * exclusivement par le "+" flottant unique (voir
- * `GeneralPanelComponent.onFabActivate` -> `triggerCreate()` ci-dessous).
+ * exclusivement par le "+" flottant unique (`DayLogisticQuickAddService`,
+ * voir `TripDetailComponent.addMenuItems`), déjà indépendant de l'onglet de
+ * départ.
  */
 @Component({
   selector: 'app-logistics-list',
   standalone: true,
-  imports: [PanelComponent, MessageComponent, ButtonComponent, SelectButtonComponent, InputTextDirective, LogisticCardComponent],
+  imports: [CardComponent, MessageComponent, ButtonComponent, SelectButtonComponent, InputTextDirective, LogisticCardComponent],
   templateUrl: './logistics-list.component.html',
   styleUrl: './logistics-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -131,8 +132,8 @@ export class LogisticsListComponent {
     });
 
     // Demande de navigation croisée (voir LogisticFocusService) : consomme
-    // la requête dès que ce composant est monté (sous-onglet déjà basculé par
-    // GeneralPanelComponent), déplie la carte ciblée et y scrolle — plus de
+    // la requête dès que ce composant est monté (tab déjà basculé par
+    // TripDetailComponent), déplie la carte ciblée et y scrolle — plus de
     // dialog à ouvrir, la carte est déjà dans la liste.
     effect(() => {
       const pending = this.logisticFocusService.pending();
@@ -165,11 +166,6 @@ export class LogisticsListComponent {
     card.collapsed.set(false);
     card.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (startGuided) card.startGuidedEntry(true);
-  }
-
-  /** Point d'entrée unique du "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
-  triggerCreate(): void {
-    this.creationService.startCreation();
   }
 
   onSortModeChange(mode: SortMode | undefined): void {

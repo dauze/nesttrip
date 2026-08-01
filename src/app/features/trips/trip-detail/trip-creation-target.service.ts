@@ -1,14 +1,8 @@
-import { Injectable, Signal, signal } from '@angular/core';
-import { SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { Injectable, signal } from '@angular/core';
 
-export type GeneralCreationSubTab = 'activities' | 'notes' | 'logistics';
-
-export interface GeneralCreationTarget {
-  activeSubTab: Signal<GeneralCreationSubTab>;
-  subTabOptions: SelectButtonOption<GeneralCreationSubTab>[];
-  selectSubTab: (tab: GeneralCreationSubTab) => void;
-  /** Crée une activité de pool (sans jour) — voir `TripDetailComponent.addMenuItems`, entrée "Activité" quand on est sur l'onglet Général. */
-  createActivity: () => void;
+interface PendingCreate {
+  id: string;
+  token: number;
 }
 
 /**
@@ -20,16 +14,13 @@ export interface GeneralCreationTarget {
  * de l'arbre des panels, il ne peut pas appeler directement leurs méthodes :
  * chaque panel s'enregistre ici au montage, et se désenregistre au destroy.
  *
- * `general` : un seul enregistrement possible (onglet "Général", singleton —
- * jamais deux instances de `GeneralPanelComponent` simultanément). Sert
- * aussi de pont pour `GeneralSubTabBarComponent` (bouton Activités/
- * Réservations/Notes flottant en bas, mobile uniquement — même contrainte
- * hors-swiper que le "+" flottant) : `subTabOptions`/`selectSubTab`
- * permettent de piloter le sous-onglet actif depuis l'extérieur du panel.
- * `day` : plusieurs jours peuvent être montés en même temps (préchargement
- * des jours voisins, voir TripDaySwiperComponent.preloadAround), d'où une Map
- * indexée par dayId — seul le trigger du jour COURANT (`activeDay()`,
- * connu de TripDetailComponent) est jamais appelé.
+ * Un seul déclencheur par id (jour ISO, ou `'activities'` pour le pool
+ * d'activités générales — seul tab de premier niveau parmi Activités/
+ * Logistique/Listes à avoir un bouton de création dédié, comme un jour) :
+ * plusieurs jours peuvent être montés en même temps (préchargement des jours
+ * voisins, voir TripDaySwiperComponent.preloadAround), d'où une Map indexée
+ * par id — seul le trigger de l'onglet COURANT (`activeDay()`, connu de
+ * TripDetailComponent) est jamais appelé.
  *
  * Fourni par `TripDetailComponent` (pas root) : partagé entre le swiper (qui
  * enregistre) et le bouton flottant (qui appelle), tous deux descendants de
@@ -37,24 +28,34 @@ export interface GeneralCreationTarget {
  */
 @Injectable()
 export class TripCreationTargetService {
-  private readonly _general = signal<GeneralCreationTarget | null>(null);
-  private readonly dayTriggers = new Map<string, () => void>();
+  private readonly triggers = new Map<string, () => void>();
 
-  readonly general = this._general.asReadonly();
-
-  registerGeneral(target: GeneralCreationTarget): () => void {
-    this._general.set(target);
-    return () => this._general.set(null);
-  }
-
-  registerDay(dayId: string, trigger: () => void): () => void {
-    this.dayTriggers.set(dayId, trigger);
+  register(id: string, trigger: () => void): () => void {
+    this.triggers.set(id, trigger);
     return () => {
-      if (this.dayTriggers.get(dayId) === trigger) this.dayTriggers.delete(dayId);
+      if (this.triggers.get(id) === trigger) this.triggers.delete(id);
     };
   }
 
-  triggerDay(dayId: string): void {
-    this.dayTriggers.get(dayId)?.();
+  trigger(id: string): void {
+    this.triggers.get(id)?.();
+  }
+
+  // ── Création différée jusqu'au montage (voir addMenuItems, entrée "Activité"
+  // depuis Logistique/Listes) ── même schéma que NotesFocusService/LogisticFocusService :
+  // un "pending" posé par l'appelant, consommé par un effect() dans le composant
+  // cible dès qu'il est monté — nécessaire car naviguer vers l'onglet Activités
+  // (changement de slide du swiper) et le montage réel du composant ne sont pas
+  // synchrones.
+  private readonly _pendingCreate = signal<PendingCreate | null>(null);
+  private createTokenSeq = 0;
+  readonly pendingCreate = this._pendingCreate.asReadonly();
+
+  requestCreateOnMount(id: string): void {
+    this._pendingCreate.set({ id, token: ++this.createTokenSeq });
+  }
+
+  clearPendingCreate(token: number): void {
+    if (this._pendingCreate()?.token === token) this._pendingCreate.set(null);
   }
 }

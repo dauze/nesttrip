@@ -1,4 +1,5 @@
-<app-panel header="Logistique" class="logistics-list">
+<div class="logistics-list">
+<app-card>
   <div class="flex flex-column gap-2">
     @if (hasNoLogisticAtAll()) {
       <app-message
@@ -63,4 +64,5 @@
       }
     }
   </div>
-</app-panel>
+</app-card>
+</div>

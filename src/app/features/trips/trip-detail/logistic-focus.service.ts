@@ -8,14 +8,13 @@ export interface LogisticFocusRequest {
 }
 
 /**
- * Demande de navigation croisée "va sur le sous-menu Logistique et ouvre cet
- * item en édition" (tap sur une bannière depuis un jour, OU création depuis
- * le menu "Ajouter" d'un jour). Même pattern que `DayActivityFocusService` :
- * `TripDetailComponent` bascule sur l'onglet Général, `GeneralPanelComponent`
- * bascule sur le sous-onglet Logistique, `LogisticsListComponent` déplie/
- * scrolle (et enchaîne la cinématique guidée si `startGuided`) puis consomme
- * (`clear`) la requête — trois consommateurs indépendants du même signal
- * `pending`, chacun réagissant à sa propre échelle.
+ * Demande de navigation croisée "va sur le tab Logistique et ouvre cet item
+ * en édition" (tap sur une bannière depuis un jour, OU création depuis le
+ * menu "Ajouter" d'un jour). Même pattern que `DayActivityFocusService` :
+ * `TripDetailComponent` bascule sur le tab Logistique, `LogisticsListComponent`
+ * déplie/scrolle (et enchaîne la cinématique guidée si `startGuided`) puis
+ * consomme (`clear`) la requête — deux consommateurs indépendants du même
+ * signal `pending`, chacun réagissant à sa propre échelle.
  */
 @Injectable()
 export class LogisticFocusService {

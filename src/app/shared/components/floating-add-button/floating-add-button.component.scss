@@ -54,8 +54,8 @@
 }
 
 // Petit badge "+" superposé : seul signe qui reste constant quel que soit le
-// contexte (`icon()` change, ex. pi-map-marker vs pi-clipboard, voir
-// GeneralPanelComponent) — rappelle qu'on est bien sur un bouton "ajouter".
+// contexte (`icon()` change, ex. pi-map-marker vs pi-clipboard selon le tab
+// actif) — rappelle qu'on est bien sur un bouton "ajouter".
 .fab-icon-badge {
   position: absolute;
   right: -0.4rem;

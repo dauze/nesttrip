@@ -1,6 +1,18 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
 // (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
 
+// Racine du composant (anciennement portée par le wrapper `GeneralPanelComponent`,
+// dissous — voir ROADMAP.md "UX / Interactions") : réserve l'espace toolbar +
+// header voyage + barre des jours EN DEHORS du scrollport, même mécanique que
+// `.day-panel-root` (day-panel.component.scss). Toujours colonne centrée, pas
+// de layout scindé pour ce tab.
+.notes-root {
+  padding-top: var(--chrome-top-offset, 0px);
+  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
+}
+
 // Padding + marge négative : agrandit la zone tactile réelle des poignées
 // de drag and drop sans déplacer visuellement les icônes ni pousser les
 // éléments voisins.

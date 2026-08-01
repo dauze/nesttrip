@@ -7,12 +7,20 @@
   class="tab-content-wrapper"
   [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
   [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
-  [style.--chrome-sub-tab-bar-height.px]="chromeService.generalSubTabBarHeight()"
-  [style.--general-sub-tab-switch-height.px]="chromeService.generalSubTabSwitchHeight()"
   [style.--sticky-top-offset.px]="chromeService.stickyContentTop()">
   <swiper-slide>
+    @if (visitedDays().has('activities')) {
+      <app-trip-activities [tripId]="trip().id" [active]="activeId() === 'activities'" />
+    }
+  </swiper-slide>
+  <swiper-slide>
+    @if (visitedDays().has('logistics')) {
+      <app-logistics-list [tripId]="trip().id" />
+    }
+  </swiper-slide>
+  <swiper-slide>
     @if (visitedDays().has('notes')) {
-      <app-general-panel [notes]="trip().notes" [tripId]="trip().id" [active]="activeId() === 'notes'" />
+      <app-notes [notes]="trip().notes" [tripId]="trip().id" />
     }
   </swiper-slide>
   @for (day of sortedDays(); track day.id) {

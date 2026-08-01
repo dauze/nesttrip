@@ -16,7 +16,9 @@ import {
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
-import { GeneralPanelComponent } from './general-panel/general-panel.component';
+import { TripActivitiesComponent } from './general-panel/trip-activities/trip-activities.component';
+import { LogisticsListComponent } from './general-panel/logistics/logistics-list.component';
+import { NotesComponent } from './general-panel/notes/notes.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
@@ -29,7 +31,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, GeneralPanelComponent, TripDayMapComponent],
+  imports: [DayPanelComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent],
   providers: [SwiperLockService, TripDayMapHostService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',

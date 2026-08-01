@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { clamp } from '@app/shared/utils/scroll-container';
 
-type ChromeKey = 'toolbar' | 'header' | 'tabsNav' | 'generalSubTabBar' | 'generalSubTabSwitch';
+type ChromeKey = 'toolbar' | 'header' | 'tabsNav';
 /**
  * `'mobile'` : barre des jours fixe en bas, jamais masquée (comportement
  * historique). `'split-hideable'` : layout scindé (voir ViewportService)
@@ -52,7 +52,7 @@ const STACKED_CHROME_GAP_PX = 4;
 @Injectable()
 export class TripChromeService {
   private readonly heights = signal<Record<ChromeKey, number>>({
-    toolbar: 0, header: 0, tabsNav: 0, generalSubTabBar: 0, generalSubTabSwitch: 0,
+    toolbar: 0, header: 0, tabsNav: 0,
   });
   private readonly chromeEls = new Set<HTMLElement>();
   private currentTranslateY = 0;
@@ -62,19 +62,8 @@ export class TripChromeService {
   readonly toolbarHeight = computed(() => this.heights().toolbar);
   /** Hauteur du seul header voyage : réservée nativement (voir le "sticky spacer" dans day-panel/general-panel). */
   readonly headerHeight = computed(() => this.heights().header);
-  /** Hauteur BRUTE de la barre des jours (mesure réelle, quelle que soit sa position) — voir `tabsNavBottomReserve` pour l'espace à réserver en bas. */
+  /** Hauteur BRUTE de la barre des jours/nav (mesure réelle, quelle que soit sa forme — barre desktop en haut ou barre morphing mobile en bas) — voir `tabsNavBottomReserve` pour l'espace à réserver en bas. */
   readonly tabsNavHeight = computed(() => this.heights().tabsNav);
-  /** Hauteur de la barre Activités/Réservations/Notes flottante mobile (voir `GeneralSubTabBarComponent`), 0 quand elle n'est pas montée (desktop, ou onglet jour) : réservée en `padding-bottom` par `GeneralPanelComponent` uniquement. */
-  readonly generalSubTabBarHeight = computed(() => this.heights().generalSubTabBar);
-  /**
-   * Hauteur de la bascule Activités/Réservations/Notes INLINE desktop de
-   * `GeneralPanelComponent` (`.sub-tab-switch`, distincte de la barre
-   * flottante mobile ci-dessus) — sert à décaler `.sticky-map` du pool
-   * d'activités sous elle en layout scindé, où les deux sont sticky dans le
-   * même scrollport (contrairement à `.sticky-map` de la vue jour, qui n'a
-   * rien au-dessus d'elle).
-   */
-  readonly generalSubTabSwitchHeight = computed(() => this.heights().generalSubTabSwitch);
   /** Mode courant (voir `ChromeMode`), piloté par `setMode`. */
   readonly mode = this._mode.asReadonly();
 
@@ -126,10 +115,9 @@ export class TripChromeService {
   );
 
   /**
-   * Espace à réserver en BAS (bouton flottant "+", barre de sélection, sous-
-   * barre Général mobile) : la hauteur réelle de la barre des jours en mode
-   * `'mobile'` (elle y est fixe en bas), `0` sinon (elle est passée en haut,
-   * plus rien à éviter en bas).
+   * Espace à réserver en BAS (bouton flottant "+", barre de sélection) : la
+   * hauteur réelle de la barre de nav en mode `'mobile'` (elle y est fixe en
+   * bas), `0` sinon (elle est passée en haut, plus rien à éviter en bas).
    */
   readonly tabsNavBottomReserve = computed(() => (this.mode() === 'mobile' ? this.tabsNavHeight() : 0));
 
@@ -151,8 +139,8 @@ export class TripChromeService {
 
   /**
    * `top` à utiliser par tout élément `position: sticky` DANS le contenu
-   * scrollé (`.sticky-map`, la bascule Activités/Réservations/Notes du
-   * panneau Général...) — jamais un simple `0`. Le scrollport (`swiper-slide`)
+   * scrollé (`.sticky-map` du pool d'activités ou de la vue jour...) —
+   * jamais un simple `0`. Le scrollport (`swiper-slide`)
    * s'étend visuellement SOUS le chrome fixe (voir la doc de classe) : un
    * `top:0` colle l'élément à `y=0` de la fenêtre, càd DERRIÈRE le chrome. En
    * `'mobile'`/`'split-hideable'`, ça reste invisible car le chrome a fini de

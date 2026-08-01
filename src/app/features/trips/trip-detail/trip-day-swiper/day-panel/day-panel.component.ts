@@ -199,12 +199,12 @@ export class DayPanelComponent {
     // (préchargement des jours voisins, voir TripDaySwiperComponent.preloadAround)
     // — seul le "+" flottant, qui connaît le jour COURANT, appellera jamais ce trigger.
     effect((onCleanup) => {
-      const unregisterFab = this.fabTarget.registerDay(this.dayId().toISOString(), () => this.creationService.startCreation());
+      const unregisterFab = this.fabTarget.register(this.dayId().toISOString(), () => this.creationService.startCreation());
       onCleanup(unregisterFab);
     });
 
     // Consommation d'une demande de navigation croisée (voir
-    // DayActivityFocusService, émise depuis l'onglet Général au clic sur une
+    // DayActivityFocusService, émise depuis le tab Activités au clic sur une
     // date). `pending()` ET `active()` sont lus AVANT le `if` (pas de
     // court-circuit) : sinon Angular perdrait la dépendance sur `pending`
     // quand `active()` ne change pas d'une exécution à l'autre (cas où on

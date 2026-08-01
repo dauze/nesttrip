@@ -199,16 +199,19 @@ export class ActivityDayDispatchOverlayComponent {
       const root = this.replica.getCloneRoot();
       if (!root) return;
 
-      // "Général" (id 'notes') n'a pas d'équivalent dans la grille : il
-      // s'efface pour de bon à l'expansion, où qu'il soit (visible ou
-      // scrollé hors champ — dans ce dernier cas l'effet est simplement
-      // invisible, sans conséquence).
-      const notesEl = root.querySelector<HTMLElement>('[data-tab-id="notes"]');
-      notesEl?.classList.toggle('dispatch-overlay__replica-tab--out', expanded);
-
+      // Les onglets Activités/Logistique/Listes (aucun `dayNumber`, voir
+      // TripTab) n'ont pas d'équivalent dans la grille : ils s'effacent pour
+      // de bon à l'expansion, où qu'ils soient (visibles ou scrollés hors
+      // champ — dans ce dernier cas l'effet est simplement invisible, sans
+      // conséquence).
+      const nonDayIds = new Set(this.tabs().filter(t => !t.dayNumber).map(t => t.id));
       root.querySelectorAll<HTMLElement>('[data-tab-id]').forEach(el => {
         const id = el.dataset['tabId'];
-        if (!id || id === 'notes') return;
+        if (!id) return;
+        if (nonDayIds.has(id)) {
+          el.classList.toggle('dispatch-overlay__replica-tab--out', expanded);
+          return;
+        }
         el.classList.toggle('dispatch-overlay__replica-tab--flipped', flipped.has(id));
       });
     });

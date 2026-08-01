@@ -5,14 +5,14 @@ export interface NotesFocusRequest {
 }
 
 /**
- * Demande de navigation croisée "va sur l'onglet Notes et crée-y une
- * nouvelle note" (entrée "Note" du menu "Ajouter", voir
- * `TripDetailComponent.addMenuItems`, ROADMAP.md "UX / Interactions").
- * Même pattern que `LogisticFocusService` : `TripDetailComponent` bascule sur
- * l'onglet Général, `GeneralPanelComponent` bascule sur le sous-onglet Notes,
- * `NotesComponent` crée la note (`addItem()`, centre + focus le champ) puis
- * consomme (`clear`) la requête — trois consommateurs indépendants du même
- * signal `pending`, chacun réagissant à sa propre échelle.
+ * Demande de navigation croisée "va sur le tab Listes et crée-y une nouvelle
+ * note" (entrée "Liste" du menu "Ajouter", voir
+ * `TripDetailComponent.addMenuItems`, ROADMAP.md "UX / Interactions"). Même
+ * pattern que `LogisticFocusService` : `TripDetailComponent` bascule sur le
+ * tab Listes (id technique `'notes'`), `NotesComponent` crée la note
+ * (`addItem()`, centre + focus le champ) puis consomme (`clear`) la requête —
+ * deux consommateurs indépendants du même signal `pending`, chacun
+ * réagissant à sa propre échelle.
  */
 @Injectable()
 export class NotesFocusService {

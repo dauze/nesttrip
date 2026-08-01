@@ -66,14 +66,16 @@ export class DispatchReplicaService {
 
   // ── FLIP des onglets de jours visibles vers les boutons de la grille ─────
   //
-  // Les onglets déjà visibles dans la barre repliée (hors "Général", qui n'a
-  // pas d'équivalent dans la grille) ne se contentent pas d'apparaître en
-  // dessous : ils "deviennent" littéralement le bouton correspondant de la
-  // grille — même technique FLIP que la bulle (mesurer avant, mesurer après,
-  // WAAPI entre les deux), appliquée ici à chaque bouton concerné. Le
-  // matching se fait par `data-tab-id` (posé sur chaque `.app-tab` réel, donc
-  // présent sur le clone) plutôt que par index : robuste à n'importe quel
-  // décalage de scroll de la barre d'origine.
+  // Les onglets déjà visibles dans la barre repliée (hors Activités/
+  // Logistique/Listes, qui n'ont pas d'équivalent dans la grille — distingués
+  // des onglets de jour par `!tab.dayNumber`, même critère que
+  // `TripTabsNavComponent`) ne se contentent pas d'apparaître en dessous :
+  // ils "deviennent" littéralement le bouton correspondant de la grille —
+  // même technique FLIP que la bulle (mesurer avant, mesurer après, WAAPI
+  // entre les deux), appliquée ici à chaque bouton concerné. Le matching se
+  // fait par `data-tab-id` (posé sur chaque `.app-tab` réel, donc présent sur
+  // le clone) plutôt que par index : robuste à n'importe quel décalage de
+  // scroll de la barre d'origine.
   captureVisibleTabFlipTargets(tabs: readonly TripTab[]): Map<string, DOMRect> {
     const map = new Map<string, DOMRect>();
     const root = this.replicaCloneRoot;
@@ -82,7 +84,7 @@ export class DispatchReplicaService {
     const navRect = root.getBoundingClientRect();
 
     for (const tab of tabs) {
-      if (tab.id === 'notes') continue;
+      if (!tab.dayNumber) continue;
       const el = root.querySelector<HTMLElement>(`[data-tab-id="${tab.id}"]`);
       if (!el) continue;
       const rect = el.getBoundingClientRect();

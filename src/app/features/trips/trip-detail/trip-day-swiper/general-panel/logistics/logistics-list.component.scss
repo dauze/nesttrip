@@ -1,5 +1,17 @@
 :host { display: block; }
 
+// Racine du composant (anciennement portée par le wrapper `GeneralPanelComponent`,
+// dissous — voir ROADMAP.md "UX / Interactions") : réserve l'espace toolbar +
+// header voyage + barre des jours EN DEHORS du scrollport, même mécanique que
+// `.day-panel-root` (day-panel.component.scss). Toujours colonne centrée, pas
+// de layout scindé pour ce tab (contrairement à Activités).
+.logistics-list {
+  padding-top: var(--chrome-top-offset, 0px);
+  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
+}
+
 // Même pattern que trip-activities.component.scss (icône loupe + bouton
 // "effacer" superposés à l'intérieur de l'input).
 .logistics-list__search {

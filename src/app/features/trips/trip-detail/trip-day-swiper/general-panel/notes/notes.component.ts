@@ -25,6 +25,7 @@ import { CardComponent } from '@app/shared/components/card/card.component';
     SelectableDirective, LongPressDirective,
   ],
   templateUrl: './notes.component.html',
+  styleUrl: './notes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NotesComponent {
@@ -40,8 +41,8 @@ export class NotesComponent {
   constructor() {
     // Demande de navigation croisée (voir NotesFocusService, entrée "Note"
     // du menu "Ajouter" — ROADMAP.md "UX / Interactions") : consomme dès que
-    // ce composant est monté (bascule d'onglet déjà faite par
-    // TripDetailComponent/GeneralPanelComponent, voir leurs effects).
+    // ce composant est monté (bascule de tab déjà faite par
+    // TripDetailComponent, voir son effect).
     effect(() => {
       const pending = this.notesFocusService.pending();
       if (!pending) return;

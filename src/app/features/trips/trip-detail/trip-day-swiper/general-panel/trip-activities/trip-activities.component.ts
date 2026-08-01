@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, ViewContainerRef, afterNextRender, computed, effect, inject, input, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewContainerRef, afterNextRender, computed, effect, inject, input, signal, viewChild, viewChildren } from '@angular/core';
+import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
@@ -71,10 +72,10 @@ function matchesSearch(title: string, address: string | undefined, term: string)
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Une instance de DayScrollSyncService/GeneralMapCinematicService par
-  // montage (détruite/recréée à chaque va-et-vient sur le sous-onglet
-  // Activités, voir le @switch de GeneralPanelComponent) : même portée que
-  // pour un DayPanelComponent. GeneralMapCinematicService : caméra du pool
-  // décorrélée du scroll, voir sa doc (ROADMAP.md "UX / Interactions").
+  // montage (détruite/recréée à chaque va-et-vient sur le tab Activités, voir
+  // le `@if (visitedDays().has('activities'))` de TripDaySwiperComponent) :
+  // même portée que pour un DayPanelComponent. GeneralMapCinematicService :
+  // caméra du pool décorrélée du scroll, voir sa doc (ROADMAP.md "UX / Interactions").
   providers: [TripActivitiesCreationService, DayScrollSyncService, GeneralMapCinematicService],
 })
 export class TripActivitiesComponent {
@@ -91,12 +92,14 @@ export class TripActivitiesComponent {
   private readonly chromeService = inject(TripChromeService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   private readonly mapCinematic = inject(GeneralMapCinematicService);
+  private readonly fabTarget = inject(TripCreationTargetService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
 
   readonly tripId = input.required<string>();
-  /** Slide "Général" active ET sous-onglet "Activités" monté (voir GeneralPanelComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
+  /** Slide "Activités" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
   readonly active = input(false);
 
   /** Carte partagée avec la vue jour, "prêtée" à ce contexte tant qu'il est actif (même principe que DayPanelComponent.activeMapComponent). */
@@ -166,8 +169,25 @@ export class TripActivitiesComponent {
       getSearchTerm: () => this.searchTerm(),
     });
 
-    // Quand ce contexte devient actif (slide Général + sous-onglet
-    // Activités), on récupère l'instance UNIQUE de la carte (partagée avec
+    // "+" flottant (voir TripDetailComponent.addMenuItems, entrée "Activité") : ce
+    // tab est un singleton comme un jour, donc un enregistrement one-shot au
+    // montage suffit (pas d'effect, pas d'input dont dépendre).
+    const unregisterFab = this.fabTarget.register('activities', () => this.triggerCreate());
+    this.destroyRef.onDestroy(unregisterFab);
+
+    // Demande de création différée (voir TripCreationTargetService.requestCreateOnMount) :
+    // le "+" depuis Logistique/Listes navigue d'abord vers cet onglet, PUIS pose
+    // cette demande — consommée ici dès que ce composant est effectivement monté
+    // (même schéma que NotesFocusService/LogisticFocusService).
+    effect(() => {
+      const pending = this.fabTarget.pendingCreate();
+      if (!pending || pending.id !== 'activities') return;
+      this.fabTarget.clearPendingCreate(pending.token);
+      this.triggerCreate();
+    });
+
+    // Quand ce contexte devient actif (slide Activités), on récupère
+    // l'instance UNIQUE de la carte (partagée avec
     // la vue jour, voir TripDayMapHostService) et on la déplace physiquement
     // dans notre conteneur sticky — même mécanique que DayPanelComponent.
     // Pas de dépendance à `generalMapPoints()` ici volontairement : ne doit
@@ -222,12 +242,10 @@ export class TripActivitiesComponent {
       getMapComponent: () => this.activeMapComponent(),
       getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
       isSplitLayout: () => this.viewport.isSplitLayout(),
-      // Contrairement à la vue jour (bouclier = stickyContentTop() seul), le
-      // pool a TOUJOURS une bascule Activités/Réservations/Notes sticky
-      // au-dessus de la carte en layout scindé (son masquage à elle dépend
-      // d'un simple @media 768px, pas du ChromeMode) : il faut donc ajouter
-      // sa hauteur au bouclier.
-      getPinnedChromeOffset: () => this.chromeService.stickyContentTop() + this.chromeService.generalSubTabSwitchHeight(),
+      // Même bouclier que la vue jour désormais : plus de bascule sticky
+      // séparée au-dessus (Activités est son propre tab de premier niveau,
+      // voir ROADMAP.md "UX / Interactions").
+      getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
       // La caméra du pool est pilotée par GeneralMapCinematicService, décorrélée
       // du scroll (voir ROADMAP.md "UX / Interactions") — DayScrollSyncService
       // continue de gérer ici attachMap/focusActivity/le snap de fin de liste,
@@ -270,7 +288,7 @@ export class TripActivitiesComponent {
     });
   }
 
-  /** Point d'entrée pour le bouton "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
+  /** Point d'entrée pour le bouton "+" flottant (voir TripCreationTargetService/TripDetailComponent.addMenuItems). */
   triggerCreate(): void {
     this.creationService.startCreation();
   }
