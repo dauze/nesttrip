@@ -1,33 +1,27 @@
 <app-card>
   <div cardHeader class="flex align-items-center justify-content-between px-2 pt-3">
-    <textarea
-      appTextarea
-      class="text-xl font-semibold flex-1 overflow-hidden transparent-textarea nt-capped-inline-field"
-      [rows]="1"
-      [value]="title()"
-      (blur)="onTitleBlur($any($event.target).value)"
-    ></textarea>
+    <div class="flex align-items-center gap-1 flex-1 min-w-0">
+      <span class="text-xl font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ title() }}</span>
+      <button type="button" class="trip-header__pencil flex-shrink-0" aria-label="Modifier le titre" (click)="openTitleDialog()">
+        <i class="pi pi-pencil"></i>
+      </button>
+    </div>
     <ng-content select="[trip-actions]" />
   </div>
-  <form [formGroup]="dateForm">
-    <div class="flex align-items-center justify-content-between gap-2 flex-wrap">
-      <app-date-picker
-        inputId="dates"
-        class="w-max transparent-inputtext"
-        formControlName="dates"
-        [range]="true"
-        placeholder="Sélectionner une période"
-        (selected)="onDatesSelected()"
-      />
-      <div class="flex align-items-center gap-1">
-        <span class="text-sm flex-shrink-0">Devise :</span>
-        <app-select
-          label="Devise"
-          [options]="currencyOptions"
-          [formControl]="currencyControl"
-          class="w-max transparent-select no-chevron"
-        />
-      </div>
-    </div>
+
+  <div class="flex align-items-center gap-1">
+    <span class="text-sm flex-shrink-0">Date : {{ dateRangeLabel() }}</span>
+    <button type="button" class="trip-header__pencil flex-shrink-0" aria-label="Modifier les dates" (click)="openDatePicker()">
+      <i class="pi pi-pencil"></i>
+    </button>
+  </div>
+
+  <form [formGroup]="dateForm" class="trip-header__hidden-date-picker">
+    <app-date-picker
+      inputId="dates"
+      formControlName="dates"
+      [range]="true"
+      (selected)="onDatesSelected()"
+    />
   </form>
 </app-card>

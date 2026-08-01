@@ -12,7 +12,7 @@
       }
     </div>
 
-    <span toolbarCenter class="nesttrip-logo">NestTrip</span>
+    <span toolbarCenter class="nesttrip-logo" [attr.title]="toolbarTitle()">{{ toolbarTitle() }}</span>
 
     <div toolbarEnd class="w-3rem flex justify-content-center">
       <app-menu #menu [items]="menuItems">

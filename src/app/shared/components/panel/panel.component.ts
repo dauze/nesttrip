@@ -56,6 +56,7 @@ export interface PanelToggleEvent {
     '[class.app-panel--fill-height]': 'fillHeight()',
     '[class.app-panel--thick-border]': 'thickBorder()',
     '[class.app-panel--collapsed]': 'collapsed()',
+    '[class.app-panel--bare]': 'bare()',
   },
 })
 export class PanelComponent {
@@ -63,6 +64,18 @@ export class PanelComponent {
   readonly toggleable = input(false);
   readonly collapsed = model(false);
   readonly instant = input(false);
+  /**
+   * Optionnel : masque entièrement le header (texte/icônes projetées ET
+   * bouton de bascule) ainsi que le border/background du host — utilisé par
+   * `TripDayMapComponent` pour la carte du pool en contexte 'general'
+   * (onglet Résumé, voir ROADMAP.md "UX / Interactions", 2026-08-01) : plus
+   * besoin d'un panel visible/repliable là où elle est hébergée dans un
+   * `app-card` qui joue déjà ce rôle. N'affecte aucun autre appelant (défaut
+   * `false`, comportement historique inchangé) — le contenu projeté (voir
+   * `<ng-content>` plus bas) n'est jamais concerné : seul le HEADER de CE
+   * composant est masqué via `@if`, jamais le contenu qu'il enveloppe.
+   */
+  readonly bare = input(false);
   /**
    * Optionnel : le panel s'étire pour occuper toute la hauteur de SON PROPRE
    * parent (au lieu de se dimensionner sur son contenu, comportement par

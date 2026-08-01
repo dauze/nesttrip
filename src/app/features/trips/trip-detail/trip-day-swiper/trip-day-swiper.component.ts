@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
+import { TripSummaryComponent } from './general-panel/trip-summary/trip-summary.component';
 import { TripActivitiesComponent } from './general-panel/trip-activities/trip-activities.component';
 import { LogisticsListComponent } from './general-panel/logistics/logistics-list.component';
 import { NotesComponent } from './general-panel/notes/notes.component';
@@ -31,7 +32,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent],
+  imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent],
   providers: [SwiperLockService, TripDayMapHostService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',

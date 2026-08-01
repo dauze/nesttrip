@@ -11,5 +11,9 @@
 
 .app-toolbar__center {
   flex: 1 1 auto;
+  // `min-width: 0` : sans ça, un flex item garde son `min-width: auto` par
+  // défaut (largeur intrinsèque du contenu), empêchant tout ellipsis CSS posé
+  // par un enfant (voir `.nesttrip-logo`, TripsComponent) de jamais s'appliquer.
+  min-width: 0;
   text-align: center;
 }

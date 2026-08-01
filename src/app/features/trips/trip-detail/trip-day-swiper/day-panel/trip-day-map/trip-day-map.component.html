@@ -1,10 +1,14 @@
-<app-panel [toggleable]="true" [(collapsed)]="collapsed" [fillHeight]="viewport.isSplitLayout()">
+<app-panel
+    [toggleable]="mapHost.currentOwner() !== 'general'"
+    [bare]="mapHost.currentOwner() === 'general'"
+    [(collapsed)]="collapsed"
+    [fillHeight]="useSplitHeight()">
     <div panelHeader class="flex align-items-center gap-2">
       <i class="pi pi-calendar"></i>
       <span>Carte</span>
     </div>
 
-    <div class="flex flex-column gap-2 swiper-no-swiping map-container" [class.map-container--fill]="viewport.isSplitLayout()">
+    <div class="flex flex-column gap-2 swiper-no-swiping map-container" [class.map-container--fill]="useSplitHeight()">
       <!--
         @for à un seul élément, tracké par isDarkMode() : google.maps.Map ne
         rafraîchit pas visuellement son rendu quand `colorScheme` change via
@@ -15,7 +19,7 @@
       -->
       @for (darkMode of [isDarkMode()]; track darkMode) {
         <google-map
-          [height]="viewport.isSplitLayout() ? '100%' : '32dvh'"
+          [height]="useSplitHeight() ? '100%' : '32dvh'"
           width="100%"
           [center]="center()"
           [zoom]="zoom()"

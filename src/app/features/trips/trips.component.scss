@@ -1,4 +1,14 @@
+// Garde-fou de longueur (voir ROADMAP.md "UX / Interactions") : le libellé
+// affiche le nom du voyage sur l'écran de détail (voir TripsComponent.toolbarTitle)
+// et doit rester sur une seule ligne dans l'espace resserré entre les deux
+// boutons de la toolbar, quelle que soit sa longueur — ellipsis CSS simple,
+// le titre complet reste dispo via l'attribut `title` (tooltip natif).
 .nesttrip-logo {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: 700;
   font-size: 1.1rem;
   letter-spacing: 0.02em;

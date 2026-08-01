@@ -10,6 +10,18 @@
   border-width: var(--nt-border-width-thick);
 }
 
+// `bare` (voir panel.component.ts) : aucun chrome propre, le contenu projeté
+// (`<ng-content>`, jamais concerné par ce sélecteur) doit sembler flotter
+// directement dans son conteneur parent (ex. l'`app-card` de TripSummaryComponent).
+:host(.app-panel--bare) {
+  border: none;
+  background: transparent;
+}
+
+:host(.app-panel--bare) .app-panel__content-inner {
+  padding: 0;
+}
+
 .app-panel__header {
   padding: 0.5rem;
   font-weight: 600;

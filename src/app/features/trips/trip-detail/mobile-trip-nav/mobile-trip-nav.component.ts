@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, e
 import { TripTab } from '../trip-tab.model';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 
-/** Icônes des 3 tabs Activités/Logistique/Listes (voir `TripDetailComponent.tabs`) — `TripTab` ne porte pas d'icône, propre à cette barre. */
+/** Icônes des 4 tabs Résumé/Activités/Logistique/Listes (voir `TripDetailComponent.tabs`) — `TripTab` ne porte pas d'icône, propre à cette barre. */
 const GENERAL_TAB_ICONS: Record<string, string> = {
+  summary: 'pi pi-home',
   activities: 'pi pi-map-marker',
   logistics: 'pi pi-bookmark',
   notes: 'pi pi-clipboard',
@@ -18,16 +19,16 @@ const GENERAL_TAB_ICONS: Record<string, string> = {
  *
  * - "Jours" (par défaut) : une bande de chips scrollable (tous les jours) au-
  *   dessus d'une barre à 2 items — badge "Jour N" (jour actif) + "Général".
- * - "Général" (activeId() correspond à Activités/Logistique/Listes) : la
- *   bande de jours se replie, le badge devient une icône compacte (retour),
- *   3 sous-items (Activités/Logistique/Listes, désormais des tabs de premier
- *   niveau — voir `TripDetailComponent.tabs`) apparaissent en cascade.
+ * - "Général" (activeId() correspond à Résumé/Activités/Logistique/Listes) :
+ *   la bande de jours se replie, le badge devient une icône compacte (retour),
+ *   4 sous-items (Résumé/Activités/Logistique/Listes, désormais des tabs de
+ *   premier niveau — voir `TripDetailComponent.tabs`) apparaissent en cascade.
  *
  * Aucun état local isolé pour "quelle section est active" : tout dérive de
  * `activeId()` (piloté par `TripDetailComponent`, lui-même mis à jour par le
- * swipe du swiper ET par le tap sur cette barre) — un swipe entre Activités/
- * Logistique/Listes/Jour 1 fait donc évoluer cette barre sans câblage
- * supplémentaire.
+ * swipe du swiper ET par le tap sur cette barre) — un swipe entre Résumé/
+ * Activités/Logistique/Listes/Jour 1 fait donc évoluer cette barre sans
+ * câblage supplémentaire.
  */
 @Component({
   selector: 'app-mobile-trip-nav',

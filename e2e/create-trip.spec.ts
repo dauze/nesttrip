@@ -33,5 +33,9 @@ test('création d’un voyage (titre, ville en texte libre, dates au clavier) m�
 
   await page.getByRole('button', { name: 'Créer le voyage' }).click();
 
-  await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}$/, { timeout: 15_000 });
+  // `(#.*)?` : l'onglet initial (ex. "Activités", "Résumé"...) peut écrire un
+  // fragment dans l'URL dès le premier positionnement du swiper (voir
+  // TripDaySwiperComponent/TripDetailComponent.updateFragment) — un
+  // comportement normal de l'app, pas une régression à interdire ici.
+  await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}(#.*)?$/, { timeout: 15_000 });
 });

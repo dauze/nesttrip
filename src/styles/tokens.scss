@@ -216,8 +216,7 @@
   // d'ordre lisible d'un coup d'œil, sans les valeurs à 4 chiffres qui
   // trainaient avant (1090, 1100, 1200, 1300, 9000...), qui ne voulaient
   // rien dire de plus que "un peu plus que l'autre".
-  // - header/toolbar : chrome fixe de l'appli (voir .app-trip-header-fixed
-  //   / .app-toolbar) — le toolbar doit rester au dessus du header.
+  // - toolbar : chrome fixe de l'appli (voir .app-toolbar).
   // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay).
   // - overlay-content : le contenu flottant lui-même, au dessus de son
   //   propre backdrop (dispatch-ball) — les overlays @angular/cdk/overlay
@@ -226,7 +225,6 @@
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
-  --z-app-header: 10;
   --z-app-toolbar: 20;
   --z-overlay-backdrop: 30;
   --z-overlay-content: 40;

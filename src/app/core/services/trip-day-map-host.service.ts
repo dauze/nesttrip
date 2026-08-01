@@ -9,7 +9,7 @@ import { TripDayMapComponent } from '@app/features/trips/trip-detail/trip-day-sw
  * ComponentRef, son état Angular et l'instance google.maps.Map sous-jacente
  * ne sont jamais détruits.
  */
-/** Contexte actuellement propriétaire de la carte partagée — voir `TripDayMapComponent.collapsed`, qui choisit `GoogleMapPanelService` ou `GeneralMapPanelService` selon cette valeur (fold state indépendant par contexte, voir ROADMAP.md "Carte"). */
+/** Contexte actuellement propriétaire de la carte partagée — voir `TripDayMapComponent.collapsed` ('day' suit `GoogleMapPanelService`, 'general' n'est jamais repliable, voir ROADMAP.md "Carte"). */
 export type TripDayMapOwner = 'day' | 'general';
 
 @Injectable()

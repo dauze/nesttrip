@@ -14,7 +14,6 @@ import { TripDataSource } from '@app/core/infra/firebase/services/trip-data-sour
 import { FileService } from '@app/core/services/file.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
-import { GeneralMapPanelService } from '@app/core/services/general-map-panel.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
@@ -45,7 +44,6 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
     ActivityDispatchService,
     TripChromeService,
     GoogleMapPanelService,
-    GeneralMapPanelService,
     GooglePhotoService,
     GooglePlaceService,
     PhotoViewerService,
@@ -58,6 +56,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
 export class TripsComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly tripFacade = inject(TripFacade);
   protected readonly chromeService = inject(TripChromeService);
   protected readonly themeService = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
@@ -107,6 +106,9 @@ export class TripsComponent {
     const url = this.currentUrl() ?? '';
     return /^\/trips\/.+/.test(url);
   });
+
+  /** Remplace "NestTrip" par le nom du voyage sur l'écran de détail (voir ROADMAP.md "UX / Interactions") — garde-fou de longueur simple (CSS ellipsis, voir styleUrl) plutôt qu'une troncature JS, le titre complet reste dispo au survol via l'attribut `title`. */
+  readonly toolbarTitle = computed(() => (this.showBack() ? this.tripFacade.activeTrip()?.title || 'NestTrip' : 'NestTrip'));
 
   readonly menuItems: AppMenuItem[] = [
     {

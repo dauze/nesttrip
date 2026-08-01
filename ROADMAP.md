@@ -17,22 +17,13 @@ Décisions prises avec l'utilisateur le 2026-07-30 :
 
 Items **mis en pause** (structurants, pas assez cadrés pour être lancés sans nouvelle discussion — voir section Qualité/process) : empaquetage mobile (Capacitor ?), secret de déploiement (nécessite une valeur fournie par l'utilisateur).
 
-Décisions prises avec l'utilisateur le 2026-08-01 (item "Onglet Résumé", section "UX / Interactions") :
-- **Scope desktop** : le header voyage (titre/dates/personnes) ne disparaît QUE du mobile (barre du bas). Le layout desktop (barre d'onglets en haut) garde le header toujours épinglé, inchangé — pas d'onglet "Résumé" ajouté à `TripTabsNavComponent`.
-- **Tuile résumé — "nombre de transport"** : compte uniquement les réservations Logistique de type Vol/Train/Location voiture (exclut Logement et Autre).
-- **Tuile résumé — "nombre d'activité"** : compte les placements (`DayActivityInstance`), pas les activités de pool distinctes — une activité affichée sur 2 jours compte 2 fois, cohérent avec la tuile Dépenses qui additionne aussi chaque placement séparément.
-- **Tuile Dépenses — multi-devise** : additionne tous les montants sans distinction de devise (pas de conversion), affiché avec le symbole de la devise du trip — cohérent avec la question déjà ouverte plus bas ("Devise" : "quid si plusieurs devises ?").
-
-Ordre d'exécution mis à jour : l'onglet "Résumé" passe devant l'item "Activités" (widget horaire) dans la liste ci-dessous.
-
 Décisions prises avec l'utilisateur le 2026-07-31 (section "UX / Interactions") :
 - **Cinématique carte du pool Général** : décorrélation totale du scroll (contrairement à la vue jour, inchangée) — tour lent point à point sur 2s d'inactivité, mise en pause (sans jamais forcer la caméra) sur toute action directement sur la carte, reprise du tour là où il en était après 2s. Détail complet dans "✅ Déjà fait".
   - **Correctif (2026-07-31)** : le retour à la vue d'ensemble sur toute action "ailleurs sur la page" (scroll du pool, clic sur une carte d'activité, recherche, tri...) a été retiré — retour utilisateur : ce comportement initial gênait, la cinématique ne doit se mettre en pause QUE sur une action directement sur la carte, jamais ailleurs (`GeneralMapCinematicService` : suppression de `onPageAction`/`onRootPointerDown` et des écouteurs scroll/`pointerdown` associés).
 - **Bouton "+"** : le même menu à 7 entrées (Activité + 5 types Logistique + Note) s'ouvre désormais partout, jour ET onglet Général — l'ancienne création directe contextuelle du "+" sur Général est retirée.
 
 Ordre d'exécution prévu pour le reste :
-2. **Onglet "Résumé"** mobile (voir "UX / Interactions" et décisions du 2026-08-01 ci-dessus).
-3. **Activités** (widget horaire simplifié, affichage multi-jours).
+2. **Activités** (widget horaire simplifié, affichage multi-jours).
 
 Tout ce qui a déjà été livré (avec le détail des correctifs) est listé dans **✅ Déjà fait**, tout en bas.
 
@@ -54,6 +45,8 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Vue calendrier (reporté, pas assez cadré)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
 - Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop, pas cool 
+- Le drag and drop 
+- refondre toute la partie générale
 
 ### Carte
 
@@ -65,7 +58,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`)
 - Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
-- il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour
+- il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour -> A voir comment faire techniquement car on saisie que 1 horaire actuellement 
 - Cohabitation entre le drag-and-drop libre (réorganisation manuelle des activités d'un jour) et un mode "par horaires" (tri automatique selon l'heure saisie) : pas de solution élégante trouvée pour gérer les deux sans réglage explicite — philosophie du produit : simplicité, pas de paramétrage, doit rester intuitif par défaut. À détailler via une question UX concrète avant d'implémenter (voir `.claude/skills/nesttrip-roadmap/SKILL.md`).
 
 ### Nouveau voyage / IA (non prioritaire)
@@ -76,60 +69,47 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### I18n (non prioritaire)
 
 - Variabiliser tous les libellés de l'application dans un fichier de propriété
-- faire renaming de tout pour avoir un truc stylé : exemple "Nouvelle aventure" 
+- faire renaming de tout pour avoir un truc stylé : exemple "Nouvelle aventure" plutôt que "créer un voyage" 
 - Internationalisation de l'app (textes)
-- Gestion de la devise par défaut qui sera affiché à l'utilisateur en fonction d'ou il vient, rajouter pay d'origine ? 
-- Gérer la devise automatiquement dans les activité / réservationds en fonctione du lieu de la destination
 
 ### Collaborateurs (non prioritaire)
 
 - Email quand ajouté à un trip
 
-### Devise
+### Devise (non prioritaire)
 
-- Compteur de somme de tous les éléments à mettre dans l'onglet générale, je ne sais pas encore où (reporté, voir plan d'exécution en tête de fichier), quid si plusieurs devises ? 
-- Faire évoluer la carte dans l'onglet résumé via le clique sur le montant pour afficher la liste des dépenses dans une popup qui contient un tableau de toutes les dépenses, le tableau a 3 colonnes : montant, libellé et date. La dernière ligne contient un bouton + qui permet de rajouter une ligne de dépense ou l'utilisateur est invité à mettre le montant via la devise, le libellé, et la date (initialisée à la date du jour) via un chainage. On peut cliquer pour mopdifier les dépenses rajoutées à la main mais les dépenses associées aux activités sont grisées. même système que pour le reste pour la supression des montant, clique prolongé et multiselection possible.
-- il faut également faire un chantier pour qu'il y ai la deviste de l'utilisateur qui soit différente de celle sélectionnée dans la devise par défaut du voyage, et que l'on fasse la conversion de tous les montant depuis la devise finale de l'utilisateur non ? 
+- Gestion de la devise par défaut qui sera affiché à l'utilisateur en fonction d'ou il vient, rajouter pays d'origine dans la demande d'inscription ? Puis modificable via un paramétrage stocké au niveau de l'utilisateur.
+- Gérer la devise sélectionnée automatiquement dans les activité / réservations en fonction du lieu de la destination. C'est cette devise qui sera modifiable dan l'onglet "infos"
+- Faire évoluer la carte dans l'onglet résumé via un clique sur le montant pour afficher la liste des dépenses dans une popup qui contient un tableau de toutes les dépenses, le tableau aurait 3 colonnes : montant, libellé et date. La dernière ligne contient un bouton + qui permet de rajouter une ligne de dépense ou l'utilisateur est invité à mettre le montant via la devise, le libellé, et la date (initialisée à la date du jour) via un chainage. On peut cliquer pour mopdifier les dépenses rajoutées à la main mais les dépenses associées aux activités sont grisées. même système que pour le reste pour la supression des montant, clique prolongé et multiselection possible.
+- il faut également faire un chantier pour que le montant total affiché dans l'onglet info affiche le montant convertie avec la devise de l'utilisateur et la devise du voyage en petit.
+- Gérer toutes les conversions de devises 
 
 ### UX / Interactions
 
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire (non prioritaire)
 - le bouton flotant : trouver une solution : déplaceable ? sur le coté qui sort ? Faut trouver mieux (non prioritaire)
-- Je ne me sert pa pour l'instant de deadline (non prioritaire)
-- Modifier les icones sur la carte, pas de chiffre, un truc plus stylé, la photo et le nom de l'activité plutot ? 
-
-- Créer un nouvel onglet "Résumé", dans la bar mobile avant "Activité" qui doit contenir : 
-  - Le trip header tout en haut (juste en dessous de la toolbar, celle-ci doit être présente sur tous les écrans comme l'existant). Celui ci est légèrement modifié :
-    - Pour le libellé du voyage, on rajoute un crayon à coté pour montrer qu'il est modifiable : c'est au clique sur le crayon qu'on permet la modfification via la popup de texte simple
-    - La liste des personnes reste inchangé
-    - Pour les dates, on rajoute un libellé "Date : " avant la date, et on rajoute un crayon à coté pour montrer qu'elles sont modifiables : c'est au clique sur le crayon qu'on ouvre le calendrier sur mobile
-    - La devise est supprimée d'ici 
-  - La carte de l'onglet "Activités" quand il y a des activités de renseignées dans le trip. Pas besoin de la mettre dans un panel repliable ni en sticky, on peut s'implemement la mettre dans un app-card sans header donc pas de zonne header. toute la cinématique de déplacement sur la carte est remit en place 
-  - Une tuile "Dépense" qui est dans un app-card qui prend un demie écran de large. Le app-card header est "Dépenses" et le contenu est : 
-    - La ligne "Devise : € Eur" qui est déplacée à l'identique du trip header
-    - A la ligne, un chiffre en gros qui est égal à la somme de toutes dépenses de toutes les activitées, et le symbole prend celui de "devise"
-  - Une tuile résumé à coté de la tuile devise, qui prend l'autre moitié et la même hauteur, et  qui affiche le nombres d'activité, le nombre de transport, le nombre de jour.
-
-impacte : 
-- suppression du tripheader sur tous les autres onglets. il faut faire attention au calcul de toutes les hauteurs. 
-- Dans la toolbar, à la place de "NestTrip", il faut affiche le nom du voyage, par exemple "Road trip Paris". Attention a mettre un garde fous si le libellé est trop long. C'est juste un libellé, non modifiable ici. 
-- Suppression de la carte de l'onglet "Activité".
+- Modifier les icones sur la carte : ne pas mettre les numéro mais mais la miniature de la photo google, partout
+- Dans l'onglet Résumé, ajouter une nouvelle tuile "Taches", qui est en dessous et qui prend toute la largeur  : 
+  - Alimenter avec la liste des activités à réserver : le clique débranche sur l'activité : exemple "Taj Mahal a réserver" en rouge 
+  - Alimenter avec la liste des activités sur liste d'attente : le clique débranche sur l'activité : exemple "Taj Mahal sur liste d'attente" en orange
+  - Alimenter avec la liste des activités à réserver avec deadline : le clique débranche sur l'activité : exemple "Taj Mahal a réserver avant le 06/10/25" en rouge 
+  - Alimenter avec la liste des transports / hôtels / train / Location de voiture / autre  de la même manière que les activités : le clique débranche sur le transport / L'hôtel
+ remarque Classer la liste dans l'ordre avec deadline, puis les logements à réserver puis les transports à réserver puis les activités à réserver.
+- Le mode clair mets un fond blanc de page blanc, il faudrait que ce soit un gris très clair pour que l'on différencie les cartes et les panel du fond
+- Rajouter le calendrier qui sort quand on clique 2 fois sur "jour n" pour saisir parmit les jours et se dirriger directement sur le bon jour
+- Sur l'écran résumé, il faut que le clique sur une activité amène directement sur l'activité au bon jour 
 
 ### Bugs / fixes
 
-- Tu utilises les bonnes API de google pour le scoll sur la carte ? Car l'affichage n'est pas fluide sur la vu ordi fv
 - Depuis le pool, problème de drag and drop maison : si je prend une activité qui est sous le calendrier, le calendrier s'ouvre et la position du drag est mal reconnue à l'affichage car si on est sur un jour, il faut sortir du calendrier et revenir pour que le survol fonctionne.
 - mettre la même annimation sur cddrag que le drag and drop maison sur les cartes qui se déplacent de haut en bas quand on déplace par dessus en mode handle : sur cddrag il y a pas d'annimation des cartes qui se déplace pour laiosser la place à la carte en survol
-- l'ouverture du calendrier sur le drag and drop dans la vue jour fait un petit sautement, il s'agrandit puis rerétraicit, il faut pas qu'il s'agrandisse plus que sa taille finale !
 - Une fois le drag and drop fait, remettre le scroll sur l'activité drop
 - Saisir date : mettre une annimation sur les aiguilles qui tourne entre les heure et les minutes
 - Clignotement des photos d'activité : l'image précédente s'affiche brièvement avant la nouvelle. en dessous, beug connu de la librairie en mode loading ? 
-- Bouton flottant d'ajout : ne doit pas rester positionné au-dessus du clavier mobile quand celui-ci est ouvert mais doit suivre le clavier pour pouvoir cliquer sur valider 
 - Pull-to-refresh sur l'écran swiper : toujours cassé malgré le correctif `overscroll-behavior`/`overflow` déjà tenté (voir "Déjà fait") — diagnostic : le scroll du haut est intercepté par Swiper avant d'atteindre le pull-to-refresh natif.
-- le clique sur l'image ne fonctionne plus — pas reproduit lors de la revue du 2026-07-31 (`ActivityHeaderComponent.openPhotoViewer`/`PhotoViewerService` semblent corrects dans le code actuel) ; à reconfirmer avec un cas précis (quelle carte, quel appareil) si ça persiste.
 - Cinématique carte du pool (`GeneralMapCinematicService`) : à la toute première fois où le tour part de la vue d'ensemble vers la 1ère activité (juste après dépli de la carte), le déplacement saute directement sans la courbe (parabole) attendue — précisé par l'utilisateur le 2026-07-31, voir décisions en tête de fichier. Aux tours suivants (boucle complète général → 1er point), l'animation se joue correctement. Piste non confirmée : `enterTour`/`followFromOverview` sont pourtant identiques à chaque passage — suspect le resize Google Maps différé d'une frame (`TripDayMapHostService.moveTo`, déclenché juste avant `GeneralMapCinematicService.attachMap` dans le même effect de `TripActivitiesComponent`) qui pourrait laisser la carte dans un état interne pas totalement stabilisé au moment du tout premier tween — à instrumenter en conditions réelles (devtools performance) pour confirmer avant de corriger à l'aveugle.
-- think border ne fonctionne pas du dtout dur le panel 
-- il y a un border sur la navevigation a gauche et à droite à tord 
+- think border ne fonctionne pas du du tout dur le panel et les cartes qui sont "a assigner" ne doivent pas avoir un border left différent mais un border left en pointillé
+- La modification du nom du trip ne doit pas rafraichir toute la page ! mettre dans tripfacade 
 
 ### Qualité / process
 
@@ -140,6 +120,11 @@ impacte :
 - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
 
 ## ✅ Déjà fait
+- **Nouvel onglet "Résumé", 2026-08-01** : 4e tab de premier niveau (`TripDetailComponent.tabs`, `GENERAL_TAB_IDS`), en tête avant Activités/Logistique/Listes, sur mobile ET desktop (`tabs()` étant déjà partagé entre `MobileTripNavComponent` et `TripTabsNavComponent`, l'onglet apparaît des deux côtés sans code dédié). Contenu (`TripSummaryComponent`, nouveau) : le header voyage (voir plus bas) + la carte du pool d'activités (reprise à l'identique, même mécanique `TripDayMapHostService`/`GeneralMapCinematicService` et cinématique de déplacement, déplacée depuis l'ancien onglet Activités, affichée seulement si des activités ont un lieu Google) + une tuile "Dépenses" (devise + somme des prix de toutes les `DayActivityInstance` du trip, un placement sur 2 jours comptant 2 fois, toutes devises additionnées sans conversion — sujet multi-devise resté ouvert par ailleurs, voir "Devise") + une tuile "Résumé" à côté, même hauteur (nombre d'activités = nombre de placements, nombre de transport = réservations Vol/Train/Location voiture uniquement, nombre de jours).
+  - **Header voyage devenu contenu normal de Résumé, plus de chrome fixe (correctif same-day)** : `TripHeaderComponent`/`TripCollaboratorsComponent` ne vivent plus dans `TripDetailComponent` (fixed, caché/affiché selon l'onglet) mais directement dans le template de `TripSummaryComponent`, en flux normal — scrolle avec le reste du contenu de cet onglet au lieu d'être épinglé sous la toolbar. `onTitleChange`/`onDatesChange`/`buildDays`/`findDaysToAdd`/`findDaysToDelete` déménagés avec lui (simplifiés : plus de bascule forcée vers "Activités" après un changement de dates, on reste sur Résumé). `TripChromeService` perd toute notion de "header" (`ChromeKey` réduit à `'toolbar' | 'tabsNav'`, `headerHeight`/`headerTop`/`headerStackHeight` supprimés) — corrige un gap-1 (0.25rem) fantôme qui restait entre la toolbar et le contenu sur tous les onglets (la formule `contentTopOffset` réservait un espace pour un header dont la hauteur mesurée valait déjà 0, au lieu de ne rien réserver du tout).
+  - **Carte sortie de son `app-panel` repliable dans ce contexte** : `TripDayMapComponent` (instance UNIQUE partagée jour/pool) est toujours enveloppée par un `app-panel`, mais celui-ci expose maintenant un mode `bare` (nouvel input sur `PanelComponent`, `false` par défaut partout ailleurs) qui masque entièrement son header/chevron/bordure — activé uniquement quand `TripDayMapHostService.currentOwner() === 'general'` (donc uniquement dans Résumé désormais). La carte n'est alors plus jamais repliable dans ce contexte (`collapsed` vaut `false` en dur pour 'general', `GeneralMapPanelService` — qui ne servait plus qu'à ça — supprimé). Correctif nécessaire dans la foulée : `PanelComponent.fillHeight`/le `height:'100%'` du `google-map` interne ne s'activent plus non plus pour 'general' (`TripDayMapComponent.useSplitHeight`), sans quoi la carte héritait du comportement "layout scindé" de l'ancien onglet Activités (hauteur 100% contre un parent sans hauteur définie) et se retrouvait invisible (0px de haut) en largeur desktop.
+  - Toolbar : nom du voyage à la place de "NestTrip" sur l'écran de détail (`TripsComponent.toolbarTitle`, basé sur le même test de route que `showBack`), tronqué en CSS (ellipsis + tooltip natif) si trop long.
+  - Carte retirée de l'onglet Activités (`TripActivitiesComponent`) avec tout ce qui n'avait de sens qu'avec elle (`DayScrollSyncService`, `GeneralMapCinematicService`, `TripDayMapHostService`).
 - paramétrer la récup des infos du trafic d'avion (non prioritaire)
 - **Refonte navigation mobile bas d'écran, 2026-08-01** : les deux barres empilées en bas sur mobile (`TripTabsNavComponent` + `GeneralSubTabBarComponent`, cette dernière supprimée) sont remplacées par une seule barre morphing (`MobileTripNavComponent`) entre un état "Jours" (bande de jours scrollable au-dessus + badge "Jour N"/"Général") et un état "Général" (bande masquée, icône compacte "Jour N", 3 sous-items Activités/Logistique/Listes en cascade avec pastille glissante) — s'applique aussi en mobile paysage tactile, pas seulement portrait (`ViewportService.isMobileChrome`, nouveau critère `pointer: coarse` pour distinguer un mobile tourné d'un vrai desktop en fenêtre étroite, seul cas qui garde l'ancien layout scindé). Dans la foulée, Activités/Logistique/Listes (renommé depuis "Notes" — seul le libellé, pas l'id technique `'notes'` ni les champs de texte libre "Notes" des activités/logistiques) deviennent 3 tabs/slides de premier niveau du swiper PARTOUT (mobile et desktop) au lieu d'un unique onglet "Général" avec switch interne (`GeneralPanelComponent`, dissous) — un swipe entre eux puis vers Jour 1 met à jour la barre/le tab du haut sans câblage supplémentaire (état dérivé de `activeId()`). Sur mobile, le calendrier de dépose d'activité (drag-and-drop) apparaît désormais directement, sans réplique/FLIP de l'ancienne barre (le mécanisme desktop, lui, continue de fonctionner à l'identique, généralisé pour 3 tabs non-jour au lieu d'1).
 - **Lot de correctifs bugs, 2026-07-31** :

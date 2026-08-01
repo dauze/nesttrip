@@ -1,40 +1,43 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { clamp } from '@app/shared/utils/scroll-container';
 
-type ChromeKey = 'toolbar' | 'header' | 'tabsNav';
+type ChromeKey = 'toolbar' | 'tabsNav';
 /**
  * `'mobile'` : barre des jours fixe en bas, jamais masquée (comportement
  * historique). `'split-hideable'` : layout scindé (voir ViewportService)
  * mais viewport trop bas pour garder le chrome en permanence (mobile
  * paysage) — la barre des jours passe en haut ET rejoint le groupe qui se
- * masque au scroll avec toolbar+header. `'split-pinned'` : layout scindé
- * avec assez de hauteur (desktop) — toolbar+header+jours ne se masquent
- * jamais. Piloté par TripDetailComponent à partir de ViewportService.
+ * masque au scroll avec la toolbar. `'split-pinned'` : layout scindé avec
+ * assez de hauteur (desktop) — toolbar+jours ne se masquent jamais. Piloté
+ * par TripDetailComponent à partir de ViewportService.
  */
 export type ChromeMode = 'mobile' | 'split-hideable' | 'split-pinned';
 
 /**
- * gap-2 (0.5rem, voir `layout-utilities.scss`) entre header voyage/barre des
- * jours et entre barre des jours/contenu, quand celle-ci est passée en haut
- * (layout scindé — voir ROADMAP.md "UI Desktop"). En pixels (racine 16px, comme
- * les seuils `ViewportService`) : ce service raisonne uniquement en pixels
- * réels mesurés (`ResizeObserver`, voir `registerHeight`), jamais en rem/CSS
- * var — un `calc()` mêlant les deux dans les bindings `[style.top.px]` du
- * template aurait été plus fragile qu'une seule constante bien nommée ici.
+ * gap-2 (0.5rem, voir `layout-utilities.scss`) entre toolbar/barre des jours
+ * et entre barre des jours/contenu, quand celle-ci est passée en haut (layout
+ * scindé — voir ROADMAP.md "UI Desktop"). En pixels (racine 16px, comme les
+ * seuils `ViewportService`) : ce service raisonne uniquement en pixels réels
+ * mesurés (`ResizeObserver`, voir `registerHeight`), jamais en rem/CSS var —
+ * un `calc()` mêlant les deux dans les bindings `[style.top.px]` du template
+ * aurait été plus fragile qu'une seule constante bien nommée ici.
  */
 const SPLIT_CHROME_GAP_PX = 8;
 
-/** Même rôle que `SPLIT_CHROME_GAP_PX`, mais gap-1 (0.25rem) entre header voyage et contenu en mode `'mobile'` (barre des jours fixe en bas, hors de ce calcul). */
+/** Même rôle que `SPLIT_CHROME_GAP_PX`, mais gap-1 (0.25rem) entre toolbar et contenu en mode `'mobile'` (barre des jours fixe en bas, hors de ce calcul). */
 const STACKED_CHROME_GAP_PX = 4;
 
 /**
- * Pilote le chrome persistant (toolbar app + header voyage) partagé entre
- * TripsComponent (toolbar, ancêtre commun à accueil-trip/new-trip/trip-detail)
- * et TripDetailComponent (header voyage). Reproduit le flux natif d'aujourd'hui
- * (toolbar+header défilent avec le contenu à la même vitesse) via
- * `translateY = -clamp(scrollTop, 0, hideableHeight)`, appliqué en position fixed.
- * `hideableHeight` dépend du `ChromeMode` courant (voir plus bas) : en layout
- * scindé desktop (`'split-pinned'`), elle vaut 0 — rien ne se masque.
+ * Pilote le chrome persistant (toolbar app, seule survivante depuis le
+ * retrait du header voyage de ce mécanisme — voir ROADMAP.md "UX /
+ * Interactions", 2026-08-01 : le header ne vit plus qu'en contenu normal de
+ * l'onglet Résumé, `TripSummaryComponent`) partagé entre TripsComponent
+ * (toolbar, ancêtre commun à accueil-trip/new-trip/trip-detail) et
+ * TripDetailComponent (mode/barre des jours). Reproduit le flux natif
+ * d'aujourd'hui (la toolbar défile avec le contenu à la même vitesse) via
+ * `translateY = -clamp(scrollTop, 0, hideableHeight)`, appliqué en position
+ * fixed. `hideableHeight` dépend du `ChromeMode` courant (voir plus bas) : en
+ * layout scindé desktop (`'split-pinned'`), elle vaut 0 — rien ne se masque.
  *
  * Écriture DOM DIRECTE (`registerChromeElement` + `el.style.transform = ...`),
  * PAS un signal lu depuis un template : passer par un binding Angular ajoute
@@ -52,7 +55,7 @@ const STACKED_CHROME_GAP_PX = 4;
 @Injectable()
 export class TripChromeService {
   private readonly heights = signal<Record<ChromeKey, number>>({
-    toolbar: 0, header: 0, tabsNav: 0,
+    toolbar: 0, tabsNav: 0,
   });
   private readonly chromeEls = new Set<HTMLElement>();
   private currentTranslateY = 0;
@@ -60,34 +63,18 @@ export class TripChromeService {
 
   /** Hauteur de la seule toolbar : réservée en `padding-top` par TripsComponent (flux normal, tous écrans). */
   readonly toolbarHeight = computed(() => this.heights().toolbar);
-  /** Hauteur du seul header voyage : réservée nativement (voir le "sticky spacer" dans day-panel/general-panel). */
-  readonly headerHeight = computed(() => this.heights().header);
   /** Hauteur BRUTE de la barre des jours/nav (mesure réelle, quelle que soit sa forme — barre desktop en haut ou barre morphing mobile en bas) — voir `tabsNavBottomReserve` pour l'espace à réserver en bas. */
   readonly tabsNavHeight = computed(() => this.heights().tabsNav);
   /** Mode courant (voir `ChromeMode`), piloté par `setMode`. */
   readonly mode = this._mode.asReadonly();
 
   /**
-   * `top` fixe du header voyage : juste sous la toolbar, avec un gap de
-   * respiration (gap-1 empilé / gap-2 scindé, comme le reste — voir
-   * `STACKED_CHROME_GAP_PX`/`SPLIT_CHROME_GAP_PX`) plutôt que collé pile dessous.
-   */
-  readonly headerTop = computed(() =>
-    this.toolbarHeight() + (this.mode() === 'mobile' ? STACKED_CHROME_GAP_PX : SPLIT_CHROME_GAP_PX),
-  );
-
-  /** Hauteur cumulée toolbar+gap+header (jamais la barre des jours). */
-  readonly headerStackHeight = computed(() => this.headerTop() + this.headerHeight());
-
-  /**
    * Gap courant (px) entre deux éléments de chrome fixed consécutifs
-   * (toolbar->header toujours ; header->barre des jours seulement hors
-   * `'mobile'`, où c'est plutôt header->contenu qui vaut ce gap) — même
-   * constante réutilisée dans les deux calculs ci-dessus
-   * (`headerTop`/`tabsNavTop`/`contentTopOffset`). Exposé pour que
-   * `.app-toolbar`/`.app-trip-header-fixed` puissent peindre un `box-shadow`
-   * de cette hauteur dans ce gap (voir leurs styles) : ce sont des éléments
-   * `position:fixed` DISJOINTS avec un intervalle non couvert entre eux, à
+   * (toolbar->barre des jours hors `'mobile'`, où c'est plutôt
+   * toolbar->contenu qui vaut ce gap) — même constante réutilisée dans
+   * `tabsNavTop`/`contentTopOffset`. Exposé pour que `.app-toolbar` puisse
+   * peindre un `box-shadow` de cette hauteur dans ce gap (voir son style) :
+   * c'est un élément `position:fixed` suivi d'un intervalle non couvert, à
    * travers lequel le contenu défilé en dessous (position:fixed lui aussi,
    * plein écran) reste visible par transparence le temps de ces quelques px.
    */
@@ -95,22 +82,21 @@ export class TripChromeService {
 
   /**
    * `top` fixe de la barre des jours quand elle passe en haut (layout
-   * scindé, voir TripDetailComponent) : juste sous toolbar+header, avec un
-   * gap-2 de respiration (voir `SPLIT_CHROME_GAP_PX`) plutôt que collée pile
-   * dessous.
+   * scindé, voir TripDetailComponent) : juste sous la toolbar, avec un gap-2
+   * de respiration (voir `SPLIT_CHROME_GAP_PX`) plutôt que collée pile dessous.
    */
-  readonly tabsNavTop = computed(() => this.headerStackHeight() + SPLIT_CHROME_GAP_PX);
+  readonly tabsNavTop = computed(() => this.toolbarHeight() + SPLIT_CHROME_GAP_PX);
 
   /**
    * Espace total à réserver en HAUT du contenu (`--chrome-top-offset`,
-   * padding-top de day-panel/general-panel) : toolbar+header (+ gap-1 de
-   * respiration en `'mobile'`, où la barre des jours reste en bas), plus la
-   * barre des jours (+ ses 2 gap-2, un au-dessus un en dessous) dès qu'elle
-   * n'est plus en bas (tout mode différent de `'mobile'`).
+   * padding-top de day-panel/general-panel) : toolbar (+ gap-1 de respiration
+   * en `'mobile'`, où la barre des jours reste en bas), plus la barre des
+   * jours (+ ses 2 gap-2, un au-dessus un en dessous) dès qu'elle n'est plus
+   * en bas (tout mode différent de `'mobile'`).
    */
   readonly contentTopOffset = computed(() =>
     this.mode() === 'mobile'
-      ? this.headerStackHeight() + STACKED_CHROME_GAP_PX
+      ? this.toolbarHeight() + STACKED_CHROME_GAP_PX
       : this.tabsNavTop() + this.tabsNavHeight() + SPLIT_CHROME_GAP_PX,
   );
 
@@ -124,32 +110,32 @@ export class TripChromeService {
   /**
    * Borne du `translateY` (voir `setScrollTop`) : la portion du chrome
    * effectivement autorisée à glisser hors champ au scroll. `0` en
-   * `'split-pinned'` (rien ne se masque, desktop) ; toolbar+header+jours en
+   * `'split-pinned'` (rien ne se masque, desktop) ; toolbar+jours en
    * `'split-hideable'` (mobile paysage, la barre des jours rejoint le groupe
-   * qui glisse) ; toolbar+header seulement en `'mobile'` (comportement
-   * historique, la barre des jours fixe en bas ne suit jamais ce mécanisme).
+   * qui glisse) ; toolbar seule en `'mobile'` (comportement historique, la
+   * barre des jours fixe en bas ne suit jamais ce mécanisme).
    */
   readonly hideableHeight = computed(() => {
     switch (this.mode()) {
       case 'split-pinned': return 0;
       case 'split-hideable': return this.tabsNavTop() + this.tabsNavHeight();
-      default: return this.headerStackHeight();
+      default: return this.toolbarHeight();
     }
   });
 
   /**
    * `top` à utiliser par tout élément `position: sticky` DANS le contenu
-   * scrollé (`.sticky-map` du pool d'activités ou de la vue jour...) —
-   * jamais un simple `0`. Le scrollport (`swiper-slide`)
-   * s'étend visuellement SOUS le chrome fixe (voir la doc de classe) : un
-   * `top:0` colle l'élément à `y=0` de la fenêtre, càd DERRIÈRE le chrome. En
-   * `'mobile'`/`'split-hideable'`, ça reste invisible car le chrome a fini de
-   * se masquer (translateY) au moment où l'élément atteint cette position — la
-   * même distance de scroll fait disparaître le chrome ET faire "arriver"
-   * l'élément sticky, donc `0` convient. En `'split-pinned'` (desktop), le
-   * chrome ne se masque JAMAIS : un `top:0` collerait l'élément derrière lui en
-   * permanence une fois le scroll engagé — il faut donc explicitement viser
-   * `contentTopOffset()` (juste sous le chrome) au lieu de `0`.
+   * scrollé (`.sticky-map` de la vue jour...) — jamais un simple `0`. Le
+   * scrollport (`swiper-slide`) s'étend visuellement SOUS le chrome fixe
+   * (voir la doc de classe) : un `top:0` colle l'élément à `y=0` de la
+   * fenêtre, càd DERRIÈRE le chrome. En `'mobile'`/`'split-hideable'`, ça
+   * reste invisible car le chrome a fini de se masquer (translateY) au moment
+   * où l'élément atteint cette position — la même distance de scroll fait
+   * disparaître le chrome ET faire "arriver" l'élément sticky, donc `0`
+   * convient. En `'split-pinned'` (desktop), le chrome ne se masque JAMAIS :
+   * un `top:0` collerait l'élément derrière lui en permanence une fois le
+   * scroll engagé — il faut donc explicitement viser `contentTopOffset()`
+   * (juste sous le chrome) au lieu de `0`.
    */
   readonly stickyContentTop = computed(() => (this.mode() === 'split-pinned' ? this.contentTopOffset() : 0));
 
@@ -169,9 +155,9 @@ export class TripChromeService {
   }
 
   /**
-   * Enregistre un élément (toolbar ou header) dont le `transform` doit suivre
-   * le scroll en direct. Retourne une fonction de désinscription (à appeler
-   * au destroy du composant appelant).
+   * Enregistre un élément (la toolbar) dont le `transform` doit suivre le
+   * scroll en direct. Retourne une fonction de désinscription (à appeler au
+   * destroy du composant appelant).
    */
   registerChromeElement(el: HTMLElement): () => void {
     this.chromeEls.add(el);

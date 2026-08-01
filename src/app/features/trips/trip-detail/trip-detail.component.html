@@ -1,28 +1,10 @@
 <div class="flex flex-column trip-detail-root">
   @if (facade.activeTrip(); as trip) {
     <div  class="flex flex-column" [class.invisible-content]="!contentReady()">
-      <div
-        #headerWrapper
-        class="app-trip-header-fixed"
-        [style.top.px]="chromeService.headerTop()"
-        [style.--nt-chrome-gap.px]="chromeService.chromeGapPx()">
-        <app-trip-header
-          [trip]="trip"
-          [title]="tripTitle()"
-          [currency]="facade.getTripCurrency(trip.id)()"
-          (titleChange)="onTitleChange($event)"
-          (datesChange)="onDatesChange($event)"
-          (currencyChange)="onCurrencyChange($event)">
-          <app-trip-collaborators
-            trip-actions
-            [tripId]="trip.id" />
-        </app-trip-header>
-      </div>
-
       <!-- Vrai desktop (pointeur fin, voir ViewportService.isMobileChrome) :
-           la barre des jours reste sticky juste sous toolbar+header, comme
-           avant (décision produit, voir ROADMAP.md "UI Desktop"). Mobile
-           (portrait OU paysage tactile) : barre morphing bas d'écran, voir
+           la barre des jours reste sticky juste sous la toolbar, comme avant
+           (décision produit, voir ROADMAP.md "UI Desktop"). Mobile (portrait
+           OU paysage tactile) : barre morphing bas d'écran, voir
            MobileTripNavComponent (ROADMAP.md "UX / Interactions"). -->
       @if (!viewport.isMobileChrome()) {
         <app-trip-tabs-nav

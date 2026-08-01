@@ -1,19 +1,4 @@
-<div class="trip-activities-body" [class.trip-activities-body--no-map]="!hasMapPoints()">
-  @if (hasMapPoints()) {
-    <div class="trip-activities-map-group">
-      <div #stickyMap class="sticky-map">
-        @if (!activeMapComponent()) {
-          <app-panel [toggleable]="true" [collapsed]="mapCollapsed()">
-            <div panelHeader class="flex align-items-center gap-2">
-              <i class="pi pi-map-marker"></i>
-              <span>Carte</span>
-            </div>
-            <app-skeleton height="250px" width="100%" borderRadius="3px" />
-          </app-panel>
-        }
-      </div>
-    </div>
-  }
+<div class="trip-activities-body">
   <div class="trip-activities-activities-group">
 <app-card>
 <div class="flex flex-column gap-2">

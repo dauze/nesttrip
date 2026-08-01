@@ -1,39 +1,47 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, effect, inject, input, output, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { format } from 'date-fns';
 import { CardComponent } from '@app/shared/components/card/card.component';
-import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
-import { SelectComponent } from '@app/shared/components/select/select.component';
-import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
+import { DialogService } from '@app/shared/services/dialog.service';
+import {
+  SimpleTextEntryDialogComponent,
+  SimpleTextEntryDialogData,
+} from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
 import { Trip } from '../../trip.model';
 
 @Component({
   selector: 'app-trip-header',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, TextareaDirective, DatePickerComponent, SelectComponent],
+  imports: [ReactiveFormsModule, CardComponent, DatePickerComponent],
   templateUrl: './trip-header.component.html',
   styleUrl: './trip-header.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripHeaderComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
 
   readonly trip = input<Trip | null>(null);
   readonly title = input<string>('');
-  /** Devise par défaut du trip — signal dédié côté TripFacade, pas lu depuis `trip()` (voir TripStore._tripCurrency, ROADMAP.md "Devise"). */
-  readonly currency = input<string>('EUR');
 
   readonly titleChange = output<string>();
   readonly datesChange = output<[Date, Date]>();
-  readonly currencyChange = output<string>();
 
-  readonly currencyOptions = CURRENCY_OPTIONS;
+  private readonly datePickerRef = viewChild(DatePickerComponent);
 
   readonly dateForm = this.fb.group({
     dates: this.fb.control<Date[] | null>(null),
   });
 
-  readonly currencyControl = this.fb.nonNullable.control<string>('EUR');
+  /** Libellé "Date : " affiché en lecture seule à côté du crayon — voir `openDatePicker`. */
+  readonly dateRangeLabel = computed(() => {
+    const dates = this.dateForm.value.dates;
+    const [start, end] = dates ?? [];
+    if (!start || !end) return '';
+    return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
+  });
 
   private lastPatchedTripId: string | null = null;
 
@@ -48,17 +56,28 @@ export class TripHeaderComponent {
       this.lastPatchedTripId = trip.id;
       this.patchFromTrip(trip);
     });
+  }
 
-    // Séparé du reste (voir `currency` input) : ne doit pas dépendre de
-    // `lastPatchedTripId`, sinon un changement de devise arrivant après le
-    // premier patch (ex. autre onglet/collaborateur) ne serait jamais repris.
-    effect(() => {
-      this.currencyControl.setValue(this.currency(), { emitEvent: false });
-    });
+  /** Titre en lecture seule + crayon dédié (voir ROADMAP.md "UX / Interactions") — même popup texte simple que les titres Logistique. */
+  protected openTitleDialog(): void {
+    const dialogRef = this.dialogService.open<string | undefined, SimpleTextEntryDialogData>(
+      SimpleTextEntryDialogComponent,
+      {
+        data: { initialValue: this.trip()?.title ?? this.title(), placeholder: 'Titre du voyage', title: 'Titre' },
+        panelClass: 'app-wide-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+      },
+    );
 
-    this.currencyControl.valueChanges.subscribe((currency) => {
-      if (currency !== this.currency()) this.currencyChange.emit(currency);
+    dialogRef.closed.subscribe((result) => {
+      if (result === undefined) return;
+      this.onTitleBlur(result);
     });
+  }
+
+  /** Dates en lecture seule + crayon dédié : ouvre le même calendrier qu'avant, juste plus caché derrière un déclencheur explicite. */
+  protected openDatePicker(): void {
+    this.datePickerRef()?.openPanel();
   }
 
   protected onTitleBlur(value: string): void {

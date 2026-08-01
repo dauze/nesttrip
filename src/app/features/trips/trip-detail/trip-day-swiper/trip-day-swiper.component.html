@@ -9,8 +9,13 @@
   [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
   [style.--sticky-top-offset.px]="chromeService.stickyContentTop()">
   <swiper-slide>
+    @if (visitedDays().has('summary')) {
+      <app-trip-summary [tripId]="trip().id" [active]="activeId() === 'summary'" />
+    }
+  </swiper-slide>
+  <swiper-slide>
     @if (visitedDays().has('activities')) {
-      <app-trip-activities [tripId]="trip().id" [active]="activeId() === 'activities'" />
+      <app-trip-activities [tripId]="trip().id" />
     }
   </swiper-slide>
   <swiper-slide>

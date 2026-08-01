@@ -1,0 +1,47 @@
+<div class="trip-summary-body">
+  <app-trip-header
+    [trip]="tripFacade.activeTrip()"
+    [title]="tripTitle()"
+    (titleChange)="onTitleChange($event)"
+    (datesChange)="onDatesChange($event)">
+    <app-trip-collaborators
+      trip-actions
+      [tripId]="tripId()" />
+  </app-trip-header>
+
+  @if (hasMapPoints()) {
+    <app-card>
+      <div #mapContainer class="trip-summary-map-container"></div>
+      @if (!activeMapComponent()) {
+        <app-skeleton height="250px" width="100%" borderRadius="3px" />
+      }
+    </app-card>
+  }
+
+  <div class="trip-summary-tiles flex gap-2">
+    <app-card class="trip-summary-tile">
+      <div cardTitle>Dépenses</div>
+      <div class="flex flex-column gap-2">
+        <div class="flex align-items-center gap-1">
+          <span class="text-sm flex-shrink-0">Devise :</span>
+          <app-select
+            label="Devise"
+            [options]="currencyOptions"
+            [formControl]="currencyControl"
+            class="w-max transparent-select no-chevron"
+          />
+        </div>
+        <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
+      </div>
+    </app-card>
+
+    <app-card class="trip-summary-tile">
+      <div cardTitle>Résumé</div>
+      <div class="flex flex-column gap-1 text-sm">
+        <span>{{ activityCount() }} activité(s)</span>
+        <span>{{ transportCount() }} transport(s)</span>
+        <span>{{ dayCount() }} jour(s)</span>
+      </div>
+    </app-card>
+  </div>
+</div>

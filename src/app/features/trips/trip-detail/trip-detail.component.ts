@@ -4,12 +4,9 @@ import { LOGISTIC_TYPE_META } from './trip-day-swiper/general-panel/logistics/lo
 import { LogisticType } from '@core/models/logistic.dto';
 import { DayLogisticQuickAddService } from './day-logistic-quick-add.service';
 import { ActivatedRoute } from '@angular/router';
-import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
-import { Day, Trip } from '../trip.model';
+import { Trip } from '../trip.model';
 import { TripDetailSkeletonComponent } from './trip-detail-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
-import { TripHeaderComponent } from './trip-header/trip-header.component';
-import { TripCollaboratorsComponent } from './trip-collaborators/trip-collaborators.component';
 import { TripTabsNavComponent } from './trip-tabs-nav/trip-tabs-nav.component';
 import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.component';
 import { TripTab } from './trip-tab.model';
@@ -29,8 +26,8 @@ import { NotesFocusService } from './notes-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
-/** Ids des 3 tabs de premier niveau Activités/Logistique/Listes (voir `tabs`) — tout le reste de `activeDay()` est un id de jour (ISO). */
-const GENERAL_TAB_IDS = ['activities', 'logistics', 'notes'];
+/** Ids des 4 tabs de premier niveau Résumé/Activités/Logistique/Listes (voir `tabs`) — tout le reste de `activeDay()` est un id de jour (ISO). */
+const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
 
 @Component({
   selector: 'app-trip-detail',
@@ -38,8 +35,6 @@ const GENERAL_TAB_IDS = ['activities', 'logistics', 'notes'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TripDetailSkeletonComponent,
-    TripHeaderComponent,
-    TripCollaboratorsComponent,
     TripTabsNavComponent,
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
@@ -67,7 +62,6 @@ const GENERAL_TAB_IDS = ['activities', 'logistics', 'notes'];
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
-  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
@@ -80,8 +74,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly itemDeletionService = inject(TripItemDeletionService);
   private readonly dayLogisticQuickAdd = inject(DayLogisticQuickAddService);
 
-  private readonly headerRef = viewChild(TripHeaderComponent);
-  private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
   private readonly addMenu = viewChild.required<MenuComponent>('addMenu');
@@ -138,12 +130,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly contentReady = signal(false);
   private readyFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-  readonly tripTitle = computed(() => {
-    const id = this.route.snapshot.paramMap.get('id');
-    const fromList = this.facade.trips().find(t => t.id === id);
-    return fromList?.title ?? this.facade.activeTrip()?.title ?? '';
-  });
-
   readonly sortedDays = computed(() =>
     this.facade.activeTrip()?.days
       ?.slice()
@@ -151,13 +137,15 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   );
 
   /**
-   * Activités/Logistique/Listes sont désormais 3 tabs/slides de premier
-   * niveau (au lieu d'un unique onglet "Général" avec switch interne, voir
+   * Résumé/Activités/Logistique/Listes sont 4 tabs/slides de premier niveau
+   * (au lieu d'un unique onglet "Général" avec switch interne, voir
    * ROADMAP.md "UX / Interactions") — même ordre qu'avant (ce bloc précède
-   * toujours les jours). `id: 'notes'` gardé tel quel en interne pour
-   * "Listes" (NotesFocusService, fragment d'URL...) : seul le libellé change.
+   * toujours les jours), "Résumé" ajouté en tête le 2026-08-01. `id: 'notes'`
+   * gardé tel quel en interne pour "Listes" (NotesFocusService, fragment
+   * d'URL...) : seul le libellé change.
    */
   readonly tabs = computed<TripTab[]>(() => [
+    { id: 'summary', label: 'Résumé' },
     { id: 'activities', label: 'Activités' },
     { id: 'logistics', label: 'Logistique' },
     { id: 'notes', label: 'Listes' },
@@ -207,35 +195,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       } else {
         this.chromeService.setMode(this.viewport.isChromePinned() ? 'split-pinned' : 'split-hideable');
       }
-    });
-
-    // effect() (pas afterNextRender, qui ne s'exécute qu'une seule fois) :
-    // #headerWrapper est dans un @if (facade.activeTrip(); as trip) — au tout
-    // premier rendu, le trip n'a pas encore fini de charger (Firestore async),
-    // donc l'élément n'existe pas encore. Un afterNextRender ici ratait
-    // silencieusement l'attache de l'observer pour de bon (headerHeight
-    // restait à 0 à vie, empêchant le header de jamais se masquer entièrement,
-    // seulement de la hauteur de la toolbar). L'effect se relance quand le
-    // signal du viewChild change, donc capte l'élément dès qu'il apparaît.
-    effect((onCleanup) => {
-      const el = this.headerWrapperRef()?.nativeElement;
-      if (!el) return;
-
-      // getBoundingClientRect (pas entry.contentRect, qui exclut le padding
-      // vertical de .app-trip-header-fixed) pour mesurer le vrai encombrement.
-      const observer = new ResizeObserver(() => {
-        this.chromeService.registerHeight('header', el.getBoundingClientRect().height);
-      });
-      observer.observe(el);
-
-      // Écriture DOM directe du transform (voir TripChromeService) : pas de
-      // binding [style.transform] dans le template.
-      const unregister = this.chromeService.registerChromeElement(el);
-
-      onCleanup(() => {
-        observer.disconnect();
-        unregister();
-      });
     });
 
     effect(() => {
@@ -318,7 +277,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.facade.unloadTrip();
     this.clearReadyFallback();
     document.documentElement.classList.remove(TRIP_DETAIL_ACTIVE_CLASS);
-    this.chromeService.registerHeight('header', 0);
     this.chromeService.reset();
   }
 
@@ -334,18 +292,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected onTitleChange(title: string): void {
-    const trip = this.facade.activeTrip();
-    if (!trip) return;
-    this.facade.updateTripTitle({ ...trip, title });
-  }
-
-  protected onCurrencyChange(currency: string): void {
-    const trip = this.facade.activeTrip();
-    if (!trip) return;
-    this.facade.updateTripCurrency(trip.id, currency);
-  }
-
   protected onTabSelected(event: { id: string; index: number }): void {
     this.activeDay.set(event.id);
     this.tabsNavRef()?.scrollIntoView(event.index);
@@ -357,33 +303,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const index = this.tabs().findIndex(t => t.id === id);
     if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
     this.updateFragment(id);
-  }
-
-  protected onDatesChange(range: [Date, Date]): void {
-    const trip = this.facade.activeTrip();
-    if (!trip) return;
-
-    const [start, end] = range;
-    const newDays = this.buildDays(start, end, trip.days);
-    const toDelete = this.findDaysToDelete(trip.days, newDays);
-    const toAdd = this.findDaysToAdd(trip.days, newDays);
-
-    const applyChanges = () => {
-      for (const day of toDelete) this.facade.removeDay(trip.id, day.id);
-      for (const day of toAdd) this.facade.addDay(trip.id, day);
-      this.activeDay.set('activities');
-      setTimeout(() => this.tabsNavRef()?.scrollIntoView(0), 100);
-    };
-
-    if (toDelete.length > 0) {
-      this.confirmDialogService.confirm({
-        message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
-        accept: applyChanges,
-        reject: () => this.headerRef()?.resetDates(),
-      });
-    } else {
-      applyChanges();
-    }
   }
 
   private formatDayTab(date: Date): TripTab {
@@ -402,33 +321,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const today = new Date().toDateString();
     const day = trip.days.find(d => new Date(d.id).toDateString() === today);
     return day ? day.id.toISOString() : 'activities';
-  }
-
-  private buildDays(start: Date, end: Date, existingDays: Day[]): Day[] {
-    const days: Day[] = [];
-    const existingMap = new Map(existingDays.map(day => [day.id.getTime(), day]));
-
-    const current = new Date(start);
-    current.setHours(0, 0, 0, 0);
-    const endNorm = new Date(end);
-    endNorm.setHours(0, 0, 0, 0);
-
-    while (current <= endNorm) {
-      const key = current.getTime();
-      days.push(existingMap.get(key) ?? { id: new Date(current), activityIds: [] });
-      current.setDate(current.getDate() + 1);
-    }
-    return days;
-  }
-
-  private findDaysToAdd(existingDays: Day[], newDays: Day[]): Day[] {
-    const existingIds = new Set(existingDays.map(d => d.id.getTime()));
-    return newDays.filter(d => !existingIds.has(d.id.getTime()));
-  }
-
-  private findDaysToDelete(existingDays: Day[], newDays: Day[]): Day[] {
-    const newIds = new Set(newDays.map(d => d.id.getTime()));
-    return existingDays.filter(d => !newIds.has(d.id.getTime()));
   }
 
   /**

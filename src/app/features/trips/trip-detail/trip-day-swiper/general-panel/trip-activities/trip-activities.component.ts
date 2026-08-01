@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewContainerRef, afterNextRender, computed, effect, inject, input, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ViewContainerRef, computed, effect, inject, input, signal, viewChildren } from '@angular/core';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { Day } from '@app/features/trips/trip.model';
@@ -15,15 +14,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
-import { DayMapPoint } from '@app/core/models/day-map-point';
-import { GeneralMapPanelService } from '@app/core/services/general-map-panel.service';
-import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
-import { ViewportService } from '@app/core/services/viewport.service';
-import { TripChromeService } from '@app/core/services/trip-chrome.service';
-import { getScrollContainer } from '@app/shared/utils/scroll-container';
 import { TripActivitiesCreationService } from './trip-activities-creation.service';
-import { GeneralMapCinematicService } from './general-map-cinematic.service';
-import { DayScrollSyncService } from '../../day-panel/day-scroll-sync.service';
 import { NewActivityDraftComponent } from '../../day-panel/new-activity-draft/new-activity-draft.component';
 
 const UNCATEGORIZED_LABEL = 'À catégoriser';
@@ -47,15 +38,6 @@ interface ChronoDayGroup {
   activities: Activity[];
 }
 
-/** Champs communs à `PoolActivity`/`Activity` nécessaires pour construire un `DayMapPoint` — voir `TripActivitiesComponent.generalMapPoints`. */
-interface MapPointSource {
-  id: string;
-  title: string;
-  placeId?: string;
-  latitude?: number;
-  longitude?: number;
-}
-
 function matchesSearch(title: string, address: string | undefined, term: string): boolean {
   if (!term) return true;
   return title.toLowerCase().includes(term) || (address ?? '').toLowerCase().includes(term);
@@ -65,18 +47,13 @@ function matchesSearch(title: string, address: string | undefined, term: string)
   selector: 'app-trip-activities',
   standalone: true,
   imports: [
-    PanelComponent, SkeletonComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent,
+    PanelComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent,
     SelectButtonComponent, InputTextDirective, DatePipe, ButtonComponent,
   ],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Une instance de DayScrollSyncService/GeneralMapCinematicService par
-  // montage (détruite/recréée à chaque va-et-vient sur le tab Activités, voir
-  // le `@if (visitedDays().has('activities'))` de TripDaySwiperComponent) :
-  // même portée que pour un DayPanelComponent. GeneralMapCinematicService :
-  // caméra du pool décorrélée du scroll, voir sa doc (ROADMAP.md "UX / Interactions").
-  providers: [TripActivitiesCreationService, DayScrollSyncService, GeneralMapCinematicService],
+  providers: [TripActivitiesCreationService],
 })
 export class TripActivitiesComponent {
   private readonly tripFacade = inject(TripFacade);
@@ -85,27 +62,12 @@ export class TripActivitiesComponent {
   protected readonly creationService = inject(TripActivitiesCreationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly elRef = inject(ElementRef<HTMLElement>);
-  private readonly mapHost = inject(TripDayMapHostService);
-  private readonly generalMapPanelService = inject(GeneralMapPanelService);
-  private readonly viewport = inject(ViewportService);
-  private readonly chromeService = inject(TripChromeService);
-  protected readonly scrollSync = inject(DayScrollSyncService);
-  private readonly mapCinematic = inject(GeneralMapCinematicService);
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
-  private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
 
   readonly tripId = input.required<string>();
-  /** Slide "Activités" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
-  readonly active = input(false);
-
-  /** Carte partagée avec la vue jour, "prêtée" à ce contexte tant qu'il est actif (même principe que DayPanelComponent.activeMapComponent). */
-  readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
-  /** État de collapse du placeholder skeleton (avant que la carte réelle ne soit déplacée ici) — état indépendant de la vue jour, voir GeneralMapPanelService. */
-  readonly mapCollapsed = this.generalMapPanelService.isCollapsed;
 
   // Restaure le tri depuis l'URL (?sort=...) au montage — voir onSortModeChange,
   // qui l'y écrit à chaque changement (voir ROADMAP.md).
@@ -130,36 +92,6 @@ export class TripActivitiesComponent {
   });
 
   readonly hasNoActivityAtAll = computed(() => this.allActivities().length === 0);
-
-  /**
-   * Points de la carte du pool, dans l'ordre EXACTEMENT rendu par le mode de
-   * tri courant (ville ou chronologique) — voir ROADMAP.md "Attention à
-   * gérer le cas du scroll avec le filtre ville et le filtre chronologique !".
-   * `.id` de chaque source correspond à l'`[activityId]` posé sur la carte
-   * correspondante dans le template (poolId en mode Ville — `row.representative`,
-   * instanceId en mode Chrono — `activity` de `getDayActivities`), donc au
-   * `card.activity()?.id` que DayScrollSyncService utilise déjà pour faire
-   * correspondre cartes et points, sans table de correspondance à part.
-   */
-  readonly generalMapPoints = computed<DayMapPoint[]>(() => {
-    const source: MapPointSource[] =
-      this.sortMode() === 'city'
-        ? this.cityGroups().flatMap(group => group.rows.map(row => row.representative))
-        : [...this.unassignedActivities(), ...this.chronoDayGroups().flatMap(group => group.activities)];
-
-    return source
-      .filter(a => a.placeId && a.latitude && a.longitude)
-      .map((a, i) => ({
-        activityId: a.id,
-        placeId: a.placeId!,
-        name: a.title,
-        latitude: a.latitude!,
-        longitude: a.longitude!,
-        order: i + 1,
-      }));
-  });
-
-  readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
 
   constructor() {
     this.creationService.connect({
@@ -186,106 +118,6 @@ export class TripActivitiesComponent {
       this.triggerCreate();
     });
 
-    // Quand ce contexte devient actif (slide Activités), on récupère
-    // l'instance UNIQUE de la carte (partagée avec
-    // la vue jour, voir TripDayMapHostService) et on la déplace physiquement
-    // dans notre conteneur sticky — même mécanique que DayPanelComponent.
-    // Pas de dépendance à `generalMapPoints()` ici volontairement : ne doit
-    // tourner qu'au (re)montage de cet onglet, pas à chaque activité
-    // ajoutée/filtrée (`mapCinematic.attachMap` y re-snapperait sinon la
-    // caméra sur la vue d'ensemble à chaque changement, pas seulement au
-    // (re)montage).
-    effect(() => {
-      if (!this.active()) return;
-      const container = this.stickyMap()?.nativeElement;
-      const map = this.mapHost.activeMap();
-      if (!container || !map) return;
-
-      this.mapHost.moveTo(container, 'general');
-      this.scrollSync.attachMap(map);
-      this.mapCinematic.attachMap(map);
-    });
-
-    // `map.points` synchronisé à chaque changement de `generalMapPoints()`
-    // (nouvelle activité, filtre, tri...). Cause racine trouvée par
-    // instrumentation (logs temporaires) : `#stickyMap` n'existe dans le DOM
-    // que sous `@if (hasMapPoints())` (voir le template), qui dépend des
-    // MÊMES données que `generalMapPoints()` — sur le tout premier passage
-    // où `generalMapPoints()` devient non-vide, `stickyMap()` (viewChild)
-    // pouvait donc encore valoir `undefined` (rendu Angular du `@if` pas
-    // encore reflété), sautant l'appel `moveTo` (qui positionne
-    // `mapHost.currentOwner()` à `'general'`, lu par l'effect interne de
-    // `TripDayMapComponent` pour savoir s'il doit ignorer l'ancien
-    // recentrage "1er point", le pool étant géré par
-    // `GeneralMapCinematicService` désormais) MAIS PAS `points.set` (pas de
-    // garde dessus) — laissant passer un saut de caméra sur le 1er point au
-    // montage/tri/filtre, avant même que la vue d'ensemble n'ait sa chance
-    // (retour utilisateur, confirmé par log `currentOwner=null` au moment de
-    // ce `points.set()`). Corrigé en gardant TOUT le corps de l'effect
-    // (`points.set` inclus) derrière la même condition `container` que
-    // `moveTo` : `stickyMap()` étant un signal lu ici, l'effect se
-    // redéclenche automatiquement dès que l'élément apparaît réellement
-    // dans le DOM.
-    effect(() => {
-      const map = this.activeMapComponent();
-      const container = this.stickyMap()?.nativeElement;
-      if (!map || !container) return;
-      this.mapHost.moveTo(container, 'general');
-      map.points.set(this.generalMapPoints());
-    });
-
-    this.scrollSync.connect({
-      isActive: () => this.active(),
-      getSlideEl: () => this.getSlideEl(),
-      getFreshOffsets: () => this.getFreshCardOffsets(),
-      getDayMapPoints: () => this.generalMapPoints(),
-      getMapComponent: () => this.activeMapComponent(),
-      getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
-      isSplitLayout: () => this.viewport.isSplitLayout(),
-      // Même bouclier que la vue jour désormais : plus de bascule sticky
-      // séparée au-dessus (Activités est son propre tab de premier niveau,
-      // voir ROADMAP.md "UX / Interactions").
-      getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
-      // La caméra du pool est pilotée par GeneralMapCinematicService, décorrélée
-      // du scroll (voir ROADMAP.md "UX / Interactions") — DayScrollSyncService
-      // continue de gérer ici attachMap/focusActivity/le snap de fin de liste,
-      // mais plus du tout la caméra.
-      cameraFollowEnabled: () => false,
-    });
-
-    this.mapCinematic.connect({
-      isActive: () => this.active(),
-      isExpanded: () => !this.mapCollapsed(),
-      getPoints: () => this.generalMapPoints(),
-      getMapComponent: () => this.activeMapComponent(),
-    });
-
-    afterNextRender(() => {
-      this.scrollSync.startListening();
-      this.mapCinematic.startListening();
-    });
-  }
-
-  /** Conteneur de scroll isolé de la slide Général : le `swiper-slide` ancêtre (voir shared/utils/scroll-container.ts). */
-  private getSlideEl(): HTMLElement | null {
-    return getScrollContainer(this.elRef.nativeElement);
-  }
-
-  /** Offsets "pseudo-absolus" des cartes actuellement rendues — voir DayPanelComponent.getFreshCardOffsets pour le détail du calcul. */
-  private getFreshCardOffsets(): { card: ActivityCardComponent; top: number; height: number }[] {
-    const cards = this.activityCards();
-    const slideEl = this.getSlideEl();
-    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
-    const slideScrollTop = slideEl?.scrollTop ?? 0;
-
-    return cards.map(card => {
-      const rect = card.element.getBoundingClientRect();
-      return {
-        card,
-        top: rect.top - slideTop + slideScrollTop,
-        height: rect.height,
-      };
-    });
   }
 
   /** Point d'entrée pour le bouton "+" flottant (voir TripCreationTargetService/TripDetailComponent.addMenuItems). */

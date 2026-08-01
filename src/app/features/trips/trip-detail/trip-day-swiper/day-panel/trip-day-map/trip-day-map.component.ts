@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
-import { GeneralMapPanelService } from '@app/core/services/general-map-panel.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ThemeService } from '@app/core/services/theme.service';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
@@ -21,24 +20,34 @@ export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
-  private readonly generalMapPanelService = inject(GeneralMapPanelService);
-  private readonly mapHost = inject(TripDayMapHostService);
-  // Suit l'état partagé du service courant (GoogleMapPanelService pour la
-  // vue jour, GeneralMapPanelService pour le pool "Général" — voir
-  // TripDayMapHostService.currentOwner, fold state volontairement
-  // indépendant entre les deux contextes, voir ROADMAP.md "Carte"), tout en
+  /** `protected` : lu depuis le template pour basculer `[toggleable]`/`[bare]` selon le contexte (voir trip-day-map.component.html). */
+  protected readonly mapHost = inject(TripDayMapHostService);
+  // Contexte 'general' (pool, uniquement l'onglet Résumé désormais — voir
+  // ROADMAP.md "UX / Interactions", 2026-08-01) : jamais repliable (plus de
+  // panel/chevron dans ce contexte, voir trip-day-map.component.html), donc
+  // toujours `false`. Contexte 'day' : suit GoogleMapPanelService, tout en
   // restant localement modifiable via le toggle du panneau (voir l'effet
-  // ci-dessous qui repropage vers le bon service). Se réaligne sur le
-  // service courant dès que `currentOwner()` change de valeur.
+  // ci-dessous qui repropage vers ce service). Se réaligne sur le service
+  // courant dès que `currentOwner()` change de valeur.
   readonly collapsed = linkedSignal(() =>
-    this.mapHost.currentOwner() === 'general'
-      ? this.generalMapPanelService.isCollapsed()
-      : this.googleMapPanelService.isCollapsed(),
+    this.mapHost.currentOwner() === 'general' ? false : this.googleMapPanelService.isCollapsed(),
   );
   zoom = input(13);
   readonly focusZoom = input(13);
-  /** Layout scindé (carte à gauche, voir ROADMAP.md "UI Desktop") : le panel s'étire pleine hauteur (`PanelComponent.fillHeight`) et la carte suit via `height="100%"` — `32dvh` empilé (mobile) sinon. */
   protected readonly viewport = inject(ViewportService);
+  /**
+   * Layout scindé (carte à gauche, voir ROADMAP.md "UI Desktop") : le panel
+   * s'étire pleine hauteur (`PanelComponent.fillHeight`) et la carte suit via
+   * `height="100%"` — `32dvh` sinon (empilé mobile, OU contexte 'general' —
+   * onglet Résumé, voir ROADMAP.md "UX / Interactions", 2026-08-01 — qui
+   * n'est JAMAIS un layout scindé carte/liste quelle que soit la largeur de
+   * viewport, contrairement à l'ancien onglet Activités qu'il remplace).
+   * Sans cette exclusion, `:host { height:100% }` (voir
+   * trip-day-map.component.scss) se propageait contre un ancêtre
+   * (`.trip-summary-map-container`) sans hauteur explicite définie — carte
+   * réduite à 0px de haut, invisible, en layout scindé desktop.
+   */
+  protected readonly useSplitHeight = computed(() => this.viewport.isSplitLayout() && this.mapHost.currentOwner() !== 'general');
 
 
   // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
@@ -89,12 +98,10 @@ export class TripDayMapComponent {
 
   constructor() {
     effect(() => {
-      const value = this.collapsed();
-      if (this.mapHost.currentOwner() === 'general') {
-        this.generalMapPanelService.setCollapse(value);
-      } else {
-        this.googleMapPanelService.setCollapse(value);
-      }
+      // Contexte 'general' : rien à repropager, `collapsed` y est une
+      // constante (voir sa doc) — jamais modifiable par l'utilisateur.
+      if (this.mapHost.currentOwner() === 'general') return;
+      this.googleMapPanelService.setCollapse(this.collapsed());
     });
 
     effect(() => {
