@@ -80,6 +80,8 @@
                   [class.app-date-picker-panel__day--range-start]="isRangeStart(day)"
                   [class.app-date-picker-panel__day--range-end]="isRangeEnd(day)"
                   [class.app-date-picker-panel__day--in-range]="isInRange(day)"
+                  [class.app-date-picker-panel__day--disabled]="isDayDisabled(day)"
+                  [disabled]="isDayDisabled(day)"
                   (mouseenter)="onDayHover(day)"
                   (click)="selectDay(day)">
                   {{ day.getDate() }}

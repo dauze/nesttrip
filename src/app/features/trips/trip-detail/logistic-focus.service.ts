@@ -5,6 +5,8 @@ export interface LogisticFocusRequest {
   token: number;
   /** Créé depuis le menu "Ajouter" d'un jour (voir `DayLogisticQuickAddService`), type déjà connu : `LogisticsListComponent` enchaîne sur la cinématique guidée (sans réétape "Type") une fois la carte trouvée, plutôt que se contenter de la déplier/scroller. */
   startGuided?: boolean;
+  /** Jour depuis lequel la création a été lancée (voir `DayLogisticQuickAddService`) — `LogisticsListComponent` y revient (`DayActivityFocusService.requestFocus`) une fois la cinématique guidée terminée (voir ROADMAP.md "UX / Interactions"). Absent si créé depuis le tab Logistique lui-même ou l'onglet Résumé. */
+  originDayId?: string;
 }
 
 /**
@@ -23,8 +25,8 @@ export class LogisticFocusService {
 
   readonly pending = this._pending.asReadonly();
 
-  requestFocus(logisticId: string, startGuided = false): void {
-    this._pending.set({ logisticId, token: ++this.tokenSeq, startGuided });
+  requestFocus(logisticId: string, startGuided = false, originDayId?: string): void {
+    this._pending.set({ logisticId, token: ++this.tokenSeq, startGuided, originDayId });
   }
 
   clear(token: number): void {

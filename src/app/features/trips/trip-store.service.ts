@@ -1,6 +1,6 @@
 import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
-import { Trip, Day, TripMember } from './trip.model';
+import { Trip, Day, TripMember, TripSummary } from './trip.model';
 import { Activity, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
@@ -128,7 +128,7 @@ export class TripStore {
   /** @internal */
   readonly _tripNotesItems = signal<Record<string, string[]>>({});
   /** @internal */
- readonly _tripsResult = signal<Pick<Trip, 'id' | 'title' | 'ownerId'>[] | undefined>(undefined);
+ readonly _tripsResult = signal<TripSummary[] | undefined>(undefined);
   /**
    * @internal — devise par défaut par trip, séparée de `_trips` : la modifier
    * ne doit PAS faire recalculer `activeTrip` (lu par énormément de
@@ -315,6 +315,27 @@ export class TripStore {
     return this.dayActivityViewById.get(instanceId)!;
   }
 
+  /**
+   * Résout une instance vers son jour + sa vue composée, ou `undefined` si
+   * l'instance n'existe plus (voir `Item.linkedActivityInstanceId`,
+   * ROADMAP.md "UX / Interactions" — pas de nettoyage en cascade des liens
+   * de listes vers une activité/instance supprimée, contrairement aux
+   * instances elles-mêmes lors de la suppression d'un jour, voir `removeDay`).
+   * Scanne `_dayActivityIds` (pas d'index inverse dédié, usage rare — ce
+   * chip uniquement).
+   */
+  getDayActivityWithDay(tripId: string, instanceId: string): Signal<{ dayId: Date; activity: Activity } | undefined> {
+    return computed(() => {
+      const instance = this._dayActivityInstances()[instanceId];
+      if (!instance) return undefined;
+      const dayKeys = this._tripDays()[tripId] ?? [];
+      const dayActivityIds = this._dayActivityIds();
+      const dayKey = dayKeys.find((k) => (dayActivityIds[k] ?? []).includes(instanceId));
+      if (!dayKey) return undefined;
+      return { dayId: new Date(dayKey), activity: this.composeInstanceView(instance, this._poolActivities()[instance.activityId]) };
+    });
+  }
+
   getPoolActivity(poolId: string): Signal<PoolActivity> {
     if (!this.poolActivityById.has(poolId)) {
       this.poolActivityById.set(
@@ -494,10 +515,17 @@ export class TripStore {
 
   saveTrip(trip: Trip): void {
     // 1. Hydratation optimiste des signals locaux
-    // _tripsResult : ajout dans la liste du dashboard
+    // _tripsResult : ajout dans la liste du dashboard — bornes de jours
+    // calculées ici aussi (voir TripSummary), pas seulement côté data source,
+    // pour que la détection du "voyage actif" (ROADMAP.md "UX / Interactions")
+    // soit correcte dès la création, avant même le premier snapshot Firestore.
+    const dayTimes = trip.days.map((d) => d.id.getTime());
     this._tripsResult.update((list) => [
       ...(list ?? []),
-      { id: trip.id, title: trip.title, ownerId: trip.ownerId },
+      {
+        id: trip.id, title: trip.title, ownerId: trip.ownerId,
+        ...(dayTimes.length ? { earliestDay: new Date(Math.min(...dayTimes)), latestDay: new Date(Math.max(...dayTimes)) } : {}),
+      },
     ]);
 
     // _trips : entité complète
@@ -841,6 +869,11 @@ export class TripStore {
       const map = this._notesItems();
       return ids.map((id) => map[id]);
     });
+  }
+
+  /** Recherche inverse "quelles listes pointent vers cette instance d'activité" (voir `Item.linkedActivityInstanceId`, ROADMAP.md "UX / Interactions") — rien n'est stocké côté activité, ce sélecteur EST le lien côté activité. */
+  getLinkedNoteItems(tripId: string, instanceId: string): Signal<Item[]> {
+    return computed(() => this.getNotesItems(tripId)().filter((item) => item.linkedActivityInstanceId === instanceId));
   }
 
   createItem(tripId: string, item: Item): void {

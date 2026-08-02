@@ -1,0 +1,78 @@
+// Même anatomie/mêmes tokens que TitleEditDialogComponent (header sticky +
+// liste scrollable) — voir sa doc pour le raisonnement flex détaillé.
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.link-activity-dialog {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.link-activity-dialog__row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--nt-overlay-background);
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.link-activity-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+.link-activity-dialog__list {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.link-activity-dialog__section-header {
+  position: sticky;
+  top: 0;
+  padding: 0.5rem 0.75rem 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--nt-text-muted-color);
+  background: var(--nt-overlay-background);
+  text-transform: capitalize;
+}
+
+.link-activity-dialog__option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+}
+
+.link-activity-dialog__option-name {
+  font-weight: 500;
+  color: var(--nt-text-color);
+  white-space: normal;
+}
+
+.link-activity-dialog__empty {
+  padding: 1rem 0.75rem;
+  color: var(--nt-text-muted-color);
+  font-size: 0.875rem;
+  text-align: center;
+}

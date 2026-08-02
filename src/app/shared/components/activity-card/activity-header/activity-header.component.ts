@@ -42,6 +42,8 @@ export class ActivityHeaderComponent {
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
   readonly placementClicked = output<{ dayId: Date; instanceId: string }>();
+  /** Clic sur l'heure de début (voir ROADMAP.md "UX / Interactions") : `ActivityCardComponent` déplie la carte et ouvre l'éditeur d'heure du form. */
+  readonly timeClicked = output<void>();
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
@@ -177,6 +179,12 @@ export class ActivityHeaderComponent {
   onPlacementClick(event: Event, placement: { dayId: Date; instanceId: string }): void {
     event.stopPropagation();
     this.placementClicked.emit(placement);
+  }
+
+  /** `stopPropagation` : même besoin que `onPlacementClick` ci-dessus — sans ça, le clic remonterait au header et déplierait/replierait le panneau au lieu d'ouvrir l'éditeur d'heure. */
+  onTimeClick(event: Event): void {
+    event.stopPropagation();
+    this.timeClicked.emit();
   }
 
   getPhotoUrl$(ref: string, maxWidth = 100) {

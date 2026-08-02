@@ -14,7 +14,11 @@ export const LOGISTIC_TYPE_META: Record<LogisticType, LogisticTypeMeta> = {
   logement: { label: 'Logement', icon: 'pi pi-building', startLabel: 'Check-in', endLabel: 'Check-out', colorVar: '--nt-logistic-logement' },
   flight: { label: 'Vol', icon: 'pi pi-send', startLabel: 'Départ', endLabel: 'Arrivée', colorVar: '--nt-logistic-flight' },
   carRental: { label: 'Location de voiture', icon: 'pi pi-car', startLabel: 'Prise en charge', endLabel: 'Restitution', colorVar: '--nt-logistic-carrental' },
-  train: { label: 'Train', icon: 'pi pi-directions', startLabel: 'Départ', endLabel: 'Arrivée', colorVar: '--nt-logistic-train' },
+  // `nt-icon-train` : PrimeIcons n'a aucun glyphe train/rail (voir ROADMAP.md
+  // "UX / Interactions") — icône maison, voir src/styles/icons.scss. `pi`
+  // reste présent partout où ce champ est consommé (concaténé en dur, ex.
+  // LogisticHeaderComponent) mais n'a aucun effet sans `pi-*` associé.
+  train: { label: 'Train', icon: 'nt-icon-train', startLabel: 'Départ', endLabel: 'Arrivée', colorVar: '--nt-logistic-train' },
   other: { label: 'Autre', icon: 'pi pi-map-marker', startLabel: 'Début', endLabel: 'Fin', colorVar: '--nt-logistic-other' },
 };
 

@@ -40,7 +40,7 @@
           <label for="end-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
-          <app-time-picker-dialog #endTimePicker id="end-time" label="Heure de fin" formControlName="endTime" />
+          <app-time-picker-dialog #endTimePicker id="end-time" label="Heure de fin" [minTime]="formValue().startTime" formControlName="endTime" />
         </div>
       </div>
       
@@ -82,12 +82,41 @@
   </div>
 
   <app-divider class="m-1" />
-  
+
   <!-- NOTES -->
   <div class="flex flex-column gap-1">
     <label for="form-notes" class="nt-text-muted text-sm flex align-items-center gap-1">
       <i class="pi pi-pencil text-xs"></i>Notes
     </label>
     <app-notes-field inputId="form-notes" formControlName="notes" placeholder="Ajouter une note…" class="w-full" />
+  </div>
+
+  <app-divider class="m-1" />
+
+  <!-- LISTE(S) LIÉE(S) -->
+  <div class="flex flex-column gap-1">
+    <span class="nt-text-muted text-sm flex align-items-center gap-1">
+      <i class="pi pi-clipboard text-xs"></i>Liste
+    </span>
+    <div class="flex align-items-center gap-1 flex-wrap">
+      @for (item of linkedListItems(); track item.id) {
+        <app-chip
+          icon="pi pi-clipboard"
+          [removable]="true"
+          (click)="navigateToLinkedList(item.id)"
+          (remove)="unlinkList(item.id)"
+          class="nt-bg-subtle text-sm cursor-pointer">
+          {{ item.title.trim() || '(Sans titre)' }}
+        </app-chip>
+      }
+      <app-button
+        label="Lier une liste"
+        icon="pi pi-link"
+        [text]="true"
+        size="small"
+        severity="secondary"
+        (click)="openLinkListDialog()"
+      />
+    </div>
   </div>
 </form>

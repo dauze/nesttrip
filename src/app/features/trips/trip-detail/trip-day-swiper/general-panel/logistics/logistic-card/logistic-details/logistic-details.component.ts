@@ -23,6 +23,7 @@ import {
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { FlightLookupApiService } from '@core/services/flight-lookup-api.service';
+import { GooglePlaceService } from '@core/services/google-place.service';
 import { ViewportService } from '@core/services/viewport.service';
 import { PlaceSummary } from '@core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
@@ -90,6 +91,7 @@ export class LogisticDetailsComponent {
   private readonly dialogService = inject(DialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly flightLookupApi = inject(FlightLookupApiService);
+  private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly viewport = inject(ViewportService);
 
   readonly tripId = input.required<string>();
@@ -138,6 +140,19 @@ export class LogisticDetailsComponent {
   readonly selectedType = computed(() => this.formValue().type);
   readonly dateLabels = computed(() => LOGISTIC_TYPE_META[this.selectedType()]);
   readonly currentPlaces = computed(() => this.selectedPlaces());
+
+  /** Bloque la sélection d'une date de fin antérieure à la date de début (voir ROADMAP.md "UX / Interactions", `app-date-picker[minDate]`). */
+  readonly endDateMinDate = computed(() => this.formValue().startDate ?? null);
+
+  /** Idem pour l'heure de fin, uniquement quand début/fin tombent le MÊME jour (sinon toute heure de fin est valide) — voir `app-time-picker-dialog[minTime]`. */
+  readonly endTimeMinTime = computed(() => {
+    const { startDate, endDate, startTime } = this.formValue();
+    if (!startDate || !endDate || !startTime) return null;
+    const sameDay = startDate.getFullYear() === endDate.getFullYear()
+      && startDate.getMonth() === endDate.getMonth()
+      && startDate.getDate() === endDate.getDate();
+    return sameDay ? startTime : null;
+  });
 
   readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED]);
 
@@ -305,6 +320,32 @@ export class LogisticDetailsComponent {
   }
 
   /**
+   * Depuis le clic sur une date/heure du header (voir
+   * `LogisticHeaderComponent.dateTimeClicked`/`LogisticCardComponent`,
+   * ROADMAP.md "UX / Interactions") : ouvre le picker correspondant.
+   * `DatePickerComponent.openPanel` fonctionne déjà en mobile ET desktop (son
+   * propre positionnement interne bascule selon `ViewportService.isMobile`) ;
+   * `TimePickerDialogComponent.openDialog`, lui, ne doit être appelé QUE sur
+   * mobile — sur desktop le champ Heure est déjà visible en ligne une fois
+   * la carte dépliée (même garde que `guidedTime`).
+   */
+  openStartDate(): void {
+    this.startDatePicker().openPanel();
+  }
+
+  openStartTime(): void {
+    if (this.viewport.isMobile()) this.startTimePicker().openDialog();
+  }
+
+  openEndDate(): void {
+    this.endDatePicker().openPanel();
+  }
+
+  openEndTime(): void {
+    if (this.viewport.isMobile()) this.endTimePicker().openDialog();
+  }
+
+  /**
    * Déclenché juste après la création d'un élément (voir
    * `LogisticsCreationService`) : demande le TYPE en premier (sauf
    * `skipTypeStep`, déjà répondu par le menu "Ajouter" d'un jour — voir
@@ -374,14 +415,18 @@ export class LogisticDetailsComponent {
       const current = this.logistic();
       if (current) {
         const titleParts = [lookup.departureAirportName, lookup.arrivalAirportName].filter(Boolean);
+        const [departureAirport, arrivalAirport] = await Promise.all([
+          lookup.departureAirportName ? this.resolveAirportPlace(lookup.departureAirportName) : Promise.resolve(undefined),
+          lookup.arrivalAirportName ? this.resolveAirportPlace(lookup.arrivalAirportName) : Promise.resolve(undefined),
+        ]);
         this.tripFacade.updateLogistic(this.tripId(), {
           ...current,
           type: 'flight',
           flightNumber,
           title: `Vol (${flightNumber})${titleParts.length ? ' - ' + titleParts.join(' - ') : ''}`,
           ...(lookup.airline ? { airline: lookup.airline } : {}),
-          ...(lookup.departureAirportName ? { departureAirport: this.syntheticPlace(lookup.departureAirportName) } : {}),
-          ...(lookup.arrivalAirportName ? { arrivalAirport: this.syntheticPlace(lookup.arrivalAirportName) } : {}),
+          ...(departureAirport ? { departureAirport } : {}),
+          ...(arrivalAirport ? { arrivalAirport } : {}),
           ...(lookup.scheduledDepartureTime ? { startDateTime: lookup.scheduledDepartureTime } : {}),
           ...(lookup.scheduledArrivalTime ? { endDateTime: lookup.scheduledArrivalTime } : {}),
         });
@@ -397,11 +442,11 @@ export class LogisticDetailsComponent {
         // cette écriture avec les anciennes valeurs locales (vides). `{emitEvent:
         // false}` : la persistance de ces valeurs est déjà faite ci-dessus, pas
         // besoin d'un second commit débounce en parallèle de celui-là.
-        if (lookup.departureAirportName) {
-          this.selectedPlaces.update((s) => ({ ...s, departureAirport: this.syntheticPlace(lookup.departureAirportName!) }));
+        if (departureAirport) {
+          this.selectedPlaces.update((s) => ({ ...s, departureAirport }));
         }
-        if (lookup.arrivalAirportName) {
-          this.selectedPlaces.update((s) => ({ ...s, arrivalAirport: this.syntheticPlace(lookup.arrivalAirportName!) }));
+        if (arrivalAirport) {
+          this.selectedPlaces.update((s) => ({ ...s, arrivalAirport }));
         }
         this.form.patchValue({
           ...(lookup.airline ? { airline: lookup.airline } : {}),
@@ -457,12 +502,12 @@ export class LogisticDetailsComponent {
   private async guidedTrain(): Promise<void> {
     if (!(await this.guidedBooking())) return;
 
-    const departureResult = await this.openTitleDialog({ initialTitle: '', title: 'Ville de départ', placeholder: 'Rechercher une ville...' });
+    const departureResult = await this.openTitleDialog({ initialTitle: '', title: 'Gare de départ', placeholder: 'Rechercher une gare...' });
     if (departureResult?.type === 'place') this.onPlaceSelected('departurePlace', departureResult.place);
 
     if (!(await this.guidedDateTime(this.startDatePicker(), this.startTimePicker()))) return;
 
-    const arrivalResult = await this.openTitleDialog({ initialTitle: '', title: "Ville d'arrivée", placeholder: 'Rechercher une ville...' });
+    const arrivalResult = await this.openTitleDialog({ initialTitle: '', title: "Gare d'arrivée", placeholder: 'Rechercher une gare...' });
     if (arrivalResult?.type === 'place') this.onPlaceSelected('arrivalPlace', arrivalResult.place);
 
     if (!(await this.guidedDateTime(this.endDatePicker(), this.endTimePicker()))) return;
@@ -549,7 +594,13 @@ export class LogisticDetailsComponent {
   private openTextDialog(data: SimpleTextEntryDialogData): Promise<string | undefined> {
     const dialogRef = this.dialogService.open<string | undefined, SimpleTextEntryDialogData>(
       SimpleTextEntryDialogComponent,
-      { data, panelClass: 'app-wide-dialog-panel', viewContainerRef: this.viewContainerRef },
+      {
+        data, panelClass: 'app-wide-dialog-panel', viewContainerRef: this.viewContainerRef,
+        // Sans ça, l'autofocus CDK par défaut ('first-tabbable') cible le
+        // bouton de fermeture, pas le champ — même correctif que
+        // `openTitleDialog` ci-dessus (retour utilisateur, 2026-08-02).
+        autoFocus: '.simple-text-entry-dialog__input',
+      },
     );
     return this.awaitOnce(dialogRef.closed);
   }
@@ -581,7 +632,27 @@ export class LogisticDetailsComponent {
     this.tripFacade.updateLogistic(this.tripId(), { ...current, title, place });
   }
 
-  /** `PlaceSummary` minimal (pas de `placeId`) pour un aéroport connu seulement par son nom (voir FlightLookupApiService, AeroDataBox ne fournit ni placeId ni coordonnées) — `LogisticPlaceInfoComponent` n'affiche la carte/les détails Google que si `placeId` est renseigné, donc reste silencieux ici ; l'utilisateur peut toujours re-sélectionner un vrai lieu Google ensuite. */
+  /**
+   * `FlightLookupApiService`/AeroDataBox ne fournit qu'un NOM d'aéroport, ni
+   * placeId ni coordonnées — on le fait donc passer par une recherche Google
+   * ponctuelle (`GooglePlaceService.searchOnce$`, même backend que
+   * l'autocomplete des champs lieu) pour récupérer un vrai `PlaceSummary`
+   * (placeId réel, carte/détails affichables via `LogisticPlaceInfoComponent`).
+   * Repli sur `syntheticPlace` (placeId vide, silencieux côté carte) si la
+   * recherche ne renvoie aucun résultat ou échoue — jamais bloquant pour la
+   * cinématique guidée, l'utilisateur peut toujours re-sélectionner un vrai
+   * lieu ensuite.
+   */
+  private async resolveAirportPlace(name: string): Promise<PlaceSummary> {
+    try {
+      const results = await firstValueFrom(this.googlePlaceService.searchOnce$(name));
+      return results[0] ?? this.syntheticPlace(name);
+    } catch {
+      return this.syntheticPlace(name);
+    }
+  }
+
+  /** `PlaceSummary` minimal (pas de `placeId`) pour un aéroport introuvable côté Google (voir `resolveAirportPlace`) — `LogisticPlaceInfoComponent` n'affiche la carte/les détails Google que si `placeId` est renseigné, donc reste silencieux ici ; l'utilisateur peut toujours re-sélectionner un vrai lieu Google ensuite. */
   private syntheticPlace(name: string): PlaceSummary {
     return { placeId: '', name, address: '', latitude: 0, longitude: 0 };
   }

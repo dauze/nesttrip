@@ -1,0 +1,24 @@
+<div class="link-list-dialog flex flex-column">
+  <div class="link-list-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="link-list-dialog__title">Lier une liste</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <div class="link-list-dialog__list">
+    @if (isEmpty()) {
+      <div class="link-list-dialog__empty">Aucune liste dans ce voyage pour l'instant.</div>
+    }
+    @for (item of items(); track item.id) {
+      <button type="button" class="link-list-dialog__option" (click)="select(item.id, item.title)">
+        <span class="link-list-dialog__option-name">{{ displayTitle(item.title) }}</span>
+      </button>
+    }
+  </div>
+</div>

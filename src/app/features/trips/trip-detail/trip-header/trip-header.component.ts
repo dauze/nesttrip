@@ -66,6 +66,9 @@ export class TripHeaderComponent {
         data: { initialValue: this.title(), placeholder: 'Titre du voyage', title: 'Titre' },
         panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
+        // Sans ça, l'autofocus CDK par défaut ('first-tabbable') cible le
+        // bouton de fermeture, pas le champ (retour utilisateur, 2026-08-02).
+        autoFocus: '.simple-text-entry-dialog__input',
       },
     );
 

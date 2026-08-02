@@ -13,6 +13,20 @@
   min-width: 0;
 }
 
+// Date/heure cliquables séparément (voir ROADMAP.md "UX / Interactions") :
+// ouvrent le picker correspondant du form plutôt que de déplier/replier le
+// panneau (comportement par défaut d'un clic ailleurs dans le header).
+.logistic-header__datetime-part {
+  cursor: pointer;
+  border-radius: var(--nt-radius-sm);
+  transition: color var(--nt-transition-duration) ease;
+
+  &:hover {
+    color: var(--nt-text-color);
+    text-decoration: underline;
+  }
+}
+
 // Même gabarit que `.activity-header__pencil` (ActivityHeaderComponent) : un
 // texte simple (pas un champ) n'invite pas à taper dedans, le crayon reste le
 // seul point d'entrée explicite pour l'éditer.

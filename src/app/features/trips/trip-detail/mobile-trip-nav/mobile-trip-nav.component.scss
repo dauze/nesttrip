@@ -47,7 +47,7 @@
   border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   background: var(--nt-content-background);
   color: var(--nt-text-muted-color);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -146,7 +146,7 @@
   background: transparent;
   color: var(--nt-surface-400);
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -201,11 +201,13 @@
 .subitem {
   flex: 1;
   height: calc(100% - 0.25rem);
+  min-width: 0; // sinon `flex:1` n'accepte pas de rétrécir sous le contenu, cassant l'ellipsis du span ci-dessous
+  padding: 0 0.125rem;
   border: none;
   background: transparent;
   color: var(--nt-surface-400);
   font-family: inherit;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   border-radius: 1rem;
   cursor: pointer;
@@ -220,6 +222,23 @@
 
   i {
     font-size: 0.875rem;
+  }
+
+  // Labels plus longs que "Activités"/"Listes" (ex. "Logement & Transport",
+  // voir ROADMAP.md "UX / Interactions") : passent sur 2 lignes plutôt que
+  // d'être tronqués (retour utilisateur, 2026-08-02 — le libellé complet
+  // doit rester lisible) — `-webkit-line-clamp` reste un garde-fou (ellipsis)
+  // si jamais un libellé futur dépassait même 2 lignes.
+  span {
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.05;
+    text-align: center;
   }
 
   &--show {

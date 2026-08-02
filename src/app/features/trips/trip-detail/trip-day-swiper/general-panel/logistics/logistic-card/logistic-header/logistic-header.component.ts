@@ -45,6 +45,8 @@ export class LogisticHeaderComponent {
   readonly titleEdited = output<string>();
   /** Émis uniquement quand le titre d'un logement est édité via une vraie sélection Google (voir le dialog ci-dessus). */
   readonly placeSelected = output<PlaceSummary>();
+  /** Clic sur une date/heure (voir ROADMAP.md "UX / Interactions") : `LogisticCardComponent` déplie la carte et ouvre le picker correspondant du form. */
+  readonly dateTimeClicked = output<'startDate' | 'startTime' | 'endDate' | 'endTime'>();
 
   readonly typeMeta = LOGISTIC_TYPE_META;
   readonly isLogement = computed(() => this.logistic().type === 'logement');
@@ -108,6 +110,8 @@ export class LogisticHeaderComponent {
         data: { initialValue: this.titleValue(), placeholder: this.typeMeta[this.logistic().type].label, title: 'Titre', optional: true },
         panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
+        // Même correctif que openLogementTitleDialog ci-dessus (retour utilisateur, 2026-08-02).
+        autoFocus: '.simple-text-entry-dialog__input',
       },
     );
 
@@ -116,5 +120,11 @@ export class LogisticHeaderComponent {
       this.titleValue.set(result);
       this.titleEdited.emit(result);
     });
+  }
+
+  /** `stopPropagation` : même besoin que le crayon ci-dessus — sans ça, le clic remonterait au header et déplierait/replierait le panneau au lieu d'ouvrir le picker. */
+  onDateTimeClick(event: Event, field: 'startDate' | 'startTime' | 'endDate' | 'endTime'): void {
+    event.stopPropagation();
+    this.dateTimeClicked.emit(field);
   }
 }

@@ -7,10 +7,10 @@
           class="trip-tasks-tile__item"
           role="button"
           tabindex="0"
-          [style.border-left-color]="task.colorVar"
+          [style.--task-color]="task.colorVar"
           (click)="task.onClick()"
           (keydown.enter)="task.onClick()">
-          {{ task.label }}
+          <span class="trip-tasks-tile__label">{{ task.label }}</span>
         </div>
       }
     </div>

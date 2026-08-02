@@ -34,8 +34,8 @@
            recouvre de toute façon la barre des jours à cet endroit. -->
       @if (!selectionService.active()) {
         <app-floating-add-button
-          [icon]="fabIcon"
-          [ariaLabel]="fabAriaLabel"
+          [icon]="fabIcon()"
+          [ariaLabel]="fabAriaLabel()"
           [bottomOffset]="chromeService.tabsNavBottomReserve()"
           (activate)="onFabActivate()" />
       }

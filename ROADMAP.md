@@ -21,8 +21,9 @@ Décisions prises avec l'utilisateur le 2026-07-31 (section "UX / Interactions")
 - **Cinématique carte du pool Général** : décorrélation totale du scroll (contrairement à la vue jour, inchangée) — tour lent point à point sur 2s d'inactivité, mise en pause (sans jamais forcer la caméra) sur toute action directement sur la carte, reprise du tour là où il en était après 2s. Détail complet dans "✅ Déjà fait".
   - **Correctif (2026-07-31)** : le retour à la vue d'ensemble sur toute action "ailleurs sur la page" (scroll du pool, clic sur une carte d'activité, recherche, tri...) a été retiré — retour utilisateur : ce comportement initial gênait, la cinématique ne doit se mettre en pause QUE sur une action directement sur la carte, jamais ailleurs (`GeneralMapCinematicService` : suppression de `onPageAction`/`onRootPointerDown` et des écouteurs scroll/`pointerdown` associés).
 - **Bouton "+"** : le même menu à 7 entrées (Activité + 5 types Logistique + Note) s'ouvre désormais partout, jour ET onglet Général — l'ancienne création directe contextuelle du "+" sur Général est retirée.
+  - **Précision (2026-08-02)** : revu — ce menu à 7 entrées reste finalement réservé au contexte jour. Dans le pool général (Activités/Logistique/Listes), le "+" est redevenu spécifique à l'écran affiché. Détail dans "✅ Déjà fait".
 
-Ordre d'exécution prévu pour le reste :
+Ordre d'exécution : la section "UX / Interactions" (tout ce qui n'est pas "non prioritaire") a été traitée intégralement le 2026-08-02, voir "✅ Déjà fait". Reste ensuite :
 2. **Activités** (widget horaire simplifié, affichage multi-jours).
 
 Tout ce qui a déjà été livré (avec le détail des correctifs) est listé dans **✅ Déjà fait**, tout en bas.
@@ -56,11 +57,11 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### Activités
 
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
-- Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`)
-- Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user
+- Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`) (non prioritaire)
+- Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user, bonne diée ou pas ? Par rapport à l'item juste après  "dupplication d'une acticvité quand elle est sur plusieurs jours", c'est pas contre productif ?
 - il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour -> A voir comment faire techniquement car on saisie que 1 horaire actuellement 
-- Si l'utilisateur créé ou modifie des date, il faut la placer chronologiquement. Si l'utilisateur drag un drop une activité qui n'a pas de date, la trier normalement. Si l'utilisateur créé une activité sans date, la mettre au début.: Donc si il créé une activité, la positionner au début et pas à la fin
-- Dans le day des activity, il faudrait mettre les transports entre les différentes activités
+- Si l'utilisateur créé ou modifie des dates et horaires dans une activité, il faut la placer chronologiquement, attention à ne pas tout retrier, il faut uniquement placer l'activité au bon endroit et pas casser les potentiels drag and drop qu'il azurait pu faire. Si l'utilisateur drag un drop une activité qui n'a pas de date, la positionner à l'endroit souhaité ET la garder ici, (sauf si plus tard il positionne une date). Si l'utilisateur créé une activité sans date, la mettre au début: Donc si il créé une activité via le bouton "+", il faut la positionner au début et pas à la fin (mettre le scrool et le focus sur l'activité en cours de création)
+- Dans le day des activity, il faudrait mettre les transports entre les différentes activités et donc les faire apparaitre dasn activity timeline. Pour les logements, tu dois mettre les checkin et chekcout entre les activité dans le timeline, mais si c'est juste stay at logement, il faut la laisser en haut et ne pas le mettre dans le activity timeline. Attention a ne pas sort tout car si l'utilisarteur a mit un drag and drop sasn heure au milieeu, il ne faut pas la déplacer 
 
 ### Nouveau voyage / IA (non prioritaire)
 
@@ -88,46 +89,26 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### UX / Interactions
 
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire (non prioritaire)
-- le bouton flotant : fais comme sur facebook, une annimation dui bouton qui se déplace un peut sur le coté pour laisser l'utilisateur cliquer sur le chevron 
-- Renommer logistique en Logement & Transport
-- Rajouter les types de transport préférer en fonction des distances des trajets pour le calcul des distances sur le résumé du voyage, dans trip header en dessous des dates
-  - Les transport doivent être "à pied si temsp en dessous de .. min, velo entre tant et tant de minutes, train sinon. Il faudrait pouvoir donner des intervalles et des modes de transport préféré, pour le calcul des distances. Il faut faire un truc simple à utiliser, mais paramétrable si on veut, j'ai besoin de ton aide pour bien faire et surtout avoir une valeur par defaut facile 
-- Dans les train ,renommer "Ville de départ et "ville d'arrivée" en "gare de départ" et "gare d'arrivé" : pour les avions ,check qu'il met bien l'aeroport 
-- Si on créé un Logistique, ou Liste depuis un jour, après la cinématique de remplissage des données, revenir au jour ou on était
-- Prérenseigner une liste de to take à la création d'un voyage 
-- Rajouter des attributions sur tout pour pouvoir mettres des trajets, hotel et des transports + mettre une note "si le transport et partagé, mettre le prix unitaire'
+- le bouton flotant : fais comme sur facebook, une annimation dui bouton qui se déplace un peut sur le coté pour laisser l'utilisateur cliquer sur le chevron (non prioritaire)
+- Rajouter les types de transport préférer en fonction des distances des trajets pour le calcul des distances sur le résumé du voyage, dans trip header en dessous des dates (non prioritaire)
+  - Les transport doivent être "à pied si temsp en dessous de .. min, velo entre tant et tant de minutes, train sinon. Il faudrait pouvoir donner des intervalles et des modes de transport préféré, pour le calcul des distances. Il faut Remarque : faire un truc simple à utiliser, mais paramétrable si on veut, j'ai besoin de ton aide pour bien faire et surtout avoir une valeur par defaut facile  (non prioritaire)
+- Prérenseigner une liste de to take à la création d'un voyage (non prioritaire)
+- Rajouter des attributions sur tout pour pouvoir mettres des trajets, hotel et des transports + mettre une note "si le transport et partagé, mettre le prix unitaire' (non prioritaire)
   - Cela serait par defaut assigné à tous les voyageurs mais on pourrait en enlever
   - Dans le calcul du prix, compter que ceux ou le voyageur est sur les trajets et les activités
-- Ajouter les fichier depuis la vue d'ensemble et améliorer le tab, en l'état il ne sert pas à grand chose
-- Améliorer nouveau voyage pour faire le même comportement que sur activité en mode mobile : 
-  - le clique sur ville / pay ouvre composant pour saisie google 
-  - le clique sur nom du voyage ouvre le composant de texte simple
-  - Lorsque l'on arrive sur l'écran de nouveau voyage, ouvrir le composant de saisie google
-  - Implémenter le chainage ville, nom du voyage puis date du voyage. Dès que l'on a saisie les dates, faire "Créer le voyage"
-- Améliorer nouveau voyage en mode desktop : positionner le curseur sur Ville / pays 
-- A la connexion : 
-  - si on a pas de voyage, aller directement sur l'onglet "Nouveaux voyage
-  - Si on a un voyage actif, aller directement sur ce voyage. Un voyage actif est un voyage dont la date du jour fait parti d'un des intervale de jour d'un voyage
-  - Si on a plusieurs voyages non actifs, aller sur l'accueil comme actuellement
-- Accelerer un peu l'annimation sur la carte de résumé
-- La gestion des retour dois faire retour à la position d'avant 
-- Enlever "autre"
-- Ecrit trop petit le libellé de la bar 
-- Dans Liste, l'attribuer à une activité et mettre un badge sur l'activité associé 
-- Modifier le logo du train dnas un item logistique
-- Clique sur date + heure du header d'une activité ou autre doit ouvrir le calendrier pour modifier l'élément
-- Rajouter un contrôle sur la date de fin qui ne doit pas être inferieur à la date de début quand il y a intervale
-- Rajouter une recherche dans l'onget Listes
-- Rajouter filtre mon planning et celui de tout le l'équipe
-- Rajouter les transports / hotel des notification directement dans la vu d'ensemble
-- mettre la durée à --:-- si l'utilisateur n'as pas saisi de valeur ou qu'elle n'a pas été calculée
+- Rajouter filtre mon planning et celui de tout le l'équipe (non prioritaire)
+- Rajouter les transports / hotel des notification directement dans la vu d'ensemble (non prioritaire)
+- Parcours nouveau client, arriver directe sur "Ville / Pays" fait bisarre, il faudrait dire bonjour ou un truc comme ça et renommer le nom de la zone
+- Si a la connexion on a qu'un seul trip, aller directement sur ce trip ! 
 
 ### Bugs / fixes
 - A l'ajout d'un train, la cinématique de remplissage ne fonctionne pas
-- Les dates de dé"but et de fin dans l'onglet résumé ne sont pas raffraisi en dynamique et la création modifie l'objet trip de facade à tord
+- Les dates de début et de fin et le titre dans l'onglet résumé et le titre en haut ne sont pas raffraichi en dynamique
+- La modification de la date de début depuis résumé modifie l'objet trip de facade à tord
 - Les boutons du switch de classement ne semble pas centrées
 - Lorsque je drag and drop une activité depuis le pool d'activitgé, il ne faut pas que ça redirige sur le jour (contrairement au drag dasn drop sur un jour précis, ou la, il faut que ça le fasse)
 - Lorsque l'on débranche et scroll sur l'écran de logistique, l'ouverture fonctionne mais le scroll jusqu'à l'élément de logistique ne fonctionne pas
+- Dans la vue résumé, l'écart est 2 fois trop gros entre dépense et résumé &xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxc c
 
 ### Qualité / process
 
@@ -138,6 +119,25 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
 
 ## ✅ Déjà fait
+- **Section "UX / Interactions" traitée intégralement, 2026-08-02** : tous les items non "non prioritaire" restants (17 items), sur demande explicite de l'utilisateur.
+  - **Logement & Transport** : libellé du tab "Logistique" renommé (id technique `logistics` inchangé, seul l'affichage change — même principe que le renommage "Notes" → "Listes").
+  - **Gares/aéroports (Train/Vol)** : côté train, "Ville de départ/arrivée" → "Gare de départ/arrivée" (4 occurrences : champs manuels `TrainFieldsComponent` + dialogs de la cinématique guidée `LogisticDetailsComponent.guidedTrain`). Côté vol, `FlightLookupApiService`/AeroDataBox ne fournit qu'un NOM d'aéroport (ni placeId ni coordonnées) — nouveau `GooglePlaceService.searchOnce$` (recherche ponctuelle, pas debouncée) résout ce nom vers un vrai `PlaceSummary` Google via une recherche texte, avec repli sur l'ancien `PlaceSummary` synthétique (placeId vide) si la recherche échoue ou ne renvoie rien (`LogisticDetailsComponent.resolveAirportPlace`).
+  - **Retour au jour d'origine après création Logistique depuis un jour** (décision : pas pour les Listes, pas de fin de cinématique définie côté liste) : `DayLogisticQuickAddService.create` transmet désormais le jour d'origine à `LogisticFocusService.requestFocus` (`originDayId`) ; `LogisticCardComponent.startGuidedEntry`/`LogisticDetailsComponent.startGuidedEntry` renvoient désormais une vraie `Promise` résolue à la fin du chaînage guidé, que `LogisticsListComponent.focusCardWhenReady` utilise pour déclencher `DayActivityFocusService.requestFocus(originDayId)` — mobile uniquement (`ViewportService.isMobile()`, la cinématique n'existe pas sur desktop).
+  - **Nombre de fichiers dans le résumé** : nouveau `TripSummaryComponent.fileCount` (somme des fichiers de toutes les activités de pool + tous les éléments logistiques du trip), affiché dans la tuile "Résumé".
+  - **Nouveau voyage, mobile** : comportement calqué sur la cinématique guidée des activités — à l'arrivée sur l'écran (`afterNextRender`), enchaînement automatique Ville (`TitleEditDialogComponent`, recherche Google ou texte libre) → Nom (`SimpleTextEntryDialogComponent`, texte simple) → Dates (`DatePickerComponent.openPanel`), auto-soumission dès la plage de dates complète. Les champs Ville/Nom deviennent des déclencheurs (boutons `.app-input-text`) rouvrant leur dialog respectif en dehors du chaînage initial.
+  - **Nouveau voyage, desktop** : focus initial sur le champ Ville/Pays (`AutoCompleteComponent.focus()`, déjà exposé) via le même `afterNextRender`.
+  - **Redirection à la connexion** — **à tester** (retour utilisateur du 2026-08-02 : logique à confirmer sur un vrai flux de connexion complet, plusieurs scénarios trip actif/inactif/0 trip) : nouveau type `TripSummary` (`trip.model.ts`, `earliestDay`/`latestDay` calculés côté `TripDataSource.getTrips$`/`TripStore.saveTrip` depuis les clés du map Firestore `days`, sans mapper complet) — `AccueilTripComponent` : 0 trip → `/trips/new` ; un trip **actif** (jour du jour dans l'intervalle `earliestDay`-`latestDay`) → directement ce trip ; sinon (aucun actif, un ou plusieurs) → reste sur l'accueil. Remplace l'ancien raccourci "1 seul trip → y aller" qui ne regardait pas les dates.
+  - **Animation carte Résumé** : `SEGMENT_MS`/`RETURN_MS` réduits (4500/3600 → 3200/2500) sur demande utilisateur ("un peu" plus rapide) — `DWELL_MS` (pause sur chaque point) inchangé, seuls les déplacements sont concernés.
+  - **Bouton "retour" navigateur** : `TripDetailComponent.updateFragment` utilise désormais `Location.go` (push, annulable par "retour") au lieu de `Location.replaceState` (qui écrasait systématiquement l'entrée courante, rendant le retour inopérant) — `Location.go` ne déclenche jamais `popstate` lui-même, donc pas de boucle avec le nouveau `bindPopState` (consomme les VRAIS retours/avances pour resynchroniser `activeDay`/le swiper sans repousser d'entrée). Effet de bord découvert et corrigé dans la foulée : `TripsComponent.currentUrl` (titre de la toolbar/`showBack`) ne réagissait qu'aux `NavigationEnd` du Router, jamais aux changements de fragment "bruts" (`Location.go`/retour navigateur) — restait donc figé sur la première URL sans fragment et retombait sur "NestTrip" après un retour ; `currentUrl` fusionne maintenant `router.events` ET `Location.subscribe`, et la regex d'extraction d'id (`toolbarTitle`) exclut désormais `#` (`[^/?#]+`) pour ne pas capturer le fragment dans l'id. Vérifié en conditions réelles (Playwright, chaîne complète tab→tab→retour×4→avance×2, titre et onglet actif corrects à chaque étape).
+  - **Enlever "Autre" du menu "+"** : le menu à 7 entrées (uniquement sur un jour désormais, voir plus bas) filtre le type `other` des types logistiques proposés — reste un type valide côté données/formulaire, juste retiré de ce menu de création rapide.
+  - **Libellés barre mobile agrandis** : `.tab`/`.day-chip` (0.75rem → 0.8125rem), `.subitem` (0.625rem → 0.6875rem) dans `MobileTripNavComponent` — au passage, `.subitem span` gagne un `text-overflow: ellipsis` (labels plus longs possibles depuis le renommage "Logement & Transport").
+  - **Association Liste ↔ Activité** (décision : bidirectionnelle, stockage unique sur l'`Item` liste) : nouveau champ optionnel `Item.linkedActivityInstanceId` (`notes.model.ts`, pas de mapper séparé — ce modèle est déjà utilisé tel quel côté Firestore). `TripStore.getLinkedNoteItems`/`getDayActivityWithDay` (nouveaux sélecteurs) permettent la recherche inverse côté activité (aucune donnée dupliquée là) et la résolution jour+vue d'une instance potentiellement supprimée depuis (repli `undefined`, pas de nettoyage en cascade des liens). Deux nouveaux tiroirs de sélection, liste plate + en-têtes de section (même pattern que `LogisticsListComponent.typeRows`) : `LinkActivityDialogComponent` (depuis une Liste, activités groupées par jour chronologique, dates visibles) et `LinkListDialogComponent` (depuis une Activité, liste plate des Listes du trip). Chip cliquable des deux côtés (`app-chip`, removable) : côté Liste navigue vers le jour+activité (`DayActivityFocusService`), côté Activité vers l'onglet Listes (`NotesFocusService.requestFocus`, nouvelle capacité — auparavant `requestCreate` seul ; l'effect manquant dans `TripDetailComponent` pour basculer vers le tab Listes a été ajouté au passage, absent jusqu'ici).
+  - **Logo du train** : PrimeIcons n'a aucune icône train/rail — nouvelle icône maison `.nt-icon-train` (SVG en `mask-image`, respecte `currentColor` comme un glyphe PrimeIcons, voir `src/styles/icons.scss`), décision actée avec l'utilisateur plutôt que de forcer une icône PrimeIcons sans rapport.
+  - **Clic sur date/heure du header ouvre l'éditeur correspondant** : `ActivityHeaderComponent`/`LogisticHeaderComponent` émettent désormais des events dédiés (`timeClicked`/`dateTimeClicked`) au clic sur chaque fragment date OU heure (séparés pour la logistique : début/fin × date/heure, 4 zones) — `ActivityCardComponent`/`LogisticCardComponent` déplient la carte puis appellent le picker correspondant sur le form (`ActivityFormComponent.openStartTimeEditor`/`LogisticDetailsComponent.openStart{Date,Time}`/`openEnd{Date,Time}`), tiroir mobile ou champ déjà visible sur desktop.
+  - **Blocage date/heure de fin < date/heure de début** : `DatePickerComponent` gagne un input `minDate` (jours antérieurs grisés/non cliquables dans le panneau ET saisie clavier desktop ignorée) ; `TimePickerDialogComponent` gagne un input `minTime` (toute sélection antérieure est remontée à cette valeur plutôt que rejetée silencieusement). Activités : `endTime` contraint par `startTime` (pas de champ date, une activité reste sur un seul jour). Logistique : `endDate` contraint par `startDate`, `endTime` par `startTime` UNIQUEMENT si début/fin tombent le même jour (sinon toute heure de fin est valide).
+  - **Recherche dans Listes** : même pattern que `TripActivitiesComponent` (icône + champ + bouton croix) — matche titre OU texte de n'importe quel élément de la liste. Le drag-and-drop (réordonnancement manuel) est désactivé pendant une recherche active (`[cdkDragDisabled]` + garde dans `onDrop`) : `reorderItems` remplace la liste complète du trip, un drop sur une liste filtrée aurait fait perdre les items masqués.
+  - **Style tuile "Tâches"** (retour utilisateur : un bord gauche seul, sans bord ailleurs, faisait "bizarre" ; des bords partout aurait été trop lourd) : remplacé par un point de couleur (`.trip-tasks-tile__dot`) + un léger lavis de fond dans la même teinte (`color-mix`, ~7% d'opacité, ~14% au survol) sur toute la carte, plutôt qu'une bordure.
+  - **Bouton "+" contextuel dans le pool** (précise la décision du 2026-07-31, voir plan d'exécution en tête) : le menu à 7 entrées ne s'ouvre plus que depuis un jour (ou l'onglet Résumé, faute d'action contextuelle évidente) ; sur Activités/Logistique/Listes, le "+" redevient une création directe propre à l'écran (`TripCreationTargetService.register('logistics'/'notes', ...)`, réintroduit — déjà en place pour `'activities'`), icône/aria-label du bouton flottant contextuels (`TripDetailComponent.fabIcon`/`fabAriaLabel`, désormais des `computed`).
 - **Session Bugs / fixes, 2026-08-01/02** : les 12 items de cette section, avec un aller-retour de retours utilisateur sur certains (détails ci-dessous).
   - **Drag-and-drop pool, survol raté quand le calendrier s'ouvre sous la boule** : un premier correctif (réévaluer le survol depuis `registerDayCells` avec la dernière position connue du pointeur) s'est révélé insuffisant — confirmé encore cassé par l'utilisateur. Cause racine réelle trouvée par repro Playwright instrumentée (geste pointerdown/hold/pointerup réel, sans mouvement) : pendant toute l'animation d'ouverture du sheet (croissance CSS de `height`, ~300-650ms), les rects des cellules jour sont une **cible mouvante** — `ActivityDayDispatchOverlayComponent.sheetExpanded` bascule à `true` dès le DÉBUT de cette transition (pour la déclencher), pas une fois "pleinement déployé" comme l'affirmait son commentaire ; `startEdgeAutoScroll` s'appuyait dessus pour armer sa zone de détection de bord, donc tournait (et re-capturait les rects, et parfois auto-scrollait) tout au long de l'animation, sur une géométrie qui n'avait pas fini de bouger. Nouveau signal dédié `sheetSettled` (bascule à `true` seulement au `transitionend` réel de la hauteur du sheet), utilisé par `startEdgeAutoScroll` à la place de `sheetExpanded`. `bindSheetTransitionEnd` capture aussi désormais les transitions individuelles (en cascade, `transitionDelay`) de chaque cellule jour, pas seulement celle du sheet. Reproduit puis vérifié corrigé en conditions réelles (Playwright, geste de bout en bout : l'activité apparaît bien sur le jour ciblé).
   - **Animation cdkDrag manquante (notes/todos)** : il manquait la règle CSS `.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) { transition: transform ... }` (`src/styles/animations.scss`) — CDK réordonne bien les cartes survolées via un `transform` inline pendant le drag, mais sans transition dessus tant que cette règle n'est pas fournie par l'appli.

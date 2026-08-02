@@ -2,17 +2,21 @@ import { Injectable, signal } from '@angular/core';
 
 export interface NotesFocusRequest {
   token: number;
+  /** Item existant à mettre en évidence/scroller (voir `requestFocus`) — absent pour une simple création (`requestCreate`). */
+  itemId?: string;
 }
 
 /**
- * Demande de navigation croisée "va sur le tab Listes et crée-y une nouvelle
- * note" (entrée "Liste" du menu "Ajouter", voir
- * `TripDetailComponent.addMenuItems`, ROADMAP.md "UX / Interactions"). Même
- * pattern que `LogisticFocusService` : `TripDetailComponent` bascule sur le
- * tab Listes (id technique `'notes'`), `NotesComponent` crée la note
- * (`addItem()`, centre + focus le champ) puis consomme (`clear`) la requête —
- * deux consommateurs indépendants du même signal `pending`, chacun
- * réagissant à sa propre échelle.
+ * Demande de navigation croisée "va sur le tab Listes" (voir ROADMAP.md "UX
+ * / Interactions"), deux usages : `requestCreate` (entrée "Liste" du menu
+ * "Ajouter", voir `TripDetailComponent.addMenuItems`) crée une nouvelle
+ * note ; `requestFocus` (chip "liste liée" depuis une activité, voir
+ * `ActivityFormComponent`) scrolle vers un item EXISTANT sans en créer.
+ * Même pattern que `LogisticFocusService` : `TripDetailComponent` bascule
+ * sur le tab Listes (id technique `'notes'`), `NotesComponent` traite la
+ * requête (crée ou scrolle selon `itemId`) puis consomme (`clear`) — deux
+ * consommateurs indépendants du même signal `pending`, chacun réagissant à
+ * sa propre échelle.
  */
 @Injectable()
 export class NotesFocusService {
@@ -23,6 +27,10 @@ export class NotesFocusService {
 
   requestCreate(): void {
     this._pending.set({ token: ++this.tokenSeq });
+  }
+
+  requestFocus(itemId: string): void {
+    this._pending.set({ itemId, token: ++this.tokenSeq });
   }
 
   clear(token: number): void {

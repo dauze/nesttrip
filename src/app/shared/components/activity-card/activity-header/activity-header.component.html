@@ -65,7 +65,12 @@
     <div class="flex align-items-center gap-2 flex-wrap">
       @if (dayId()) {
         @if (activity().startTime ) {
-        <span class="nt-text-muted text-xs flex align-items-center gap-1">
+        <span
+          class="nt-text-muted text-xs flex align-items-center gap-1 cursor-pointer"
+          role="button"
+          tabindex="0"
+          (click)="onTimeClick($event)"
+          (keydown.enter)="onTimeClick($event)">
           <i class="pi pi-clock activity-header__meta-icon"></i>
           {{ activity().startTime | date:'HH:mm' }}
         </span>

@@ -173,6 +173,7 @@ export class TripFacade {
 
   getDayActivities = this.store.getDayActivities.bind(this.store);
   getDayActivity = this.store.getDayActivity.bind(this.store);
+  getDayActivityWithDay = this.store.getDayActivityWithDay.bind(this.store);
   getPoolActivity = this.store.getPoolActivity.bind(this.store);
   getPoolActivityView = this.store.getPoolActivityView.bind(this.store);
   /** Toutes les activités de pool d'un trip (placées sur un/plusieurs jours, ou aucun). */
@@ -180,6 +181,7 @@ export class TripFacade {
   /** Map poolActivityId -> liste des placements (jour + instance) où elle est présente. */
   getActivityPlacements = this.store.getActivityPlacements.bind(this.store);
   getNotesItems = this.store.getNotesItems.bind(this.store);
+  getLinkedNoteItems = this.store.getLinkedNoteItems.bind(this.store);
   /** Devise par défaut du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripCurrency). */
   getTripCurrency = this.store.getTripCurrency.bind(this.store);
   /** Titre du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTitle). */

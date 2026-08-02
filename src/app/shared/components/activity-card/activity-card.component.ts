@@ -37,6 +37,8 @@ import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 const HOLD_DELAY_MS = 20;
 /** Laisse le temps à l'animation de repli du panneau de se terminer avant de décrocher la carte. */
 const PANEL_COLLAPSE_DELAY_MS = 300;
+/** Laisse le temps à l'animation de dépli du panneau de se terminer avant d'ouvrir un éditeur du form (voir `openStartTime`) — même valeur que `PANEL_EXPAND_DELAY_MS` dans LogisticCardComponent. */
+const PANEL_EXPAND_DELAY_MS = 300;
 
 @Component({
   selector: 'app-activity-card',
@@ -176,6 +178,12 @@ export class ActivityCardComponent {
   /** Mobile uniquement, post-création (voir DayActivityCreationService) : démarre le chaînage Type→Résa→Début→Fin→Prix. No-op hors contexte jour (pool général, où `app-activity-form` n'est jamais monté). */
   startGuidedEntry(): void {
     this.formComponent()?.startGuidedEntry();
+  }
+
+  /** Clic sur l'heure du header (voir ActivityHeaderComponent, ROADMAP.md "UX / Interactions") : déplie la carte puis ouvre l'éditeur d'heure du form (tiroir mobile, champ déjà visible sur desktop une fois dépliée). */
+  protected openStartTime(): void {
+    this.collapsed.set(false);
+    setTimeout(() => this.formComponent()?.openStartTimeEditor(), PANEL_EXPAND_DELAY_MS);
   }
 
   // --- Sélection d'un lieu depuis l'autocomplete + récupération des photos ---

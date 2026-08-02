@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -9,6 +9,8 @@ import { DatePickerComponent } from '@app/shared/components/date-picker/date-pic
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { NotesFieldComponent } from '@app/shared/components/notes-field/notes-field.component';
 import { PriceFieldComponent } from '@app/shared/components/price-field/price-field.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ChipComponent } from '@app/shared/components/chip/chip.component';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
@@ -16,6 +18,10 @@ import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
+import { DialogService } from '@app/shared/services/dialog.service';
+import { ViewportService } from '@app/core/services/viewport.service';
+import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
+import { LinkListDialogComponent, LinkListDialogData, LinkListDialogResult } from './link-list-dialog/link-list-dialog.component';
 
 @Component({
   selector: 'app-activity-form',
@@ -24,7 +30,7 @@ import { TimePickerDialogComponent } from '@app/shared/components/time-picker-di
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
     SelectComponent, DatePickerComponent, DividerComponent, NotesFieldComponent, PriceFieldComponent,
-    TimePickerDialogComponent
+    TimePickerDialogComponent, ButtonComponent, ChipComponent,
   ],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.scss',
@@ -33,6 +39,10 @@ export class ActivityFormComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly notesFocusService = inject(NotesFocusService);
+  private readonly viewport = inject(ViewportService);
 
   readonly tripId = input.required<string>();
   /** Toujours renseigné : ce composant n'est monté qu'en contexte jour (jamais dans le pool général). */
@@ -293,7 +303,22 @@ export class ActivityFormComponent {
       this.isProgrammaticUpdate = false;
       return;
     }
-    this.syncDurationTimeControlFromForm();
+    // Durée nulle ET pas de début/fin pour la calculer : reste non renseignée
+    // (voir ROADMAP.md "UX / Interactions") — `syncDurationTimeControlFromForm`
+    // construirait ici un `Date` à 00:00 bien réel, affiché "00:00" au lieu
+    // du placeholder "--:--" de `TimePickerDialogComponent`.
+    this.durationTimeControl.setValue(null, { emitEvent: false });
+  }
+
+  /**
+   * Depuis le clic sur l'heure du header (voir ActivityHeaderComponent/
+   * ActivityCardComponent, ROADMAP.md "UX / Interactions") : ouvre le
+   * tiroir mobile dédié. Sur desktop, le champ Début est déjà visible en
+   * ligne une fois la carte dépliée (voir ActivityCardComponent.openStartTime) —
+   * rien de plus à faire, même garde que `LogisticDetailsComponent.guidedTime`.
+   */
+  openStartTimeEditor(): void {
+    if (this.viewport.isMobile()) this.startTimePickerRef().openDialog();
   }
 
   /**
@@ -334,5 +359,34 @@ export class ActivityFormComponent {
       callback(value);
     });
     this.destroyRef.onDestroy(() => subscription.unsubscribe());
+  }
+
+  // ─── Liste(s) liée(s) (voir ROADMAP.md "UX / Interactions") ────────────────
+  // Rien n'est stocké côté activité : recherche inverse des `Item` (Listes)
+  // dont `linkedActivityInstanceId` pointe vers CETTE instance (voir
+  // TripStore.getLinkedNoteItems) — plusieurs listes peuvent en théorie
+  // pointer vers la même activité, d'où un chip par item plutôt qu'un seul.
+
+  readonly linkedListItems = computed(() => this.tripFacade.getLinkedNoteItems(this.tripId(), this.activity().id)());
+
+  /** Tiroir "Lier une liste" — voir LinkListDialogComponent. */
+  openLinkListDialog(): void {
+    const dialogRef = this.dialogService.open<LinkListDialogResult | undefined, LinkListDialogData>(
+      LinkListDialogComponent,
+      { data: { tripId: this.tripId() }, panelClass: 'app-wide-dialog-panel', viewContainerRef: this.viewContainerRef },
+    );
+    dialogRef.closed.subscribe((result) => {
+      if (!result) return;
+      this.tripFacade.updateItem(this.tripId(), result.itemId, { linkedActivityInstanceId: this.activity().id });
+    });
+  }
+
+  unlinkList(itemId: string): void {
+    this.tripFacade.updateItem(this.tripId(), itemId, { linkedActivityInstanceId: undefined });
+  }
+
+  /** Clic sur un chip "liste liée" : navigue vers le tab Listes et scrolle jusqu'à cet item (voir NotesFocusService/NotesComponent). */
+  navigateToLinkedList(itemId: string): void {
+    this.notesFocusService.requestFocus(itemId);
   }
 }

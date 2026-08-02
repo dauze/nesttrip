@@ -104,8 +104,8 @@
           <i class="pi pi-calendar-times text-sm"></i>{{ dateLabels().endLabel }}
         </label>
         <div class="flex align-items-center gap-1">
-          <app-date-picker #endDatePicker [label]="dateLabels().endLabel" inputId="logistic-end-date" formControlName="endDate" class="flex-1 min-w-0 transparent-inputtext" />
-          <app-time-picker-dialog #endTimePicker [label]="'Heure — ' + dateLabels().endLabel" formControlName="endTime" class="flex-none" />
+          <app-date-picker #endDatePicker [label]="dateLabels().endLabel" [minDate]="endDateMinDate()" inputId="logistic-end-date" formControlName="endDate" class="flex-1 min-w-0 transparent-inputtext" />
+          <app-time-picker-dialog #endTimePicker [label]="'Heure — ' + dateLabels().endLabel" [minTime]="endTimeMinTime()" formControlName="endTime" class="flex-none" />
         </div>
       </div>
     </div>

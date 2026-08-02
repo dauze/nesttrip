@@ -1,9 +1,12 @@
-import {Component, inject, input, ChangeDetectionStrategy, computed, effect, signal} from '@angular/core';
+import {Component, DestroyRef, ViewContainerRef, inject, input, ChangeDetectionStrategy, computed, effect, signal} from '@angular/core';
 import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
+import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ChipComponent } from '@app/shared/components/chip/chip.component';
 import { FieldsetComponent } from '@app/shared/components/fieldset/fieldset.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
@@ -13,16 +16,27 @@ import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-dr
 import {Notes, Item, Point} from './notes.model';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { NotesType } from '@app/core/enums/notes.type';
 import { CardComponent } from '@app/shared/components/card/card.component';
+import { DialogService } from '@app/shared/services/dialog.service';
+import { LinkActivityDialogComponent, LinkActivityDialogData, LinkActivityDialogResult } from './link-activity-dialog/link-activity-dialog.component';
+
+import { InputTextDirective } from '@app/shared/directives/input-text.directive';
+
+/** Titre OU texte d'un élément quelconque de la liste (voir ROADMAP.md "UX / Interactions"). */
+function matchesSearch(item: Item, term: string): boolean {
+  if (item.title.toLowerCase().includes(term)) return true;
+  return item.elements.some((p) => p.text.toLowerCase().includes(term));
+}
 
 @Component({
   selector: 'app-notes',
   standalone: true,
   imports: [
-    PanelComponent, TextareaDirective, FormsModule, CheckboxComponent, ButtonComponent,
+    PanelComponent, TextareaDirective, FormsModule, CheckboxComponent, ButtonComponent, ChipComponent,
     DragDropModule, FieldsetComponent, MessageComponent, CardComponent,
-    SelectableDirective, LongPressDirective,
+    SelectableDirective, LongPressDirective, InputTextDirective,
   ],
   templateUrl: './notes.component.html',
   styleUrl: './notes.component.scss',
@@ -31,6 +45,11 @@ import { CardComponent } from '@app/shared/components/card/card.component';
 export class NotesComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly notesFocusService = inject(NotesFocusService);
+  private readonly fabTarget = inject(TripCreationTargetService);
+  private readonly dayActivityFocusService = inject(DayActivityFocusService);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
@@ -38,32 +57,106 @@ export class NotesComponent {
   readonly items = computed(() => this.tripFacade.getNotesItems(this.tripId())());
   readonly activePointId = signal<string | null>(null);
 
+  // Recherche (voir ROADMAP.md "UX / Interactions", même pattern que TripActivitiesComponent) :
+  // titre OU contenu (texte de n'importe quel élément de la liste).
+  readonly searchTerm = signal('');
+  private readonly normalizedSearch = computed(() => this.searchTerm().trim().toLowerCase());
+  readonly filteredItems = computed(() => {
+    const term = this.normalizedSearch();
+    if (!term) return this.items();
+    return this.items().filter((item) => matchesSearch(item, term));
+  });
+  readonly matchCount = computed(() => this.filteredItems().length);
+
   constructor() {
-    // Demande de navigation croisée (voir NotesFocusService, entrée "Note"
-    // du menu "Ajouter" — ROADMAP.md "UX / Interactions") : consomme dès que
-    // ce composant est monté (bascule de tab déjà faite par
+    // "+" flottant (voir TripDetailComponent.onFabActivate) : ce tab est un
+    // singleton comme un jour, donc un enregistrement one-shot au montage
+    // suffit (pas d'effect, pas d'input dont dépendre).
+    const unregisterFab = this.fabTarget.register('notes', () => this.addItem());
+    this.destroyRef.onDestroy(unregisterFab);
+
+    // Demande de navigation croisée (voir NotesFocusService) : entrée
+    // "Liste" du menu "Ajouter" (`itemId` absent -> création) OU chip
+    // "liste liée" depuis une activité (`itemId` présent -> scroll vers
+    // l'item existant, voir ROADMAP.md "UX / Interactions") — consomme dès
+    // que ce composant est monté (bascule de tab déjà faite par
     // TripDetailComponent, voir son effect).
     effect(() => {
       const pending = this.notesFocusService.pending();
       if (!pending) return;
       this.notesFocusService.clear(pending.token);
-      this.addItem();
+      if (pending.itemId) {
+        this.focusItemWhenReady(pending.itemId);
+      } else {
+        this.addItem();
+      }
     });
+  }
+
+  /** Retente sur quelques frames avant d'abandonner silencieusement — même raison que `LogisticsListComponent.focusCardWhenReady` (composant tout juste monté, la carte ciblée peut ne pas encore être dans le DOM). */
+  private focusItemWhenReady(itemId: string, attemptsLeft = 15): void {
+    const el = document.querySelector<HTMLElement>(`[data-title-id="${itemId}"]`);
+    if (!el) {
+      if (attemptsLeft <= 0) return;
+      requestAnimationFrame(() => this.focusItemWhenReady(itemId, attemptsLeft - 1));
+      return;
+    }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  /** Vue composée (jour + activité) de l'activité liée à cette liste, ou `undefined` si non liée / si l'activité a depuis été supprimée (voir `Item.linkedActivityInstanceId`, ROADMAP.md "UX / Interactions"). */
+  linkedActivity(item: Item): { dayId: Date; activity: Activity } | undefined {
+    if (!item.linkedActivityInstanceId) return undefined;
+    return this.tripFacade.getDayActivityWithDay(this.tripId(), item.linkedActivityInstanceId)();
+  }
+
+  /** Tiroir "Lier une activité" — voir LinkActivityDialogComponent. */
+  openLinkActivityDialog(item: Item): void {
+    const dialogRef = this.dialogService.open<LinkActivityDialogResult | undefined, LinkActivityDialogData>(
+      LinkActivityDialogComponent,
+      { data: { tripId: this.tripId() }, panelClass: 'app-wide-dialog-panel', viewContainerRef: this.viewContainerRef },
+    );
+    dialogRef.closed.subscribe((result) => {
+      if (!result) return;
+      this.tripFacade.updateItem(this.tripId(), item.id, { linkedActivityInstanceId: result.instanceId });
+    });
+  }
+
+  unlinkActivity(item: Item): void {
+    this.tripFacade.updateItem(this.tripId(), item.id, { linkedActivityInstanceId: undefined });
+  }
+
+  /** Clic sur le chip "activité liée" : navigue vers le bon jour + activité (voir DayActivityFocusService, même mécanisme que la carte Résumé). */
+  navigateToLinkedActivity(dayId: Date, instanceId: string): void {
+    this.dayActivityFocusService.requestFocus(dayId.toISOString(), instanceId);
   }
 
   selectableRef(itemId: string): SelectableItemRef {
     return { kind: 'noteItem', id: itemId };
   }
 
+  onSearchInput(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
+
   // ─── Events ─────────────────────────────────────────────────────────────────
+  /** Opère sur `filteredItems()` (= `items()` quand aucune recherche n'est active) : le drag-and-drop est désactivé pendant une recherche (voir `[cdkDragDisabled]` dans le template), donc `previousIndex`/`currentIndex` restent toujours relatifs à la liste complète non filtrée dans ce cas. */
   onDrop(event: CdkDragDrop<Item[]>): void {
-    if (event.previousIndex === event.currentIndex) return;
-    const items = [...this.items()];
+    // Garde-fou en plus de `[cdkDragDisabled]` (voir le template) : un drop
+    // pendant une recherche active réordonnerait `filteredItems()` (un
+    // sous-ensemble), et `reorderItems` REMPLACE la liste complète du trip —
+    // les items masqués par le filtre seraient perdus.
+    if (this.searchTerm().trim() || event.previousIndex === event.currentIndex) return;
+    const items = [...this.filteredItems()];
     moveItemInArray(items, event.previousIndex, event.currentIndex);
     this.tripFacade.reorderItems(this.tripId(), items.map(a => a.id));
   }
 
-  /** Point d'entrée pour l'entrée "Note" du menu "Ajouter" (voir NotesFocusService, atteignable depuis n'importe quel onglet — jour ou Général). */
+  /** Point d'entrée pour le "+" flottant sur ce tab, et pour l'entrée "Liste" du menu "Ajouter" depuis un jour/Résumé (voir NotesFocusService). */
   addItem(): void {
    const newItem: Item = {
       id: crypto.randomUUID(),

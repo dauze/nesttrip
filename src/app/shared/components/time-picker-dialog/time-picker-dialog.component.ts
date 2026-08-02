@@ -65,6 +65,8 @@ export class TimePickerDialogComponent
 
     /** Titre du dialog mobile (ex. "Heure de début") — court, même registre que les autres dialogs (Titre, Notes, Prix) ; retombe sur un libellé générique selon `mode` si non fourni, voir TimePickerClockComponent. */
     readonly label = input<string>('');
+    /** Heure minimum (voir ROADMAP.md "UX / Interactions") : n'a de sens que si début/fin tombent le MÊME jour (comparaison en heure seule, `applySelectedDate` ignore la partie date) — laisser à `null` sinon. Toute saisie antérieure est remontée à cette valeur plutôt que rejetée silencieusement. */
+    readonly minTime = input<Date | null>(null);
 
     currentDate = signal<Date | null>(null);
 
@@ -129,8 +131,7 @@ export class TimePickerDialogComponent
                 this.closed.emit(undefined);
                 return;
             }
-            this.applySelectedDate(selected);
-            this.closed.emit(selected);
+            this.closed.emit(this.applySelectedDate(selected));
         });
     }
 
@@ -161,7 +162,8 @@ export class TimePickerDialogComponent
         return date;
     }
 
-    private applySelectedDate(date: Date): void {
+    private applySelectedDate(rawDate: Date): Date {
+        const date = this.clampToMinTime(rawDate);
         const hour = String(date.getHours()).padStart(2, '0');
         const minute = String(date.getMinutes()).padStart(2, '0');
         this.currentDate.set(date);
@@ -170,5 +172,19 @@ export class TimePickerDialogComponent
         this.displayText.set(`${hour}:${minute}`);
         this.onChange?.(date);
         this.onTouch?.();
+        return date;
+    }
+
+    /** Voir la doc de `minTime` — ne compare que l'heure/minute, ignore la partie date des deux côtés (le champ ne connaît que l'heure du jour, pas quel jour). */
+    private clampToMinTime(date: Date): Date {
+        const min = this.minTime();
+        if (!min) return date;
+        const dateMinutes = date.getHours() * 60 + date.getMinutes();
+        const minMinutes = min.getHours() * 60 + min.getMinutes();
+        if (dateMinutes >= minMinutes) return date;
+
+        const clamped = new Date(date);
+        clamped.setHours(min.getHours(), min.getMinutes(), 0, 0);
+        return clamped;
     }
 }

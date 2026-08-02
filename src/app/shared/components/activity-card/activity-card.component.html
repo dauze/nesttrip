@@ -26,7 +26,8 @@
           [hideBookingMeta]="hideBookingMeta()"
           (placeSelected)="onPlaceSelected($event)"
           (titleEdited)="onTitleChanged($event)"
-          (placementClicked)="onPlacementClicked($event)" />
+          (placementClicked)="onPlacementClicked($event)"
+          (timeClicked)="openStartTime()" />
       </div>
 
       @if (inDayList() && dayId(); as day) {

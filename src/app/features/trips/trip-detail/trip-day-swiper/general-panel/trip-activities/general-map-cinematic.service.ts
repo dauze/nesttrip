@@ -15,9 +15,11 @@ const IDLE_MS = 2000;
 // Déplacement caméra du pool volontairement bien plus lent que l'ancien
 // suivi en direct (retour utilisateur "au moins 3 fois plus lent", voir
 // ROADMAP.md "UX / Interactions") — un tour d'ensemble n'a pas besoin d'être
-// rapide, contrairement à un suivi de scroll.
-const SEGMENT_MS = 4500;
-const RETURN_MS = 3600;
+// rapide, contrairement à un suivi de scroll. Réaccéléré un peu le
+// 2026-08-02 (retour utilisateur) : uniquement les déplacements
+// point-à-point, `DWELL_MS` (pause SUR chaque point) reste inchangé.
+const SEGMENT_MS = 3200;
+const RETURN_MS = 2500;
 /** Légère pause sur chaque point atteint pendant le tour, avant d'enchaîner vers le suivant — voir ROADMAP.md "UX / Interactions". */
 const DWELL_MS = 700;
 /**

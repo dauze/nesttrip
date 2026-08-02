@@ -17,10 +17,14 @@
       </button>
     </div>
 
-    <span class="nt-text-muted text-xs flex align-items-center gap-1">
+    <span class="nt-text-muted text-xs flex align-items-center gap-1 flex-wrap">
       <i class="pi pi-calendar logistic-header__meta-icon"></i>
       @if (logistic().startDateTime || logistic().endDateTime) {
-        {{ logistic().startDateTime | date:'dd/MM HH:mm' }} → {{ logistic().endDateTime | date:'dd/MM HH:mm' }}
+        <span class="logistic-header__datetime-part" role="button" tabindex="0" (click)="onDateTimeClick($event, 'startDate')" (keydown.enter)="onDateTimeClick($event, 'startDate')">{{ logistic().startDateTime | date:'dd/MM' }}</span>
+        <span class="logistic-header__datetime-part" role="button" tabindex="0" (click)="onDateTimeClick($event, 'startTime')" (keydown.enter)="onDateTimeClick($event, 'startTime')">{{ logistic().startDateTime | date:'HH:mm' }}</span>
+        <span>→</span>
+        <span class="logistic-header__datetime-part" role="button" tabindex="0" (click)="onDateTimeClick($event, 'endDate')" (keydown.enter)="onDateTimeClick($event, 'endDate')">{{ logistic().endDateTime | date:'dd/MM' }}</span>
+        <span class="logistic-header__datetime-part" role="button" tabindex="0" (click)="onDateTimeClick($event, 'endTime')" (keydown.enter)="onDateTimeClick($event, 'endTime')">{{ logistic().endDateTime | date:'HH:mm' }}</span>
       } @else {
         Date à renseigner
       }

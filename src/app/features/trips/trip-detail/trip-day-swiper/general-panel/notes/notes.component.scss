@@ -13,6 +13,33 @@
   margin-inline: auto;
 }
 
+// Recherche (voir ROADMAP.md "UX / Interactions") — même anatomie que
+// `.trip-activities__search` (TripActivitiesComponent).
+.notes-search {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.notes-search__icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.notes-search__input {
+  padding-left: 2.25rem !important;
+  padding-right: 2.25rem !important;
+}
+
+.notes-search__clear {
+  position: absolute;
+  top: 50%;
+  right: 0.15rem;
+  transform: translateY(-50%);
+}
+
 // Padding + marge négative : agrandit la zone tactile réelle des poignées
 // de drag and drop sans déplacer visuellement les icônes ni pousser les
 // éléments voisins.

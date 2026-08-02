@@ -10,7 +10,7 @@
           [checked]="sel.isSelected()"
           (click)="sel.onCheckboxClick($event)"
         />
-        <app-logistic-header class="flex-1 min-w-0" [logistic]="logistic" (titleEdited)="onTitleChanged($event)" (placeSelected)="onHeaderPlaceSelected($event)" />
+        <app-logistic-header class="flex-1 min-w-0" [logistic]="logistic" (titleEdited)="onTitleChanged($event)" (placeSelected)="onHeaderPlaceSelected($event)" (dateTimeClicked)="onDateTimeClicked($event)" />
         @if (timeStatus() === 'current') {
           <app-tag severity="success" value="En cours" class="flex-shrink-0" />
         }

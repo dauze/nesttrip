@@ -113,6 +113,15 @@ export class TripSummaryComponent {
 
   readonly dayCount = computed(() => this.tripFacade.activeTrip()?.days.length ?? 0);
 
+  /** Fichiers vivant uniquement sur le pool (activités) — jamais dupliqués par instance de jour, voir CLAUDE.md — plus ceux des éléments logistiques. */
+  readonly fileCount = computed(() => {
+    const activityFiles = this.tripFacade.getAllPoolActivities(this.tripId())()
+      .reduce((sum, a) => sum + a.files.length, 0);
+    const logisticFiles = this.tripFacade.getAllLogistics(this.tripId())()
+      .reduce((sum, l) => sum + l.files.length, 0);
+    return activityFiles + logisticFiles;
+  });
+
   /** Points de la carte, ordonnés chronologiquement (par jour) — voir `allPlacedActivities`. */
   readonly generalMapPoints = computed<DayMapPoint[]>(() =>
     this.allPlacedActivities()

@@ -88,9 +88,34 @@ export class LogisticCardComponent {
     this.tripFacade.updateLogistic(this.tripId(), { ...logistic, place });
   }
 
-  /** Déclenché juste après la création (voir LogisticsCreationService) : la carte démarre toujours repliée (`initCollapsed=true`), on la déplie d'abord pour que le chaînage guidé (LogisticDetailsComponent.startGuidedEntry) s'ancre correctement. `skipTypeStep` : le type est déjà connu (création depuis le menu "Ajouter" d'un jour, voir DayLogisticQuickAddService), la 1ère étape "Type" est sautée. */
-  startGuidedEntry(skipTypeStep = false): void {
+  /**
+   * Déclenché juste après la création (voir LogisticsCreationService) : la
+   * carte démarre toujours repliée (`initCollapsed=true`), on la déplie
+   * d'abord pour que le chaînage guidé (LogisticDetailsComponent.startGuidedEntry)
+   * s'ancre correctement. `skipTypeStep` : le type est déjà connu (création
+   * depuis le menu "Ajouter" d'un jour, voir DayLogisticQuickAddService), la
+   * 1ère étape "Type" est sautée. Renvoie la promesse de fin de chaînage
+   * (voir `LogisticsListComponent.focusCardWhenReady`, qui l'utilise pour
+   * revenir sur le jour d'origine une fois la cinématique terminée).
+   */
+  startGuidedEntry(skipTypeStep = false): Promise<void> {
     this.collapsed.set(false);
-    setTimeout(() => this.detailsComponent().startGuidedEntry(skipTypeStep), PANEL_EXPAND_DELAY_MS);
+    return new Promise((resolve) => {
+      setTimeout(() => this.detailsComponent().startGuidedEntry(skipTypeStep).then(resolve), PANEL_EXPAND_DELAY_MS);
+    });
+  }
+
+  /** Clic sur une date/heure du header (voir LogisticHeaderComponent.dateTimeClicked, ROADMAP.md "UX / Interactions") : déplie la carte puis ouvre le picker correspondant du form. */
+  onDateTimeClicked(field: 'startDate' | 'startTime' | 'endDate' | 'endTime'): void {
+    this.collapsed.set(false);
+    setTimeout(() => {
+      const details = this.detailsComponent();
+      switch (field) {
+        case 'startDate': details.openStartDate(); break;
+        case 'startTime': details.openStartTime(); break;
+        case 'endDate': details.openEndDate(); break;
+        case 'endTime': details.openEndTime(); break;
+      }
+    }, PANEL_EXPAND_DELAY_MS);
   }
 }

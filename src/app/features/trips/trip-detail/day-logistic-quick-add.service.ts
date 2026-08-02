@@ -14,14 +14,16 @@ import { LogisticFocusService } from './logistic-focus.service';
  * Logistique, dépli/scroll de la carte) à `LogisticFocusService`, déjà câblé
  * pour ça côté `TripDetailComponent`/`LogisticsListComponent` —
  * `startGuided: true` y déclenche en plus la cinématique guidée (sans
- * réétape "Type") une fois la carte trouvée.
+ * réétape "Type") une fois la carte trouvée, qui ramène ensuite sur
+ * `dayDate` une fois terminée (voir `originDayId`, ROADMAP.md "UX /
+ * Interactions").
  */
 @Injectable()
 export class DayLogisticQuickAddService {
   private readonly tripFacade = inject(TripFacade);
   private readonly logisticFocusService = inject(LogisticFocusService);
 
-  /** `dayDate` : jour depuis lequel le menu "Ajouter" a été ouvert (voir ROADMAP.md, "La date de début d'une réservation doit être positionnée soit sur le jour cliqué") — préremplit la date de début, jamais l'heure. */
+  /** `dayDate` : jour depuis lequel le menu "Ajouter" a été ouvert (voir ROADMAP.md, "La date de début d'une réservation doit être positionnée soit sur le jour cliqué") — préremplit la date de début, jamais l'heure, et sert aussi de jour de retour une fois la cinématique guidée terminée. */
   create(type: LogisticType, dayDate?: Date): void {
     const tripId = this.tripFacade.activeTrip()?.id;
     if (!tripId) return;
@@ -37,7 +39,7 @@ export class DayLogisticQuickAddService {
     };
 
     this.tripFacade.createLogistic(tripId, logistic);
-    this.logisticFocusService.requestFocus(logistic.id, true);
+    this.logisticFocusService.requestFocus(logistic.id, true, dayDate?.toISOString());
   }
 }
 

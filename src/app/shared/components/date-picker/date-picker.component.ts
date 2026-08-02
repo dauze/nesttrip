@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, TemplateRef, ViewContai
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { addDays, addMonths, addYears, eachDayOfInterval, format, isBefore, isSameDay, isSameMonth, isToday as isTodayDate, isValid, parse, startOfMonth, startOfWeek, subMonths, subYears } from 'date-fns';
+import { addDays, addMonths, addYears, eachDayOfInterval, format, isBefore, isSameDay, isSameMonth, isToday as isTodayDate, isValid, parse, startOfDay, startOfMonth, startOfWeek, subMonths, subYears } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ViewportService } from '@core/services/viewport.service';
 
@@ -114,6 +114,8 @@ export class DatePickerComponent implements ControlValueAccessor {
   readonly inputId = input('');
   /** Titre affiché en tête du panneau (ex. "Check-in"/"Check-out") — utile quand plusieurs `app-date-picker` sont ouverts l'un après l'autre par un chaînage de saisie guidée, pour savoir lequel est ouvert. Vide par défaut (pas affiché). */
   readonly label = input('');
+  /** Date minimum sélectionnable (inclusive, comparée en date seule — voir ROADMAP.md "UX / Interactions") : les jours strictement avant sont grisés/non cliquables dans le panneau, et une saisie clavier desktop antérieure est silencieusement ignorée. Typiquement la date de début, posée sur le picker de fin. */
+  readonly minDate = input<Date | null>(null);
 
   /** Émis avec la valeur finale (Date en mode simple, [début, fin] en mode plage) quand une sélection se termine. */
   readonly selected = output<Date | [Date, Date]>();
@@ -296,6 +298,13 @@ export class DatePickerComponent implements ControlValueAccessor {
     return isSameMonth(day, this.viewMonth());
   }
 
+  /** Voir la doc de `minDate` — comparaison en date seule (minuit local des deux côtés), l'heure n'a pas de sens ici. */
+  protected isDayDisabled(day: Date): boolean {
+    const min = this.minDate();
+    if (!min) return false;
+    return isBefore(startOfDay(day), startOfDay(min));
+  }
+
   protected isToday(day: Date): boolean {
     return isTodayDate(day);
   }
@@ -331,6 +340,8 @@ export class DatePickerComponent implements ControlValueAccessor {
   }
 
   protected selectDay(day: Date): void {
+    if (this.isDayDisabled(day)) return;
+
     if (!this.range()) {
       this.singleValue.set(day);
       this.onChange?.(day);
@@ -384,7 +395,7 @@ export class DatePickerComponent implements ControlValueAccessor {
 
     if (!this.range()) {
       const parsed = parse(trimmed, 'dd/MM/yyyy', new Date());
-      if (!isValid(parsed)) return;
+      if (!isValid(parsed) || this.isDayDisabled(parsed)) return;
 
       this.singleValue.set(parsed);
       this.viewMonth.set(startOfMonth(parsed));

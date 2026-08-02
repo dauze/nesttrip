@@ -22,6 +22,20 @@ export interface Trip {
   defaultCurrency?: string;
 }
 
+/**
+ * Projection légère utilisée par le dashboard (`AccueilTripComponent`, voir
+ * `TripStore._tripsResult`) : pas de `days`/`activities`/... (trop coûteux à
+ * garder pour TOUS les trips d'un utilisateur en mémoire, voir CLAUDE.md
+ * "état normalisé") — seulement `earliestDay`/`latestDay` (bornes de
+ * l'intervalle de jours, voir ROADMAP.md "UX / Interactions", détection du
+ * "voyage actif" à la connexion), calculées côté data source directement
+ * depuis les clés du map Firestore `days`, sans mapper complet.
+ */
+export interface TripSummary extends Pick<Trip, 'id' | 'title' | 'ownerId'> {
+  earliestDay?: Date;
+  latestDay?: Date;
+}
+
 export interface Day {
   id: Date;
   /** Référence des DayActivityInstance.id, pas des activités de pool. */

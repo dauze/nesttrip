@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { Location } from '@angular/common';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
 import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.component';
 import { AuthService } from '@core/services/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs';
+import { Observable, filter, map, merge, startWith } from 'rxjs';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
@@ -55,6 +56,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
 })
 export class TripsComponent {
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly authService = inject(AuthService);
   private readonly tripFacade = inject(TripFacade);
   protected readonly chromeService = inject(TripChromeService);
@@ -94,12 +96,27 @@ export class TripsComponent {
     });
   }
 
+  /**
+   * Fusionne les `NavigationEnd` du Router ET les changements bruts de
+   * `Location` (voir `TripDetailComponent.updateFragment`/`bindPopState`,
+   * ROADMAP.md "UX / Interactions") : la navigation par tab/jour à l'intérieur
+   * d'un trip passe par `Location.go`/le bouton "retour" navigateur, jamais
+   * par le Router — sans cette 2e source, `currentUrl` restait figé sur la
+   * toute première URL Router (sans fragment) et ne recevait plus aucune
+   * mise à jour après un retour navigateur, cassant `toolbarTitle` (retombe
+   * sur "NestTrip" alors qu'on est toujours sur le même trip).
+   */
   readonly currentUrl = toSignal(
-    this.router.events.pipe(
-      filter((e) => e instanceof NavigationEnd),
-      map((e) => (e as NavigationEnd).urlAfterRedirects),
-      startWith(this.router.url),
-    ),
+    merge(
+      this.router.events.pipe(
+        filter((e) => e instanceof NavigationEnd),
+        map((e) => (e as NavigationEnd).urlAfterRedirects),
+      ),
+      new Observable<string>((observer) => {
+        const subscription = this.location.subscribe(() => observer.next(this.location.path(true)));
+        return () => subscription.unsubscribe();
+      }),
+    ).pipe(startWith(this.router.url)),
   );
 
   readonly showBack = computed(() => {
@@ -118,10 +135,13 @@ export class TripsComponent {
    * TripStore._tripTitle) — passer par `activeTrip()` ne serait-ce que pour
    * son `id` réintroduirait une dépendance à CE signal, donc un recalcul de
    * `toolbarTitle` à chaque mutation du trip actif (pas seulement son titre).
+   * `[^/?#]+` (pas juste `[^/?]+`) : `currentUrl` peut désormais porter un
+   * fragment (`/trips/abc#day-1`, voir sa doc) — sans exclure `#`, l'id
+   * capturé embarquait le fragment entier, cassant `getTripTitle(id)`.
    */
   readonly toolbarTitle = computed(() => {
     if (!this.showBack()) return 'NestTrip';
-    const id = (this.currentUrl() ?? '').match(/^\/trips\/([^/?]+)/)?.[1];
+    const id = (this.currentUrl() ?? '').match(/^\/trips\/([^/?#]+)/)?.[1];
     return (id ? this.tripFacade.getTripTitle(id)() : '') || 'NestTrip';
   });
 

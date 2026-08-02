@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, effect, inject, input, signal, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, effect, inject, input, signal, viewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
@@ -7,6 +7,9 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { LogisticFocusService } from '@app/features/trips/trip-detail/logistic-focus.service';
+import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
+import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
+import { ViewportService } from '@core/services/viewport.service';
 import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META, LogisticTypeMeta } from './logistic.constants';
 import { LogisticCardComponent } from './logistic-card/logistic-card.component';
@@ -39,10 +42,11 @@ function matchesSearch(title: string, term: string): boolean {
  * "Chronologie" (`allLogisticsSorted` — en cours/futures d'abord, passées à
  * la fin, inchangé) ou "Type" (regroupement Logement/Vol/Location voiture/
  * Train/Autre, ordre fixe, section masquée si vide), plus une barre de
- * recherche (titre). Pas de bouton "Ajouter" local, la création passe
- * exclusivement par le "+" flottant unique (`DayLogisticQuickAddService`,
- * voir `TripDetailComponent.addMenuItems`), déjà indépendant de l'onglet de
- * départ.
+ * recherche (titre). Le "+" flottant unique crée directement un élément
+ * ici quand ce tab est actif (`triggerCreate`, voir
+ * `TripDetailComponent.onFabActivate`) ; depuis un jour, il passe par
+ * `DayLogisticQuickAddService`/`TripDetailComponent.addMenuItems`, type déjà
+ * connu.
  */
 @Component({
   selector: 'app-logistics-list',
@@ -59,6 +63,10 @@ export class LogisticsListComponent {
   private readonly injector = inject(Injector);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly fabTarget = inject(TripCreationTargetService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dayActivityFocusService = inject(DayActivityFocusService);
+  private readonly viewport = inject(ViewportService);
   protected readonly creationService = inject(LogisticsCreationService);
 
   private readonly logisticCards = viewChildren(LogisticCardComponent);
@@ -131,6 +139,12 @@ export class LogisticsListComponent {
       getTripId: () => this.tripId(),
     });
 
+    // "+" flottant (voir TripDetailComponent.onFabActivate) : ce tab est un
+    // singleton comme un jour, donc un enregistrement one-shot au montage
+    // suffit (pas d'effect, pas d'input dont dépendre).
+    const unregisterFab = this.fabTarget.register('logistics', () => this.triggerCreate());
+    this.destroyRef.onDestroy(unregisterFab);
+
     // Demande de navigation croisée (voir LogisticFocusService) : consomme
     // la requête dès que ce composant est monté (tab déjà basculé par
     // TripDetailComponent), déplie la carte ciblée et y scrolle — plus de
@@ -139,7 +153,7 @@ export class LogisticsListComponent {
       const pending = this.logisticFocusService.pending();
       if (!pending) return;
 
-      afterNextRender(() => this.focusCardWhenReady(pending.logisticId, pending.token, !!pending.startGuided), { injector: this.injector });
+      afterNextRender(() => this.focusCardWhenReady(pending.logisticId, pending.token, !!pending.startGuided, pending.originDayId), { injector: this.injector });
     });
   }
 
@@ -153,19 +167,36 @@ export class LogisticsListComponent {
    * depuis le menu "Ajouter" d'un jour (voir `DayLogisticQuickAddService`,
    * `LogisticFocusRequest`) — le type est déjà connu, on enchaîne direct sur
    * la cinématique guidée (sans réétape "Type") plutôt que juste déplier.
+   * `originDayId` : une fois la cinématique guidée terminée, revient sur ce
+   * jour (`DayActivityFocusService.requestFocus`, même service que le tab
+   * Activités utilise pour naviguer vers un jour — sans `instanceId`, il se
+   * contente de changer de jour actif sans tenter de scroller vers une
+   * activité, voir ROADMAP.md "UX / Interactions"). Uniquement sur mobile :
+   * `LogisticDetailsComponent.startGuidedEntry` est un no-op immédiat sur
+   * desktop (formulaire déjà entièrement visible), donc sans cette garde le
+   * retour se déclencherait aussitôt la carte créée, avant même que
+   * l'utilisateur ait pu la voir.
    */
-  private focusCardWhenReady(logisticId: string, token: number, startGuided: boolean, attemptsLeft = 15): void {
+  private focusCardWhenReady(logisticId: string, token: number, startGuided: boolean, originDayId?: string, attemptsLeft = 15): void {
     const card = this.logisticCards().find((c) => c.logisticId() === logisticId);
     if (!card) {
       if (attemptsLeft <= 0) return;
-      requestAnimationFrame(() => this.focusCardWhenReady(logisticId, token, startGuided, attemptsLeft - 1));
+      requestAnimationFrame(() => this.focusCardWhenReady(logisticId, token, startGuided, originDayId, attemptsLeft - 1));
       return;
     }
 
     this.logisticFocusService.clear(token);
     card.collapsed.set(false);
     card.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (startGuided) card.startGuidedEntry(true);
+    if (startGuided) {
+      const done = card.startGuidedEntry(true);
+      if (originDayId && this.viewport.isMobile()) done.then(() => this.dayActivityFocusService.requestFocus(originDayId));
+    }
+  }
+
+  /** Point d'entrée pour le "+" flottant (voir TripCreationTargetService/TripDetailComponent.onFabActivate). */
+  triggerCreate(): void {
+    this.creationService.startCreation();
   }
 
   onSortModeChange(mode: SortMode | undefined): void {
