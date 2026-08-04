@@ -20,9 +20,33 @@ export class TripDayMapHostService {
   private readonly _currentOwner = signal<TripDayMapOwner | null>(null);
   readonly currentOwner = this._currentOwner.asReadonly();
 
+  /**
+   * Conteneur `position:fixed` (posé par `TripDaySwiperComponent`, hors du
+   * `swiper-container`) où la carte partagée est déplacée en contexte 'day'
+   * sur layout empilé (mobile/tablette) — ROADMAP.md "### UI" : la carte doit
+   * réellement sortir du scroll du jour, pas seulement y être "sticky". En
+   * layout scindé (desktop), `DayPanelComponent` continue de cibler son
+   * propre `.sticky-map` local (carte en colonne, pas de notion de "sortir du
+   * scroll" là-bas) — ce conteneur reste alors simplement vide.
+   */
+  private readonly _dayFixedContainer = signal<HTMLElement | null>(null);
+  readonly dayFixedContainer = this._dayFixedContainer.asReadonly();
+
+  /** Hauteur réelle courante du conteneur ci-dessus (mesurée par `TripDaySwiperComponent` via ResizeObserver) — 0 quand vide (layout scindé, ou aucun jour actif). Consommée par `DayPanelComponent`/`day-panel.component.scss` pour réserver l'espace équivalent en haut du contenu scrollable. */
+  private readonly _dayFixedContainerHeight = signal(0);
+  readonly dayFixedContainerHeight = this._dayFixedContainerHeight.asReadonly();
+
   /** Appelé une seule fois par TripDaySwiperComponent, propriétaire de l'instance. */
   register(component: TripDayMapComponent): void {
     this.mapComponent.set(component);
+  }
+
+  registerDayFixedContainer(el: HTMLElement | null): void {
+    this._dayFixedContainer.set(el);
+  }
+
+  setDayFixedContainerHeight(height: number): void {
+    this._dayFixedContainerHeight.set(height);
   }
 
   /**

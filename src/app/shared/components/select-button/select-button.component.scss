@@ -47,7 +47,7 @@
   position: relative;
   display: inline-flex;
   width: auto;
-  border-radius: 999px;
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-secondary-bg);
   // `--nt-form-field-border-color` (même token que le variant 'solid' juste
   // au-dessus) plutôt que `--nt-content-border-color` : plus contrasté contre
@@ -68,10 +68,14 @@
   // 2 boutons (vérifié par bounding box, ~8px de marge des 2 côtés) — mais
   // restait peu perceptible du côté de la pastille primary (le contraste
   // fort pastille/fond fait "disparaître" visuellement un simple liseré fin
-  // juste à côté). Ombre portée en plus (même token que les popovers) pour
-  // que TOUTE la pilule se lise comme un seul objet posé/encadré, plutôt que
-  // de compter uniquement sur le contraste de couleur du contour.
-  box-shadow: var(--nt-overlay-popover-shadow);
+  // juste à côté). Ombre portée en plus pour que TOUTE la pilule se lise
+  // comme un seul objet posé/encadré, plutôt que de compter uniquement sur
+  // le contraste de couleur du contour — `--nt-shadow-sm` (diffuse, quasi
+  // symétrique) plutôt que `--nt-overlay-popover-shadow` (nettement plus
+  // lourde en bas qu'en haut) : cette dernière donnait l'impression que la
+  // pilule "penchait"/n'était pas centrée verticalement dans sa ligne
+  // (retour utilisateur, ROADMAP.md "### UI").
+  box-shadow: var(--nt-shadow-sm);
 }
 
 // 3 couches demandées explicitement par l'utilisateur (voir ROADMAP.md) :
@@ -89,7 +93,7 @@
   bottom: 0.2rem;
   left: 0.2rem;
   right: 0.2rem;
-  border-radius: 999px;
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-form-field-background);
   pointer-events: none;
 }
@@ -102,7 +106,7 @@
   position: absolute;
   top: 0.35rem;
   bottom: 0.35rem;
-  border-radius: 999px;
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-primary-color);
   transition: left var(--nt-transition-duration) ease, width var(--nt-transition-duration) ease;
   pointer-events: none;
@@ -113,7 +117,7 @@
   z-index: 1;
   flex: 0 0 auto;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--nt-radius-pill);
   padding: 0.35rem 0.85rem;
   font-size: 0.85rem;
   color: var(--nt-text-muted-color);

@@ -5,7 +5,9 @@
 // même mécanique que `.trip-activities-body`/`.day-panel-root`.
 .trip-summary-body {
   padding-top: var(--chrome-top-offset, 0px);
-  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // `+ var(--nt-layout-gap-stacked, 0.25rem)` (ROADMAP.md "### UI") : respiration entre le
+  // dernier élément et la barre du bas, sinon aucun espace.
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
   max-width: var(--nt-content-max-width);
   margin-inline: auto;
   display: flex;
@@ -22,8 +24,10 @@
 }
 
 // `align-items: stretch` (défaut flex) sur `.trip-summary-tiles` étire les
-// deux `app-card` à la même hauteur — voir ROADMAP.md ("même hauteur" demandé
-// explicitement pour la tuile Résumé à côté de la tuile Dépenses).
+// deux `app-card` à la même hauteur. Le graphique "types d'activité"
+// remplace le texte qui vivait ici (ROADMAP.md "### UI") : la tuile garde sa
+// largeur d'origine (1/2, à côté de Dépenses), voir `activity-type-rings.component.scss`
+// pour l'ajustement de taille du graphique à cet espace plus étroit.
 .trip-summary-tile {
   flex: 1 1 0;
   min-width: 0;

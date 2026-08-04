@@ -19,7 +19,7 @@ import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
-import { ActivityFilesComponent } from './activity-files/activity-files.component';
+import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
@@ -47,7 +47,7 @@ const PANEL_EXPAND_DELAY_MS = 300;
   imports: [
     CommonModule, PanelComponent, DividerComponent, CheckboxComponent,
     ActivityHeaderComponent, ActivityFormComponent,
-    ActivityFilesComponent, ActivityGoogleInfoComponent,
+    FilesFieldComponent, ActivityGoogleInfoComponent,
     SelectableDirective, LongPressDirective,
   ],
   templateUrl: './activity-card.component.html',
@@ -322,6 +322,26 @@ export class ActivityCardComponent {
 
   onPlacementClicked(placement: { dayId: Date; instanceId: string }): void {
     this.dayActivityFocusService.requestFocus(placement.dayId.toISOString(), placement.instanceId);
+  }
+
+  /** Chemin Storage des fichiers de cette activité — préfixe SANS le nom de fichier final, voir `FilesFieldComponent.storagePathPrefix`. */
+  protected readonly filesStoragePathPrefix = computed(() => `trips/${this.tripId()}/${this.activity()?.activityId}`);
+
+  /** `(filesChange)` de `FilesFieldComponent` (ROADMAP.md "### UI", dédup avec LogisticCardComponent) : les fichiers vivent uniquement sur l'activité de pool, jamais dupliqués par instance — voir CLAUDE.md. */
+  onFilesChange(files: FileRef[]): void {
+    const activity = this.activity();
+    if (!activity) return;
+
+    this.tripFacade.updatePoolActivity(this.tripId(), {
+      id: activity.activityId,
+      title: activity.title,
+      placeId: activity.placeId,
+      address: activity.address,
+      latitude: activity.latitude,
+      longitude: activity.longitude,
+      photoRefs: activity.photoRefs,
+      files,
+    });
   }
 
   onTitleChanged(newTitle: string): void {

@@ -7,65 +7,59 @@
   <div class="flex flex-column gap-2">
     @for (entry of entries(); track entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id; let last = $last) {
       @if (entry.kind === 'logistic') {
-        <div class="grid align-items-center cursor-pointer"
+        <div class="timeline-row cursor-pointer"
             role="button"
             tabindex="0"
             (click)="logisticSelected.emit(entry.occurrence)"
             (keydown.enter)="logisticSelected.emit(entry.occurrence)">
 
-          <span class="col-3">~ {{ entry.occurrence.time | date:'HH:mm' }}</span>
+          <span class="timeline-time">{{ entry.occurrence.time | date:'HH:mm' }}</span>
 
-          <span class="col-1">
-            <i [class]="LOGISTIC_TYPE_META[entry.occurrence.logistic.type].icon + ' text-lg'" [style.color]="'var(' + LOGISTIC_TYPE_META[entry.occurrence.logistic.type].colorVar + ')'"></i>
+          <span class="timeline-badge" [style.--timeline-badge-color]="'var(' + LOGISTIC_TYPE_META[entry.occurrence.logistic.type].colorVar + ')'">
+            <i [class]="LOGISTIC_TYPE_META[entry.occurrence.logistic.type].icon"></i>
           </span>
 
-          <span class="col-8">
+          <span class="timeline-title">
             {{ entry.occurrence.role }} — {{ entry.occurrence.logistic.title }}
           </span>
         </div>
       } @else if (entry.kind === 'activity') {
-        <div class="grid align-items-center cursor-pointer"
+        <div class="timeline-row cursor-pointer"
             role="button"
             tabindex="0"
             (click)="activitySelected.emit(entry.activity.id)"
             (keydown.enter)="activitySelected.emit(entry.activity.id)">
 
-          <!-- durée -->
-          <span class="col-3">
-            ~ {{ entry.activity.startTime }}
+          <span class="timeline-time">{{ entry.activity.startTime }}</span>
+
+          <span class="timeline-badge" [style.--timeline-badge-color]="'var(' + ACTIVITY_TYPE_META[entry.activity.type].colorVar + ')'">
+            <i [class]="ACTIVITY_TYPE_META[entry.activity.type].icon"></i>
           </span>
 
-          <!-- icône -->
-          <span class="col-1">
-            <i [class]="ACTIVITY_TYPE_META[entry.activity.type].icon + ' text-lg'" [style.color]="'var(' + ACTIVITY_TYPE_META[entry.activity.type].colorVar + ')'"></i>
-          </span>
-
-          <!-- titre -->
-          <span class="col-8">
+          <span class="timeline-title">
             {{ entry.activity.title }}
           </span>
-
         </div>
       } @else {
-        <div class="grid align-items-center cursor-pointer timeline-echo"
+        <div class="timeline-row cursor-pointer timeline-echo"
             role="button"
             tabindex="0"
             (click)="echoSelected.emit(entry)"
             (keydown.enter)="echoSelected.emit(entry)">
 
-          <span class="col-3">~ 00:00</span>
+          <span class="timeline-time">00:00</span>
 
-          <span class="col-1">
-            <i class="pi pi-history text-lg" [style.color]="'var(' + ACTIVITY_TYPE_META[entry.type].colorVar + ')'"></i>
+          <span class="timeline-badge" [style.--timeline-badge-color]="'var(' + ACTIVITY_TYPE_META[entry.type].colorVar + ')'">
+            <i class="pi pi-history"></i>
           </span>
 
-          <span class="col-8 nt-text-muted font-italic">
+          <span class="timeline-title nt-text-muted font-italic">
             suite de {{ entry.title }}
           </span>
         </div>
       }
        @if (!last) {
-      <app-divider class="m-0"></app-divider>
+      <app-divider class="m-0 timeline-divider"></app-divider>
        }
     }
   </div>

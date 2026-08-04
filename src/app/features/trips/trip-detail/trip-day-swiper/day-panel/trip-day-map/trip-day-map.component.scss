@@ -14,9 +14,57 @@
   height: 100%;
 }
 
+// Carte sticky (ROADMAP.md "### UI") : le CADRE extérieur (`.map-panel`) doit
+// paraître accroché à la toolbar — aucun coin arrondi en haut, AUCUNE
+// bordure visible (ni haut ni côtés, voir retour utilisateur "on voit les
+// bordures sur les côtés, il ne faut pas, elle doit faire la taille de
+// l'écran") : `.day-fixed-map` (trip-day-swiper) est déjà pleine largeur,
+// une bordure ici casserait cet effet. Seule une bordure basse légère reste
+// (transition vers le contenu qui suit). `.map-panel` cible directement
+// l'élément `<app-panel>` déclaré dans CE template (pas du contenu projeté) :
+// porte le même attribut de scope Angular, pas besoin de `::ng-deep` (voir
+// le même raisonnement dans activity-card.component.scss).
+.map-panel {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+// La map elle-même GARDE un vrai cadre arrondi sur les 4 coins (y compris en
+// haut) et un padding autour (hérité de `.app-panel__content-inner`, plus
+// `flushContent` retiré ici) : seul le CADRE EXTÉRIEUR (`.map-panel`
+// ci-dessus) est flush contre la toolbar, la carte elle-même reste "encadrée"
+// avec un peu d'air tout autour (retour utilisateur : "le conteneur n'a pas
+// de radius en haut, ok, mais la map doit en avoir, idem pour le padding").
 .map-container {
-  border-radius: 0.1875rem;
+  border-radius: var(--nt-content-border-radius);
   overflow: hidden;
+}
+
+// Icônes du footer togglable (voir `footerToggle`/`[panelFooter]`,
+// panel.component.html) : "pi-map" à sa taille d'origine (retour utilisateur
+// — ne pas la grossir) au-dessus d'une poignée "grabber" (capsule arrondie,
+// public/map-collapse.png) plutôt qu'un `pi-minus` — footer le plus fin
+// possible (retour utilisateur), d'où le padding réduit du bouton lui-même
+// (voir panel.component.scss `.app-panel__footer-toggle`, pas touché ici) et
+// un espacement minimal entre les deux éléments.
+.map-panel__footer-icons {
+  gap: 0.25rem;
+  padding: 0.125rem 0;
+
+  i {
+    font-size: var(--nt-icon-size-sm);
+  }
+}
+
+.map-panel__grabber {
+  width: 2rem;
+  height: 0.25rem;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-text-muted-color);
+  opacity: 0.5;
 }
 
 // Layout scindé (voir `PanelComponent.fillHeight`, activé depuis le

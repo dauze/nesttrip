@@ -88,8 +88,6 @@ export class DayPanelComponent {
 
   readonly active = input(false);
 
-  activitiesCollapsed = false;
-
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getDayActivities(this.dayId())());
 
   /** Activités + échos + occurrences logistiques "frontière" (voir day-timeline-merge.ts) : consommé pour l'AFFICHAGE (timeline mini + liste principale) — le drag/la carte/la création restent sur `activities()`, qui ne contient ni écho ni logistique. */
@@ -126,7 +124,7 @@ export class DayPanelComponent {
     // initiale du jour n'apparaissait plus au premier montage.
     effect(() => {
       const map = this.activeMapComponent();
-      const container = this.stickyMap()?.nativeElement;
+      const container = this.mapContainerEl();
       if (!map || !container) return;
       this.mapHost.moveTo(container, 'day');
       map.points.set(this.dayMapPoints());
@@ -167,7 +165,7 @@ export class DayPanelComponent {
     // recréée) et on la déplace physiquement dans notre conteneur sticky.
     effect(() => {
       if (!this.active()) return;
-      const container = this.stickyMap()?.nativeElement;
+      const container = this.mapContainerEl();
       const map = this.mapHost.activeMap();
       if (!container || !map) return;
 
@@ -181,7 +179,7 @@ export class DayPanelComponent {
       getFreshOffsets: () => this.getFreshCardOffsets(),
       getDayMapPoints: () => this.dayMapPoints(),
       getMapComponent: () => this.activeMapComponent(),
-      getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
+      getStickyMapEl: () => this.mapContainerEl(),
       isSplitLayout: () => this.viewport.isSplitLayout(),
       getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
       getLogisticOffsets: () => this.getFreshLogisticOffsets(),
@@ -237,6 +235,17 @@ export class DayPanelComponent {
     afterNextRender(() => {
       this.scrollSync.startListening();
     });
+
+    // Répercute cette instance sur `TripChromeService.dayPanelActive` (voir sa
+    // doc) : jusqu'à 3 instances de DayPanelComponent peuvent coexister
+    // (préchargement des jours voisins), seule celle avec `active()===true`
+    // doit compter — `onCleanup` remet `false` si CETTE instance est détruite
+    // alors qu'elle était l'active courante (sortie de trip-detail).
+    effect((onCleanup) => {
+      const isActive = this.active();
+      this.chromeService.setDayPanelActive(isActive);
+      onCleanup(() => { if (isActive) this.chromeService.setDayPanelActive(false); });
+    });
   }
 
   /** Conteneur de scroll isolé de ce jour : le `swiper-slide` ancêtre (voir shared/utils/scroll-container.ts). */
@@ -244,9 +253,19 @@ export class DayPanelComponent {
     return getScrollContainer(this.elRef.nativeElement);
   }
 
-  onActivitiesPanelToggled() {
-    // Laisse le temps à l'animation PrimeNG de se terminer avant d'ajuster le scroll
-    setTimeout(() => this.scrollSync.wakeLoop(), 300);
+  /**
+   * Conteneur cible pour la carte partagée en contexte 'day' (ROADMAP.md
+   * "### UI") : en layout scindé (desktop, carte en colonne à gauche), le
+   * `.sticky-map` local à CE day-panel — la notion de "sortir du scroll" n'a
+   * pas de sens là-bas (carte déjà en pleine hauteur de sa propre colonne).
+   * En layout empilé (mobile/tablette), le conteneur `position:fixed` partagé
+   * posé par `TripDaySwiperComponent` hors du swiper (voir
+   * `TripDayMapHostService.dayFixedContainer`) — la carte y est réellement
+   * sortie du scroll, plus seulement "sticky" dedans.
+   */
+  private mapContainerEl(): HTMLElement | null {
+    if (this.viewport.isSplitLayout()) return this.stickyMap()?.nativeElement ?? null;
+    return this.mapHost.dayFixedContainer();
   }
 
   /** Clic sur un écho dans la timeline mini (voir TimelineComponent) : navigue vers l'instance réelle sur son jour d'origine. */

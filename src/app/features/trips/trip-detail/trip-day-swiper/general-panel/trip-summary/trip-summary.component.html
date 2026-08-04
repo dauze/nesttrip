@@ -18,7 +18,7 @@
     </app-card>
   }
 
-  <div class="trip-summary-tiles flex gap-2">
+  <div class="trip-summary-tiles flex gap-1">
     <app-card class="trip-summary-tile">
       <div cardTitle>Dépenses</div>
       <div class="flex flex-column gap-2">
@@ -37,12 +37,9 @@
 
     <app-card class="trip-summary-tile">
       <div cardTitle>Résumé</div>
-      <div class="flex flex-column gap-1 text-sm">
-        <span>{{ activityCount() }} activité(s)</span>
-        <span>{{ transportCount() }} transport(s)</span>
-        <span>{{ dayCount() }} jour(s)</span>
-        <span>{{ fileCount() }} fichier(s)</span>
-      </div>
+      @if (typeBreakdown().length > 0) {
+        <app-activity-type-rings [entries]="typeBreakdown()" />
+      }
     </app-card>
   </div>
 

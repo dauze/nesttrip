@@ -34,12 +34,7 @@
     </div>
     <div class="day-panel-activities-group">
       <app-day-logistic-banner class="day-panel-banner" [tripId]="tripId()" [dayId]="dayId()" />
-      <app-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
-      (afterToggle)="onActivitiesPanelToggled()" class="activities-column">
-        <div panelHeader class="flex align-items-center gap-2">
-          <i class="pi pi-calendar"></i>
-          <span>Activités</span>
-        </div>
+      <app-panel [noHeader]="true" class="activities-column">
         <div class="flex flex-column gap-2">
           <div #activityList class="flex flex-column gap-2">
             @for (entry of timelineEntries(); track entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id) {

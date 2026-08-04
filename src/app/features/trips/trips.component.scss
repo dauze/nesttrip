@@ -24,10 +24,42 @@
   right: 0;
   z-index: var(--z-app-toolbar);
   background: var(--nt-page-background);
-  // Peint le gap (fixed, non couvert) jusqu'au header voyage juste en dessous
-  // avec la même couleur que ce fond, sans toucher au moindre padding/margin
-  // (box-shadow est hors flux/hors boîte) — voir TripChromeService.chromeGapPx.
-  box-shadow: 0 var(--nt-chrome-gap, 0px) 0 0 var(--nt-page-background);
+  // Deux box-shadow superposées : la 1re peint le gap (fixed, non couvert)
+  // jusqu'au header voyage juste en dessous avec la même couleur que ce fond,
+  // sans toucher au moindre padding/margin (box-shadow est hors flux/hors
+  // boîte) — voir TripChromeService.chromeGapPx. La 2e est la vraie ombre de
+  // profondeur (ROADMAP.md "### UI").
+  box-shadow:
+    0 var(--nt-chrome-gap, 0px) 0 0 var(--nt-page-background),
+    var(--nt-shadow-sm);
+  transition: box-shadow var(--nt-transition-duration) ease;
+
+  // `--flush` (day-panel actif juste en dessous, voir TripChromeService.dayPanelActive) :
+  // AUCUNE box-shadow, pas même celle qui peint le "chrome gap" — cette
+  // dernière reste peinte dans `--nt-page-background`, une teinte DIFFÉRENTE
+  // de `--nt-content-background` (utilisée par `.day-fixed-map`/la carte
+  // juste en dessous), ce qui dessinait un filet visible entre les deux
+  // malgré l'absence de l'ombre de profondeur (retour utilisateur : "on voit
+  // toujours un espace entre le header et la map"). La carte est censée
+  // arriver en continuité visuelle DIRECTE sous la toolbar, sans aucun
+  // filet/ombre entre les deux.
+  &--flush {
+    box-shadow: none;
+  }
+}
+
+// Icône engrenage : rotation douce pendant que le menu réglages s'ouvre/se
+// ferme (ROADMAP.md "### UI") — appliquée au bouton entier (pas juste l'`<i>`
+// interne, hors de portée de cette feuille scopée à cause de l'encapsulation
+// de vue d'`app-button`), visuellement équivalent ici puisque le bouton est
+// icon-only.
+.app-settings-btn {
+  display: inline-flex;
+  transition: transform 280ms var(--nt-ease-standard);
+
+  &--open {
+    transform: rotate(90deg);
+  }
 }
 
 // Contrôle segmenté clair/sombre/système projeté en tête du menu réglages

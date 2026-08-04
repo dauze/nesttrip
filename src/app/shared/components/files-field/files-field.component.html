@@ -11,7 +11,7 @@
   }
 
   <div class="flex flex-wrap gap-1 align-items-center">
-    @for (file of activity().files; track file.path; let i = $index) {
+    @for (file of files(); track file.path; let i = $index) {
       <app-chip
         [icon]="fileIcon(file.name)"
         [removable]="true"
@@ -28,7 +28,7 @@
       hidden
       (change)="onFileSelect($event)" />
     <app-button
-      [label]="(activity().files?.length ?? 0) > 0 ? '' : 'Ajouter'"
+      [label]="files().length > 0 ? '' : 'Ajouter'"
       icon="pi pi-upload"
       severity="secondary"
       size="small"

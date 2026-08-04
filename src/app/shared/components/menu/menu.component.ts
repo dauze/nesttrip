@@ -51,7 +51,8 @@ export class MenuComponent {
   private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panel');
 
   private overlayRef?: OverlayRef;
-  protected readonly isOpen = signal(false);
+  /** Public (pas `protected`) : lu depuis le template hôte via `#menu` (ex. rotation de l'icône engrenage, `TripsComponent`) — pas seulement en interne. */
+  readonly isOpen = signal(false);
 
   toggle(event: Event): void {
     this.toggleAt(event.currentTarget as HTMLElement);

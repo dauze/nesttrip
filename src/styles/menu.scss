@@ -42,3 +42,21 @@
   text-align: center;
   padding: 0.75rem;
 }
+
+/* ---------------------------------------------------------------------
+ * Popup desktop (roue crantée, ROADMAP.md "### UI") : jusqu'ici aucune
+ * animation d'ouverture (contrairement au tiroir mobile ci-dessus) — fade +
+ * léger scale depuis le coin ancré au déclencheur (`transform-origin`, voir
+ * `DESKTOP_POSITIONS` dans menu.component.ts : ancré côté droit du bouton).
+ * ------------------------------------------------------------------- */
+.app-menu-overlay--desktop .app-menu-panel {
+  transform-origin: top right;
+  transition: transform 180ms var(--nt-ease-standard), opacity 150ms ease;
+  transform: scale(1);
+  opacity: 1;
+
+  @starting-style {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+}

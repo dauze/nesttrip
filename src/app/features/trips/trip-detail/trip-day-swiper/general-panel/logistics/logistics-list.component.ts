@@ -26,11 +26,17 @@ const TYPE_ORDER = Object.keys(LOGISTIC_TYPE_META) as LogisticType[];
  * Une ligne de la vue "Type" : soit un en-tête de section, soit une carte.
  * Volontairement une liste PLATE (une seule boucle `@for`, voir le template)
  * plutôt que des groupes imbriqués avec leur propre `@for` par section —
- * voir `typeRows` pour la raison (régression du 2026-07-30).
+ * voir `typeRows` pour la raison (régression du 2026-07-30). `isLastInGroup`
+ * (ROADMAP.md "### UI", uniformisation avec les groupes ville/jour du pool
+ * d'activités) : pilote uniquement un modificateur CSS (coin arrondi bas +
+ * filet de fermeture, voir logistics-list.component.scss) pour que chaque
+ * section se lise comme un panel de groupe, SANS jamais introduire de
+ * boucle imbriquée — la liste reste plate, ce booléen est juste calculé une
+ * fois ici plutôt que dérivé en CSS.
  */
 type TypeRow =
   | { kind: 'header'; type: LogisticType; meta: LogisticTypeMeta; count: number }
-  | { kind: 'item'; logistic: Logistic };
+  | { kind: 'item'; logistic: Logistic; isLastInGroup: boolean };
 
 function matchesSearch(title: string, term: string): boolean {
   if (!term) return true;
@@ -127,7 +133,7 @@ export class LogisticsListComponent {
       const group = items.filter((r) => r.type === type);
       if (!group.length) continue;
       rows.push({ kind: 'header', type, meta: LOGISTIC_TYPE_META[type], count: group.length });
-      for (const logistic of group) rows.push({ kind: 'item', logistic });
+      group.forEach((logistic, i) => rows.push({ kind: 'item', logistic, isLastInGroup: i === group.length - 1 }));
     }
     return rows;
   });

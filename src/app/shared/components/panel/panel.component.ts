@@ -93,6 +93,27 @@ export class PanelComponent {
    * autre appelant (défaut `false`).
    */
   readonly thickBorder = input(false);
+  /**
+   * Optionnel : remplace le header (texte/chevron habituels) par un footer
+   * togglable sous le contenu — utilisé par `TripDayMapComponent` en contexte
+   * 'day' (ROADMAP.md "### UI", carte sticky) : la carte n'a plus de header
+   * du tout, seul un footer (`[panelFooter]`) permet de la replier/déplier.
+   * Indépendant de `toggleable()` (toujours requis en plus pour que le clic
+   * fonctionne réellement, voir `toggle()`) — n'affecte aucun autre appelant
+   * (défaut `false`).
+   */
+  readonly footerToggle = input(false);
+  /**
+   * Optionnel : supprime uniquement le header (texte/chevron), garde le
+   * border/background/radius normal du panel — contrairement à `bare()`, qui
+   * supprime aussi le chrome visuel (utilisé quand un ancêtre joue déjà ce
+   * rôle, ex. `app-card`). Utilisé par le panel "Activités" du jour
+   * (ROADMAP.md "### UI") : reste un vrai panel visuellement délimité, mais
+   * non togglable et sans titre — simplifie le scroll vers une activité (plus
+   * besoin de vérifier/attendre un état ouvert). N'affecte aucun autre
+   * appelant (défaut `false`).
+   */
+  readonly noHeader = input(false);
 
   readonly beforeToggle = output<PanelToggleEvent>();
   readonly afterToggle = output<PanelToggleEvent>();

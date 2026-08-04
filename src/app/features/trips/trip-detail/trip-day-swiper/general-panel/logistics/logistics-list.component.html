@@ -57,7 +57,10 @@
                 <span class="nt-text-muted text-xs">({{ row.count }})</span>
               </div>
             } @else {
-              <app-logistic-card [tripId]="tripId()" [logisticId]="row.logistic.id" [initCollapsed]="true" />
+              <app-logistic-card
+                class="logistics-list__group-item"
+                [class.logistics-list__group-item--last]="row.isLastInGroup"
+                [tripId]="tripId()" [logisticId]="row.logistic.id" [initCollapsed]="true" />
             }
           }
         </div>

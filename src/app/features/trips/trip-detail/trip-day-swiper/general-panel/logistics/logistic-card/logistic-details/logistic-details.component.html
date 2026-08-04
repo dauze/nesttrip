@@ -5,7 +5,7 @@
         <label for="logistic-type" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-list text-sm"></i>Type
         </label>
-        <app-select #typeSelect id="logistic-type" label="Type" [options]="typeOptions" formControlName="type" class="w-full transparent-select" />
+        <app-select #typeSelect id="logistic-type" label="Type" class="booking w-full transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="typeOptions" formControlName="type" />
       </div>
     </div>
     <div class="col-6 p-0 pl-1 min-w-0" formGroupName="booking">
@@ -13,10 +13,12 @@
         <label for="logistic-booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-bookmark text-sm"></i>Résa
         </label>
-        <app-select #bookingSelect id="logistic-booking-status" label="Résa" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+        <app-select #bookingSelect id="logistic-booking-status" label="Résa" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
       </div>
     </div>
   </div>
+
+  <app-divider class="m-1" />
 
   @switch (selectedType()) {
     @case ('logement') {
@@ -110,6 +112,8 @@
       </div>
     </div>
   </div>
+
+  <app-divider class="m-1" />
 
   <div class="flex flex-column gap-1">
     <label for="logistic-price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">

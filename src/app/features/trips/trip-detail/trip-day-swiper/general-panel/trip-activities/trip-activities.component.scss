@@ -50,7 +50,9 @@
 // 2026-08-01) : une seule colonne, plus de bascule empilé/scindé à gérer ici.
 .trip-activities-body {
   padding-top: var(--chrome-top-offset, 0px);
-  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // `+ var(--nt-layout-gap-stacked, 0.25rem)` (ROADMAP.md "### UI") : respiration entre le
+  // dernier élément et la barre du bas, sinon aucun espace.
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
   max-width: var(--nt-content-max-width);
   margin-inline: auto;
   display: flex;

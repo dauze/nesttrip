@@ -3,7 +3,7 @@
   border-radius: var(--nt-content-border-radius);
   background: var(--nt-content-background);
   color: var(--nt-text-color);
-  box-shadow: 0 0.0625rem 0.125rem 0 rgba(18, 18, 23, 0.05);
+  box-shadow: var(--nt-shadow-xs);
 }
 
 .app-card__header:empty {

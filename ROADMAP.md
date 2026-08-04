@@ -25,6 +25,12 @@ Décisions prises avec l'utilisateur le 2026-07-31 (section "UX / Interactions")
 
 Ordre d'exécution : la section "UX / Interactions" (tout ce qui n'est pas "non prioritaire") a été traitée intégralement le 2026-08-02, puis la section "Activités" (tout ce qui n'est pas "non prioritaire") le même jour — voir "✅ Déjà fait" pour le détail des deux lots. Un nouveau lot de puces ajouté depuis à la section "UX / Interactions" a été traité intégralement le 2026-08-04 (9 des 10 items non "non prioritaire" — le 10e, l'accroche onboarding, mis de côté ce jour-là, voir "🔧 À faire") — voir "✅ Déjà fait".
 
+En cours (démarré le 2026-08-04) : section "### UI", fusionnée avec l'étude de direction artistique `DESIGN.md` en une seule grosse livraison visuelle (design system + toolbar + carte + activity card/timeline + mobile-trip-nav + FAB/app-message + graphique Résumé), livrée par phases (un commit logique par phase, `nesttrip-verify` entre chaque). Décisions actées avec l'utilisateur avant implémentation :
+- **Icône engrenage (toolbar)** : rotation douce de l'icône pendant que le menu réglages s'ouvre/se ferme (la puce roadmap originale s'arrêtait à "pendant que le menu sort" sans suite), + une vraie animation d'apparition pour le popup desktop (actuellement aucune, contrairement au tiroir mobile).
+- **Persistance du toggle carte repliée/dépliée** : vraie préférence utilisateur Firestore (`users/{uid}`, nouveau champ `mapCollapsedByDefault`), pas du localStorage — seule exception logique de ce lot au scope "visuel uniquement" de `DESIGN.md`. `firestore.rules` interdisait jusqu'ici toute écriture client sur `users/{uid}` (champ géré par Cloud Functions) ; la règle est assouplie pour n'autoriser le client à modifier QUE ce champ précis de son propre doc.
+- **Carte Google** : retrait des contrôles de navigation par défaut (zoom/compass — pinch/scroll restent), et affinement du style des marqueurs déjà thémés (halo primary sur le marqueur sélectionné).
+- **Graphique "types d'activité" (Résumé)** : anneaux concentriques (un par catégorie, longueur d'arc ∝ proportion, légende dessous) plutôt qu'un donut classique — référence visuelle `public/graphisme.png` (fournie par l'utilisateur, remplace `public/graphique.html` qui s'est avéré être une page Freepik morte sans visuel exploitable) ; top 5 combiné activités + transport + logement, couleurs = tokens `--nt-activity-*`/`--nt-logistic-*` déjà existants.
+
 Tout ce qui a déjà été livré (avec le détail des correctifs) est listé dans **✅ Déjà fait**, tout en bas.
 
 ## 🔧 À faire
@@ -118,6 +124,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Rajouter filtre mon planning et celui de tout le l'équipe (non prioritaire)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (non prioritaire)
 - mettre les badges des compagnons de route en haut, et mettre des chip en detail dans le résumé, cliquable aussi (non prioritaire)
+- Uniformiser les carte de logement et transport avec les cartes des activités
 
 ### Bugs / fixes
 - A l'ajout d'un train, la cinématique de remplissage ne fonctionne pas
@@ -130,6 +137,15 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Dans activity form, les tailles des valeurs ne doivent pas être en width 100% mais elle doivent prendre uniquement la largeur du contenu.
 - Au clique sur le crayon du nom d'un trip dans résumé, mettre le focus et ouvrir le clavier sur mobile 
 - Quand je suis sur un jour et que je clique sur précédent, je dois retourner à la page d'accueil. L'iteme sur les retours ne concernait que les retour via les commandes du natigateur, pas le bouton de retour qui lui doit retourner sur l'accueilo systématiquement
+- Si en bas d'un activité et que le bouton + est contre le bord, si je scroll, celui ci ne revient pas à sa place à tord 
+- mettre une vue d'ensemble de la journée si il y a un transport ! 
+- Adapter le skeleton pour la carte maintenant qu'elle n'ai plus dans le day trip 
+- Centrer la dépense par rapport à la carte dans le résué 
+- mettre un peu plus de padding left dans la carte activité car c'est trop collé sur la gauche 
+- Le "suite da ..." d'une activité doit être entourré pour faire uniforme 
+- Vérifier que le double clique sur "Jour n" fonctionne toujours bien 
+- L'espace entre la bar et l'élément en dessous est toujours pas uniforme avec les autres padding 
+- je padding left et right est bien respecté sur day trip ?  Uniforme avec le padding bootom ? J'ai l'impression que le padding à droite n'est pas bon et que le padding botton est 2 fois trop gros 
 
 ### Qualité / process
 

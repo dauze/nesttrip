@@ -5,7 +5,6 @@ import { CardComponent } from '@app/shared/components/card/card.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { SelectComponent } from '@app/shared/components/select/select.component';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
-import type { LogisticType } from '@core/models/logistic.dto';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { Day } from '@app/features/trips/trip.model';
@@ -16,9 +15,12 @@ import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.serv
 import { GeneralMapCinematicService } from '../trip-activities/general-map-cinematic.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { TripTasksTileComponent } from './trip-tasks-tile/trip-tasks-tile.component';
+import { ActivityTypeRingsComponent, RingChartEntry } from './activity-type-rings/activity-type-rings.component';
+import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
+import { LOGISTIC_TYPE_META } from '../logistics/logistic.constants';
 
-/** Types Logistique comptés comme "transport" par la tuile Résumé (décision utilisateur du 2026-08-01, voir ROADMAP.md) — exclut Logement et Autre. */
-const TRANSPORT_LOGISTIC_TYPES: LogisticType[] = ['flight', 'train', 'carRental'];
+/** Top 5 catégories max affichées dans les anneaux (ROADMAP.md "### UI") — au-delà, le reste est simplement ignoré (pas de segment "autres"). */
+const MAX_RING_ENTRIES = 5;
 
 /**
  * Onglet "Résumé" (voir ROADMAP.md "UX / Interactions", 2026-08-01) : header
@@ -35,7 +37,7 @@ const TRANSPORT_LOGISTIC_TYPES: LogisticType[] = ['flight', 'train', 'carRental'
 @Component({
   selector: 'app-trip-summary',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, SkeletonComponent, SelectComponent, TripHeaderComponent, TripCollaboratorsComponent, TripTasksTileComponent],
+  imports: [ReactiveFormsModule, CardComponent, SkeletonComponent, SelectComponent, TripHeaderComponent, TripCollaboratorsComponent, TripTasksTileComponent, ActivityTypeRingsComponent],
   templateUrl: './trip-summary.component.html',
   styleUrl: './trip-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -105,22 +107,6 @@ export class TripSummaryComponent {
     return this.currencyOptions.find(o => o.value === currency)?.label.split(' ')[0] ?? '';
   });
 
-  readonly activityCount = computed(() => this.allPlacedActivities().length);
-
-  readonly transportCount = computed(() =>
-    this.tripFacade.getAllLogistics(this.tripId())().filter(l => TRANSPORT_LOGISTIC_TYPES.includes(l.type)).length,
-  );
-
-  readonly dayCount = computed(() => this.tripFacade.activeTrip()?.days.length ?? 0);
-
-  /** Fichiers vivant uniquement sur le pool (activités) — jamais dupliqués par instance de jour, voir CLAUDE.md — plus ceux des éléments logistiques. */
-  readonly fileCount = computed(() => {
-    const activityFiles = this.tripFacade.getAllPoolActivities(this.tripId())()
-      .reduce((sum, a) => sum + a.files.length, 0);
-    const logisticFiles = this.tripFacade.getAllLogistics(this.tripId())()
-      .reduce((sum, l) => sum + l.files.length, 0);
-    return activityFiles + logisticFiles;
-  });
 
   /** Points de la carte, ordonnés chronologiquement (par jour) — voir `allPlacedActivities`. */
   readonly generalMapPoints = computed<DayMapPoint[]>(() =>
@@ -139,6 +125,45 @@ export class TripSummaryComponent {
   );
 
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
+
+  /**
+   * Top 5 catégories (types d'activité + transport + logement combinés,
+   * ROADMAP.md "### UI") pour les anneaux du Résumé — `share` de chaque
+   * catégorie retenue est calculée sur le total GLOBAL (toutes catégories,
+   * y compris celles hors top 5), pas seulement la somme du top 5 : chaque
+   * anneau reflète ainsi sa vraie part de l'ensemble du voyage, pas une part
+   * relative uniquement entre les 5 affichées.
+   */
+  readonly typeBreakdown = computed<RingChartEntry[]>(() => {
+    const counts = new Map<string, { label: string; icon: string; colorVar: string; count: number }>();
+
+    for (const { activity } of this.allPlacedActivities()) {
+      const meta = ACTIVITY_TYPE_META[activity.type];
+      if (!meta) continue;
+      const key = `activity:${activity.type}`;
+      const entry = counts.get(key) ?? { label: meta.label, icon: meta.icon, colorVar: meta.colorVar, count: 0 };
+      entry.count++;
+      counts.set(key, entry);
+    }
+
+    for (const logistic of this.tripFacade.getAllLogistics(this.tripId())()) {
+      const meta = LOGISTIC_TYPE_META[logistic.type];
+      if (!meta) continue;
+      const key = `logistic:${logistic.type}`;
+      const entry = counts.get(key) ?? { label: meta.label, icon: meta.icon, colorVar: meta.colorVar, count: 0 };
+      entry.count++;
+      counts.set(key, entry);
+    }
+
+    const all = Array.from(counts.values());
+    const total = all.reduce((sum, e) => sum + e.count, 0);
+    if (total === 0) return [];
+
+    return all
+      .sort((a, b) => b.count - a.count)
+      .slice(0, MAX_RING_ENTRIES)
+      .map(e => ({ ...e, share: e.count / total }));
+  });
 
   private mapClickSub?: { unsubscribe: () => void };
 

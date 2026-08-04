@@ -13,9 +13,22 @@
   background: color-mix(in srgb, var(--nt-msg-color) 15%, transparent);
   color: var(--nt-msg-color);
   font-size: 0.9rem;
+  // Ombre légère + apparition douce (DESIGN.md "app-message", "animations") —
+  // absentes jusqu'ici (juste un flex statique) ; `@starting-style` natif,
+  // même mécanisme que les tiroirs (menu.scss)/l'activity card.
+  box-shadow: var(--nt-shadow-xs);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 200ms ease;
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
 
   i {
     flex-shrink: 0;
+    font-size: var(--nt-icon-size-md);
   }
 }
 

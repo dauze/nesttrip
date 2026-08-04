@@ -17,16 +17,24 @@
   height: 3rem;
   padding: 0 0.9rem;
   border: none;
-  border-radius: 2rem;
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-primary-color);
   color: var(--nt-primary-contrast-color);
-  box-shadow: 0 0.25rem 0.75rem rgba(18, 18, 23, 0.25);
+  // `--nt-shadow-lg` (échelle d'élévation, tokens.scss) plutôt qu'une valeur
+  // en dur : plus diffuse, cohérente avec le reste des ombres "premium"
+  // (DESIGN.md) — c'est l'élément le plus haut dans la hiérarchie d'élévation
+  // de l'app (flotte au-dessus de tout le reste), d'où le palier `lg`.
+  box-shadow: var(--nt-shadow-lg);
   cursor: pointer;
-  transition: background-color 150ms ease;
+  transition: background-color 150ms ease, box-shadow 200ms ease;
 
   &:hover,
   &:active {
     background: var(--nt-primary-hover-color);
+  }
+
+  &:active {
+    box-shadow: var(--nt-shadow-md);
   }
 }
 

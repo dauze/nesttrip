@@ -1,45 +1,38 @@
 <div #wrapper class="mobile-trip-nav">
-  <div #dayStrip class="day-strip" [class.day-strip--hidden]="expanded()">
-    @for (tab of dayTabs(); track tab.id) {
-      <button
-        type="button"
-        class="day-chip"
-        [class.day-chip--active]="tab.id === activeId()"
-        [attr.data-day-id]="tab.id"
-        (click)="selectTab(tab)">
-        {{ dayChipLabel(tab) }}
-      </button>
+  <div #dayStrip class="day-strip">
+    @if (!expanded()) {
+      @for (tab of dayTabs(); track tab.id) {
+        <button
+          type="button"
+          class="day-strip__chip"
+          [class.day-strip__chip--active]="tab.id === activeId()"
+          [attr.data-day-id]="tab.id"
+          (click)="selectTab(tab)">
+          {{ dayChipLabel(tab) }}
+        </button>
+      }
+    } @else {
+      @for (tab of generalTabs(); track tab.id) {
+        <button
+          type="button"
+          class="day-strip__chip day-strip__chip--general"
+          [class.day-strip__chip--active]="tab.id === activeId()"
+          [attr.data-day-id]="tab.id"
+          (click)="selectTab(tab)">
+          <i [class]="generalTabIcon(tab)"></i>
+          <span>{{ tab.label }}</span>
+        </button>
+      }
     }
   </div>
 
   <div class="bar" [attr.data-state]="expanded() ? 'expanded' : 'collapsed'">
     <div class="pill"></div>
 
-    <!-- "Jour X" toujours du même côté (droite) dans les deux états — voir
-         mobile-trip-nav.component.scss (.pill ancrée à droite) : general-entry
-         et subrow occupent le même emplacement (gauche), mutuellement
-         exclusifs selon l'état. -->
-    @if (!expanded()) {
-      <button type="button" class="tab general-entry" (click)="openGeneral()">
-        <i class="pi pi-th-large"></i>
-        <span class="label">Général</span>
-      </button>
-    }
-
-    <div class="subrow">
-      @for (tab of generalTabs(); track tab.id; let i = $index) {
-        <button
-          type="button"
-          class="subitem"
-          [class.subitem--active]="tab.id === activeId()"
-          [class.subitem--show]="expanded()"
-          [style.transition-delay.ms]="expanded() ? i * 55 : 0"
-          (click)="selectTab(tab)">
-          <i [class]="generalTabIcon(tab)"></i>
-          <span>{{ tab.label }}</span>
-        </button>
-      }
-    </div>
+    <button type="button" class="tab" [class.active]="expanded()" (click)="openGeneral()">
+      <i class="pi pi-th-large"></i>
+      <span class="label">Général</span>
+    </button>
 
     <button
       type="button"

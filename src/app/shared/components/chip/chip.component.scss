@@ -3,7 +3,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.25rem 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-secondary-bg);
   color: var(--nt-secondary-color);
   font-size: 0.875rem;

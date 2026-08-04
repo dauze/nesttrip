@@ -18,7 +18,11 @@
   &::after {
     content: '';
     flex: 1 1 auto;
-    border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+    // `--nt-content-border-width` (indirection, voir tokens.scss) plutôt que
+    // `--nt-border-width-hairline` directement : permet à un ancêtre précis
+    // (ex. `.timeline-divider`, TimelineComponent) de la redéfinir en cascade
+    // sans affecter tous les autres dividers de l'app.
+    border-bottom: var(--nt-content-border-width) solid var(--nt-content-border-color);
   }
 
   &:not(:empty)::before {

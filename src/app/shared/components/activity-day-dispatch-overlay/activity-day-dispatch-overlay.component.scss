@@ -68,7 +68,7 @@
 
   .dispatch-overlay--expanded & {
     max-height: 50vh;
-    border-radius: 1.75rem 1.75rem 0 0;
+    border-radius: var(--nt-radius-2xl) var(--nt-radius-2xl) 0 0;
   }
 }
 

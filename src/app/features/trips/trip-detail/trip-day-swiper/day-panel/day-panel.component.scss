@@ -30,8 +30,22 @@
 // hérite normalement à travers les descendants, quel que soit l'élément qui
 // la lit.
 .day-panel-root {
-  padding-top: var(--chrome-top-offset, 0px);
-  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // `+ --fixed-map-height` (ROADMAP.md "### UI") : la carte "jour" n'occupe
+  // plus d'espace de FLUX ici (déplacée hors du swiper en layout empilé, voir
+  // TripDayMapHostService.dayFixedContainer/`.day-fixed-map`) — ce contenu
+  // doit donc réserver lui-même l'équivalent en haut, sans quoi il remonterait
+  // sous la carte fixe. Vaut 0 en layout scindé (le conteneur fixe y reste
+  // vide, `.sticky-map` local reprend son rôle habituel). `+ --nt-layout-gap-stacked` :
+  // un `gap` flex ne s'applique jamais entre le padding du conteneur et son
+  // PREMIER enfant (uniquement entre enfants) — sans cet ajout, l'écart entre
+  // la carte et "Vue d'ensemble de la journée" était plus serré que le gap
+  // normal entre les AUTRES blocs (retour utilisateur, ROADMAP.md "### UI").
+  padding-top: calc(var(--chrome-top-offset, 0px) + var(--fixed-map-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+  // `+ var(--nt-layout-gap-stacked, 0.25rem)` (ROADMAP.md "### UI") : sans ça, le dernier
+  // élément touchait exactement le haut de la barre du bas, aucune
+  // respiration — même correctif appliqué aux 4 autres onglets (Résumé/
+  // Activités/Logistique/Listes).
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
   // Centre le contenu (carte, timeline, activités) dans une colonne de
   // largeur raisonnable sur grand écran plutôt que de l'étirer sur toute la
   // largeur — voir --nt-content-max-width (tokens.scss) et ROADMAP.md.
@@ -63,12 +77,19 @@
   order: 1;
 }
 
+// La carte (order 2) passe désormais AVANT la timeline (order 3, ROADMAP.md
+// "### UI") : elle doit rester la toute première chose sous le chrome fixe
+// (toolbar/barre des jours), en continuité visuelle immédiate — la "vue
+// d'ensemble de la journée" (timeline) vient juste après, qu'elle soit
+// ouverte ou repliée. Sticky positioning gère seule le repositionnement du
+// contenu suivant selon la hauteur courante de la carte, sans calcul JS
+// supplémentaire.
 .day-panel-timeline {
-  order: 2;
+  order: 3;
 }
 
 .sticky-map {
-  order: 3;
+  order: 2;
   position: sticky;
   // JAMAIS `0` en dur : voir la doc de `TripChromeService.stickyContentTop`
   // (colle sinon derrière le chrome fixe en layout desktop, qui ne se masque
@@ -88,9 +109,12 @@
   // qui défilent juste en dessous (elles n'ont volontairement pas de z-index,
   // voir trip-detail.component.scss) : le contenu disparaissait sous un
   // rectangle plat avec une coupure nette, lisible comme un bug d'empilement
-  // plutôt qu'un vrai "sticky" voulu — voir ROADMAP.md. Même token que les
-  // popovers (élévation discrète), pas le modal (beaucoup trop marqué ici).
-  box-shadow: var(--nt-overlay-popover-shadow);
+  // plutôt qu'un vrai "sticky" voulu — voir ROADMAP.md. `--nt-shadow-md`
+  // (ROADMAP.md "### UI") plutôt que le popover : offset/spread pensés pour
+  // ne porter QUE vers le bas (voir tokens.scss), sans liseré visible dans le
+  // petit espace au-dessus de la carte — elle doit paraître en continuité
+  // directe avec la toolbar, jamais séparée par une ombre là-haut.
+  box-shadow: var(--nt-shadow-md);
 }
 
 .activities-column {

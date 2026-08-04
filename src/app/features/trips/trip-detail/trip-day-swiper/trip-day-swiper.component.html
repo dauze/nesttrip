@@ -1,13 +1,29 @@
 <div class="map-anchor">
   <app-trip-day-map #dayMap></app-trip-day-map>
 </div>
+
+<!-- Carte "jour" réellement hors du swiper (ROADMAP.md "### UI") : position
+     fixed juste sous la toolbar, la même largeur qu'elle — DayPanelComponent
+     y déplace la carte partagée (voir TripDayMapHostService.dayFixedContainer)
+     en layout empilé UNIQUEMENT (mobile/tablette) ; en layout scindé (desktop,
+     carte en colonne) ce conteneur reste vide, DayPanelComponent cible alors
+     son propre `.sticky-map` local. Vide (0 hauteur) hors contexte 'day'
+     (Résumé/Activités/Logistique/Listes) : rien n'y est jamais déplacé. -->
+<div
+  #dayFixedMap
+  class="day-fixed-map"
+  [class.day-fixed-map--active]="mapHost.dayFixedContainerHeight() > 0"
+  [style.--chrome-toolbar-height.px]="chromeService.toolbarHeight()"
+></div>
+
 <swiper-container
   #swiperRef
   init="false"
   class="tab-content-wrapper"
   [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
   [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
-  [style.--sticky-top-offset.px]="chromeService.stickyContentTop()">
+  [style.--sticky-top-offset.px]="chromeService.stickyContentTop()"
+  [style.--fixed-map-height.px]="mapHost.dayFixedContainerHeight()">
   <swiper-slide>
     @if (visitedDays().has('summary')) {
       <app-trip-summary [tripId]="trip().id" [active]="activeId() === 'summary'" />

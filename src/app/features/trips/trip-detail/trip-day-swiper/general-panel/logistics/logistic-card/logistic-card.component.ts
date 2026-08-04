@@ -8,11 +8,10 @@ import { LongPressDirective } from '@app/shared/directives/long-press.directive'
 import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { PlaceSummary } from '@core/models/place.dto';
-import { BookingStatus } from '@core/enums/booking.status';
-import { BOOKING_STATUS_META } from '@app/shared/components/activity-card/activity.constants';
+import { LOGISTIC_TYPE_META } from '../logistic.constants';
 import { LogisticHeaderComponent } from './logistic-header/logistic-header.component';
 import { LogisticDetailsComponent } from './logistic-details/logistic-details.component';
-import { LogisticFilesComponent } from '../logistic-files/logistic-files.component';
+import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';
 import { TagComponent } from '@app/shared/components/tag/tag.component';
 
 /** Laisse le temps à l'animation de dépli du panneau de se terminer avant de lancer le chaînage guidé (voir `startGuidedEntry`) — sinon les panneaux/dialogs CDK s'ancrent à un élément encore en cours de transition (`max-height`). Même valeur que `PANEL_COLLAPSE_DELAY_MS` dans ActivityCardComponent. */
@@ -30,7 +29,7 @@ const PANEL_EXPAND_DELAY_MS = 300;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     NgClass, PanelComponent, DividerComponent, CheckboxComponent,
-    LogisticHeaderComponent, LogisticDetailsComponent, LogisticFilesComponent,
+    LogisticHeaderComponent, LogisticDetailsComponent, FilesFieldComponent,
     SelectableDirective, LongPressDirective, TagComponent,
   ],
   templateUrl: './logistic-card.component.html',
@@ -50,7 +49,8 @@ export class LogisticCardComponent {
 
   readonly collapsed = linkedSignal(() => this.initCollapsed());
 
-  readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.logistic()?.booking?.status ?? BookingStatus.NOT_NEEDED]);
+  /** Couleur d'identité du type (ROADMAP.md "### UI", uniformisation avec ActivityCardComponent) — remplace la couleur par statut de réservation sur le bord gauche de la carte, même mécanisme (dégradé pseudo-élément) que `.trip` dans activity-card.component.scss. */
+  readonly typeColorVar = computed(() => LOGISTIC_TYPE_META[this.logistic()?.type ?? 'other'].colorVar);
 
   /**
    * Catégorisation en cours/future/passée (voir ROADMAP.md, "Administratif") :
@@ -71,8 +71,18 @@ export class LogisticCardComponent {
 
   readonly selectableRef = computed<SelectableItemRef>(() => ({ kind: 'logistic', id: this.logisticId() }));
 
+  /** Chemin Storage des fichiers de cette réservation — préfixe SANS le nom de fichier final, voir `FilesFieldComponent.storagePathPrefix`. Une réservation est une entité plate (contrairement à l'activité), le chemin cible directement `logisticId()`. */
+  protected readonly filesStoragePathPrefix = computed(() => `trips/${this.tripId()}/logistics/${this.logisticId()}`);
+
   get element(): HTMLElement {
     return this.cardContainer().nativeElement;
+  }
+
+  /** `(filesChange)` de `FilesFieldComponent` (ROADMAP.md "### UI", dédup avec ActivityCardComponent). */
+  onFilesChange(files: FileRef[]): void {
+    const logistic = this.logistic();
+    if (!logistic) return;
+    this.tripFacade.updateLogistic(this.tripId(), { ...logistic, files });
   }
 
   onTitleChanged(newTitle: string): void {

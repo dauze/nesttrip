@@ -75,6 +75,16 @@ export class TripDayMapComponent {
       mapId: environment.googleMapsMapId,
       colorScheme: this.isDarkMode() ? 'DARK' : 'LIGHT',
       disableDefaultUI: false,
+      // Seul le zoom est retiré (retour utilisateur : "remets tout sauf le
+      // zoom") — fullscreen/street view/plan-satellite/rotation restent les
+      // contrôles par défaut de Google. `cameraControl` (le bouton unifié
+      // "Map camera controls", API récente) est un réglage DISTINCT de
+      // `zoomControl` (l'ancien +/-) : les deux doivent être à `false`,
+      // sinon le bouton unifié reste affiché même `zoomControl` désactivé
+      // (constaté en vérifiant ce lot) — pinch/scroll restent pleinement
+      // utilisables via `gestureHandling: 'greedy'` juste en dessous.
+      zoomControl: false,
+      cameraControl: false,
       gestureHandling: 'greedy',
       // Sans ce flag, le zoom fractionnaire est désactivé PAR DÉFAUT sur une
       // carte raster (activé par défaut seulement en vectoriel) — chaque
@@ -180,17 +190,19 @@ export class TripDayMapComponent {
 
     // PinElement étend HTMLElement : on le retourne directement plutôt que
     // sa propriété `.element`, dépréciée par l'API Google Maps. Toujours en
-    // couleur primary (pin "classique", pas de rouge) : la distinction
-    // sélectionné/non sélectionné passe uniquement par la taille ici.
-    // `glyphColor` DOIT être posé explicitement : sans `glyphText`/`glyph`,
-    // PinElement affiche quand même un petit rond central avec sa couleur par
-    // défaut (rouge Google), qui ressortait comme un point rouge résiduel au
-    // milieu du pin même une fois `background`/`borderColor` recolorés.
+    // couleur primary (pin "classique", pas de rouge) — le halo/l'accent du
+    // marqueur sélectionné (ROADMAP.md "### UI") passe par un bord PLUS
+    // marqué (couleur active, plus épais) en plus de la taille, pas
+    // seulement l'échelle comme avant. `glyphColor` DOIT être posé
+    // explicitement : sans `glyphText`/`glyph`, PinElement affiche quand même
+    // un petit rond central avec sa couleur par défaut (rouge Google), qui
+    // ressortait comme un point rouge résiduel au milieu du pin même une
+    // fois `background`/`borderColor` recolorés.
     return new google.maps.marker.PinElement({
       background: 'var(--nt-primary-color)',
-      borderColor: 'var(--nt-primary-active-color)',
+      borderColor: isSelected ? 'var(--nt-primary-active-color)' : 'var(--nt-primary-hover-color)',
       glyphColor: 'var(--nt-primary-color)',
-      scale: isSelected ? 1.2 : 1,
+      scale: isSelected ? 1.35 : 1,
     });
   }
 
@@ -201,7 +213,13 @@ export class TripDayMapComponent {
    */
   private buildPhotoMarker(url: string, isSelected: boolean): HTMLElement {
     const size = isSelected ? 44 : 36;
-    const borderColor = isSelected ? '#e53935' : 'var(--nt-primary-color)';
+    // Halo couleur primary (pas de rouge, ROADMAP.md "### UI") : un anneau
+    // supplémentaire, diffus, en plus du bord — c'est lui qui donne
+    // l'impression de "halo" plutôt qu'un simple bord plus épais.
+    const borderColor = isSelected ? 'var(--nt-primary-active-color)' : 'var(--nt-primary-color)';
+    const haloShadow = isSelected
+      ? ', 0 0 0 0.25rem color-mix(in srgb, var(--nt-primary-color) 40%, transparent)'
+      : '';
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `
@@ -210,7 +228,7 @@ export class TripDayMapComponent {
       border-radius: 50%;
       border: ${isSelected ? 3 : 2}px solid ${borderColor};
       overflow: hidden;
-      box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
+      box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)${haloShadow};
       background: #ffffff;
     `;
 

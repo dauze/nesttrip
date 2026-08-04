@@ -27,7 +27,7 @@ import { GooglePlaceService } from '@core/services/google-place.service';
 import { ViewportService } from '@core/services/viewport.service';
 import { PlaceSummary } from '@core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
-import { BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
+import { BOOKING_STATUS_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META, LOGISTIC_TYPE_OPTIONS, CURRENCY_OPTIONS } from '../../logistic.constants';
 import { FlightFieldsComponent } from '../../logistic-form/flight-fields/flight-fields.component';
@@ -139,6 +139,8 @@ export class LogisticDetailsComponent {
 
   readonly selectedType = computed(() => this.formValue().type);
   readonly dateLabels = computed(() => LOGISTIC_TYPE_META[this.selectedType()]);
+  /** Couleur d'identité du type (ROADMAP.md "### UI", uniformisation avec ActivityFormComponent) — même mécanisme `.booking`/`--booking-status-color` (select.component.scss), déplacé du champ Résa vers le champ Type ici aussi. */
+  readonly typeColorVar = computed(() => LOGISTIC_TYPE_META[this.selectedType()].colorVar);
   readonly currentPlaces = computed(() => this.selectedPlaces());
 
   /** Bloque la sélection d'une date de fin antérieure à la date de début (voir ROADMAP.md "UX / Interactions", `app-date-picker[minDate]`). */
@@ -153,8 +155,6 @@ export class LogisticDetailsComponent {
       && startDate.getDate() === endDate.getDate();
     return sameDay ? startTime : null;
   });
-
-  readonly bookingMeta = computed(() => BOOKING_STATUS_META[this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED]);
 
   readonly showDeadline = computed(() => {
     const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;

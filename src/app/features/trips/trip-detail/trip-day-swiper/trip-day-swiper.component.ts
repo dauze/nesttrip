@@ -40,9 +40,11 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
-  private readonly mapHost = inject(TripDayMapHostService);
+  protected readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
+  private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
+  private dayFixedMapObserver?: ResizeObserver;
 
   // --- Synchro chrome (toolbar + header) au fil du scroll du slide actif ---
   // Un `scroll` DOM event seul ne suffit pas : les navigateurs le dispatchent
@@ -94,6 +96,33 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const map = this.dayMapRef();
       if (map) this.mapHost.register(map);
+    });
+
+    // Conteneur fixe "carte jour" (voir sa doc dans le template) : enregistré
+    // une seule fois auprès de TripDayMapHostService, avec un ResizeObserver
+    // qui alimente `--fixed-map-height` (day-panel.component.scss) pour que le
+    // contenu scrollable du jour réserve exactement l'espace équivalent —
+    // 0 quand vide (layout scindé, ou aucun jour actif). Enregistré aussi
+    // auprès de `TripChromeService.registerChromeElement` : reçoit ainsi le
+    // MÊME `translateY` que la toolbar au hide-on-scroll (mobile), pour ne
+    // jamais laisser de trou entre les deux quand la toolbar se masque
+    // (retour utilisateur) — les deux glissent comme un seul bloc soudé.
+    effect((onCleanup) => {
+      const el = this.dayFixedMapRef()?.nativeElement;
+      this.mapHost.registerDayFixedContainer(el ?? null);
+      if (!el) return;
+
+      this.dayFixedMapObserver?.disconnect();
+      this.dayFixedMapObserver = new ResizeObserver(() => {
+        this.mapHost.setDayFixedContainerHeight(el.getBoundingClientRect().height);
+      });
+      this.dayFixedMapObserver.observe(el);
+
+      const unregisterChrome = this.chromeService.registerChromeElement(el);
+      onCleanup(() => {
+        this.dayFixedMapObserver?.disconnect();
+        unregisterChrome();
+      });
     });
 
     // Réactif à `isLocked()` lui-même (pas juste au changement de jour actif,
@@ -172,6 +201,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('touchmove', this.wakeChromeLoop);
     window.removeEventListener('wheel', this.wakeChromeLoop);
     if (this.chromeRafLoop) cancelAnimationFrame(this.chromeRafLoop);
+    this.dayFixedMapObserver?.disconnect();
   }
 
   private waitForStableLayout(): void {

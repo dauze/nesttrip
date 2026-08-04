@@ -69,6 +69,21 @@ export class TripChromeService {
   readonly mode = this._mode.asReadonly();
 
   /**
+   * Vrai quand un `DayPanelComponent` actif est monté (voir son
+   * `setDayPanelActive`) — utilisé par `TripsComponent` pour masquer le
+   * box-shadow de bas de toolbar (ROADMAP.md "### UI") : la carte sticky du
+   * jour est censée arriver en continuité visuelle directe sous la toolbar,
+   * une ombre entre les deux romprait cette impression. `false` partout
+   * ailleurs (onglets Général, accueil, écrans hors trip-detail).
+   */
+  private readonly _dayPanelActive = signal(false);
+  readonly dayPanelActive = this._dayPanelActive.asReadonly();
+
+  setDayPanelActive(active: boolean): void {
+    this._dayPanelActive.set(active);
+  }
+
+  /**
    * Gap courant (px) entre deux éléments de chrome fixed consécutifs
    * (toolbar->barre des jours hors `'mobile'`, où c'est plutôt
    * toolbar->contenu qui vaut ce gap) — même constante réutilisée dans

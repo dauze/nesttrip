@@ -1,4 +1,4 @@
-@if (!bare()) {
+@if (!bare() && !footerToggle() && !noHeader()) {
   <div class="app-panel__header flex align-items-center justify-content-between gap-2">
     <div
       class="app-panel__header-content flex align-items-center gap-2"
@@ -33,3 +33,13 @@
     <ng-content />
   </div>
 </div>
+@if (footerToggle()) {
+  <button
+    type="button"
+    class="app-panel__footer-toggle flex flex-column align-items-center justify-content-center w-full"
+    [attr.aria-expanded]="!collapsed()"
+    aria-label="Afficher/masquer"
+    (click)="toggle()">
+    <ng-content select="[panelFooter]" />
+  </button>
+}

@@ -7,9 +7,42 @@
 // logistique, inchangé). `app-panel` est écrit directement dans CE template
 // (pas du contenu projeté), donc porte le même attribut de scope Angular que
 // `.not-dispatched` — pas besoin de `::ng-deep` ici.
+//
+// Bordure gauche en dégradé (public/bordure_activity_card.png, DESIGN.md) :
+// un pseudo-élément remplace le `border-left` plat d'origine (mis à 0 ici,
+// le pseudo occupe visuellement le même espace, voir `::before` plus bas) —
+// `border-image` aurait aussi affecté le style `dashed` des 3 autres côtés
+// (voir `.not-dispatched` plus bas), un pseudo-élément reste indépendant.
+// Ombre douce au repos + apparition fondu/translation (DESIGN.md "cartes
+// premium"/"animations") — `@starting-style` natif, même mécanisme déjà
+// utilisé par les tiroirs (voir menu.scss), pas de librairie d'animation.
 .trip {
-  border-left-width: 0.4rem;
-  border-left-color: var(--activity-type-color);
+  position: relative;
+  border-left-width: 0;
+  box-shadow: var(--nt-shadow-xs);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 220ms ease, transform 220ms ease, box-shadow var(--nt-transition-duration) ease;
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.trip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.4rem;
+  border-radius: var(--nt-content-border-radius) 0 0 var(--nt-content-border-radius);
+  background: linear-gradient(
+    180deg,
+    var(--activity-type-color) 0%,
+    color-mix(in srgb, var(--activity-type-color) 55%, transparent) 100%
+  );
 }
 
 // Un `inset` posé par erreur ici rendait ce bord gauche avec l'effet

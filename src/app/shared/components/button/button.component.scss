@@ -180,7 +180,7 @@
 // --- Forme ---
 
 .app-button--rounded {
-  border-radius: 2rem;
+  border-radius: var(--nt-radius-pill);
 }
 
 .app-button--icon-only {

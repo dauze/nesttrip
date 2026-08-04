@@ -112,6 +112,14 @@
   --nt-content-hover-background: var(--nt-surface-100);
   --nt-content-border-color: var(--nt-surface-200);
   --nt-content-border-radius: var(--nt-radius-md);
+  // Épaisseur de bordure des cartes/panels — indirection (pas directement
+  // `--nt-border-width-hairline` dans panel.component.scss) pour permettre à
+  // UN sous-arbre précis de la redéfinir en cascade sans toucher le reste de
+  // l'app : `.tab-content-wrapper` (day/général, ROADMAP.md "### UI", "réduire
+  // de moitié le border de tous les contenus de daytrip") la redéfinit à
+  // `--nt-border-width-hair`, tous les autres panels (dialogs, login...)
+  // gardent cette valeur par défaut.
+  --nt-content-border-width: var(--nt-border-width-hairline);
 
   // Fond de page (body, toolbar, carte épinglée en mode empilé) — distinct de
   // `--nt-content-background` (cartes/panels) pour qu'on distingue visuellement
@@ -146,13 +154,24 @@
 
   // Rayons de bordure — en rem (jamais en px, cohérent avec le reste du
   // thème : un rayon doit suivre l'échelle typographique de l'utilisateur,
-  // pas rester figé en pixels physiques).
+  // pas rester figé en pixels physiques). Échelle agrandie (ROADMAP.md
+  // "### UI", "aggrandi les border radius") par rapport aux valeurs Aura
+  // d'origine — direction "premium" plus arrondie (DESIGN.md) — tout en
+  // gardant `--nt-radius-xs` intact (checkbox, volontairement anguleuse).
   --nt-radius-none: 0;
   --nt-radius-xs: 0.125rem;
   --nt-radius-sm: 0.25rem;
-  --nt-radius-md: 0.375rem;
-  --nt-radius-lg: 0.5rem;
-  --nt-radius-xl: 0.75rem;
+  --nt-radius-md: 0.5rem;
+  --nt-radius-lg: 0.75rem;
+  --nt-radius-xl: 1rem;
+  // Coins hauts d'un tiroir/bottom-sheet (day-picker-sheet, dispatch-overlay) —
+  // valeur déjà utilisée telle quelle avant tokenisation, juste nommée ici.
+  --nt-radius-2xl: 1.75rem;
+  // Forme pilule/capsule (chips, FAB, select-button "subtle") — `999px` plutôt
+  // qu'une valeur en `rem` : s'adapte automatiquement à N'IMPORTE QUELLE
+  // hauteur d'élément (toujours un demi-cercle à chaque bout), contrairement
+  // à un rayon fixe qui ne "ferme" parfaitement qu'à UNE hauteur précise.
+  --nt-radius-pill: 999px;
 
   // Largeurs de bordure — échelle unique pour tous les `border: Npx solid`
   // en dur trouvés dans les composants (panel, menu, fieldset, toolbar,
@@ -170,6 +189,45 @@
   // thick) s'est révélé imperceptible à l'oeil (vérifié via capture d'écran),
   // d'où cette 3e valeur dédiée, plus nettement plus épaisse.
   --nt-border-width-group: 0.1875rem;
+
+  // Bordure fine dédiée au contenu jour/général (cartes/panels) une fois la
+  // toolbar débarrassée de la sienne (voir ROADMAP.md "### UI", "toolbar
+  // n'aura plus de border, tu peux réduire de moitié le border de tous les
+  // contenus de daytrip") — moitié de `--nt-border-width-hairline`. Réservée
+  // à ce contexte précis (panel/activity-card), jamais un remplacement
+  // global du hairline standard (champs de formulaire, overlays...).
+  --nt-border-width-hair: 0.03125rem;
+
+  // Échelle d'élévation (ombres) — direction "premium" DESIGN.md : diffuses
+  // et douces plutôt que denses/dures, une seule échelle réutilisée partout
+  // au lieu des valeurs `box-shadow` dupliquées en dur trouvées composant par
+  // composant (FAB, mobile-trip-nav, marker photo...). `--nt-shadow-xs` = à
+  // peine perceptible (repos), `--nt-shadow-lg` = élément flottant au-dessus
+  // de tout le reste (FAB, bottom sheet).
+  --nt-shadow-xs: 0 0.0625rem 0.125rem rgba(15, 23, 42, 0.06);
+  --nt-shadow-sm: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.08);
+  --nt-shadow-md: 0 0.375rem 1rem -0.125rem rgba(15, 23, 42, 0.12);
+  --nt-shadow-lg: 0 0.75rem 2rem -0.375rem rgba(15, 23, 42, 0.18);
+
+  // Échelle de taille d'icône — remplace les `font-size` ad hoc trouvés sur
+  // les `<i class="pi ...">` composant par composant (0.65rem, 0.7rem,
+  // 0.85em, 0.9375rem, 1.15rem...), appliquée progressivement aux
+  // composants retouchés (pas un balayage global d'un coup, voir ROADMAP.md).
+  --nt-icon-size-sm: 0.875rem;
+  --nt-icon-size-md: 1rem;
+  --nt-icon-size-lg: 1.25rem;
+
+  // Grille d'espacement unique — alias des valeurs déjà utilisées par les
+  // utilitaires `.gap-*`/`.p-*` (layout-utilities.scss) et par
+  // `--nt-layout-gap-*` ci-dessous, pour que les prochains composants y
+  // réfèrent directement plutôt que des valeurs en rem dupliquées au cas par
+  // cas (ROADMAP.md "### UI", "grille de spacing unique").
+  --nt-space-1: 0.25rem;
+  --nt-space-2: 0.5rem;
+  --nt-space-3: 0.75rem;
+  --nt-space-4: 1rem;
+  --nt-space-5: 1.5rem;
+  --nt-space-6: 2rem;
 
   // Flou de fond (backdrop-filter) — une seule valeur pour tous les
   // masques/tiroirs (dialog, select mobile, date-picker mobile,
@@ -237,10 +295,14 @@
   //   propre backdrop (dispatch-ball) — les overlays @angular/cdk/overlay
   //   (dialog, menu, select, autocomplete, date-picker) vivent tous dans
   //   .cdk-overlay-container, dont le z-index (1000) dépasse déjà tout ça.
+  // - fixed-map : carte "jour" sortie du scroll (.day-fixed-map,
+  //   TripDaySwiperComponent) — juste sous la toolbar, mais au-dessus du
+  //   contenu normal qui défile en dessous (ROADMAP.md "### UI").
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
   --z-app-toolbar: 20;
+  --z-fixed-map: 15;
   --z-overlay-backdrop: 30;
   --z-overlay-content: 40;
   --z-drag-portal: 100;
@@ -299,6 +361,39 @@
   // (un simple gris n'y suffit pas visuellement) mais un blanc translucide.
   --nt-skeleton-bg: var(--nt-surface-200);
   --nt-skeleton-shimmer: rgba(255, 255, 255, 0.4);
+}
+
+// Voir la doc de `--nt-shadow-*` dans le bloc `:root` ci-dessus : mêmes
+// ombres en clair et en sombre gonfleraient un fond déjà très foncé sans
+// jamais s'y détacher (un halo noir de plus sur du noir/ardoise) — le dark
+// mode reprend la même géométrie (offsets/flous inchangés) avec une opacité
+// nettement plus forte, seul levier qui reste lisible sur fond sombre.
+@mixin nt-shadow-dark-tokens {
+  --nt-shadow-xs: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.24);
+  --nt-shadow-sm: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.32);
+  --nt-shadow-md: 0 0.375rem 1rem -0.125rem rgba(0, 0, 0, 0.4);
+  --nt-shadow-lg: 0 0.75rem 2rem -0.375rem rgba(0, 0, 0, 0.55);
+}
+
+@mixin nt-shadow-light-tokens {
+  --nt-shadow-xs: 0 0.0625rem 0.125rem rgba(15, 23, 42, 0.06);
+  --nt-shadow-sm: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.08);
+  --nt-shadow-md: 0 0.375rem 1rem -0.125rem rgba(15, 23, 42, 0.12);
+  --nt-shadow-lg: 0 0.75rem 2rem -0.375rem rgba(15, 23, 42, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include nt-shadow-dark-tokens;
+  }
+}
+
+:root[data-theme='dark'] {
+  @include nt-shadow-dark-tokens;
+}
+
+:root[data-theme='light'] {
+  @include nt-shadow-light-tokens;
 }
 
 // Jetons redéfinis par mode — factorisés en mixins pour être appliqués à la

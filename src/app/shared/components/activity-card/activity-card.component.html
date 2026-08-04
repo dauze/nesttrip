@@ -36,7 +36,7 @@
         <app-divider class="m-1"/>
       }
 
-      <app-activity-files [tripId]="tripId()" [activity]="activity" />
+      <app-files-field [files]="activity.files" [storagePathPrefix]="filesStoragePathPrefix()" (filesChange)="onFilesChange($event)" />
 
       <!-- L'appel a été simplifié ici -->
       <app-activity-google-info

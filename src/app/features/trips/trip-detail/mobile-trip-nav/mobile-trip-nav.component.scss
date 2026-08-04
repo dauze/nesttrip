@@ -1,8 +1,15 @@
 // Racine : `position:fixed` bas d'écran, même palier que l'ancien
 // `app-trip-tabs-nav-fixed` (z-5, voir trip-detail.component.html) — englobe
-// la bande de jours ET la barre, pour que `ActivityDispatchService.
-// registerNavBarElement` mesure une géométrie de repli cohérente couvrant les
-// deux (voir mobile-trip-nav.component.ts).
+// la bande de jours/tabs généraux ET la barre Général/Jour, pour que
+// `ActivityDispatchService.registerNavBarElement` mesure une géométrie de
+// repli cohérente couvrant les deux (voir mobile-trip-nav.component.ts).
+//
+// Surface unique (ROADMAP.md "### UI") : fond + ombre + radius portés ICI
+// (pas plus un fond flottant "overlay" séparé sur `.bar` seule) pour que
+// toute la barre paraisse posée au même niveau que la toolbar — `.bar`
+// elle-même n'a donc plus son propre fond/ombre (voir plus bas), seule sa
+// piste interne (`.pill`, teinte `--nt-secondary-bg`) garde un fond, même
+// langage visuel que `SelectButtonComponent` variant 'subtle'.
 .mobile-trip-nav {
   position: fixed;
   left: 0;
@@ -11,39 +18,40 @@
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.625rem 0.75rem calc(0.625rem + env(safe-area-inset-bottom, 0px));
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
   max-width: var(--nt-content-max-width);
   margin-inline: auto;
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-md);
 }
 
-// ── Bande de jours (chips scrollables) ─────────────────────────────────────
+// ── Bande scrollable : chips de jours OU tabs généraux (ROADMAP.md "### UI")
+// ───────────────────────────────────────────────────────────────────────────
+// Affiche soit les jours (état "Jours"), soit les 4 tabs Résumé/Activités/
+// Logement & Transport/Listes (état "Général") — jamais les deux à la fois,
+// contrairement à l'ancienne barre où les 4 tabs vivaient dans `.subrow` DANS
+// la barre du bas. La barre du bas (`.bar`) ne contient donc plus que 2
+// entrées fixes ("Général"/"Jour N").
 .day-strip {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
   scrollbar-width: none;
   padding: 0.125rem;
-  transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.35s ease;
-  max-height: 3.5rem;
 
   &::-webkit-scrollbar {
     display: none;
   }
-
-  &--hidden {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    margin-bottom: -0.5rem;
-    pointer-events: none;
-  }
 }
 
-.day-chip {
+.day-strip__chip {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   padding: 0.5rem 0.875rem;
-  border-radius: 0.875rem;
+  border-radius: var(--nt-radius-lg);
   border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   background: var(--nt-content-background);
   color: var(--nt-text-muted-color);
@@ -51,87 +59,81 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease,
+    border-color var(--nt-transition-duration) ease, transform 150ms ease, box-shadow var(--nt-transition-duration) ease;
+
+  i {
+    font-size: var(--nt-icon-size-sm);
+  }
+
+  // État pressé (DESIGN.md "chips des jours", Apple Calendar/Flighty) : léger
+  // tassement au tap, jamais sur l'état actif (déjà surélevé, voir plus bas).
+  &:active:not(&--active) {
+    transform: scale(0.96);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(&--active) {
+      background: var(--nt-content-hover-background);
+      border-color: var(--nt-form-field-hover-border-color);
+    }
+  }
 
   &--active {
     background: var(--nt-primary-color);
     border-color: var(--nt-primary-color);
     color: var(--nt-primary-contrast-color);
+    box-shadow: var(--nt-shadow-xs);
+  }
+
+  // Apparition douce à la bascule "Jours" -> "Général" (les 4 tabs généraux
+  // remplacent les chips de jours dans la même bande, voir le template).
+  &--general {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 200ms ease, transform 200ms ease;
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.85);
+    }
   }
 }
 
-// ── Barre elle-même ─────────────────────────────────────────────────────────
-//
-// Couleur volontairement inversée par rapport au reste de l'UI (précisé par
-// l'utilisateur) : toujours sombre en thème clair (pour ressortir sur le
-// fond clair de l'app), plus claire en thème sombre (pour ressortir sur le
-// fond déjà très sombre) — tokens `--nt-surface-*` existants (tokens.scss),
-// jamais de couleur en dur. `gap` entre les groupes d'items (ex. icône jour
-// compacte / sous-items) — sans lui, les deux blocs se touchaient (retour
-// utilisateur).
+// ── Barre Général/Jour N (2 entrées fixes désormais) ────────────────────────
 .bar {
   position: relative;
-  height: 3.25rem;
-  border-radius: 1.375rem;
+  height: 3rem;
+  border-radius: var(--nt-radius-pill);
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.3rem;
-  background: var(--nt-surface-950);
-  box-shadow: 0 0.75rem 1.875rem -0.625rem rgba(0, 0, 0, 0.5);
-  transition: height 0.45s cubic-bezier(0.34, 1.3, 0.4, 1);
-
-  @media (prefers-color-scheme: dark) {
-    background: var(--nt-surface-800);
-  }
+  background: var(--nt-secondary-bg);
 }
 
-:root[data-theme='dark'] .bar {
-  background: var(--nt-surface-800);
-}
-
-:root[data-theme='light'] .bar {
-  background: var(--nt-surface-950);
-}
-
-.bar[data-state='expanded'] {
-  height: 3.5rem;
-}
-
-// Pastille glissante derrière l'item actif — largeur pilotée par les deux
-// états connus ci-dessous (jamais de mesure JS par frame). Ancrée à DROITE
-// (pas `left`) : le badge "Jour X" reste toujours du même côté (droite) dans
-// les deux états (voir le template), donc seule sa largeur doit s'animer, le
-// bord droit ne bouge jamais.
+// Pastille glissante derrière l'item actif — 2 positions fixes seulement (les
+// 2 entrées ont désormais toujours la même largeur, contrairement à l'ancien
+// "Général" icon-only vs "Jour N" labellisé) : plus besoin de mesure JS ni de
+// largeur spéciale "compacte".
 .pill {
   position: absolute;
   top: 0.3rem;
-  right: 0.3rem;
   bottom: 0.3rem;
-  border-radius: 1.075rem;
-  background: var(--nt-surface-800);
-  transition: width 0.5s cubic-bezier(0.34, 1.15, 0.4, 1);
+  left: 0.3rem;
+  width: calc(50% - 0.45rem);
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-primary-color);
+  transition: left 0.4s cubic-bezier(0.34, 1.15, 0.4, 1);
   z-index: 0;
-
-  @media (prefers-color-scheme: dark) {
-    background: var(--nt-surface-700);
-  }
-}
-
-:root[data-theme='dark'] .pill {
-  background: var(--nt-surface-700);
-}
-
-:root[data-theme='light'] .pill {
-  background: var(--nt-surface-800);
-}
-
-.bar[data-state='collapsed'] .pill {
-  width: calc(50% - 0.3rem);
 }
 
 .bar[data-state='expanded'] .pill {
-  width: 2.75rem;
+  left: 0.3rem;
+}
+
+.bar[data-state='collapsed'] .pill {
+  left: calc(50% + 0.15rem);
 }
 
 .tab {
@@ -142,125 +144,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.375rem;
   border: none;
   background: transparent;
-  color: var(--nt-surface-400);
+  color: var(--nt-text-muted-color);
   font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  transition: color 0.3s ease, flex 0.5s cubic-bezier(0.34, 1.15, 0.4, 1);
+  transition: color 0.3s ease;
 
   i {
-    font-size: 0.9375rem;
+    font-size: var(--nt-icon-size-md);
   }
 
   &.active {
-    color: var(--nt-surface-0);
-  }
-}
-
-.bar[data-state='expanded'] .tab.day-badge {
-  flex: 0 0 2.75rem;
-}
-
-// `margin-left` (pas `gap` sur `.tab`, voir plus bas) collabsé à 0 en même
-// temps que la largeur : sans ça, l'icône reste décalée du centre réel du
-// bouton (le `gap` continuait de compter dans le calcul de centrage même une
-// fois le libellé réduit à une largeur nulle — retour utilisateur, "le logo
-// du jour n'est pas centré").
-.tab .label {
-  margin-left: 0.375rem;
-  transition: opacity 0.3s ease, width 0.3s ease, margin-left 0.3s ease;
-}
-
-.bar[data-state='expanded'] .tab.day-badge .label {
-  opacity: 0;
-  width: 0;
-  margin-left: 0;
-}
-
-// ── Sous-items (Activités/Logistique/Listes) ────────────────────────────────
-.subrow {
-  position: relative;
-  z-index: 1;
-  display: none;
-  align-items: center;
-  gap: 0.25rem;
-  flex: 3;
-  height: 100%;
-  padding: 0 0.125rem;
-}
-
-.bar[data-state='expanded'] .subrow {
-  display: flex;
-}
-
-.subitem {
-  flex: 1;
-  height: calc(100% - 0.25rem);
-  min-width: 0; // sinon `flex:1` n'accepte pas de rétrécir sous le contenu, cassant l'ellipsis du span ci-dessous
-  padding: 0 0.125rem;
-  border: none;
-  background: transparent;
-  color: var(--nt-surface-400);
-  font-family: inherit;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  border-radius: 1rem;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.1875rem;
-  transform: scale(0.4);
-  opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.4, 1), opacity 0.25s ease, color 0.2s ease;
-
-  i {
-    font-size: 0.875rem;
-  }
-
-  // Labels plus longs que "Activités"/"Listes" (ex. "Logement & Transport",
-  // voir ROADMAP.md "UX / Interactions") : passent sur 2 lignes plutôt que
-  // d'être tronqués (retour utilisateur, 2026-08-02 — le libellé complet
-  // doit rester lisible) — `-webkit-line-clamp` reste un garde-fou (ellipsis)
-  // si jamais un libellé futur dépassait même 2 lignes.
-  span {
-    max-width: 100%;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-    line-height: 1.05;
-    text-align: center;
-  }
-
-  &--show {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  &--active {
-    background: var(--nt-primary-color);
     color: var(--nt-primary-contrast-color);
   }
 }
 
-// Respecte prefers-reduced-motion (voir ROADMAP.md) : pas de rebond ni de
-// décalage en cascade, transitions linéaires courtes.
 @media (prefers-reduced-motion: reduce) {
-  .bar,
   .pill,
   .tab,
-  .subitem {
+  .day-strip__chip {
     transition-duration: 0.15s;
     transition-timing-function: ease;
-    transition-delay: 0ms !important;
   }
 }

@@ -1,6 +1,6 @@
 :host {
   display: block;
-  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border: var(--nt-content-border-width) solid var(--nt-content-border-color);
   border-radius: var(--nt-content-border-radius);
   background: var(--nt-content-background);
   color: var(--nt-text-color);
@@ -25,6 +25,26 @@
 .app-panel__header {
   padding: 0.5rem;
   font-weight: 600;
+  border-radius: var(--nt-content-border-radius) var(--nt-content-border-radius) 0 0;
+}
+
+// Légère teinte + filet bas (DESIGN.md "cartes premium", "séparation des
+// sections") — UNIQUEMENT déplié : repliée, la carte n'affiche que son
+// header (cas très fréquent des cartes d'activité du pool, `initCollapsed`),
+// une teinte ici la ferait paraître grise/désactivée plutôt que blanche —
+// rien à séparer visuellement puisqu'il n'y a alors aucun contenu en dessous.
+// Combinateur enfant DIRECT (`>`, pas un simple espace) : les attributs
+// `_nghost-*`/`_ngcontent-*` de l'encapsulation émulée Angular sont partagés
+// par TOUTES les instances de `PanelComponent` (pas un id unique par
+// instance) — un panel imbriqué dans un autre (ex. une `ActivityCardComponent`
+// dans le panel de groupe "À catégoriser" du pool) matchait sinon aussi ce
+// sélecteur dès que l'ANCÊTRE (le groupe) n'était pas replié, même si LUI
+// (la carte) l'était — un vrai bug constaté en vérifiant ce lot (header gris
+// sur des cartes repliées). `>` restreint la correspondance au header qui
+// est un enfant direct de CE host précis, jamais celui d'un panel enfant.
+:host(:not(.app-panel--collapsed)) > .app-panel__header {
+  background: var(--nt-content-hover-background);
+  border-bottom: var(--nt-content-border-width) solid var(--nt-content-border-color);
 }
 
 .app-panel__header-content {
@@ -118,7 +138,40 @@
 // posé directement dessus resterait visible (il s'ajoute en dehors de la
 // hauteur de contenu en `box-sizing: content-box`) — d'où le sliver de
 // contenu qui restait visible même panel replié.
+//
+// Padding UNIFORME sur les 4 côtés, toujours (avec ou sans header) —
+// historiquement `padding-top: 0` (le header était censé fournir la
+// séparation), mais retour utilisateur (ROADMAP.md "### UI") : même avec un
+// header, le premier élément du contenu reste trop collé (les panels de
+// groupe "À catégoriser"/ville du pool en particulier) ; sans header
+// (`noHeader`/`footerToggle`), le problème était encore plus net. Une seule
+// valeur simple plutôt qu'une distinction par variante.
 .app-panel__content-inner {
   min-width: 0;
-  padding: 0 0.5rem 0.5rem 0.5rem;
+  padding: 0.5rem;
+}
+
+// Footer togglable (voir `footerToggle`) : remplace le header habituel pour
+// `TripDayMapComponent` en contexte 'day' — un seul bouton pleine largeur,
+// contenu (icônes) entièrement projeté par l'appelant (`[panelFooter]`).
+// Le PLUS FIN possible (retour utilisateur) : padding minimal.
+.app-panel__footer-toggle {
+  gap: 0.125rem;
+  padding: 0.1875rem;
+  border: none;
+  border-top: var(--nt-content-border-width) solid var(--nt-content-border-color);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  i {
+    font-size: var(--nt-icon-size-md);
+  }
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+    color: var(--nt-text-hover-color);
+  }
 }

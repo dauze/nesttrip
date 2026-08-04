@@ -59,7 +59,6 @@ export class MobileTripNavComponent {
 
   /** Numéro séquentiel du jour actif dans le voyage (pas la date) — badge affiché en état "Jours". */
   protected readonly activeDayIndex = computed(() => this.dayTabs().findIndex(t => t.id === this.activeId()));
-  protected readonly activeDayLabel = computed(() => `Jour ${this.activeDayIndex() + 1}`);
 
   /**
    * Dernier jour actif connu (mis à jour dès que `activeId()` est un jour) :
@@ -67,9 +66,27 @@ export class MobileTripNavComponent {
    * vérité de la section active (`expanded`, dérivé de `activeId()`), sert
    * uniquement à savoir vers quel jour revenir en retapant l'icône compacte
    * "Jour X" (interaction absente de l'UI précédente, il n'y avait rien vers
-   * quoi "revenir").
+   * quoi "revenir") — et à afficher un numéro de jour cohérent (voir
+   * `activeDayLabel`) tant qu'aucun jour n'est actif.
    */
   private readonly lastDayId = signal<string | null>(null);
+
+  /**
+   * Badge affiché en état "Jours" — mais aussi en état "Général" (le badge
+   * compact "Jour X" reste visible des deux côtés, voir le template). Sur
+   * "Général", `activeDayIndex()` vaut -1 (aucun tab de jour n'est actif),
+   * ce qui affichait à tort "Jour 0" (retour utilisateur) : on retombe alors
+   * sur le DERNIER jour visité (`lastDayId`), ou sur le premier jour du
+   * voyage tant qu'aucun n'a encore été visité — jamais 0.
+   */
+  protected readonly activeDayLabel = computed(() => {
+    const index = this.activeDayIndex();
+    if (index >= 0) return `Jour ${index + 1}`;
+
+    const lastId = this.lastDayId();
+    const lastIndex = lastId ? this.dayTabs().findIndex(t => t.id === lastId) : -1;
+    return `Jour ${lastIndex >= 0 ? lastIndex + 1 : 1}`;
+  });
 
   protected dayChipLabel(tab: TripTab): string {
     return `${tab.weekday} ${tab.dayNumber} ${tab.month}`;

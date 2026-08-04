@@ -1,14 +1,12 @@
 <app-panel
+    class="map-panel"
     [toggleable]="mapHost.currentOwner() !== 'general'"
+    [footerToggle]="mapHost.currentOwner() !== 'general'"
     [bare]="mapHost.currentOwner() === 'general'"
     [(collapsed)]="collapsed"
     [fillHeight]="useSplitHeight()">
-    <div panelHeader class="flex align-items-center gap-2">
-      <i class="pi pi-calendar"></i>
-      <span>Carte</span>
-    </div>
-
-    <div class="flex flex-column gap-2 swiper-no-swiping map-container" [class.map-container--fill]="useSplitHeight()">
+    <div class="flex flex-column gap-2 swiper-no-swiping map-container"
+      [class.map-container--fill]="useSplitHeight()">
       <!--
         @for à un seul élément, tracké par isDarkMode() : google.maps.Map ne
         rafraîchit pas visuellement son rendu quand `colorScheme` change via
@@ -36,4 +34,11 @@
         </google-map>
       }
   </div>
+
+  @if (mapHost.currentOwner() !== 'general') {
+    <div panelFooter class="map-panel__footer-icons flex flex-column align-items-center">
+      <i class="pi pi-map"></i>
+      <span class="map-panel__grabber"></span>
+    </div>
+  }
 </app-panel>
