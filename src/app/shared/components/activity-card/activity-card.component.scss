@@ -24,6 +24,14 @@
   transform: translateY(0);
   transition: opacity 220ms ease, transform 220ms ease, box-shadow var(--nt-transition-duration) ease;
 
+  // Compense la barre colorée ci-dessous (0.4rem, `::before`) : sans ça, le
+  // contenu ne respire qu'avec le reliquat (0.5rem de padding uniforme -
+  // 0.4rem de barre = 0.1rem) contre 0.5rem pleins sur les 3 autres côtés
+  // (retour utilisateur, ROADMAP.md "### UI", "pas assez de padding à
+  // gauche"). `--nt-panel-content-padding-left` (panel.component.scss) :
+  // même respiration après la barre (0.5rem) que les autres côtés.
+  --nt-panel-content-padding-left: 0.9rem;
+
   @starting-style {
     opacity: 0;
     transform: translateY(0.5rem);

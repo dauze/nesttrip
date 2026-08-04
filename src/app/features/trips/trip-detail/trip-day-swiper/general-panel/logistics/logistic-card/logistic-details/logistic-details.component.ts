@@ -97,8 +97,7 @@ export class LogisticDetailsComponent {
   readonly tripId = input.required<string>();
   readonly logistic = input.required<Logistic>();
 
-  // Refs template pour le chaînage de saisie guidée (Type → cinématique propre au type), voir startGuidedEntry().
-  private readonly typeSelect = viewChild.required<SelectComponent<LogisticType>>('typeSelect');
+  // Refs template pour le chaînage de saisie guidée (cinématique propre au type, le type lui-même est toujours déjà connu, voir startGuidedEntry()).
   private readonly bookingSelect = viewChild.required<SelectComponent<BookingStatus>>('bookingSelect');
   private readonly startDatePicker = viewChild.required<DatePickerComponent>('startDatePicker');
   private readonly startTimePicker = viewChild.required<TimePickerDialogComponent>('startTimePicker');
@@ -347,25 +346,21 @@ export class LogisticDetailsComponent {
 
   /**
    * Déclenché juste après la création d'un élément (voir
-   * `LogisticsCreationService`) : demande le TYPE en premier (sauf
-   * `skipTypeStep`, déjà répondu par le menu "Ajouter" d'un jour — voir
-   * `DayLogisticQuickAddService`), puis enchaîne sur la cinématique propre à
-   * ce type (voir ROADMAP.md). MOBILE UNIQUEMENT — décision explicite :
-   * sur desktop le formulaire complet est déjà visible d'un coup, l'utilisateur
-   * renseigne les champs à son rythme sans qu'on lui impose un ordre ; ce
-   * chaînage reste donc un pattern mobile, comme `ActivityFormComponent.startGuidedEntry`.
-   * Dès qu'une étape est fermée SANS validation (backdrop/Échap sur un
-   * `app-select`, annulation d'un `app-time-picker-dialog`/dialog), le
-   * chaînage s'arrête net, le reste s'édite manuellement.
+   * `DayLogisticQuickAddService`/`TripDetailComponent.logisticsAddMenuItems`) :
+   * le TYPE est toujours déjà connu à cet instant (choisi dans le menu
+   * "Type"/"Ajouter" AVANT la création — ROADMAP.md "### UI", voir la doc de
+   * `LogisticsListComponent.typeGroups` pour le pourquoi), donc enchaîne
+   * directement sur la cinématique propre à ce type. MOBILE UNIQUEMENT —
+   * décision explicite : sur desktop le formulaire complet est déjà visible
+   * d'un coup, l'utilisateur renseigne les champs à son rythme sans qu'on
+   * lui impose un ordre ; ce chaînage reste donc un pattern mobile, comme
+   * `ActivityFormComponent.startGuidedEntry`. Dès qu'une étape est fermée
+   * SANS validation (backdrop/Échap sur un `app-select`, annulation d'un
+   * `app-time-picker-dialog`/dialog), le chaînage s'arrête net, le reste
+   * s'édite manuellement.
    */
-  async startGuidedEntry(skipTypeStep = false): Promise<void> {
+  async startGuidedEntry(): Promise<void> {
     if (!this.viewport.isMobile()) return;
-
-    if (!skipTypeStep) {
-      this.typeSelect().openPanel();
-      const { selected } = await this.awaitOnce(this.typeSelect().closed);
-      if (!selected) return;
-    }
 
     this.guidedFlowActive = true;
     try {

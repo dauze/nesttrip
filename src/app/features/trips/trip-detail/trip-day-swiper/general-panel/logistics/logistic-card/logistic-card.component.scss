@@ -14,6 +14,12 @@
   transform: translateY(0);
   transition: opacity 220ms ease, transform 220ms ease, box-shadow var(--nt-transition-duration) ease;
 
+  // Même correctif que `.trip` (ActivityCardComponent, ROADMAP.md "### UI",
+  // "pas de padding entre le border-left et le logo") : compense la barre
+  // colorée ci-dessous (0.4rem, `::before`) pour retrouver 0.5rem de
+  // respiration après elle, comme sur les 3 autres côtés.
+  --nt-panel-content-padding-left: 0.9rem;
+
   @starting-style {
     opacity: 0;
     transform: translateY(0.5rem);

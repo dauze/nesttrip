@@ -16,18 +16,21 @@
 
 // Carte sticky (ROADMAP.md "### UI") : le CADRE extérieur (`.map-panel`) doit
 // paraître accroché à la toolbar — aucun coin arrondi en haut, AUCUNE
-// bordure visible (ni haut ni côtés, voir retour utilisateur "on voit les
+// bordure visible sur les CÔTÉS (voir retour utilisateur "on voit les
 // bordures sur les côtés, il ne faut pas, elle doit faire la taille de
 // l'écran") : `.day-fixed-map` (trip-day-swiper) est déjà pleine largeur,
-// une bordure ici casserait cet effet. Seule une bordure basse légère reste
-// (transition vers le contenu qui suit). `.map-panel` cible directement
-// l'élément `<app-panel>` déclaré dans CE template (pas du contenu projeté) :
-// porte le même attribut de scope Angular, pas besoin de `::ng-deep` (voir
-// le même raisonnement dans activity-card.component.scss).
+// une bordure latérale ici casserait cet effet. Le hairline du HAUT, lui, est
+// gardé (retour utilisateur, ROADMAP.md "### UI" : "je veux un petit border
+// sur le dessus de la map... mais discrete") — une légère séparation
+// volontaire avec la toolbar, dans le même hairline discret que la bordure
+// basse déjà présente (héritée du `:host` par défaut d'`app-panel`, jamais
+// retirée). `.map-panel` cible directement l'élément `<app-panel>` déclaré
+// dans CE template (pas du contenu projeté) : porte le même attribut de
+// scope Angular, pas besoin de `::ng-deep` (voir le même raisonnement dans
+// activity-card.component.scss).
 .map-panel {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
-  border-top: none;
   border-left: none;
   border-right: none;
 }
@@ -59,8 +62,10 @@
   }
 }
 
+// Doublé en LONGUEUR uniquement (retour utilisateur, ROADMAP.md "### UI") :
+// l'épaisseur (`height`) reste inchangée, seule la largeur de la capsule double.
 .map-panel__grabber {
-  width: 2rem;
+  width: 4rem;
   height: 0.25rem;
   border-radius: var(--nt-radius-pill);
   background: var(--nt-text-muted-color);

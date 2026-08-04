@@ -23,15 +23,24 @@ export class DayLogisticQuickAddService {
   private readonly tripFacade = inject(TripFacade);
   private readonly logisticFocusService = inject(LogisticFocusService);
 
-  /** `dayDate` : jour depuis lequel le menu "Ajouter" a été ouvert (voir ROADMAP.md, "La date de début d'une réservation doit être positionnée soit sur le jour cliqué") — préremplit la date de début, jamais l'heure, et sert aussi de jour de retour une fois la cinématique guidée terminée. */
-  create(type: LogisticType, dayDate?: Date): void {
+  /**
+   * `dayDate` : jour depuis lequel le menu "Ajouter" a été ouvert (voir
+   * ROADMAP.md, "La date de début d'une réservation doit être positionnée
+   * soit sur le jour cliqué") — préremplit la date de début, jamais l'heure,
+   * et sert aussi de jour de retour une fois la cinématique guidée terminée.
+   * `initialTitle` : recherche en cours sur le tab Logistique au moment du
+   * "+" (voir `LogisticsListComponent`, ROADMAP.md "UX / Interactions",
+   * "préremplissage/vidage") — vide dans le cas du menu "Ajouter" d'un jour,
+   * qui n'a pas de champ recherche.
+   */
+  create(type: LogisticType, dayDate?: Date, initialTitle = ''): void {
     const tripId = this.tripFacade.activeTrip()?.id;
     if (!tripId) return;
 
     const logistic: Logistic = {
       id: crypto.randomUUID(),
       type,
-      title: '',
+      title: initialTitle,
       files: [],
       links: [],
       booking: { status: BookingStatus.NOT_NEEDED },

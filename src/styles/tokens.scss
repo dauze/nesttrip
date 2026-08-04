@@ -297,12 +297,21 @@
   //   .cdk-overlay-container, dont le z-index (1000) dépasse déjà tout ça.
   // - fixed-map : carte "jour" sortie du scroll (.day-fixed-map,
   //   TripDaySwiperComponent) — juste sous la toolbar, mais au-dessus du
-  //   contenu normal qui défile en dessous (ROADMAP.md "### UI").
+  //   contenu normal qui défile en dessous (ROADMAP.md "### UI"). MÊME
+  //   valeur que --z-app-toolbar (retour utilisateur, ROADMAP.md "### UI") :
+  //   à un z-index strictement inférieur, le `box-shadow` de la toolbar (qui
+  //   peint AU-DELÀ de sa propre boîte) passait par-dessus la carte malgré un
+  //   écart de 0px entre les deux — lisible comme un filet d'ombre flottant
+  //   entre toolbar et carte plutôt qu'une continuité franche. À égalité de
+  //   z-index, l'ordre DOM tranche (.app-toolbar est déclaré avant
+  //   <router-outlet>/.app-content dans trips.component.html, voir sa doc) :
+  //   la carte, plus tardive dans le DOM, peint par-dessus l'ombre de la
+  //   toolbar plutôt que l'inverse.
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
   --z-app-toolbar: 20;
-  --z-fixed-map: 15;
+  --z-fixed-map: 20;
   --z-overlay-backdrop: 30;
   --z-overlay-content: 40;
   --z-drag-portal: 100;

@@ -41,41 +41,9 @@
   transform: translateY(-50%);
 }
 
-// Uniformisé avec les groupes ville/jour du pool d'activités (ROADMAP.md
-// "### UI", "ce n'est pas dans des panels comme dans les activités") : la
-// liste RESTE plate (voir la doc de `typeRows` — surtout ne pas réintroduire
-// des `@for` imbriqués par section, régression connue du 2026-07-30), donc
-// pas de vrai `app-panel` enveloppant chaque groupe. Compromis CSS : le
-// header prend le même traitement visuel qu'un header de groupe (teinte,
-// bordure épaisse, coins arrondis en haut) et la DERNIÈRE carte de chaque
-// groupe (`isLastInGroup`, calculé dans `typeRows`) ferme la "boîte" avec
-// une bordure basse + coins arrondis en bas — sans bordures latérales sur
-// chaque carte individuellement (qui fragmenteraient visuellement le
-// groupe à chaque `gap` entre 2 cartes).
-.logistics-list__type-header {
-  padding: 0.5rem 0.75rem;
-  border: var(--nt-border-width-group) solid var(--nt-content-border-color);
-  border-bottom: none;
-  border-radius: var(--nt-content-border-radius) var(--nt-content-border-radius) 0 0;
-  background: var(--nt-content-hover-background);
-
-  // Liste plate (voir la doc de `typeRows`, `logistics-list.component.ts`) :
-  // le `gap` uniforme du conteneur ne distingue plus "gap entre carte et
-  // en-tête suivant" de "gap entre 2 cartes" — cet espace additionnel avant
-  // chaque en-tête (sauf le tout premier) restaure la séparation visuelle
-  // entre sections qu'offrait l'ancien wrapper par groupe (`gap-3`).
-  &:not(:first-child) {
-    margin-top: 0.5rem;
-  }
-}
-
-// Pas de `border-radius`/`overflow:hidden` ici (contrairement au header) :
-// la carte À L'INTÉRIEUR (`.reservation`, ActivityCard/LogisticCard) a déjà
-// ses propres coins arrondis — les dupliquer sur ce host risquerait un
-// double-clip visuel si les deux rectangles ne coïncident pas exactement au
-// pixel près. Un simple filet de fermeture suffit à lire "fin du groupe".
-.logistics-list__group-item--last {
-  display: block;
-  padding-bottom: 0.375rem;
-  border-bottom: var(--nt-border-width-group) solid var(--nt-content-border-color);
-}
+// Groupes du tri "Type" : vrais `<app-panel [thickBorder]="true">`, un par
+// type (voir `typeGroups`, `logistics-list.component.ts`) — même composant
+// que les groupes ville/jour du pool d'activités (ROADMAP.md "### UI",
+// décision explicite de l'utilisateur, voir la doc de `typeGroups` pour le
+// risque accepté). Rien à styler ici : `PanelComponent`/`thickBorder` gèrent
+// déjà bordure, radius, chevron et l'espacement vient du `gap` du conteneur.

@@ -99,19 +99,19 @@ export class LogisticCardComponent {
   }
 
   /**
-   * Déclenché juste après la création (voir LogisticsCreationService) : la
-   * carte démarre toujours repliée (`initCollapsed=true`), on la déplie
-   * d'abord pour que le chaînage guidé (LogisticDetailsComponent.startGuidedEntry)
-   * s'ancre correctement. `skipTypeStep` : le type est déjà connu (création
-   * depuis le menu "Ajouter" d'un jour, voir DayLogisticQuickAddService), la
-   * 1ère étape "Type" est sautée. Renvoie la promesse de fin de chaînage
-   * (voir `LogisticsListComponent.focusCardWhenReady`, qui l'utilise pour
-   * revenir sur le jour d'origine une fois la cinématique terminée).
+   * Déclenché juste après la création (voir `DayLogisticQuickAddService`/
+   * `TripDetailComponent.logisticsAddMenuItems`, type toujours déjà connu à
+   * ce stade) : la carte démarre toujours repliée (`initCollapsed=true`), on
+   * la déplie d'abord pour que le chaînage guidé
+   * (`LogisticDetailsComponent.startGuidedEntry`) s'ancre correctement.
+   * Renvoie la promesse de fin de chaînage (voir
+   * `LogisticsListComponent.focusCardWhenReady`, qui l'utilise pour revenir
+   * sur le jour d'origine une fois la cinématique terminée).
    */
-  startGuidedEntry(skipTypeStep = false): Promise<void> {
+  startGuidedEntry(): Promise<void> {
     this.collapsed.set(false);
     return new Promise((resolve) => {
-      setTimeout(() => this.detailsComponent().startGuidedEntry(skipTypeStep).then(resolve), PANEL_EXPAND_DELAY_MS);
+      setTimeout(() => this.detailsComponent().startGuidedEntry().then(resolve), PANEL_EXPAND_DELAY_MS);
     });
   }
 

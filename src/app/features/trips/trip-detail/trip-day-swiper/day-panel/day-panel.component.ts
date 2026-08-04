@@ -19,7 +19,6 @@ import { MergedDayEntry } from './day-logistic-banner/day-timeline-merge';
 import { LogisticDayOccurrence } from './day-logistic-banner/logistic-day-occurrence';
 import { Activity, ActivityEcho } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { ActivityEchoCardComponent } from '@app/shared/components/activity-card/activity-echo-card/activity-echo-card.component';
 import { DayLogisticEntryComponent, logisticRowId } from './day-logistic-entry/day-logistic-entry.component';
@@ -28,7 +27,6 @@ import { MessageComponent } from '@app/shared/components/message/message.compone
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
-import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { getScrollContainer } from '@app/shared/utils/scroll-container';
 import { DayScrollSyncService } from './day-scroll-sync.service';
@@ -46,7 +44,7 @@ import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-p
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    TimelineComponent, ActivityCardComponent, ActivityEchoCardComponent, DayLogisticEntryComponent, PanelComponent, MessageComponent, SkeletonComponent,
+    TimelineComponent, ActivityCardComponent, ActivityEchoCardComponent, DayLogisticEntryComponent, PanelComponent, MessageComponent,
     NewActivityDraftComponent, DayLogisticBannerComponent, FabBottomProximityDirective,
   ],
   styleUrl: 'day-panel.component.scss',
@@ -60,7 +58,6 @@ export class DayPanelComponent {
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly mapHost = inject(TripDayMapHostService);
-  private readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly dispatchService = inject(ActivityDispatchService);
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly focusService = inject(DayActivityFocusService);
@@ -69,8 +66,6 @@ export class DayPanelComponent {
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
-
-  readonly collapsed = this.googleMapPanelService.isCollapsed;
 
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();

@@ -41,6 +41,7 @@
           (activate)="onFabActivate()" />
       }
       <app-menu #addMenu title="Ajouter" [items]="addMenuItems()" />
+      <app-menu #logisticsAddMenu title="Type" [items]="logisticsAddMenuItems()" />
 
       <!-- Même contrainte hors-swiper que le "+" flottant ci-dessus. -->
       <app-selection-action-bar

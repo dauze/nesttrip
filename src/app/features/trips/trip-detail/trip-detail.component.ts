@@ -77,6 +77,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
   private readonly addMenu = viewChild.required<MenuComponent>('addMenu');
+  private readonly logisticsAddMenu = viewChild.required<MenuComponent>('logisticsAddMenu');
   private readonly fabElementRef = viewChild(FloatingAddButtonComponent, { read: ElementRef });
 
   /**
@@ -122,6 +123,36 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       })),
     { label: 'Liste', icon: 'pi pi-clipboard', command: () => this.notesFocusService.requestCreate() },
   ]);
+
+  /**
+   * Options du menu "Type" ouvert par le "+" flottant SUR le tab Logistique
+   * lui-même (ROADMAP.md "### UI", retour utilisateur) : contrairement à
+   * `addMenuItems`, les 5 types (dont "Autre", inclus ici) plutôt qu'une
+   * liste de 4 excluant "Autre" — ici il n'y a rien d'autre à choisir
+   * (on est déjà sur l'écran Logistique), donc "Autre" doit être un choix
+   * explicite. Type connu AVANT toute création (`DayLogisticQuickAddService.create`,
+   * `dayDate` absent — pas rattaché à un jour précis) : contrairement à
+   * l'ancien flux (`LogisticsCreationService`, retiré) qui créait toujours
+   * l'élément en type 'other' D'ABORD puis lui faisait changer de type dans
+   * la foulée via la cinématique guidée — un élément fraîchement créé qui
+   * change de type peut changer de section dans le tri "Type" (groupes
+   * réels, `<app-panel>` par type, voir `LogisticsListComponent`), auquel
+   * cas Angular détruit/recrée sa carte et coupe net tout dialog CDK de
+   * cinématique guidée déjà ouvert dessus — reproduit et confirmé via
+   * Playwright. En connaissant le type AVANT la création, l'élément naît
+   * direct dans la bonne section, aucun changement de type après coup.
+   */
+  protected readonly logisticsAddMenuItems = computed<AppMenuItem[]>(() =>
+    (Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][])
+      .map(([type, meta]) => ({
+        label: meta.label,
+        icon: meta.icon,
+        command: () => {
+          this.dayLogisticQuickAdd.create(type, undefined, this.fabTarget.logisticsSearchTerm());
+          this.fabTarget.setLogisticsSearchTerm('');
+        },
+      })),
+  );
 
   readonly activeDay = signal<string>('activities');
   private initializedTripId: string | null = null;
@@ -178,19 +209,26 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * Sur les tabs Activités/Logistique/Listes : création directe de
-   * l'élément propre à l'écran affiché (`fabTarget.trigger`, cible
-   * enregistrée par chacun de ces 3 composants). Sur un jour ET sur Résumé :
-   * ouvre le menu "Ajouter" (voir addMenuItems) ancré sur le bouton lui-même.
+   * Sur Activités/Listes : création directe de l'élément propre à l'écran
+   * affiché (`fabTarget.trigger`, cible enregistrée par ces composants). Sur
+   * Logistique : ouvre le menu "Type" (voir `logisticsAddMenuItems`, type
+   * connu AVANT création — pas de `fabTarget.trigger` ici, ce tab n'a plus
+   * de cible enregistrée). Sur un jour ET sur Résumé : ouvre le menu
+   * "Ajouter" (voir addMenuItems) ancré sur le bouton lui-même.
    */
   protected onFabActivate(): void {
     const day = this.activeDay();
-    if (day === 'activities' || day === 'logistics' || day === 'notes') {
+    if (day === 'activities' || day === 'notes') {
       this.fabTarget.trigger(day);
       return;
     }
     const anchor = this.fabElementRef()?.nativeElement;
-    if (anchor) this.addMenu().toggleAt(anchor);
+    if (!anchor) return;
+    if (day === 'logistics') {
+      this.logisticsAddMenu().toggleAt(anchor);
+      return;
+    }
+    this.addMenu().toggleAt(anchor);
   }
 
   protected onSelectionCancel(): void {

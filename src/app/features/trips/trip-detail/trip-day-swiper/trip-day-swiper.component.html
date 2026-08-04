@@ -21,6 +21,7 @@
   init="false"
   class="tab-content-wrapper"
   [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
+  [style.--day-map-chrome-offset.px]="mapHost.dayFixedContainerHeight() > 0 ? chromeService.toolbarHeight() : chromeService.contentTopOffset()"
   [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
   [style.--sticky-top-offset.px]="chromeService.stickyContentTop()"
   [style.--fixed-map-height.px]="mapHost.dayFixedContainerHeight()">

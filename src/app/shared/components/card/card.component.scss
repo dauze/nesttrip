@@ -33,3 +33,29 @@
     margin-top: 0;
   }
 }
+
+// `fillHeight` (voir card.component.ts) : PAS de `height: 100%` ici,
+// contrairement à `PanelComponent.fillHeight` (panel.component.scss) — son
+// parent immédiat y a toujours une hauteur DÉFINIE (ex. `.sticky-map` en
+// layout scindé, `height: calc(...)`), alors qu'ici le parent direct
+// (`.trip-summary-tiles`, `display:flex` SANS hauteur définie, dimensionné
+// par son plus grand enfant) créerait un pourcentage circulaire — `height:
+// 100%` s'y résout alors en `auto` de façon inconsistante et casse
+// l'étirement `align-items:stretch` déjà correct. `display:flex` seul
+// suffit : le host garde la hauteur RÉELLE que `stretch` lui donne déjà
+// (une vraie valeur "used", pas un pourcentage), les enfants ci-dessous
+// n'ont qu'à en réclamer leur part via `flex:1`. `:host(...)` obligatoire,
+// l'encapsulation émulée d'Angular ne pose `_ngcontent-*` que sur les
+// descendants, jamais sur le host lui-même.
+:host(.app-card--fill-height) {
+  display: flex;
+  flex-direction: column;
+}
+
+:host(.app-card--fill-height) .app-card__body,
+:host(.app-card--fill-height) .app-card__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

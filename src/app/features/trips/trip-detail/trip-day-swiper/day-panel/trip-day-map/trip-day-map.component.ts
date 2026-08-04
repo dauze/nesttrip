@@ -121,11 +121,11 @@ export class TripDayMapComponent {
 
     effect(() => {
       const pts = this.points();
-      if (!pts.length) return;
 
       // Clé stable indépendante de l'ordre : identifie le JOUR affiché,
-      // pas le contenu de chaque activité.
-      const key = pts.map(p => p.activityId).sort().join('|');
+      // pas le contenu de chaque activité. Chaîne vide = jour sans aucune
+      // activité géolocalisée (cas distinct traité ci-dessous).
+      const key = pts.length ? pts.map(p => p.activityId).sort().join('|') : '';
       if (key === this.lastPointsKey) {
         // Même jour, juste une mise à jour de données : on ne touche pas
         // au centre pour ne pas couper le focus/scroll de l'utilisateur.
@@ -133,6 +133,22 @@ export class TripDayMapComponent {
       }
 
       this.lastPointsKey = key;
+
+      if (!pts.length) {
+        // Bascule vers un jour/contexte sans AUCUNE activité géolocalisée
+        // (ROADMAP.md "### UI", "il y a toujours l'ancien contenu de la
+        // map") : sans ce reset, la caméra reste bloquée sur la position du
+        // dernier jour affiché — ni DayScrollSyncService ni
+        // GeneralMapCinematicService n'ont de point vers lequel recentrer
+        // dans ce cas (tous deux nécessitent au moins un point), le early
+        // return ci-dessous (cas non-vide) ne s'applique donc pas ici. Retour
+        // à la même vue par défaut qu'au tout premier chargement, avant
+        // toute donnée (voir la valeur initiale de `center`) — imperative
+        // (`moveCameraTo`), jamais `this.center.set()`, voir le commentaire
+        // juste en dessous.
+        this.moveCameraTo({ lat: 48.8566, lng: 2.3522 }, this.zoom());
+        return;
+      }
 
       // NE JAMAIS écraser `center` ici, ni pour 'general' ni pour 'day'.
       // `center`/`zoom` sont liés en réactif au template (`[center]="center()"`),

@@ -33,7 +33,10 @@
   min-width: 0;
 }
 
+// Centré par rapport à la carte + montant agrandi (retour utilisateur,
+// ROADMAP.md "### UI") — seul le montant, pas la ligne "Devise :" au-dessus.
 .trip-summary-total {
-  font-size: 1.75rem;
+  font-size: 2.25rem;
   font-weight: 700;
+  text-align: center;
 }

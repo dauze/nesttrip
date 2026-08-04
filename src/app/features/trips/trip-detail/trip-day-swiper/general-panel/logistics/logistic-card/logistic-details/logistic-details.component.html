@@ -5,7 +5,7 @@
         <label for="logistic-type" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-list text-sm"></i>Type
         </label>
-        <app-select #typeSelect id="logistic-type" label="Type" class="booking w-full transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="typeOptions" formControlName="type" />
+        <app-select id="logistic-type" label="Type" class="booking w-full transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="typeOptions" formControlName="type" />
       </div>
     </div>
     <div class="col-6 p-0 pl-1 min-w-0" formGroupName="booking">

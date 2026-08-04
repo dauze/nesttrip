@@ -146,9 +146,14 @@
 // groupe "À catégoriser"/ville du pool en particulier) ; sans header
 // (`noHeader`/`footerToggle`), le problème était encore plus net. Une seule
 // valeur simple plutôt qu'une distinction par variante.
+// `padding-left` séparé (custom property, défaut = même valeur que les 3
+// autres côtés) : seul `ActivityCardComponent` la surcharge (voir `.trip`,
+// activity-card.component.scss) pour compenser sa bordure gauche en
+// dégradé — inerte pour tout autre consommateur de `PanelComponent`.
 .app-panel__content-inner {
   min-width: 0;
   padding: 0.5rem;
+  padding-left: var(--nt-panel-content-padding-left, 0.5rem);
 }
 
 // Footer togglable (voir `footerToggle`) : remplace le header habituel pour

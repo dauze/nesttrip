@@ -78,7 +78,11 @@
     }
 
     @for (group of chronoDayGroups(); track group.day.id) {
-      <app-panel [toggleable]="true" [collapsed]="false" [thickBorder]="true">
+      <!-- Jour sans aucune activité (gardé pour la vue d'ensemble, voir
+           chronoDayGroups) : replié par défaut (retour utilisateur,
+           ROADMAP.md "### UI") — rien à montrer, pas de raison de l'ouvrir
+           d'office comme les jours qui ont du contenu. -->
+      <app-panel [toggleable]="true" [collapsed]="group.activities.length === 0" [thickBorder]="true">
         <div
           panelHeader
           class="trip-activities__day-header flex align-items-center gap-2"

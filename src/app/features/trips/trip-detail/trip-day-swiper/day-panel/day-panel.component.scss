@@ -40,7 +40,18 @@
   // PREMIER enfant (uniquement entre enfants) — sans cet ajout, l'écart entre
   // la carte et "Vue d'ensemble de la journée" était plus serré que le gap
   // normal entre les AUTRES blocs (retour utilisateur, ROADMAP.md "### UI").
-  padding-top: calc(var(--chrome-top-offset, 0px) + var(--fixed-map-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+  // `--day-map-chrome-offset` (pas `--chrome-top-offset` directement, voir
+  // trip-day-swiper.component.html) : en layout empilé (`--fixed-map-height`
+  // > 0), la carte est DÉJÀ collée exactement sous la toolbar SEULE
+  // (`.day-fixed-map { top: --chrome-toolbar-height }`, sans le gap-1 de
+  // respiration inclus dans `--chrome-top-offset`, pensé pour un contenu
+  // SANS carte) — réutiliser `--chrome-top-offset` ici comptait ce gap-1 une
+  // seconde fois, gonflant l'écart carte->"Vue d'ensemble" au-delà du
+  // `--nt-layout-gap-stacked` voulu (retour utilisateur, ROADMAP.md "### UI",
+  // "la map n'est toujours pas collée à la toolbar"). En layout scindé
+  // (`--fixed-map-height` vaut 0), `--day-map-chrome-offset` retombe sur
+  // `--chrome-top-offset` complet (toolbar + barre des jours), inchangé.
+  padding-top: calc(var(--day-map-chrome-offset, 0px) + var(--fixed-map-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
   // `+ var(--nt-layout-gap-stacked, 0.25rem)` (ROADMAP.md "### UI") : sans ça, le dernier
   // élément touchait exactement le haut de la barre du bas, aucune
   // respiration — même correctif appliqué aux 4 autres onglets (Résumé/
@@ -73,23 +84,26 @@
   display: contents;
 }
 
+// Bandeau logistique (Check-in/Check-out, Nuit sur place...) désormais APRÈS
+// "Vue d'ensemble de la journée" (order 3, retour utilisateur, ROADMAP.md
+// "### UI" : il apparaissait avant, cassant la continuité carte -> vue
+// d'ensemble -> reste du contenu).
 .day-panel-banner {
-  order: 1;
-}
-
-// La carte (order 2) passe désormais AVANT la timeline (order 3, ROADMAP.md
-// "### UI") : elle doit rester la toute première chose sous le chrome fixe
-// (toolbar/barre des jours), en continuité visuelle immédiate — la "vue
-// d'ensemble de la journée" (timeline) vient juste après, qu'elle soit
-// ouverte ou repliée. Sticky positioning gère seule le repositionnement du
-// contenu suivant selon la hauteur courante de la carte, sans calcul JS
-// supplémentaire.
-.day-panel-timeline {
   order: 3;
 }
 
-.sticky-map {
+// La carte (order 1) reste la toute première chose sous le chrome fixe
+// (toolbar/barre des jours), en continuité visuelle immédiate — la "vue
+// d'ensemble de la journée" (timeline, order 2) vient juste après, qu'elle
+// soit ouverte ou repliée, puis le bandeau logistique (order 3, voir
+// ci-dessus). Sticky positioning gère seule le repositionnement du contenu
+// suivant selon la hauteur courante de la carte, sans calcul JS supplémentaire.
+.day-panel-timeline {
   order: 2;
+}
+
+.sticky-map {
+  order: 1;
   position: sticky;
   // JAMAIS `0` en dur : voir la doc de `TripChromeService.stickyContentTop`
   // (colle sinon derrière le chrome fixe en layout desktop, qui ne se masque
@@ -115,6 +129,20 @@
   // petit espace au-dessus de la carte — elle doit paraître en continuité
   // directe avec la toolbar, jamais séparée par une ombre là-haut.
   box-shadow: var(--nt-shadow-md);
+}
+
+// Layout empilé (mobile) une fois la carte partagée déjà chargée : la carte
+// réelle vit dans `.day-fixed-map` (hors du swiper, voir
+// `DayPanelComponent.mapContainerEl`), CE conteneur local ne sert alors plus
+// QUE de squelette de chargement (`@if (!activeMapComponent())` dans le
+// template) — vide dès que la carte est active, ne laissant qu'un
+// commentaire Angular (`<!--container-->`, ne compte pas pour `:empty`).
+// Sans ce `display:none`, ce `div` vide participait quand même au `gap` flex
+// de `.day-panel-body` (order 1, juste avant la timeline), doublant l'écart
+// déjà réservé par `padding-top` ci-dessus (retour utilisateur, ROADMAP.md
+// "### UI", "trop d'espace entre la map et le premier élément").
+.sticky-map:empty {
+  display: none;
 }
 
 .activities-column {

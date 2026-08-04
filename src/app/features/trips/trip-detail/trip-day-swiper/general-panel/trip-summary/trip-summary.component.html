@@ -19,9 +19,9 @@
   }
 
   <div class="trip-summary-tiles flex gap-1">
-    <app-card class="trip-summary-tile">
+    <app-card class="trip-summary-tile" [fillHeight]="true">
       <div cardTitle>Dépenses</div>
-      <div class="flex flex-column gap-2">
+      <div class="flex flex-column gap-2 flex-1">
         <div class="flex align-items-center gap-1">
           <span class="text-sm flex-shrink-0">Devise :</span>
           <app-select
@@ -31,7 +31,9 @@
             class="w-max transparent-select no-chevron"
           />
         </div>
-        <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
+        <div class="trip-summary-total-wrapper flex-1 flex align-items-center justify-content-center">
+          <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
+        </div>
       </div>
     </app-card>
 

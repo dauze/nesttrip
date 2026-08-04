@@ -49,19 +49,19 @@
         </div>
       } @else {
         <div class="flex flex-column gap-2">
-          @for (row of typeRows(); track row.kind === 'header' ? 'header-' + row.type : row.logistic.id) {
-            @if (row.kind === 'header') {
-              <div class="logistics-list__type-header flex align-items-center gap-2" [style.color]="'var(' + row.meta.colorVar + ')'">
-                <i [class]="row.meta.icon"></i>
-                <span class="font-semibold text-sm">{{ row.meta.label }}</span>
-                <span class="nt-text-muted text-xs">({{ row.count }})</span>
+          @for (group of typeGroups(); track group.type) {
+            <app-panel [toggleable]="true" [collapsed]="false" [thickBorder]="true">
+              <div panelHeader class="flex align-items-center gap-2" [style.color]="'var(' + group.meta.colorVar + ')'">
+                <i [class]="group.meta.icon"></i>
+                <span class="font-semibold text-sm">{{ group.meta.label }}</span>
+                <span class="nt-text-muted text-xs">({{ group.logistics.length }})</span>
               </div>
-            } @else {
-              <app-logistic-card
-                class="logistics-list__group-item"
-                [class.logistics-list__group-item--last]="row.isLastInGroup"
-                [tripId]="tripId()" [logisticId]="row.logistic.id" [initCollapsed]="true" />
-            }
+              <div class="flex flex-column gap-2">
+                @for (logistic of group.logistics; track logistic.id) {
+                  <app-logistic-card [tripId]="tripId()" [logisticId]="logistic.id" [initCollapsed]="true" />
+                }
+              </div>
+            </app-panel>
           }
         </div>
       }

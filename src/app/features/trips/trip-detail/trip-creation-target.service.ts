@@ -71,4 +71,16 @@ export class TripCreationTargetService {
   setAvoidEdge(active: boolean): void {
     this._avoidEdge.set(active);
   }
+
+  // ── Recherche en cours du tab Logistique (voir ROADMAP.md "UX / Interactions",
+  // "préremplissage/vidage") ── le menu "Type" du "+" flottant vit dans
+  // `TripDetailComponent` (hors de `LogisticsListComponent`, voir la doc de
+  // classe), il n'a donc pas d'accès direct à son `searchTerm` local — même
+  // schéma que `avoidEdge` : alimenté par l'écran actif, lu par le "+".
+  private readonly _logisticsSearchTerm = signal('');
+  readonly logisticsSearchTerm = this._logisticsSearchTerm.asReadonly();
+
+  setLogisticsSearchTerm(term: string): void {
+    this._logisticsSearchTerm.set(term);
+  }
 }

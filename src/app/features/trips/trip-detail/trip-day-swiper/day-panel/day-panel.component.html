@@ -13,23 +13,13 @@
        introduit ici), donc toute la mécanique de DayScrollSyncService/
        DayReorderService (offsets de cartes, snap, drag) continue de
        fonctionner sans changement. -->
-  <div class="day-panel-body" [class.day-panel-body--no-map]="activities().length === 0">
+  <div class="day-panel-body" [class.day-panel-body--no-map]="timelineEntries().length === 0">
     <div class="day-panel-map-group">
-      @if (activities().length > 0) {
+      @if (timelineEntries().length > 0) {
         <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
           (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
           (logisticSelected)="onLogisticEntrySelected($event)"/>
-        <div #stickyMap class="sticky-map">
-          @if (!activeMapComponent()) {
-            <app-panel [toggleable]="true" [collapsed]="collapsed()">
-              <div panelHeader class="flex align-items-center gap-2">
-                <i class="pi pi-calendar"></i>
-                <span>Carte</span>
-              </div>
-              <app-skeleton height="250px" width="100%" borderRadius="3px" />
-            </app-panel>
-          }
-        </div>
+        <div #stickyMap class="sticky-map"></div>
       }
     </div>
     <div class="day-panel-activities-group">
