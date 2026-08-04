@@ -133,11 +133,11 @@ export class ActivityFormComponent {
     if (this.hasUnflushedLocalEdit && a.id === this.lastSyncedActivityId) return;
     this.lastSyncedActivityId = a.id;
 
-    // On force la date de dayId sur le startTime et endTime reçus si présents
+    // "HH:mm" stocké → Date sur le jour courant (le form garde un contrôle Date, voir TimePickerDialogComponent)
     const patchedActivity = {
       ...a,
-      startTime: this.applyDayIdDate(a.startTime ? new Date(a.startTime) : null),
-      endTime: this.applyDayIdDate(a.endTime ? new Date(a.endTime) : null),
+      startTime: this.timeStringToDate(a.startTime),
+      endTime: this.timeStringToDate(a.endTime),
     };
 
     // CRUCIAL : { emitEvent: false } évite la boucle infinie avec le debounceTime plus bas
@@ -158,8 +158,8 @@ export class ActivityFormComponent {
       id: activity.id,
       activityId: activity.activityId,
       ...value,
-      startTime: value.startTime ?? undefined,
-      endTime: value.endTime ?? undefined,
+      startTime: this.dateToTimeString(value.startTime),
+      endTime: this.dateToTimeString(value.endTime),
       booking: { ...activity.booking, ...value.booking, deadline: value.booking?.deadline ?? undefined },
       price: { ...activity.price, ...value.price },
     });
@@ -181,6 +181,18 @@ export class ActivityFormComponent {
       this.isProgrammaticUpdate = false;
 
       this.recalculateFrom('duration');
+
+      // Contrairement à une édition directe de startTime/endTime (dont le
+      // TOUT PREMIER setValue, lui, émet normalement puis remonte au parent
+      // une fois les recalculs internes terminés), chaque mutation ci-dessus
+      // (duration, startTime/endTime recalculés) est faite avec
+      // emitEvent:false dès le départ pour ne pas boucler avec les handlers
+      // de setupTimeDurationSync — donc rien n'émet jamais sur
+      // `form.valueChanges` ici. Sans ce déclenchement explicite, éditer
+      // UNIQUEMENT la durée (sans toucher Début/Fin) n'était jamais
+      // sauvegardé côté store (bug remonté par l'utilisateur, ROADMAP.md
+      // "Activités").
+      this.form.updateValueAndValidity();
     });
 
     this.form.controls.startTime.valueChanges.pipe(takeUntilDestroyed()).subscribe((start) => {
@@ -289,6 +301,21 @@ export class ActivityFormComponent {
     const base = new Date(this.dayId());
     base.setHours(time.getHours(), time.getMinutes(), 0, 0);
     return base;
+  }
+
+  /** "HH:mm" stocké → Date sur le jour courant (voir applyDayIdDate, même rôle). */
+  private timeStringToDate(hhmm: string | undefined): Date | null {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    const d = new Date(this.dayId());
+    d.setHours(h, m, 0, 0);
+    return d;
+  }
+
+  /** Date du form → "HH:mm" pour le stockage (voir timeStringToDate, sens inverse). */
+  private dateToTimeString(d: Date | null | undefined): string | undefined {
+    if (!d) return undefined;
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   private initDurationFromForm(): void {

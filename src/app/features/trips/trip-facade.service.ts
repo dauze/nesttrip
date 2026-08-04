@@ -6,6 +6,8 @@ import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dt
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
+import { getLogisticDayOccurrences, LogisticDayOccurrence } from './trip-detail/trip-day-swiper/day-panel/day-logistic-banner/logistic-day-occurrence';
+import { mergeDayTimeline, pinnedLogisticOccurrences, MergedDayEntry } from './trip-detail/trip-day-swiper/day-panel/day-logistic-banner/day-timeline-merge';
 
 @Injectable()
 export class TripFacade {
@@ -172,6 +174,7 @@ export class TripFacade {
   }
 
   getDayActivities = this.store.getDayActivities.bind(this.store);
+  getDayActivitiesWithEchoes = this.store.getDayActivitiesWithEchoes.bind(this.store);
   getDayActivity = this.store.getDayActivity.bind(this.store);
   getDayActivityWithDay = this.store.getDayActivityWithDay.bind(this.store);
   getPoolActivity = this.store.getPoolActivity.bind(this.store);
@@ -228,6 +231,26 @@ export class TripFacade {
     return this.store.getAllLogistics(tripId)().filter(
       (r) => r.startDateTime && r.endDateTime && r.startDateTime < dayEnd && r.endDateTime >= dayStart,
     );
+  }
+
+  /**
+   * Timeline fusionnée d'un jour (activités + échos + occurrences logistiques
+   * "frontière"), triée chronologiquement — voir `mergeDayTimeline`
+   * (ROADMAP.md "Activités"). Vit en Facade, pas en Store : composition de
+   * deux sélecteurs déjà mémoïsés (`getDayActivitiesWithEchoes`,
+   * `logisticsForDay`), pas de nouvel état ; `getLogisticDayOccurrences` est
+   * un util d'affichage `day-panel`, pas un concept de domaine `TripStore`.
+   */
+  getMergedDayTimeline(tripId: string, dayId: Date): MergedDayEntry[] {
+    const entries = this.store.getDayActivitiesWithEchoes(tripId, dayId)();
+    const occurrences = this.logisticsForDay(tripId, dayId).flatMap((r) => getLogisticDayOccurrences(r, dayId));
+    return mergeDayTimeline(entries, occurrences);
+  }
+
+  /** Occurrences épinglées en haut du jour (Nuit sur place / En cours) — alimente `DayLogisticBannerComponent`, inchangé pour ces 2 rôles uniquement. */
+  getPinnedLogisticOccurrences(tripId: string, dayId: Date): LogisticDayOccurrence[] {
+    const occurrences = this.logisticsForDay(tripId, dayId).flatMap((r) => getLogisticDayOccurrences(r, dayId));
+    return pinnedLogisticOccurrences(occurrences);
   }
   // ── Hydratation ───────────────────────────────────────────────────────────
 

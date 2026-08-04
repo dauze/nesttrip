@@ -1,0 +1,29 @@
+:host { display: block; }
+
+.activity-echo-card {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--nt-content-border-radius, 0.5rem);
+  background: var(--nt-bg-subtle, rgba(0, 0, 0, 0.03));
+  color: var(--nt-text-muted);
+  font-style: italic;
+  font-size: 0.875rem;
+  opacity: 0.75;
+  transition: background-color 0.15s ease;
+
+  &:hover, &:focus-visible {
+    background-color: var(--nt-bg-subtle-hover, rgba(0, 0, 0, 0.06));
+  }
+}
+
+.activity-echo-card__icon,
+.activity-echo-card__type-icon {
+  color: var(--nt-text-muted);
+}
+
+.activity-echo-card__end {
+  color: var(--nt-text-muted);
+}

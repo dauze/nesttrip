@@ -1,0 +1,28 @@
+<div
+  class="day-logistic-entry flex flex-column gap-1 w-full"
+  [style.border-left-color]="'var(' + typeMeta[occurrence().logistic.type].colorVar + ')'"
+  [attr.data-logistic-id]="logisticId"
+  [attr.data-logistic-role]="role"
+  role="button"
+  tabindex="0"
+  (click)="onTap()"
+  (keydown.enter)="onTap()">
+  <div class="flex align-items-center gap-2 w-full">
+    <span
+      class="day-logistic-entry__handle cursor-move nt-text-muted flex-shrink-0 drag-handle swiper-no-swiping"
+      (pointerdown)="onHandlePointerDown($event)">
+      <i class="pi pi-bars"></i>
+    </span>
+    <i [class]="typeMeta[occurrence().logistic.type].icon + ' text-lg flex-shrink-0'" [style.color]="'var(' + typeMeta[occurrence().logistic.type].colorVar + ')'"></i>
+    <span class="day-logistic-entry__role flex-shrink-0 text-sm font-semibold">{{ occurrence().role }}</span>
+    <span class="day-logistic-entry__title flex-1 min-w-0 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">
+      {{ occurrence().logistic.title }}
+    </span>
+    <span class="nt-text-muted text-sm flex-shrink-0">{{ occurrence().time | date:'HH:mm' }}</span>
+  </div>
+  @if (occurrence().logistic; as r) {
+    @if (r.type === 'flight' && r.flightNumber) {
+      <app-flight-status-badge [tripId]="tripId()" [logistic]="r" />
+    }
+  }
+</div>

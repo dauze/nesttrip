@@ -1,0 +1,15 @@
+<div
+  class="activity-echo-card flex align-items-center gap-2 w-full"
+  role="button"
+  tabindex="0"
+  (click)="onTap()"
+  (keydown.enter)="onTap()">
+  <i class="pi pi-history activity-echo-card__icon flex-shrink-0" aria-hidden="true"></i>
+  <i [class]="typeMeta[echo().type]?.icon" class="activity-echo-card__type-icon flex-shrink-0" aria-hidden="true"></i>
+  <span class="activity-echo-card__title flex-1 min-w-0 white-space-nowrap overflow-hidden text-overflow-ellipsis">
+    suite de {{ echo().title }}
+  </span>
+  @if (echo().endTime) {
+    <span class="activity-echo-card__end flex-shrink-0">jusqu'à {{ echo().endTime }}</span>
+  }
+</div>

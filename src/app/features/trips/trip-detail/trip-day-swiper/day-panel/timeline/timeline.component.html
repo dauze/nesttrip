@@ -5,29 +5,65 @@
   </div>
 
   <div class="flex flex-column gap-2">
-    @for (activity of activities(); track activity.id; let last = $last) {
-      <div class="grid align-items-center cursor-pointer" 
-          role="button" 
-          tabindex="0" 
-          (click)="activitySelected.emit(activity.id)"
-          (keydown.enter)="activitySelected.emit(activity.id)">
-        
-        <!-- durée -->
-        <span class="col-3">
-          ~ {{ activity.startTime  | date:'HH:mm' }}
-        </span>
-        
-        <!-- icône -->
-        <span class="col-1">
-          <i [class]="ACTIVITY_TYPE_META[activity.type]?.icon" class="text-lg nt-text-primary"></i>
-        </span>
-        
-        <!-- titre -->
-        <span class="col-8">
-          {{ activity.title }}
-        </span>
-        
-      </div>
+    @for (entry of entries(); track entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id; let last = $last) {
+      @if (entry.kind === 'logistic') {
+        <div class="grid align-items-center cursor-pointer"
+            role="button"
+            tabindex="0"
+            (click)="logisticSelected.emit(entry.occurrence)"
+            (keydown.enter)="logisticSelected.emit(entry.occurrence)">
+
+          <span class="col-3">~ {{ entry.occurrence.time | date:'HH:mm' }}</span>
+
+          <span class="col-1">
+            <i class="pi pi-ticket text-lg nt-text-primary"></i>
+          </span>
+
+          <span class="col-8">
+            {{ entry.occurrence.role }} — {{ entry.occurrence.logistic.title }}
+          </span>
+        </div>
+      } @else if (entry.kind === 'activity') {
+        <div class="grid align-items-center cursor-pointer"
+            role="button"
+            tabindex="0"
+            (click)="activitySelected.emit(entry.activity.id)"
+            (keydown.enter)="activitySelected.emit(entry.activity.id)">
+
+          <!-- durée -->
+          <span class="col-3">
+            ~ {{ entry.activity.startTime }}
+          </span>
+
+          <!-- icône -->
+          <span class="col-1">
+            <i [class]="ACTIVITY_TYPE_META[entry.activity.type]?.icon" class="text-lg nt-text-primary"></i>
+          </span>
+
+          <!-- titre -->
+          <span class="col-8">
+            {{ entry.activity.title }}
+          </span>
+
+        </div>
+      } @else {
+        <div class="grid align-items-center cursor-pointer timeline-echo"
+            role="button"
+            tabindex="0"
+            (click)="echoSelected.emit(entry)"
+            (keydown.enter)="echoSelected.emit(entry)">
+
+          <span class="col-3">~ 00:00</span>
+
+          <span class="col-1">
+            <i class="pi pi-history text-lg nt-text-muted"></i>
+          </span>
+
+          <span class="col-8 nt-text-muted font-italic">
+            suite de {{ entry.title }}
+          </span>
+        </div>
+      }
        @if (!last) {
       <app-divider class="m-0"></app-divider>
        }

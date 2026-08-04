@@ -1,2 +1,6 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
 // (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
+
+.timeline-echo {
+  opacity: 0.75;
+}

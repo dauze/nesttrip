@@ -4,16 +4,16 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { LogisticFocusService } from '@app/features/trips/trip-detail/logistic-focus.service';
 import { LOGISTIC_TYPE_META } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/logistic.constants';
 import { FlightStatusBadgeComponent } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/flight-status-badge/flight-status-badge.component';
-import { getLogisticDayOccurrences, LogisticDayOccurrence } from './logistic-day-occurrence';
+import { LogisticDayOccurrence } from './logistic-day-occurrence';
 
 /**
- * Bannière read-only en haut du contenu scrollable d'un jour (voir
- * `day-panel.component.html`) : une carte compacte par réservation qui
- * touche ce jour (hôtel/vol/location/autre), avec le rôle joué CE jour
- * précisément (check-in vs check-out, départ vs arrivée...) — voir
- * `getLogisticDayOccurrences`. Purement passif : toute édition passe par
- * le sous-menu Réservations (voir `LogisticFocusService`), jamais de form
- * ici.
+ * Bannière read-only épinglée en haut du contenu scrollable d'un jour (voir
+ * `day-panel.component.html`) : ne montre plus que les occurrences
+ * "continuation" (Nuit sur place / En cours, voir `pinnedLogisticOccurrences`)
+ * — les occurrences "frontière" (Check-in/out, Départ/Arrivée...) sont
+ * désormais fusionnées dans la timeline du jour (voir `day-timeline-merge.ts`,
+ * ROADMAP.md "Activités"). Purement passif : toute édition passe par le
+ * sous-menu Réservations (voir `LogisticFocusService`), jamais de form ici.
  */
 @Component({
   selector: 'app-day-logistic-banner',
@@ -42,9 +42,7 @@ export class DayLogisticBannerComponent {
   readonly typeMeta = LOGISTIC_TYPE_META;
 
   readonly occurrences = computed<LogisticDayOccurrence[]>(() =>
-    this.tripFacade
-      .logisticsForDay(this.tripId(), this.dayId())
-      .flatMap((r) => getLogisticDayOccurrences(r, this.dayId()))
+    [...this.tripFacade.getPinnedLogisticOccurrences(this.tripId(), this.dayId())]
       .sort((a, b) => a.time.getTime() - b.time.getTime()),
   );
 

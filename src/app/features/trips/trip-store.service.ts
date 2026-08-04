@@ -1,7 +1,8 @@
 import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { Trip, Day, TripMember, TripSummary } from './trip.model';
-import { Activity, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { Activity, ActivityEcho, DayActivityEntry, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { timeToMinutes } from '@app/shared/components/activity-card/activity-time.util';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dto';
@@ -14,6 +15,7 @@ import { DayPersistenceService } from '@app/core/infra/firebase/services/persist
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
+import { insertChronologically } from './day-activity-order.util';
 import { Observable, tap } from 'rxjs';
 
 type TripEntities = Record<string, Trip>;
@@ -22,6 +24,12 @@ type PoolActivityEntities = Record<string, PoolActivity>;
 type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
 type LogisticEntities = Record<string, Logistic>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
+
+/** true si [startTime, endTime) franchit minuit (fin < début), les deux au format "HH:mm" — voir `getDayActivitiesWithEchoes`. */
+function spansMidnight(startTime: string | undefined, endTime: string | undefined): boolean {
+  if (!startTime || !endTime) return false;
+  return timeToMinutes(endTime) < timeToMinutes(startTime);
+}
 
 /** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
 function defaultInstanceForm(currency = 'EUR'): Omit<DayActivityInstance, 'id' | 'activityId'> {
@@ -299,6 +307,54 @@ export class TripStore {
       );
     }
     return this.dayActivitiesByDay.get(key)!;
+  }
+
+  private readonly dayActivitiesWithEchoesByDay = new Map<string, Signal<DayActivityEntry[]>>();
+
+  /**
+   * Activités du jour + échos (voir `ActivityEcho`) : préfixe, pour ce jour,
+   * les échos des activités de la veille dont la plage franchit minuit —
+   * purement dérivé (computed), jamais persisté. Le jour précédent est
+   * résolu via `_tripDays[tripId]` (ordre de l'itinéraire), pas par
+   * arithmétique calendaire.
+   */
+  getDayActivitiesWithEchoes(tripId: string, dayId: Date): Signal<DayActivityEntry[]> {
+    const key = `${tripId}:${dayId.toISOString()}`;
+    if (!this.dayActivitiesWithEchoesByDay.has(key)) {
+      this.dayActivitiesWithEchoesByDay.set(
+        key,
+        computed(() => {
+          const dayKeys = this._tripDays()[tripId] ?? [];
+          const dayKey = dayId.toISOString();
+          const idx = dayKeys.indexOf(dayKey);
+
+          const echoes: ActivityEcho[] = [];
+          if (idx > 0) {
+            const prevDayId = new Date(dayKeys[idx - 1]);
+            const prevActivities = this.getDayActivities(prevDayId)();
+            for (const a of prevActivities) {
+              if (spansMidnight(a.startTime, a.endTime)) {
+                echoes.push({
+                  kind: 'echo',
+                  originInstanceId: a.id,
+                  originDayId: prevDayId,
+                  activityId: a.activityId,
+                  title: a.title,
+                  type: a.type,
+                  startTime: '00:00',
+                  endTime: a.endTime,
+                  photoRefs: a.photoRefs,
+                });
+              }
+            }
+          }
+
+          const real: DayActivityEntry[] = this.getDayActivities(dayId)().map((activity) => ({ kind: 'activity' as const, activity }));
+          return [...echoes, ...real];
+        }),
+      );
+    }
+    return this.dayActivitiesWithEchoesByDay.get(key)!;
   }
 
   /** Vue composée d'une instance jour donnée, par son instance id. */
@@ -648,10 +704,10 @@ export class TripStore {
 
   // ── Commandes — Activities ────────────────────────────────────────────────
 
-  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour). */
+  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour) — positionnée en tête de journée (voir ROADMAP.md "Activités"), pas en fin. */
   createActivity(tripId: string, dayId: Date, poolActivity: PoolActivity, instance: DayActivityInstance): void {
     this.addPoolActivity(tripId, poolActivity);
-    this.addDayActivityInstance(tripId, dayId, instance);
+    this.addDayActivityInstance(tripId, dayId, instance, 'start');
   }
 
   /** Crée une activité dans le pool général du trip uniquement (aucun jour) : elle sera affichée avec des contours en tiret tant qu'elle n'est placée sur aucun jour. */
@@ -671,13 +727,14 @@ export class TripStore {
     this.activityPersistenceService.queueUpdate(tripId, poolActivity);
   }
 
-  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance): void {
+  /** `position: 'start'` uniquement pour la création via le bouton "+" (voir `createActivity`) — le drag depuis le pool (`attachPoolActivityToDay`) continue d'ajouter en fin. */
+  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance, position: 'start' | 'end' = 'end'): void {
     const dayKey = dayId.toISOString();
 
     this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
     this._dayActivityIds.update((d) => ({
       ...d,
-      [dayKey]: [...(d[dayKey] ?? []), instance.id],
+      [dayKey]: position === 'start' ? [instance.id, ...(d[dayKey] ?? [])] : [...(d[dayKey] ?? []), instance.id],
     }));
     this.markActivityPending(instance.id);
 
@@ -760,6 +817,31 @@ export class TripStore {
     this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
     this.markActivityPending(instance.id);
     this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
+
+    if (instance.startTime) {
+      this.repositionChronologically(tripId, instance.id, instance.startTime);
+    }
+  }
+
+  /**
+   * Replace `instanceId` au bon endroit chronologique sur son jour courant
+   * (voir `insertChronologically`) — ne retrie jamais les activités non
+   * datées entre elles, ne fait rien si l'ordre ne change pas (voir
+   * ROADMAP.md "Activités").
+   */
+  private repositionChronologically(tripId: string, instanceId: string, startTime: string): void {
+    const dayKeys = this._tripDays()[tripId] ?? [];
+    const dayActivityIds = this._dayActivityIds();
+    const dayKey = dayKeys.find((k) => (dayActivityIds[k] ?? []).includes(instanceId));
+    if (!dayKey) return;
+
+    const currentIds = dayActivityIds[dayKey] ?? [];
+    const instances = this._dayActivityInstances();
+    const reordered = insertChronologically(currentIds, instanceId, startTime, (id) => instances[id]?.startTime);
+    if (reordered.every((id, i) => id === currentIds[i])) return;
+
+    this._dayActivityIds.update((d) => ({ ...d, [dayKey]: reordered }));
+    this.syncDayActivityIds(tripId, new Date(dayKey));
   }
 
   private markActivityPending(id: string): void {

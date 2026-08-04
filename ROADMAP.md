@@ -23,8 +23,7 @@ Décisions prises avec l'utilisateur le 2026-07-31 (section "UX / Interactions")
 - **Bouton "+"** : le même menu à 7 entrées (Activité + 5 types Logistique + Note) s'ouvre désormais partout, jour ET onglet Général — l'ancienne création directe contextuelle du "+" sur Général est retirée.
   - **Précision (2026-08-02)** : revu — ce menu à 7 entrées reste finalement réservé au contexte jour. Dans le pool général (Activités/Logistique/Listes), le "+" est redevenu spécifique à l'écran affiché. Détail dans "✅ Déjà fait".
 
-Ordre d'exécution : la section "UX / Interactions" (tout ce qui n'est pas "non prioritaire") a été traitée intégralement le 2026-08-02, voir "✅ Déjà fait". Reste ensuite :
-2. **Activités** (widget horaire simplifié, affichage multi-jours).
+Ordre d'exécution : la section "UX / Interactions" (tout ce qui n'est pas "non prioritaire") a été traitée intégralement le 2026-08-02, puis la section "Activités" (tout ce qui n'est pas "non prioritaire") le même jour — voir "✅ Déjà fait" pour le détail des deux lots.
 
 Tout ce qui a déjà été livré (avec le détail des correctifs) est listé dans **✅ Déjà fait**, tout en bas.
 
@@ -41,13 +40,36 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible
 
-### UI Desktop
+### UI spécifique Desktop
 
 - Vue calendrier (reporté, pas assez cadré)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
 - Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop, pas cool 
 - Le drag and drop 
 - refondre toute la partie générale
+
+### UI 
+- De manière générale, aggrandi les border radius : Il faut qu'ils soient tous pilotté par un token css qui est dans token scss si ce n'est pas le cas.
+- TOOLBAR : 
+  - Supprime les borders
+  - Supprime les margins et padding top, left et right
+  - Met un box shadow au bottom, qui ne doit pas se voir lorsque l'on est sur un daypanel puisque la carte est sencé être en continuité
+  - Qunad on clique sur la roue cranté, pendant que le menu sort 
+- Carte : modifier son mode de fonctionnement sur la vue Days : 
+  - Elle doit etre sticky à la tooltip header, donc elle peut sortir du day swiper : ca simplifiera la gestion au slide et la transposition qui ne sera plus nescessaire
+  - La navigation avec le scroll sur les activités reste inchangé
+  - il faut rajouter un mode pour le panel togglelable, Il y aura pas de header, mais un footer qui contiendra au centre le logo "pi pi-map" et en dessous de lui, centré également  un "pi pi-minus" de primeng : le clique sur un de ces boutons permettra de l'ouvrir et de la fermer
+  - Un box shadow sera sur le padding bottom, comme actuellement, et il n'y aura pas de border radius sur les 2 coté du haut nide de padding à gauiche et à droite  pour qu'elle s'incruste dans la toolbar 
+  - Lorsque l'on est en haute de l'écran tout en haut du scroll, La vue d'ensemble de la journée doit être juste après de la carte, qu'elle soit ouverte ou fermée : cela veut dire qu'il faut donc calculer le padding au début du day swoper en fonction de la hauteur de la map (qui varie entre ouvert et fermé)
+  - Stocker l'information de la carte toogle ou pas directement sur l'utilisateur : déployée par défaut, comme ça si il la ferme et actualise, elle restera fermée
+  - Est ce que tu peux personaliser les boutons de navigation de la carte ? Si oui : 
+    - Enlève le bouton de navigationn
+    - Fais un meilleur design pour les carte, qui se rapproche plus de mon thème, avec la couleur primary pour l'item selectionné
+- Transformer le panel qui contient toutes les activités qui à un header "Activités" par un pannel non togglable sans titre : cela devrait siumplifier le scroll sur une activité car il y a plus bezsoin de verifier qu'il est toggle, attendre potentiellement qu'il soit ouvert, puis scroll
+- mobile-trip-nav doit avoir un fond avec un box shadow au dessus pour qu'on comprenne qu'elle est au encrée au même titre que la bar du haut 
+- Comme la toolbar n'aura plus de border, tu peux réduire de moitier le border de tous les contenu de daytrip  
+- Dans résumé dans la tab résumé, mettre un graphique plutôt avec les différents types d'activités, il ressemblera à "public/graphique.html avec les 5 + gros type d'activité/ transport /logement. Il faut que les couleurs de types d'activités soient respectées, et que si il y en a moins de 5 sélectionné, ne pas les afficher
+- Les boutons du switch de classement ne semble pas centrées à cause du box-shadow, faire en sorte qu'il paraisse visuellement centré
 
 ### Carte
 
@@ -58,10 +80,6 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 
 - Suggestions d'activités via la ville dans le pool (non prioritaire)
 - Calcul auto des trajets entre activités (à pied / voiture / vélo) (non prioritaire — visuel de référence à challenger si le calcul temps réel s'avère trop lent : `public/distance entre activités.png`) (non prioritaire)
-- Widget simplifié : saisie d'un horaire plutôt que des objet dates simplifiérait l'objet et le stockage mais ne doit rien changer pour le user, bonne diée ou pas ? Par rapport à l'item juste après  "dupplication d'une acticvité quand elle est sur plusieurs jours", c'est pas contre productif ?
-- il faut prévoir d'afficher l'activité sur le jour d'après si elle dure plusieurs jour -> A voir comment faire techniquement car on saisie que 1 horaire actuellement 
-- Si l'utilisateur créé ou modifie des dates et horaires dans une activité, il faut la placer chronologiquement, attention à ne pas tout retrier, il faut uniquement placer l'activité au bon endroit et pas casser les potentiels drag and drop qu'il azurait pu faire. Si l'utilisateur drag un drop une activité qui n'a pas de date, la positionner à l'endroit souhaité ET la garder ici, (sauf si plus tard il positionne une date). Si l'utilisateur créé une activité sans date, la mettre au début: Donc si il créé une activité via le bouton "+", il faut la positionner au début et pas à la fin (mettre le scrool et le focus sur l'activité en cours de création)
-- Dans le day des activity, il faudrait mettre les transports entre les différentes activités et donc les faire apparaitre dasn activity timeline. Pour les logements, tu dois mettre les checkin et chekcout entre les activité dans le timeline, mais si c'est juste stay at logement, il faut la laisser en haut et ne pas le mettre dans le activity timeline. Attention a ne pas sort tout car si l'utilisarteur a mit un drag and drop sasn heure au milieeu, il ne faut pas la déplacer 
 
 ### Nouveau voyage / IA (non prioritaire)
 
@@ -87,9 +105,25 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Gérer toutes les conversions de devises 
 
 ### UX / Interactions
+- Le bouton flottant de "+" de tous les onglets doiven se mettre sur le coté via une annimation : l'annimation doit être le bouton qui s'acrase sur le coté, qui se déforme et il ressemble en position final à un demi bouton contre le bord, avec le logo "+" recentré pendant l'annimation, mais avec un leger aller-retour du à la déformation. Les condition de lancement de cette annimation sont : 
+  - Si on est devant une carte activité, info, transport ou Logement  et que l'on est en bas de la page (cela veut dire qu'il cache un bouton d'une activité et que l'on ne peux pas descendre pour l'afficher).
+  - L'annimation inverse doit se produire quand l'utilisateur rescroll et que l'on ne se trouve plus en bas et devant une activité : elle n'est pas à l'inverse exacte, car l'annimation doit prendr en compte la force exercée par la vitèsse de replacement, il doit un peu se déformer dans l'autre sens et revenir à sa forme initial ensuite
+- Parcours nouveau client, arriver directe sur "Ville / Pays" fait bisarre, il faudrait dire bonjour ou un truc comme ça et renommer le nom de la zone
+- Si a la connexion on a qu'un seul trip, aller directement sur ce trip !
+- Améliorer les day-logistic-entry "logistiques" dans les day activity: Pour les avions et trains, ne pas mettre 2 lignes différentes pour Départ et arrivé si c'est sur le même jours, écrire directemebnt dans la même day-logistic-entry le départ et l'arrivé, on ne prévoira pas d'activité pendant les transports ! Mais si le trajet est sur plusieurs jours, alors laisser comme l'eixtant avec un day-logistic-entry pour le départ, et un pour l'arriver
+- renomer "Résa" de activity form en "Etat résa"
+- Modifier le système de couleur BOOKING_STATUS_META : Les couleurs sur le coté ne doivent plus correspondre au statut du booking, mais plutôt au type d'activité : il faut donc définir une couleur par ACTIVITY_TYPE_META et l'associer à la couleur des borders. Cela implique : 
+  - Ce n'est plus la valeur de "Résa" d'une activité qui est coloré de , mais la valeur de "Type" 
+  - Il faut définir une couleur par activité qui n'est pas utiliser par un élemnt de logistique, on peut réutiliser les couleurs de booking qui ne seront plus utilisées. Fais matcher des couleurs correspondantes au type d'activité + fais attention aux normes d'accessibilités numériques
+  - Dans la vue Pool d'activité, tu peux remettre la couleurs sur toutes les cartes d'activité, même lorsqu'elles sont regroupée par ville, car ce sont maintenant les même cartes. ne pas mettre le border left en pointillé lorsque ce sont des "a assigner"
+  - Dans la vue d'ensemble de la journée, les logos doivent avoir les mêmes couleurs que les types d'activités 
+- Quand on recherche un logement ou transport dans la bar de recherche et que rien est trouvé, si on clique sur le bouton "+", alimenter la zone du titre avec ce qui est entré dans la bar de recherche. Après la création du logement ou transport, vider l'input de recherche 
+- Après la création de l'activité depuis le pool, vider l'input de recherche 
+- Quand on recherche une note dans la bar de recherche et que rien est trouvé, si on clique sur le bouton "+", alimenter la zone du titre avec ce qui est entré dans la bar de recherche. vider l'input de recherche dès que le titre est alimenté de la nouvelle valeur
+- Pour la carte sur plusieurs jours, quand on est en modifications du de l'heure de fin sur l'horloge, quand on choisit une heure inférieur à la date de débuts, afficher "J + 1" avec des flèche à gauche et à droite permettant de faire + ou moins un jour. Si il est sur 1 jour et qu'ils clique à gauche, le 1 jour tremble via une annimation. Si il clique a droite, alors on incrémente vers 2, 3, 4, ect. Une fois l'heure positionné, on peut savoir sur combien de jour il faut faire le mécanisme de reflet de l'activité avec l'heure de positionné à et l'heure saisie avec la mention "+nj" à côté de l'heure de fin, un truc design et minimalist 
+- Lorsqu'une carte est de type transport (train + avion), elle doit s'améliorer pour rajouter l'heure de début ET de fin, pas seulement l'heure de début : if faut donc faire du rennomage pour ne pas seulement marquer "Début" et "Fin" mais uniquement le libellé avec l'ehrue de début et de fin. Remarques : si c'est sur plusieurs jours, il faut faire comme pour les activités, la duppliquer.
 
 - Créer le mode avec l'aide pour la premiere fois qu'on utilise l'application : des popup qui expliquent comment faire (non prioritaire)
-- le bouton flotant : fais comme sur facebook, une annimation dui bouton qui se déplace un peut sur le coté pour laisser l'utilisateur cliquer sur le chevron (non prioritaire)
 - Rajouter les types de transport préférer en fonction des distances des trajets pour le calcul des distances sur le résumé du voyage, dans trip header en dessous des dates (non prioritaire)
   - Les transport doivent être "à pied si temsp en dessous de .. min, velo entre tant et tant de minutes, train sinon. Il faudrait pouvoir donner des intervalles et des modes de transport préféré, pour le calcul des distances. Il faut Remarque : faire un truc simple à utiliser, mais paramétrable si on veut, j'ai besoin de ton aide pour bien faire et surtout avoir une valeur par defaut facile  (non prioritaire)
 - Prérenseigner une liste de to take à la création d'un voyage (non prioritaire)
@@ -98,17 +132,18 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
   - Dans le calcul du prix, compter que ceux ou le voyageur est sur les trajets et les activités
 - Rajouter filtre mon planning et celui de tout le l'équipe (non prioritaire)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (non prioritaire)
-- Parcours nouveau client, arriver directe sur "Ville / Pays" fait bisarre, il faudrait dire bonjour ou un truc comme ça et renommer le nom de la zone
-- Si a la connexion on a qu'un seul trip, aller directement sur ce trip ! 
+- mettre les badges des compagnons de route en haut, et mettre des chip en detail dans le résumé, cliquable aussi (non prioritaire)
 
 ### Bugs / fixes
 - A l'ajout d'un train, la cinématique de remplissage ne fonctionne pas
-- Les dates de début et de fin et le titre dans l'onglet résumé et le titre en haut ne sont pas raffraichi en dynamique
-- La modification de la date de début depuis résumé modifie l'objet trip de facade à tord
-- Les boutons du switch de classement ne semble pas centrées
+- Les dates de début et de fin et le titre dans l'onglet résumé et le titre en haut ne sont pas raffraichi en dynamique si quelqu'un les changent en distant, elles se sont pas rafraichi à tord 
+- La modification de la date de début depuis résumé modifie l'objet trip de facade à tord, il faut faire de l'ui optimistic comme le reste
 - Lorsque je drag and drop une activité depuis le pool d'activitgé, il ne faut pas que ça redirige sur le jour (contrairement au drag dasn drop sur un jour précis, ou la, il faut que ça le fasse)
 - Lorsque l'on débranche et scroll sur l'écran de logistique, l'ouverture fonctionne mais le scroll jusqu'à l'élément de logistique ne fonctionne pas
-- Dans la vue résumé, l'écart est 2 fois trop gros entre dépense et résumé &xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxc c
+- Dans la vue résumé, l'écart est 2 fois trop gros entre dépense et résumé
+- Dans l'onglet listes, mettre la taille du titre pas en largeur max mais que de la taille du contenue
+- Dans activity form, les tailles des valeurs ne doivent pas être en width 100% mais elle doivent prendre uniquement la largeur du contenu.
+- Au clique sur le crayon du nom d'un trip dans résumé, mettre le focus et ouvrir le clavier sur mobile 
 
 ### Qualité / process
 
@@ -117,8 +152,14 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - empacter le tout dasn une application pour mobile ? Comment gérer la cohabitation ? — **en pause** : décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer, pas lancé dans ce lot.
 - Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là
 - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
+- La selection de fichier : le composant est duppliqué entre le pool d'activité et les activités à tord 
 
 ## ✅ Déjà fait
+- **Section "Activités" traitée intégralement, 2026-08-02** : les 4 items non "non prioritaire" restants de cette section, décisions actées avec l'utilisateur avant implémentation.
+  - **Widget horaire simplifié** : `DayActivityInstance.startTime`/`endTime` (et la vue composée `Activity`) passent de `Date` à une chaîne `"HH:mm"` pure — la partie date était déjà synthétique (forcée à la date du jour par `ActivityFormComponent.applyDayIdDate`), ce changement ne modifie donc rien côté utilisateur. `day-activity-instance.mapper.ts` reste rétro-compatible en lecture avec l'ancien format (epoch-ms stringifié) indéfiniment, sans script de migration — chaque instance s'auto-met à jour au prochain edit, seule l'écriture n'émet plus que `"HH:mm"`. Nouveau `activity-time.util.ts` (`timeToMinutes`) centralise les comparaisons horaires pour les items suivants.
+  - **Affichage multi-jours ("écho lié")** : une activité dont la fin est antérieure à son début (plage franchissant minuit) affiche désormais un écho en lecture seule sur le jour suivant (`TripStore.getDayActivitiesWithEchoes`, nouveau type `ActivityEcho`) — dérivé à l'affichage uniquement, jamais une vraie `DayActivityInstance` ni stocké en base ; le modèle "1 instance = 1 jour" reste inchangé. Le tap sur l'écho (`ActivityEchoCardComponent`) navigue vers l'instance réelle sur son jour d'origine (`DayActivityFocusService`, mécanisme déjà existant).
+  - **Placement chronologique automatique + comportement du drag** : `TripStore.updateDayActivityInstance` replace désormais l'activité éditée au bon endroit chronologique dès qu'un horaire de début est renseigné (`insertChronologically`, nouveau `day-activity-order.util.ts`) — les activités sans horaire ne sont jamais retriées entre elles, seules celles déjà datées contraignent le point d'insertion ; le drag manuel d'une activité non datée reste inchangé (persistance via `reorderActivities`, jamais concerné par ce repositionnement). Une nouvelle activité créée via le bouton "+" (`TripStore.createActivity`) est désormais insérée en tête de journée plutôt qu'en fin (le drag depuis le pool général continue lui d'ajouter en fin) — le scroll+focus automatique vers la carte tout juste créée existait déjà et n'a nécessité aucun câblage supplémentaire.
+  - **Fusion visuelle timeline jour + logistique** (décision : fusion d'affichage uniquement, les écrans de création/édition Activité et Logistique restent strictement indépendants) : les occurrences logistiques "frontière" (Check-in/Check-out, Départ/Arrivée, Prise en charge/Restitution, Début/Fin) rejoignent désormais la timeline chronologique du jour (`mergeDayTimeline`, nouveau `day-timeline-merge.ts`), aussi bien dans la liste principale (nouveau `DayLogisticEntryComponent`) que dans le mini "Vue d'ensemble de la journée" (`TimelineComponent`, désormais cliquable pour scroller dans le jour via un nouveau `DayScrollSyncService.focusLogisticEntry`, plutôt que de naviguer vers l'onglet Logistique). Les occurrences "continuation" (Nuit sur place / En cours, activité déjà en cours sans horaire actionnable ce jour-là) restent épinglées en haut du jour (`DayLogisticBannerComponent`, inchangé pour elles uniquement). Le tap sur une entrée logistique fusionnée continue de naviguer vers l'onglet Logistique pour éditer (comportement inchangé) ; sa poignée offre en plus un geste de saisie/relâchement autonome (résistance élastique + rebond), volontairement SANS intégrer la mécanique de `DayReorderService` (spécifique aux cartes d'activité et à un réordonnancement réellement persistable) — une occurrence logistique n'a structurellement aucune position à sauvegarder, sa place réelle est toujours recalculée depuis son horaire côté Logistique.
 - **Section "UX / Interactions" traitée intégralement, 2026-08-02** : tous les items non "non prioritaire" restants (17 items), sur demande explicite de l'utilisateur.
   - **Logement & Transport** : libellé du tab "Logistique" renommé (id technique `logistics` inchangé, seul l'affichage change — même principe que le renommage "Notes" → "Listes").
   - **Gares/aéroports (Train/Vol)** : côté train, "Ville de départ/arrivée" → "Gare de départ/arrivée" (4 occurrences : champs manuels `TrainFieldsComponent` + dialogs de la cinématique guidée `LogisticDetailsComponent.guidedTrain`). Côté vol, `FlightLookupApiService`/AeroDataBox ne fournit qu'un NOM d'aéroport (ni placeId ni coordonnées) — nouveau `GooglePlaceService.searchOnce$` (recherche ponctuelle, pas debouncée) résout ce nom vers un vrai `PlaceSummary` Google via une recherche texte, avec repli sur l'ancien `PlaceSummary` synthétique (placeId vide) si la recherche échoue ou ne renvoie rien (`LogisticDetailsComponent.resolveAirportPlace`).

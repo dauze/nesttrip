@@ -5,6 +5,7 @@ import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/p
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 
 import { Activity } from '../activity.model';
+import { timeToMinutes } from '../activity-time.util';
 import { LoadingState, PlaceDetails } from '@app/core/models/place.dto';
 
 const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -79,7 +80,7 @@ export class ActivityGoogleInfoComponent {
     const startTime = this.activity().startTime;
     if (!startTime) return null;
 
-    const hm = startTime.getHours() * 60 + startTime.getMinutes();
+    const hm = timeToMinutes(startTime);
     return ranges.some(({ start, end }) => hm >= start && hm <= end);
   });
 

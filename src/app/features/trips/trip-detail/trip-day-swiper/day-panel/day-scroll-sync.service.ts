@@ -42,6 +42,8 @@ export interface DayScrollSyncConfig {
    * DERRIÈRE ce chrome toujours visible, jamais réellement dans le champ.
    */
   getPinnedChromeOffset: () => number;
+  /** Offsets des entrées logistique fusionnées dans la liste principale (voir `DayLogisticEntryComponent`) — alimente `focusLogisticEntry`, cible mesurée par `logisticId + role` (une réservation peut jouer plusieurs rôles le même jour, ex. Check-in ET Check-out d'un aller-retour). */
+  getLogisticOffsets: () => { logisticId: string; role: string; top: number }[];
 }
 
 /**
@@ -377,9 +379,7 @@ export class DayScrollSyncService implements OnDestroy {
   }
 
   focusActivity(activityId: string, onComplete?: () => void): void {
-    const freshOffsets = this.config.getFreshOffsets();
-
-    const target = freshOffsets.find(
+    const target = this.config.getFreshOffsets().find(
       item => item.card.activity()?.id === activityId
     );
 
@@ -388,6 +388,25 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
+    this.scrollToOffsetTop(target.top, onComplete);
+  }
+
+  /** Scroll vers une entrée logistique fusionnée dans la liste (voir `TimelineComponent.logisticSelected`) — miroir de `focusActivity`, cible mesurée par `logisticId + role`. */
+  focusLogisticEntry(logisticId: string, role: string, onComplete?: () => void): void {
+    const target = this.config.getLogisticOffsets().find(
+      (o) => o.logisticId === logisticId && o.role === role
+    );
+
+    if (!target) {
+      onComplete?.();
+      return;
+    }
+
+    this.scrollToOffsetTop(target.top, onComplete);
+  }
+
+  /** Voir `focusActivity`/`focusLogisticEntry` : même calcul de bouclier sticky (carte + chrome fixe), factoriser évite de le dupliquer par cible. */
+  private scrollToOffsetTop(top: number, onComplete?: () => void): void {
     const stickyElement = this.config.getStickyMapEl();
 
     // En layout scindé, la carte est à côté (pas au-dessus) de la liste :
@@ -400,7 +419,7 @@ export class DayScrollSyncService implements OnDestroy {
         ? stickyElement.getBoundingClientRect().height
         : this.stickyHeight();
 
-    const targetScroll = target.top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
+    const targetScroll = top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
 
     this.smoothScrollTo(targetScroll, 700, onComplete);
   }

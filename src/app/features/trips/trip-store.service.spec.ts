@@ -229,5 +229,95 @@ describe('TripStore', () => {
         type: ActivityType.VISITE,
       });
     });
+
+    it('insère les nouvelles activités en tête de journée, pas en fin (voir ROADMAP.md "Activités")', () => {
+      store.createActivity(tripId, dayId, poolActivity({ id: 'pool-1' }), instance({ id: 'instance-1', activityId: 'pool-1' }));
+      store.createActivity(tripId, dayId, poolActivity({ id: 'pool-2' }), instance({ id: 'instance-2', activityId: 'pool-2' }));
+
+      const ids = store.getDayActivities(dayId)().map((a) => a.id);
+      expect(ids).toEqual(['instance-2', 'instance-1']);
+    });
+  });
+
+  describe('updateDayActivityInstance — placement chronologique automatique', () => {
+    function seedDay(ids: string[], instancesById: Record<string, DayActivityInstance>) {
+      const dayKey = dayId.toISOString();
+      store._tripDays.set({ [tripId]: [dayKey] });
+      store._dayActivityIds.set({ [dayKey]: ids });
+      store._dayActivityInstances.set(instancesById);
+    }
+
+    it("replace une instance nouvellement datée au bon endroit chronologique, sans retrier les activités non datées entre elles", () => {
+      const morning = instance({ id: 'morning', startTime: '09:00' });
+      const evening = instance({ id: 'evening', startTime: '18:00' });
+      const untimedA = instance({ id: 'untimed-a' });
+      const untimedB = instance({ id: 'untimed-b' });
+
+      seedDay(
+        ['untimed-b', 'untimed-a', 'morning', 'evening'],
+        { 'untimed-b': untimedB, 'untimed-a': untimedA, morning, evening },
+      );
+
+      store.updateDayActivityInstance(tripId, { ...untimedA, startTime: '12:00' });
+
+      expect(store._dayActivityIds()[dayId.toISOString()]).toEqual(['untimed-b', 'morning', 'untimed-a', 'evening']);
+    });
+
+    it("ne touche pas l'ordre si l'instance mise à jour n'a pas de startTime", () => {
+      seedDay(['a', 'b'], { a: instance({ id: 'a' }), b: instance({ id: 'b' }) });
+
+      store.updateDayActivityInstance(tripId, instance({ id: 'a', notes: 'note modifiée' }));
+
+      expect(store._dayActivityIds()[dayId.toISOString()]).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('getDayActivitiesWithEchoes — écho lié (activité à cheval sur minuit)', () => {
+    const day2 = new Date(dayId.getTime() + 24 * 60 * 60 * 1000);
+
+    function seedTwoDays() {
+      store._tripDays.set({ [tripId]: [dayId.toISOString(), day2.toISOString()] });
+    }
+
+    it("affiche un écho sur le jour suivant si l'activité franchit minuit", () => {
+      seedTwoDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-night' }),
+        instance({ id: 'night', activityId: 'pool-night', startTime: '22:00', endTime: '01:00' }),
+      );
+
+      const entries = store.getDayActivitiesWithEchoes(tripId, day2)();
+
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({
+        kind: 'echo',
+        originInstanceId: 'night',
+        title: 'Tour Eiffel',
+        startTime: '00:00',
+        endTime: '01:00',
+      });
+    });
+
+    it("ne crée pas d'écho pour une activité qui ne franchit pas minuit", () => {
+      seedTwoDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-day' }),
+        instance({ id: 'day-act', activityId: 'pool-day', startTime: '10:00', endTime: '11:00' }),
+      );
+
+      const entries = store.getDayActivitiesWithEchoes(tripId, day2)();
+
+      expect(entries).toEqual([]);
+    });
+
+    it("ne plante pas sur le premier jour du trip (pas de jour précédent)", () => {
+      seedTwoDays();
+
+      const entries = store.getDayActivitiesWithEchoes(tripId, dayId)();
+
+      expect(entries).toEqual([]);
+    });
   });
 });

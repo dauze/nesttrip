@@ -143,8 +143,18 @@ export class ActivityCardComponent {
    * Émis dès le pointerdown sur la poignée quand `inDayList()` est vrai —
    * DayPanelComponent prend alors intégralement la main sur le geste
    * (collapse, suivi du pointeur, réordonnancement). Voir `startDispatchGesture`.
+   * `rowId` (pas `activityId`) : DayReorderService pilote une liste unifiée
+   * activités + logistique (voir DraggableDayRow), même émetteur générique
+   * pour les deux composants.
    */
-  readonly dragHandleDown = output<{ x: number; y: number; pointerId: number; activityId: string }>();
+  readonly dragHandleDown = output<{ x: number; y: number; pointerId: number; rowId: string }>();
+
+  /** Voir `DraggableDayRow` — DayReorderService pilote une liste unifiée activités + logistique. */
+  get rowId(): string {
+    return this.activityId();
+  }
+
+  readonly kind = 'activity' as const;
 
   /** true pendant que cette carte est décrochée pour être déposée sur un autre jour. */
   readonly isBeingDragged = computed(() => this.dispatchService.isDraggedActivity(this.activityId()));
@@ -378,7 +388,7 @@ export class ActivityCardComponent {
     this.clearHoldTimer();
 
     if (this.inDayList()) {
-      this.dragHandleDown.emit({ x, y, pointerId, activityId: this.activityId() });
+      this.dragHandleDown.emit({ x, y, pointerId, rowId: this.activityId() });
       return;
     }
 

@@ -15,10 +15,15 @@ import {
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
 import { DayLogisticBannerComponent } from './day-logistic-banner/day-logistic-banner.component';
-import { Activity } from '@app/shared/components/activity-card/activity.model';
+import { MergedDayEntry } from './day-logistic-banner/day-timeline-merge';
+import { LogisticDayOccurrence } from './day-logistic-banner/logistic-day-occurrence';
+import { Activity, ActivityEcho } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
+import { ActivityEchoCardComponent } from '@app/shared/components/activity-card/activity-echo-card/activity-echo-card.component';
+import { DayLogisticEntryComponent, logisticRowId } from './day-logistic-entry/day-logistic-entry.component';
+import { DraggableDayRow } from './draggable-day-row';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
@@ -40,7 +45,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    TimelineComponent, ActivityCardComponent, PanelComponent, MessageComponent, SkeletonComponent,
+    TimelineComponent, ActivityCardComponent, ActivityEchoCardComponent, DayLogisticEntryComponent, PanelComponent, MessageComponent, SkeletonComponent,
     NewActivityDraftComponent, DayLogisticBannerComponent,
   ],
   styleUrl: 'day-panel.component.scss',
@@ -70,6 +75,7 @@ export class DayPanelComponent {
   readonly dayId = input.required<Date>();
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
+  private readonly logisticEntries = viewChildren(DayLogisticEntryComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
   /** Conteneur flex de la liste — voir `lockActivityListHeight` : sa hauteur est figée pendant un drag pour ne pas "sauter" quand la carte draguée quitte le flux. */
   private readonly activityList = viewChild<ElementRef<HTMLElement>>('activityList');
@@ -84,6 +90,9 @@ export class DayPanelComponent {
   activitiesCollapsed = false;
 
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getDayActivities(this.dayId())());
+
+  /** Activités + échos + occurrences logistiques "frontière" (voir day-timeline-merge.ts) : consommé pour l'AFFICHAGE (timeline mini + liste principale) — le drag/la carte/la création restent sur `activities()`, qui ne contient ni écho ni logistique. */
+  readonly timelineEntries: Signal<MergedDayEntry[]> = computed(() => this.tripFacade.getMergedDayTimeline(this.tripId(), this.dayId()));
 
   readonly dayMapPoints = computed<DayMapPoint[]>(() => {
     return this.activities()
@@ -174,15 +183,15 @@ export class DayPanelComponent {
       getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
       isSplitLayout: () => this.viewport.isSplitLayout(),
       getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
+      getLogisticOffsets: () => this.getFreshLogisticOffsets(),
     });
 
     this.reorderService.connect({
-      getCards: () => this.activityCards(),
-      getActivities: () => this.activities(),
+      getCards: () => this.getRows(),
       getTripId: () => this.tripId(),
       getDayId: () => this.dayId(),
       getSlideEl: () => this.getSlideEl(),
-      getFreshOffsets: () => this.getFreshCardOffsets(),
+      getFreshOffsets: () => this.getFreshRowOffsets(),
       getActivityListEl: () => this.activityList()?.nativeElement ?? null,
       notifyRenderFlush: () => this.cdr.detectChanges(),
     });
@@ -239,6 +248,16 @@ export class DayPanelComponent {
     setTimeout(() => this.scrollSync.wakeLoop(), 300);
   }
 
+  /** Clic sur un écho dans la timeline mini (voir TimelineComponent) : navigue vers l'instance réelle sur son jour d'origine. */
+  onEchoSelected(echo: ActivityEcho): void {
+    this.focusService.requestFocus(echo.originDayId.toISOString(), echo.originInstanceId);
+  }
+
+  /** Clic sur une occurrence logistique dans la timeline mini : scroll dans CE jour (pas de navigation vers l'onglet Logistique, contrairement au tap sur la carte elle-même). */
+  onLogisticEntrySelected(occurrence: LogisticDayOccurrence): void {
+    this.scrollSync.focusLogisticEntry(occurrence.logistic.id, occurrence.role);
+  }
+
   /**
    * Offsets "pseudo-absolus" des cartes, stables quel que soit le scroll
    * courant du slide : `rect.top` (relatif viewport, bouge avec le scroll
@@ -257,6 +276,70 @@ export class DayPanelComponent {
       const rect = card.element.getBoundingClientRect();
       return {
         card,
+        top: rect.top - slideTop + slideScrollTop,
+        height: rect.height,
+      };
+    });
+  }
+
+  /** Même calcul que `getFreshCardOffsets`, pour les entrées logistique inline de la liste principale — voir `DayScrollSyncService.focusLogisticEntry`. */
+  getFreshLogisticOffsets(): { logisticId: string; role: string; top: number }[] {
+    const entries = this.logisticEntries();
+    const slideEl = this.getSlideEl();
+    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
+    const slideScrollTop = slideEl?.scrollTop ?? 0;
+
+    return entries.map(entry => {
+      const rect = entry.hostElement.getBoundingClientRect();
+      return {
+        logisticId: entry.logisticId,
+        role: entry.role,
+        top: rect.top - slideTop + slideScrollTop,
+      };
+    });
+  }
+
+  /**
+   * Liste UNIFIÉE (activités + occurrences logistiques "frontière", voir
+   * `DraggableDayRow`) consommée par `DayReorderService` — retour utilisateur
+   * explicite, ROADMAP.md "Activités" : "Activité et transport/logement
+   * doivent être dans la même pile pour le drag and drop". Parcourt
+   * `timelineEntries()` (déjà dans le bon ordre visuel) et résout chaque
+   * entrée vers son composant rendu ; les échos sont ignorés (jamais
+   * draguables). SÉPARÉE de `activityCards()`/`getFreshCardOffsets()` (voir
+   * leur doc) : ceux-ci restent activités-seules, consommés par
+   * `DayScrollSyncService` (suivi caméra, `dayMapPoints` ne connaît que les
+   * vraies activités) et `DayActivityCreationService`.
+   */
+  private getRows(): DraggableDayRow[] {
+    const activityById = new Map(this.activityCards().map(c => [c.activityId(), c as DraggableDayRow]));
+    const logisticById = new Map(this.logisticEntries().map(e => [e.rowId, e as DraggableDayRow]));
+
+    const rows: DraggableDayRow[] = [];
+    for (const entry of this.timelineEntries()) {
+      if (entry.kind === 'activity') {
+        const row = activityById.get(entry.activity.id);
+        if (row) rows.push(row);
+      } else if (entry.kind === 'logistic') {
+        const row = logisticById.get(logisticRowId(entry.occurrence));
+        if (row) rows.push(row);
+      }
+      // 'echo' : jamais draguable, volontairement absent de cette liste.
+    }
+    return rows;
+  }
+
+  /** Même principe que `getFreshCardOffsets`, sur la liste unifiée `getRows()` — dédié à `DayReorderService` uniquement. */
+  private getFreshRowOffsets(): { card: DraggableDayRow; top: number; height: number }[] {
+    const rows = this.getRows();
+    const slideEl = this.getSlideEl();
+    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
+    const slideScrollTop = slideEl?.scrollTop ?? 0;
+
+    return rows.map(row => {
+      const rect = row.hostElement.getBoundingClientRect();
+      return {
+        card: row,
         top: rect.top - slideTop + slideScrollTop,
         height: rect.height,
       };

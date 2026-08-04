@@ -21,8 +21,10 @@ export interface DayActivityInstance {
   activityId: string;
   type: ActivityType;
   duration: number;
-  startTime?: Date;
-  endTime?: Date;
+  /** Format "HH:mm" — heure du jour uniquement, aucune date associée (voir activity-time.util.ts). */
+  startTime?: string;
+  /** Format "HH:mm" — heure du jour uniquement, aucune date associée (voir activity-time.util.ts). */
+  endTime?: string;
   price: Price;
   booking: Booking;
   notes: string;
@@ -40,8 +42,10 @@ export interface Activity {
   title: string;
   type: ActivityType;
   duration: number;
-  startTime?: Date;
-  endTime?: Date;
+  /** Format "HH:mm" — heure du jour uniquement, aucune date associée (voir activity-time.util.ts). */
+  startTime?: string;
+  /** Format "HH:mm" — heure du jour uniquement, aucune date associée (voir activity-time.util.ts). */
+  endTime?: string;
   price: Price;
   booking: Booking;
   notes: string;
@@ -53,6 +57,30 @@ export interface Activity {
   longitude?: number;
   photoRefs: string[];
 }
+
+/**
+ * Écho en lecture seule d'une activité de la veille dont la plage horaire
+ * franchit minuit (fin < début) — jamais stocké en base, jamais une vraie
+ * `DayActivityInstance` : dérivé à l'affichage (voir `TripStore.getDayActivitiesWithEchoes`,
+ * ROADMAP.md "Activités"). Le clic navigue vers l'instance réelle sur son
+ * jour d'origine (voir `ActivityEchoCardComponent`, `DayActivityFocusService`).
+ */
+export interface ActivityEcho {
+  kind: 'echo';
+  originInstanceId: string;
+  originDayId: Date;
+  /** FK pool, pour icône/type/photo — même origine que `Activity.activityId`. */
+  activityId: string;
+  title: string;
+  type: ActivityType;
+  /** Toujours "00:00" : l'écho représente la portion de l'activité qui se poursuit après minuit. */
+  startTime: string;
+  endTime?: string;
+  photoRefs: string[];
+}
+
+/** Entrée de la timeline d'un jour : soit une vraie activité, soit l'écho d'une activité de la veille (voir ActivityEcho). */
+export type DayActivityEntry = { kind: 'activity'; activity: Activity } | ActivityEcho;
 
 export interface Price {
   amount: number;

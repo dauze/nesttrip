@@ -1,19 +1,18 @@
 import { ChangeDetectorRef, Injectable, OnDestroy, inject } from '@angular/core';
-import { Activity } from '@app/shared/components/activity-card/activity.model';
-import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { DayScrollSyncService } from './day-scroll-sync.service';
+import { DraggableDayRow } from './draggable-day-row';
 
-interface CardOffset { card: ActivityCardComponent; top: number; height: number }
+interface CardOffset { card: DraggableDayRow; top: number; height: number }
 
 /** État d'un réordonnancement manuel en cours dans un jour — voir DayReorderService.onDragHandleDown. */
 interface DayDragState {
   readonly pointerId: number;
-  readonly card: ActivityCardComponent;
-  readonly activityId: string;
+  readonly card: DraggableDayRow;
+  readonly rowId: string;
   readonly fromIndex: number;
   targetIndex: number;
   thresholdCrossed: boolean;
@@ -31,10 +30,25 @@ interface DayDragState {
    */
   readonly grabOffsetX: number;
   readonly grabOffsetY: number;
-  /** Offsets (id, top document-relatif) de toutes les cartes, figés une seule fois au franchissement du seuil — les voisines ne bougent pas dans le DOM pendant le drag, seul leur décalage visuel change. */
-  offsets: { id: string; top: number }[];
-  /** Distance top-à-top entre deux cartes consécutives (déjà collapsées) — sert de grille uniforme pour le hit-test. */
-  slotHeight: number;
+  /**
+   * Offsets (id, top document-relatif, hauteur RÉELLE) de toutes les cartes,
+   * figés une seule fois au franchissement du seuil — les voisines ne
+   * bougent pas dans le DOM pendant le drag, seul leur décalage visuel
+   * change. La hauteur est conservée PAR CARTE (pas de grille uniforme) :
+   * une occurrence logistique est nettement plus basse qu'une carte
+   * d'activité — voir `updateTargetIndex` (hit-test par point milieu réel de
+   * chaque carte, pas par division d'une hauteur de slot fixe).
+   */
+  offsets: { id: string; top: number; height: number }[];
+  /**
+   * Distance (px) dont TOUT le reste de la liste se décale quand CETTE carte
+   * quitte/rejoint le flux — hauteur réelle de la carte draguée + l'écart
+   * (`gap` flex) qui la sépare de sa voisine suivante, mesurés une seule
+   * fois au franchissement du seuil. Ne dépend QUE de la carte saisie
+   * (jamais des voisines, qui peuvent avoir une hauteur différente) — voir
+   * `applySiblingOffsets`.
+   */
+  collapseDelta: number;
   /**
    * Clone visuel qui suit le doigt, ajouté au portail hors-swiper — voir
    * `beginCardFollow`. Le VRAI nœud de la carte, lui, ne quitte JAMAIS sa
@@ -48,8 +62,8 @@ interface DayDragState {
 }
 
 export interface DayReorderConfig {
-  getCards: () => readonly ActivityCardComponent[];
-  getActivities: () => Activity[];
+  /** Liste UNIFIÉE activités + occurrences logistiques "frontière" (voir DraggableDayRow), dans l'ordre visuel — les échos ne sont jamais inclus (jamais draguables). */
+  getCards: () => readonly DraggableDayRow[];
   getTripId: () => string;
   getDayId: () => Date;
   getSlideEl: () => HTMLElement | null;
@@ -69,6 +83,17 @@ export interface DayReorderConfig {
  * la fenêtre en bord d'écran, et coordination avec
  * ActivityDayDispatchOverlayComponent pour l'escalade vers un autre jour
  * (voir `ActivityDispatchService.dayEscalated`).
+ *
+ * Pilote une liste UNIFIÉE de lignes (activités + occurrences logistiques
+ * "frontière", voir `DraggableDayRow` — retour utilisateur explicite,
+ * ROADMAP.md "Activités" : "Activité et transport/logement doivent être dans
+ * la même pile pour le drag and drop"). Seules les activités persistent
+ * réellement une nouvelle position (`reorderActivities`) : `handleDragPointerUp`
+ * ne commit que si l'ordre relatif des lignes `kind === 'activity'` a
+ * RÉELLEMENT changé, peu importe le type de la ligne saisie — glisser une
+ * logistique, ou une activité qui n'a croisé que des logistiques, ne change
+ * jamais cet ordre et retombe donc toujours exactement à sa place (voir la
+ * comparaison avant/après dans `handleDragPointerUp`).
  *
  * Fourni par `DayPanelComponent` (pas root), aux côtés de
  * `DayScrollSyncService` — une instance par jour affiché, détruite avec lui.
@@ -117,16 +142,18 @@ export class DayReorderService implements OnDestroy {
 
   /**
    * Point d'entrée du réordonnancement manuel intra-jour, déclenché par le
-   * pointerdown sur la poignée d'une carte (voir `ActivityCardComponent.dragHandleDown`).
+   * pointerdown sur la poignée d'une carte (voir
+   * `ActivityCardComponent`/`DayLogisticEntryComponent`.`dragHandleDown`).
    * Collapse toutes les cartes immédiatement (comme avant), puis attend un
    * léger seuil de mouvement avant de sortir réellement la carte du flux —
    * voir `handleDragPointerMove`/`beginCardFollow`.
    */
-  onDragHandleDown(ev: { x: number; y: number; pointerId: number; activityId: string }): void {
+  onDragHandleDown(ev: { x: number; y: number; pointerId: number; rowId: string }): void {
     if (this.drag) return; // un seul geste de reorder actif à la fois
 
-    const card = this.config.getCards().find(c => c.activityId() === ev.activityId);
-    const fromIndex = this.config.getActivities().findIndex(a => a.id === ev.activityId);
+    const cards = this.config.getCards();
+    const card = cards.find(c => c.rowId === ev.rowId);
+    const fromIndex = cards.findIndex(c => c.rowId === ev.rowId);
     if (!card || fromIndex === -1) return;
 
     // Mesuré AVANT le collapse : voir la doc de `grabOffsetX/Y` sur DayDragState.
@@ -136,23 +163,20 @@ export class DayReorderService implements OnDestroy {
 
     this.lockService.lock();
 
-    const cards = new Map<string, boolean>();
-    for (const c of this.config.getCards()) {
-      const id = c.activity()?.id;
-      if (id) cards.set(id, c.collapsed());
-    }
-    this.collapseSnapshot = { cards, map: this.googleMapPanelService.isCollapsed() };
+    const collapseState = new Map<string, boolean>();
+    for (const c of cards) collapseState.set(c.rowId, c.collapsed());
+    this.collapseSnapshot = { cards: collapseState, map: this.googleMapPanelService.isCollapsed() };
 
     // collapseInstantly (pas juste collapsed.set(true)) : sur un drag rapide,
     // la géométrie doit déjà refléter l'état replié dès la frame suivante,
     // avant que le moindre mouvement ne soit interprété (voir sa doc).
-    for (const c of this.config.getCards()) c.collapseInstantly();
+    for (const c of cards) c.collapseInstantly();
     this.googleMapPanelService.setCollapse(true);
 
     this.drag = {
       pointerId: ev.pointerId,
       card,
-      activityId: ev.activityId,
+      rowId: ev.rowId,
       fromIndex,
       targetIndex: fromIndex,
       thresholdCrossed: false,
@@ -161,7 +185,7 @@ export class DayReorderService implements OnDestroy {
       grabOffsetX,
       grabOffsetY,
       offsets: [],
-      slotHeight: 0,
+      collapseDelta: 0,
       cloneEl: null,
     };
     this.pointerY = ev.y;
@@ -182,7 +206,7 @@ export class DayReorderService implements OnDestroy {
     // Garde-fou : la liste a changé de façon inattendue en plein geste (ex.
     // suppression/dispatch concurrent) — on annule proprement plutôt que de
     // raisonner sur un fromIndex/offsets devenus obsolètes.
-    if (this.config.getActivities().findIndex(a => a.id === drag.activityId) === -1) {
+    if (this.config.getCards().findIndex(c => c.rowId === drag.rowId) === -1) {
       this.abortDrag(drag);
       return;
     }
@@ -238,19 +262,37 @@ export class DayReorderService implements OnDestroy {
     }
 
     for (const c of this.config.getCards()) {
-      if (c.activity()?.id !== drag.activityId) c.clearShiftOffset();
+      if (c.rowId !== drag.rowId) c.clearShiftOffset();
     }
 
-    const reordered = drag.targetIndex !== drag.fromIndex;
-    if (reordered) {
-      const ids = this.config.getActivities().map(a => a.id);
-      const [movedId] = ids.splice(drag.fromIndex, 1);
-      ids.splice(drag.targetIndex, 0, movedId);
-      this.tripFacade.reorderActivities(this.config.getTripId(), this.config.getDayId(), ids);
-      // Flush synchrone : @for a le vrai nœud de la carte (jamais déplacé
-      // hors de sa place, voir `beginCardFollow`) dans son nouveau slot AVANT
-      // la mesure "after" de `settleCard`.
-      this.config.notifyRenderFlush();
+    // Ne commit (persistance store) QUE si l'ordre relatif des ACTIVITÉS
+    // entre elles a réellement changé — peu importe le type de la ligne
+    // saisie (voir la doc de classe). Glisser une logistique, ou une
+    // activité qui n'a croisé que des logistiques sans jamais dépasser une
+    // autre activité, laisse cette comparaison identique : aucun appel
+    // store, `settleCard` anime simplement le retour à la position
+    // d'origine (la liste sous-jacente n'a jamais bougé).
+    let committed = false;
+    if (drag.targetIndex !== drag.fromIndex) {
+      const cards = this.config.getCards();
+      const activityIdsBefore = cards.filter(c => c.kind === 'activity').map(c => c.rowId);
+
+      const reorderedCards = [...cards];
+      const [moved] = reorderedCards.splice(drag.fromIndex, 1);
+      reorderedCards.splice(drag.targetIndex, 0, moved);
+      const activityIdsAfter = reorderedCards.filter(c => c.kind === 'activity').map(c => c.rowId);
+
+      const changed = activityIdsAfter.length !== activityIdsBefore.length
+        || activityIdsAfter.some((id, i) => id !== activityIdsBefore[i]);
+
+      if (changed) {
+        this.tripFacade.reorderActivities(this.config.getTripId(), this.config.getDayId(), activityIdsAfter);
+        // Flush synchrone : @for a le vrai nœud de la carte (jamais déplacé
+        // hors de sa place, voir `beginCardFollow`) dans son nouveau slot AVANT
+        // la mesure "after" de `settleCard`.
+        this.config.notifyRenderFlush();
+        committed = true;
+      }
     }
 
     this.settleCard(drag);
@@ -259,13 +301,13 @@ export class DayReorderService implements OnDestroy {
 
     // Scroll jusqu'à la carte déplacée à sa nouvelle position (voir
     // ROADMAP.md, "il faut scroller sur l'activité drop en tête") : seulement
-    // si l'ordre a réellement changé (sinon rien n'a bougé), et après deux
-    // rAF pour laisser le re-dépli déclenché par `restoreCollapseSnapshot()`
+    // si un ordre a réellement été persisté (sinon rien n'a bougé), et après
+    // deux rAF pour laisser le re-dépli déclenché par `restoreCollapseSnapshot()`
     // (cartes remises à leur état pré-drag, souvent dépliées) se peindre —
     // sans cette attente, `focusActivity` mesurerait encore la géométrie
     // "toutes cartes repliées" du drag, pas la position finale réelle.
-    if (reordered) {
-      const movedId = drag.activityId;
+    if (committed) {
+      const movedId = drag.rowId;
       requestAnimationFrame(() => requestAnimationFrame(() => this.scrollSync.focusActivity(movedId)));
     }
   };
@@ -278,10 +320,18 @@ export class DayReorderService implements OnDestroy {
     const rect = el.getBoundingClientRect();
 
     const freshOffsets = this.config.getFreshOffsets();
-    drag.offsets = freshOffsets.map(o => ({ id: o.card.activity()?.id ?? '', top: o.top }));
-    drag.slotHeight = freshOffsets.length > 1
-      ? freshOffsets[1].top - freshOffsets[0].top
-      : (freshOffsets[0]?.height ?? rect.height);
+    drag.offsets = freshOffsets.map(o => ({ id: o.card.rowId, top: o.top, height: o.height }));
+
+    // Écart (gap) flex entre deux cartes consécutives — supposé uniforme sur
+    // toute la liste (le conteneur pose un seul `gap-*`, voir
+    // day-panel.component.html), donc mesurable sur N'IMPORTE QUELLE paire
+    // adjacente : on prend la première. `collapseDelta` = hauteur RÉELLE de
+    // la carte draguée (jamais une hauteur générique — voir sa doc) + ce gap.
+    const gap = freshOffsets.length > 1
+      ? freshOffsets[1].top - freshOffsets[0].top - freshOffsets[0].height
+      : 0;
+    const draggedHeight = freshOffsets.find(o => o.card.rowId === drag.rowId)?.height ?? rect.height;
+    drag.collapseDelta = draggedHeight + gap;
 
     // Fige la hauteur de la liste À CET INSTANT PRÉCIS (juste avant que la
     // carte ne quitte le flux) : mesurée trop tôt (ex. dès le pointerdown),
@@ -324,18 +374,34 @@ export class DayReorderService implements OnDestroy {
     if (info) this.dispatchService.registerActiveDayDrag(info, clone);
   }
 
-  /** Recalcule l'index de dépose par hit-test contre les offsets figés au franchissement du seuil, et ne réapplique le décalage visuel des voisines que si l'index a changé. */
+  /**
+   * Recalcule l'index de dépose par hit-test contre les offsets figés au
+   * franchissement du seuil, et ne réapplique le décalage visuel des
+   * voisines que si l'index a changé.
+   *
+   * Compare le pointeur au POINT MILIEU RÉEL de chaque carte VOISINE (jamais
+   * une grille à hauteur uniforme — une occurrence logistique est nettement
+   * plus basse qu'une carte d'activité, voir la doc de `DayDragState.offsets`) :
+   * `targetIndex` compte combien de voisines ont leur milieu déjà franchi
+   * par le pointeur, ce qui correspond exactement à l'index d'insertion
+   * "retirer puis réinsérer" utilisé par `handleDragPointerUp`/`applySiblingOffsets`.
+   */
   private updateTargetIndex(drag: DayDragState, event: PointerEvent): void {
-    if (!drag.offsets.length || drag.slotHeight <= 0) return;
+    if (!drag.offsets.length) return;
 
     // Même repère pseudo-absolu que getFreshCardOffsets() (relatif au slide isolé, pas au document).
     const slideEl = this.config.getSlideEl();
     const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
     const slideScrollTop = slideEl?.scrollTop ?? 0;
     const docY = event.clientY - slideTop + slideScrollTop;
-    const relative = docY - drag.offsets[0].top;
-    let targetIndex = Math.round(relative / drag.slotHeight);
-    targetIndex = Math.max(0, Math.min(drag.offsets.length - 1, targetIndex));
+
+    const siblings = drag.offsets.filter(o => o.id !== drag.rowId);
+    let targetIndex = 0;
+    for (const o of siblings) {
+      if (docY < o.top + o.height / 2) break;
+      targetIndex++;
+    }
+    targetIndex = Math.max(0, Math.min(siblings.length, targetIndex));
 
     if (targetIndex === drag.targetIndex) return;
     drag.targetIndex = targetIndex;
@@ -349,32 +415,32 @@ export class DayReorderService implements OnDestroy {
    *
    * Piège : la carte draguée est en `position:fixed` (voir `beginCardFollow`),
    * donc entièrement retirée de la composition flex — TOUT ce qui suit son
-   * index d'origine remonte donc déjà, tout seul, d'un `slotHeight` en layout
-   * pur (aucun transform requis pour ça). Ce calcul doit composer avec ce
-   * remous automatique plutôt que l'ignorer :
+   * index d'origine remonte donc déjà, tout seul, de `collapseDelta` (la
+   * hauteur RÉELLE de la carte draguée + le gap, jamais une hauteur générique
+   * — voir sa doc, une occurrence logistique est plus basse qu'une carte
+   * d'activité) en layout pur (aucun transform requis pour ça). Ce calcul
+   * doit composer avec ce remous automatique plutôt que l'ignorer :
    * - pour une carte après `fromIndex` ET dans la zone active du drag (jusqu'à
    *   `targetIndex` en descendant), ce remous automatique EST exactement le
    *   décalage recherché → décalage manuel nul.
    * - pour une carte après `fromIndex` mais HORS de cette zone, il faut au
-   *   contraire ANNULER ce remous (+slotHeight) pour qu'elle reste à sa place.
+   *   contraire ANNULER ce remous (+collapseDelta) pour qu'elle reste à sa place.
    * - pour une carte avant `fromIndex`, aucun remous automatique n'existe :
    *   le décalage (si besoin, en remontant la carte) est entièrement manuel.
    */
   private applySiblingOffsets(drag: DayDragState): void {
-    const { fromIndex, targetIndex, slotHeight, activityId } = drag;
-    const order = this.config.getActivities();
+    const { fromIndex, targetIndex, collapseDelta, rowId } = drag;
+    const cards = this.config.getCards();
 
-    for (const c of this.config.getCards()) {
-      const id = c.activity()?.id;
-      if (!id || id === activityId) continue;
+    cards.forEach((c, index) => {
+      if (c.rowId === rowId) return;
 
-      const index = order.findIndex(a => a.id === id);
       const offset = index > fromIndex
-        ? ((targetIndex > fromIndex && index <= targetIndex) ? 0 : slotHeight)
-        : ((targetIndex < fromIndex && index >= targetIndex) ? slotHeight : 0);
+        ? ((targetIndex > fromIndex && index <= targetIndex) ? 0 : collapseDelta)
+        : ((targetIndex < fromIndex && index >= targetIndex) ? collapseDelta : 0);
 
       c.setShiftOffset(offset);
-    }
+    });
   }
 
   /**
@@ -382,7 +448,10 @@ export class DayReorderService implements OnDestroy {
    * swap) : mesure la position écran du CLONE (encore `position:fixed`, suit
    * le doigt), le retire, fait réapparaître le vrai nœud dans le flux (voir
    * `rejoinFlow`), puis anime son delta vers 0 — même technique FLIP que
-   * `runTabFlip` dans ActivityDayDispatchOverlayComponent.
+   * `runTabFlip` dans ActivityDayDispatchOverlayComponent. Pour une ligne
+   * logistique (jamais persistée, voir la doc de classe), la liste sous-jacente
+   * n'a jamais bougé : ce FLIP anime donc simplement le retour à la position
+   * d'origine, exactement le "rebond" attendu.
    */
   private settleCard(drag: DayDragState): void {
     const before = drag.cloneEl?.getBoundingClientRect();
@@ -410,8 +479,7 @@ export class DayReorderService implements OnDestroy {
     if (!this.collapseSnapshot) return;
     const { cards, map } = this.collapseSnapshot;
     for (const card of this.config.getCards()) {
-      const id = card.activity()?.id;
-      const prev = id ? cards.get(id) : undefined;
+      const prev = cards.get(card.rowId);
       if (prev !== undefined) card.collapsed.set(prev);
     }
     this.googleMapPanelService.setCollapse(map);
@@ -428,7 +496,7 @@ export class DayReorderService implements OnDestroy {
     if (this.drag === drag) this.drag = undefined;
 
     for (const c of this.config.getCards()) {
-      if (c.activity()?.id !== drag.activityId) c.clearShiftOffset();
+      if (c.rowId !== drag.rowId) c.clearShiftOffset();
     }
 
     if (drag.thresholdCrossed) {

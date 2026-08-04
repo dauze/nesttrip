@@ -72,7 +72,7 @@
           (click)="onTimeClick($event)"
           (keydown.enter)="onTimeClick($event)">
           <i class="pi pi-clock activity-header__meta-icon"></i>
-          {{ activity().startTime | date:'HH:mm' }}
+          {{ activity().startTime }}
         </span>
         }
         @if (activity().price.amount) {
