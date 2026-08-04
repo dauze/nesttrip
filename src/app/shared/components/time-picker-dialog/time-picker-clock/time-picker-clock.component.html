@@ -3,30 +3,48 @@
 
         @if (viewMode() === 'clock') {
 
-            <div
-                class="flex justify-content-center align-items-center gap-2"
-            >
-                <button
-                    type="button"
-                    class="time-box"
-                    [class.active]="selectionMode === 'hour'"
-                    (click)="selectionMode = 'hour'"
-                >
-                    {{ tempHour }}
-                </button>
+            <div class="clock-header-row" [class.clock-header-row--offset]="hasDayOffsetFeature">
+                @if (hasDayOffsetFeature) {
+                    <div class="clock-day-offset__spacer" aria-hidden="true"></div>
+                }
 
-                <span class="time-separator">
-                    :
-                </span>
+                <div class="flex justify-content-center align-items-center gap-2">
+                    <button
+                        type="button"
+                        class="time-box"
+                        [class.active]="selectionMode === 'hour'"
+                        (click)="selectionMode = 'hour'"
+                    >
+                        {{ tempHour }}
+                    </button>
 
-                <button
-                    type="button"
-                    class="time-box"
-                    [class.active]="selectionMode === 'minute'"
-                    (click)="selectionMode = 'minute'"
-                >
-                    {{ tempMinute }}
-                </button>
+                    <span class="time-separator">
+                        :
+                    </span>
+
+                    <button
+                        type="button"
+                        class="time-box"
+                        [class.active]="selectionMode === 'minute'"
+                        (click)="selectionMode = 'minute'"
+                    >
+                        {{ tempMinute }}
+                    </button>
+                </div>
+
+                @if (hasDayOffsetFeature) {
+                    <div class="clock-day-offset" [class.clock-day-offset--shake]="dayOffsetShaking()">
+                        @if (crossesToNextDay) {
+                            <button type="button" class="clock-day-offset__arrow" (click)="decrementDayOffset()" aria-label="Un jour de moins">
+                                <i class="pi pi-chevron-left"></i>
+                            </button>
+                            <span class="clock-day-offset__label">J+{{ effectiveDayOffset }}</span>
+                            <button type="button" class="clock-day-offset__arrow" (click)="incrementDayOffset()" aria-label="Un jour de plus">
+                                <i class="pi pi-chevron-right"></i>
+                            </button>
+                        }
+                    </div>
+                }
             </div>
 
             <div
@@ -85,14 +103,34 @@
 
         } @else {
 
-            <div class="keyboard-fields flex justify-content-center align-items-center">
-                <app-time-fields
-                    #timeFields
-                    [hour]="tempHour"
-                    [minute]="tempMinute"
-                    (hourChange)="onKeyboardHourChange($event)"
-                    (minuteChange)="onKeyboardMinuteChange($event)"
-                />
+            <div class="clock-header-row" [class.clock-header-row--offset]="hasDayOffsetFeature">
+                @if (hasDayOffsetFeature) {
+                    <div class="clock-day-offset__spacer" aria-hidden="true"></div>
+                }
+
+                <div class="keyboard-fields flex justify-content-center align-items-center">
+                    <app-time-fields
+                        #timeFields
+                        [hour]="tempHour"
+                        [minute]="tempMinute"
+                        (hourChange)="onKeyboardHourChange($event)"
+                        (minuteChange)="onKeyboardMinuteChange($event)"
+                    />
+                </div>
+
+                @if (hasDayOffsetFeature) {
+                    <div class="clock-day-offset" [class.clock-day-offset--shake]="dayOffsetShaking()">
+                        @if (crossesToNextDay) {
+                            <button type="button" class="clock-day-offset__arrow" (click)="decrementDayOffset()" aria-label="Un jour de moins">
+                                <i class="pi pi-chevron-left"></i>
+                            </button>
+                            <span class="clock-day-offset__label">J+{{ effectiveDayOffset }}</span>
+                            <button type="button" class="clock-day-offset__arrow" (click)="incrementDayOffset()" aria-label="Un jour de plus">
+                                <i class="pi pi-chevron-right"></i>
+                            </button>
+                        }
+                    </div>
+                }
             </div>
 
         }

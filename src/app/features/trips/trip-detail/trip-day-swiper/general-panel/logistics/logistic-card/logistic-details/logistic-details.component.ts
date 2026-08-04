@@ -383,7 +383,7 @@ export class LogisticDetailsComponent {
 
   /** Titre (Google ou texte libre, voir LogisticHeaderComponent) → conditionnellement Adresse → Résa → check-in → check-out → Prix. */
   private async guidedLogement(): Promise<void> {
-    const nameResult = await this.openTitleDialog({ initialTitle: '', title: 'Nom', placeholder: 'Nom du logement' });
+    const nameResult = await this.openTitleDialog({ initialTitle: this.logistic().title, title: 'Nom', placeholder: 'Nom du logement' });
     if (!nameResult) return;
 
     if (nameResult.type === 'place') {
@@ -521,7 +521,7 @@ export class LogisticDetailsComponent {
 
   /** Titre (Google ou texte libre, même pattern que Logement) → conditionnellement Adresse → Résa → date/heure début → date/heure fin → Prix. */
   private async guidedOther(): Promise<void> {
-    const nameResult = await this.openTitleDialog({ initialTitle: '', title: 'Titre', placeholder: "Nom de l'élément" });
+    const nameResult = await this.openTitleDialog({ initialTitle: this.logistic().title, title: 'Titre', placeholder: "Nom de l'élément" });
     if (nameResult) {
       if (nameResult.type === 'place') {
         this.applyTitleWithPlace(nameResult.place.name, nameResult.place);

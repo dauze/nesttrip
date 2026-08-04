@@ -23,10 +23,13 @@
   display: none;
 }
 
-// Couleur du statut de réservation (activity-form : `[ngClass]="'booking ' +
-// bookingMeta().className"` pose `.booking.to_book`/`.booked`/... sur le
-// host, `--booking-status-color` étant définie par ces classes dans
-// styles.scss) — remplace l'ancien `::ng-deep .booking .p-select-label`.
+// Mécanisme générique "libellé coloré" (classe `.booking` + variable
+// `--booking-status-color` posée en style inline par l'appelant) — utilisé
+// par le champ "Etat résa" de logistic-details (couleur de statut, via
+// `.to_book`/`.booked`/... dans styles/utilities.scss) ET par le champ
+// "Type" d'activity-form (couleur d'identité du type, voir
+// ACTIVITY_TYPE_META.colorVar — ROADMAP.md "UX / Interactions"), qui pose la
+// variable directement en `[style]` plutôt que via ces classes de statut.
 :host(.booking) .app-select__label {
   color: var(--booking-status-color);
 }

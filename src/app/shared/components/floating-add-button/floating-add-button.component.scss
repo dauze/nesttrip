@@ -10,6 +10,7 @@
   right: calc(2.5rem + env(safe-area-inset-right, 0px));
   bottom: calc(var(--fab-bottom-offset, 0px) + 1.5rem);
   z-index: 12;
+  transition: right 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .fab {
@@ -86,4 +87,40 @@
   max-width: 10rem;
   opacity: 1;
   margin-right: 0.5rem;
+}
+
+// Évitement de bord (voir la doc de classe du .ts, ROADMAP.md "UX /
+// Interactions") : le bouton se plaque VRAIMENT contre le bord de l'écran
+// (le `:host` perd son décalage `right` habituel) et glisse à moitié hors
+// viewport — SEULE la moitié gauche reste visible/cliquable (retour
+// utilisateur : la 1re version allait trop loin, quasi tout le bouton
+// disparaissait). `translateX(50%)` décale exactement d'une demi-largeur ;
+// le léger `scaleX` n'est qu'une déformation cosmétique, pas ce qui pousse le
+// bouton hors champ. L'icône reçoit un contre-décalage pour rester
+// visuellement centrée sur cette moitié visible.
+:host(.fab-host--edge) {
+  right: env(safe-area-inset-right, 0px);
+}
+
+:host(.fab-host--edge) .fab {
+  transform: translateX(50%) scaleX(0.9);
+  transition: transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:host(.fab-host--edge) .fab-icon {
+  transform: translateX(-28%);
+  transition: transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+// Retour à la position normale (edge -> normal) : léger overshoot élastique
+// plutôt qu'un simple retour linéaire — voir `RETURN_BOUNCE_DURATION_MS`.
+// N'accroche jamais sur le badge "+"/le label, purement décoratif sur .fab.
+:host(.fab-host--returning) .fab {
+  animation: fab-return 260ms ease-out;
+}
+
+@keyframes fab-return {
+  0% { transform: translateX(0) scaleX(1); }
+  35% { transform: translateX(0) scaleX(1.08); }
+  100% { transform: translateX(0) scaleX(1); }
 }

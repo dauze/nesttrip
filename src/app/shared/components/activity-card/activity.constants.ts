@@ -4,6 +4,8 @@ import { BookingStatus } from '@core/enums/booking.status';
 export interface ActivityTypeMeta {
   label: string;
   icon: string;
+  /** Variable CSS (`--nt-activity-*`, voir tokens.scss) pilotant la couleur d'identité du type — remplace la couleur par statut de réservation sur le bord gauche des cartes (voir ROADMAP.md "UX / Interactions"). */
+  colorVar: string;
 }
 
 export interface BookingStatusMeta {
@@ -12,16 +14,16 @@ export interface BookingStatusMeta {
 }
 
 export const ACTIVITY_TYPE_META: Record<ActivityType, ActivityTypeMeta> = {
-  [ActivityType.REPAS]: {label: 'Repas', icon: 'pi pi-star', },
-  [ActivityType.TRANSPORT]: {label: 'Transport', icon: 'pi pi-car', },
-  [ActivityType.HEBERGEMENT]: {label: 'Hébergement', icon: 'pi pi-home', },
-  [ActivityType.VISITE]: {label: 'Visite', icon: 'pi pi-map-marker', },
-  [ActivityType.ACTIVITE]: {label: 'Activité', icon: 'pi pi-bolt', },
-  [ActivityType.SHOPPING]: {label: 'Shopping', icon: 'pi pi-shopping-bag', },
-  [ActivityType.DETENTE]: {label: 'Détente', icon: 'pi pi-heart', },
-  [ActivityType.EVENEMENT]: {label: 'Événement', icon: 'pi pi-calendar', },
-  [ActivityType.NATURE]: {label: 'Nature', icon: 'pi pi-sun', },
-  [ActivityType.SOINS]: {label: 'Soins', icon: 'pi pi-plus-circle', },
+  [ActivityType.REPAS]: {label: 'Repas', icon: 'pi pi-star', colorVar: '--nt-activity-repas'},
+  [ActivityType.TRANSPORT]: {label: 'Transport', icon: 'pi pi-car', colorVar: '--nt-activity-transport'},
+  [ActivityType.HEBERGEMENT]: {label: 'Hébergement', icon: 'pi pi-home', colorVar: '--nt-activity-hebergement'},
+  [ActivityType.VISITE]: {label: 'Visite', icon: 'pi pi-map-marker', colorVar: '--nt-activity-visite'},
+  [ActivityType.ACTIVITE]: {label: 'Activité', icon: 'pi pi-bolt', colorVar: '--nt-activity-activite'},
+  [ActivityType.SHOPPING]: {label: 'Shopping', icon: 'pi pi-shopping-bag', colorVar: '--nt-activity-shopping'},
+  [ActivityType.DETENTE]: {label: 'Détente', icon: 'pi pi-heart', colorVar: '--nt-activity-detente'},
+  [ActivityType.EVENEMENT]: {label: 'Événement', icon: 'pi pi-calendar', colorVar: '--nt-activity-evenement'},
+  [ActivityType.NATURE]: {label: 'Nature', icon: 'pi pi-sun', colorVar: '--nt-activity-nature'},
+  [ActivityType.SOINS]: {label: 'Soins', icon: 'pi pi-plus-circle', colorVar: '--nt-activity-soins'},
 };
 
 export const BOOKING_STATUS_META: Record<BookingStatus, {label: string; className: string;}> = {

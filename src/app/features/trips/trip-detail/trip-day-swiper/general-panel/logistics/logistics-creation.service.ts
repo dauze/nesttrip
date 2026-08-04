@@ -11,7 +11,8 @@ export interface LogisticsCreationConfig {
 
 /**
  * Orchestration du bouton "+" flottant du sous-onglet Logistique : crée
- * immédiatement un élément (type provisoire 'other', titre vide) puis
+ * immédiatement un élément (type provisoire 'other', titre préempli depuis la
+ * recherche en cours si non vide — voir ROADMAP.md "UX / Interactions") puis
  * enchaîne sur la cinématique de saisie guidée (`LogisticDetailsComponent.startGuidedEntry`,
  * qui demande le type EN PREMIER — voir ROADMAP.md). Mobile uniquement, comme
  * le chaînage guidé des activités : `startGuidedEntry` no-op sur desktop
@@ -47,7 +48,7 @@ export class LogisticsCreationService {
    * `DayLogisticQuickAddService`) quand le type est déjà connu — dans ce cas
    * la cinématique guidée saute directement l'étape "Type" (déjà répondue).
    */
-  startCreation(initialType: LogisticType = 'other'): void {
+  startCreation(initialType: LogisticType = 'other', initialTitle = ''): void {
     const inProgressId = this.creatingId();
     if (inProgressId) {
       this.config.getCards().find((c) => c.logisticId() === inProgressId)
@@ -55,10 +56,10 @@ export class LogisticsCreationService {
       return;
     }
 
-    this.createLogistic(initialType, initialType !== 'other');
+    this.createLogistic(initialType, initialType !== 'other', initialTitle);
   }
 
-  private createLogistic(type: LogisticType, skipTypeStep: boolean): void {
+  private createLogistic(type: LogisticType, skipTypeStep: boolean, initialTitle = ''): void {
     const id = crypto.randomUUID();
 
     // Heure jamais préremplie (voir ROADMAP.md) : reste vide jusqu'à ce que
@@ -71,7 +72,7 @@ export class LogisticsCreationService {
     const logistic: Logistic = {
       id,
       type,
-      title: '',
+      title: initialTitle,
       files: [],
       links: [],
       booking: { status: BookingStatus.NOT_NEEDED },

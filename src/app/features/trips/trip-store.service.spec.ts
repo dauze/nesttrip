@@ -320,4 +320,44 @@ describe('TripStore', () => {
       expect(entries).toEqual([]);
     });
   });
+
+  describe('getDayActivitiesWithEchoes — endDayOffset explicite (plusieurs jours)', () => {
+    const day2 = new Date(dayId.getTime() + 24 * 60 * 60 * 1000);
+    const day3 = new Date(dayId.getTime() + 2 * 24 * 60 * 60 * 1000);
+
+    function seedThreeDays() {
+      store._tripDays.set({ [tripId]: [dayId.toISOString(), day2.toISOString(), day3.toISOString()] });
+    }
+
+    it('génère un écho par jour intermédiaire (sans endTime) et un écho final (avec endTime) pour endDayOffset=2', () => {
+      seedThreeDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-trek' }),
+        instance({ id: 'trek', activityId: 'pool-trek', startTime: '08:00', endTime: '17:00', endDayOffset: 2 }),
+      );
+
+      const day2Entries = store.getDayActivitiesWithEchoes(tripId, day2)();
+      const day3Entries = store.getDayActivitiesWithEchoes(tripId, day3)();
+
+      expect(day2Entries).toHaveLength(1);
+      expect(day2Entries[0]).toMatchObject({ kind: 'echo', originInstanceId: 'trek', startTime: '00:00', endTime: undefined });
+
+      expect(day3Entries).toHaveLength(1);
+      expect(day3Entries[0]).toMatchObject({ kind: 'echo', originInstanceId: 'trek', startTime: '00:00', endTime: '17:00' });
+    });
+
+    it("ne crée aucun écho au-delà d'endDayOffset", () => {
+      seedThreeDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-onenight' }),
+        instance({ id: 'onenight', activityId: 'pool-onenight', startTime: '22:00', endTime: '01:00', endDayOffset: 1 }),
+      );
+
+      const day3Entries = store.getDayActivitiesWithEchoes(tripId, day3)();
+
+      expect(day3Entries).toEqual([]);
+    });
+  });
 });

@@ -58,4 +58,17 @@ export class TripCreationTargetService {
   clearPendingCreate(token: number): void {
     if (this._pendingCreate()?.token === token) this._pendingCreate.set(null);
   }
+
+  // ── Évitement de bord du "+" flottant (voir ROADMAP.md "UX / Interactions") ──
+  // Alimenté par `FabBottomProximityDirective` sur l'écran actif (jour, pool
+  // d'activités, logistique) : `true` quand ce "+" cache le bas d'une carte
+  // et qu'on ne peut plus scroller pour la voir. Un seul écran actif à la
+  // fois y écrit (les jours préchargés non actifs remontent toujours
+  // `false`), donc dernier appel gagnant sans conflit.
+  private readonly _avoidEdge = signal(false);
+  readonly avoidEdge = this._avoidEdge.asReadonly();
+
+  setAvoidEdge(active: boolean): void {
+    this._avoidEdge.set(active);
+  }
 }

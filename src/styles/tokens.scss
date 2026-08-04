@@ -263,6 +263,23 @@
   --nt-logistic-train: #EC4899;
   --nt-logistic-other: #78716C;
 
+  // Couleurs d'identité par type d'activité (voir ACTIVITY_TYPE_META.colorVar,
+  // ROADMAP.md "UX / Interactions") — remplacent la couleur par statut de
+  // réservation sur le bord gauche des cartes d'activité. Distinctes des
+  // couleurs `--nt-logistic-*` ci-dessus. HEBERGEMENT/TRANSPORT : types
+  // legacy masqués à la création (voir HIDDEN_ACTIVITY_TYPES) mais gardent
+  // une couleur pour les activités déjà existantes.
+  --nt-activity-repas: #F97316;
+  --nt-activity-transport: #64748B;
+  --nt-activity-hebergement: #B45309;
+  --nt-activity-visite: #F43F5E;
+  --nt-activity-activite: #f79009;
+  --nt-activity-shopping: #D946EF;
+  --nt-activity-detente: #1570ef ;
+  --nt-activity-evenement: #6366F1;
+  --nt-activity-nature: #12b76e;
+  --nt-activity-soins: #14B8A6;
+
   // "Secondary"/neutre (Button, Tag...) — PAS un simple alias vers
   // --nt-surface-100/200/300 : ces primitives gardent la même convention de
   // numérotation (100 = toujours clair) dans les DEUX modes, alors qu'en
@@ -350,6 +367,17 @@
   --nt-logistic-train: #F472B6;
   --nt-logistic-other: #A8A29E;
 
+  --nt-activity-repas: #FB923C;
+  --nt-activity-transport: #94A3B8;
+  --nt-activity-hebergement: #D97706;
+  --nt-activity-visite:#FB7185;
+  --nt-activity-activite: #fdb022;
+  --nt-activity-shopping: #E879F9;
+  --nt-activity-detente:  #53b1fd;
+  --nt-activity-evenement: #818CF8;
+  --nt-activity-nature: #32d583;
+  --nt-activity-soins: #2DD4BF;
+
   --nt-secondary-bg: var(--nt-surface-800);
   --nt-secondary-hover-bg: var(--nt-surface-700);
   --nt-secondary-active-bg: var(--nt-surface-600);
@@ -419,6 +447,17 @@
   --nt-logistic-carrental: #84CC16;
   --nt-logistic-train: #EC4899;
   --nt-logistic-other: #78716C;
+
+  --nt-activity-repas: #F97316;
+  --nt-activity-transport: #64748B;
+  --nt-activity-hebergement: #B45309;
+  --nt-activity-visite:  #F43F5E;
+  --nt-activity-activite: #f79009;
+  --nt-activity-shopping: #D946EF;
+  --nt-activity-detente: #1570ef;
+  --nt-activity-evenement: #6366F1;
+  --nt-activity-nature: #12b76e;
+  --nt-activity-soins: #14B8A6;
 
   --nt-secondary-bg: var(--nt-surface-100);
   --nt-secondary-hover-bg: var(--nt-surface-200);

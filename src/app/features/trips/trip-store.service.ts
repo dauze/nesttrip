@@ -2,7 +2,7 @@ import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { Trip, Day, TripMember, TripSummary } from './trip.model';
 import { Activity, ActivityEcho, DayActivityEntry, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
-import { timeToMinutes } from '@app/shared/components/activity-card/activity-time.util';
+import { resolveEndDayOffset } from '@app/shared/components/activity-card/activity-time.util';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dto';
@@ -24,12 +24,6 @@ type PoolActivityEntities = Record<string, PoolActivity>;
 type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
 type LogisticEntities = Record<string, Logistic>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
-
-/** true si [startTime, endTime) franchit minuit (fin < début), les deux au format "HH:mm" — voir `getDayActivitiesWithEchoes`. */
-function spansMidnight(startTime: string | undefined, endTime: string | undefined): boolean {
-  if (!startTime || !endTime) return false;
-  return timeToMinutes(endTime) < timeToMinutes(startTime);
-}
 
 /** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
 function defaultInstanceForm(currency = 'EUR'): Omit<DayActivityInstance, 'id' | 'activityId'> {
@@ -221,6 +215,7 @@ export class TripStore {
       duration: instance.duration,
       startTime: instance.startTime,
       endTime: instance.endTime,
+      endDayOffset: instance.endDayOffset,
       price: instance.price,
       booking: instance.booking,
       notes: instance.notes,
@@ -313,10 +308,14 @@ export class TripStore {
 
   /**
    * Activités du jour + échos (voir `ActivityEcho`) : préfixe, pour ce jour,
-   * les échos des activités de la veille dont la plage franchit minuit —
-   * purement dérivé (computed), jamais persisté. Le jour précédent est
-   * résolu via `_tripDays[tripId]` (ordre de l'itinéraire), pas par
-   * arithmétique calendaire.
+   * les échos des activités des jours précédents dont l'étalement
+   * (`endDayOffset`, voir `resolveEndDayOffset`) atteint ce jour — purement
+   * dérivé (computed), jamais persisté. Chaque jour d'origine est résolu via
+   * `_tripDays[tripId]` (ordre de l'itinéraire), pas par arithmétique
+   * calendaire. Un écho sur le dernier jour couvert (`offset === i`, celui où
+   * l'activité se termine réellement) porte `endTime` ; les échos des jours
+   * intermédiaires n'en portent pas (voir `ActivityEchoCardComponent`, qui
+   * n'affiche "jusqu'à ..." que si `endTime` est renseigné).
    */
   getDayActivitiesWithEchoes(tripId: string, dayId: Date): Signal<DayActivityEntry[]> {
     const key = `${tripId}:${dayId.toISOString()}`;
@@ -325,27 +324,25 @@ export class TripStore {
         key,
         computed(() => {
           const dayKeys = this._tripDays()[tripId] ?? [];
-          const dayKey = dayId.toISOString();
-          const idx = dayKeys.indexOf(dayKey);
+          const idx = dayKeys.indexOf(dayId.toISOString());
 
           const echoes: ActivityEcho[] = [];
-          if (idx > 0) {
-            const prevDayId = new Date(dayKeys[idx - 1]);
-            const prevActivities = this.getDayActivities(prevDayId)();
-            for (const a of prevActivities) {
-              if (spansMidnight(a.startTime, a.endTime)) {
-                echoes.push({
-                  kind: 'echo',
-                  originInstanceId: a.id,
-                  originDayId: prevDayId,
-                  activityId: a.activityId,
-                  title: a.title,
-                  type: a.type,
-                  startTime: '00:00',
-                  endTime: a.endTime,
-                  photoRefs: a.photoRefs,
-                });
-              }
+          for (let i = 1; idx - i >= 0; i++) {
+            const originDayId = new Date(dayKeys[idx - i]);
+            for (const a of this.getDayActivities(originDayId)()) {
+              const offset = resolveEndDayOffset(a.startTime, a.endTime, a.endDayOffset);
+              if (offset < i) continue;
+              echoes.push({
+                kind: 'echo',
+                originInstanceId: a.id,
+                originDayId,
+                activityId: a.activityId,
+                title: a.title,
+                type: a.type,
+                startTime: '00:00',
+                endTime: offset === i ? a.endTime : undefined,
+                photoRefs: a.photoRefs,
+              });
             }
           }
 

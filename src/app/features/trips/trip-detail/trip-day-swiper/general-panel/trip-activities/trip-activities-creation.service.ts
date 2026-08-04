@@ -17,6 +17,8 @@ export interface TripActivitiesCreationConfig {
   getViewContainerRef: () => ViewContainerRef;
   /** Texte courant de la barre de recherche/filtre (voir ROADMAP.md) : préremplit le titre à la création plutôt que de le perdre. */
   getSearchTerm: () => string;
+  /** Vide la barre de recherche une fois l'activité créée (voir ROADMAP.md "UX / Interactions") — la recherche a rempli son rôle de préremplissage, elle ne doit pas continuer à filtrer la liste après coup. */
+  clearSearch: () => void;
 }
 
 /** Titre saisi à la création, texte libre ou lieu Google — voir `startCreation`. */
@@ -129,6 +131,7 @@ export class TripActivitiesCreationService {
     };
 
     this.tripFacade.createGeneralActivity(this.config.getTripId(), poolActivity);
+    this.config.clearSearch();
 
     // `afterNextRender` (pas `queueMicrotask`) : attend le rendu réel de la
     // nouvelle carte avant de la résoudre via viewChildren — voir la même

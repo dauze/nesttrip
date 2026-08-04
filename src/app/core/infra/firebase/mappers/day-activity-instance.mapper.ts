@@ -35,6 +35,10 @@ export function dayActivityInstanceFromFb(a: DayActivityInstanceFirebase): DayAc
     notes: a.notes ?? '',
     startTime: timeFromFb(a.startTime),
     endTime: timeFromFb(a.endTime),
+    // Absent en base (instance créée avant ce champ, ou jamais retouchée
+    // depuis) : reste `undefined`, résolu à la lecture par `resolveEndDayOffset`
+    // (activity-time.util.ts) plutôt que migré ici.
+    endDayOffset: a.endDayOffset,
   };
 }
 
@@ -44,5 +48,9 @@ export function dayActivityInstanceToFb(a: DayActivityInstance): DayActivityInst
     booking: bookingToFb(a.booking),
     startTime: a.startTime ?? '',
     endTime: a.endTime ?? '',
+    // `ignoreUndefinedProperties` (voir firebase.service.ts) omet ce champ du
+    // document tant qu'il n'est pas explicitement renseigné — jamais écrit à
+    // `0`/`null` en placeholder.
+    endDayOffset: a.endDayOffset,
   };
 }

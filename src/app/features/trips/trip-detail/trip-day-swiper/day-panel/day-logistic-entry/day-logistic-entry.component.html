@@ -14,11 +14,17 @@
       <i class="pi pi-bars"></i>
     </span>
     <i [class]="typeMeta[occurrence().logistic.type].icon + ' text-lg flex-shrink-0'" [style.color]="'var(' + typeMeta[occurrence().logistic.type].colorVar + ')'"></i>
-    <span class="day-logistic-entry__role flex-shrink-0 text-sm font-semibold">{{ occurrence().role }}</span>
+    @if (!occurrence().endTime) {
+      <span class="day-logistic-entry__role flex-shrink-0 text-sm font-semibold">{{ occurrence().role }}</span>
+    }
     <span class="day-logistic-entry__title flex-1 min-w-0 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">
       {{ occurrence().logistic.title }}
     </span>
-    <span class="nt-text-muted text-sm flex-shrink-0">{{ occurrence().time | date:'HH:mm' }}</span>
+    @if (occurrence().endTime; as endTime) {
+      <span class="nt-text-muted text-sm flex-shrink-0">{{ occurrence().time | date:'HH:mm' }} → {{ endTime | date:'HH:mm' }}</span>
+    } @else {
+      <span class="nt-text-muted text-sm flex-shrink-0">{{ occurrence().time | date:'HH:mm' }}</span>
+    }
   </div>
   @if (occurrence().logistic; as r) {
     @if (r.type === 'flight' && r.flightNumber) {

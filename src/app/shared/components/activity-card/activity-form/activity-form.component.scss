@@ -1,1 +1,21 @@
 :host { display: block; }
+
+// Badge "J+N" (fin d'activité sur plusieurs jours, voir ROADMAP.md "UX /
+// Interactions") — lecture seule ici (le réglage vit dans le dialog "Heure
+// de fin", voir TimePickerClockComponent) : simple rappel cliquable qui
+// ramène sur ce même dialog.
+.end-day-offset-badge {
+  padding: 0.15rem 0.6rem;
+  border: none;
+  border-radius: 1rem;
+  background: var(--nt-content-hover-background);
+  color: var(--nt-primary-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-border-color);
+  }
+}

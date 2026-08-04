@@ -1,4 +1,4 @@
-<div class="trip-activities-body">
+<div class="trip-activities-body" [appFabBottomProximity]="true" (nearBottomChange)="onFabNearBottomChange($event)">
   <div class="trip-activities-activities-group">
 <app-card>
 <div class="flex flex-column gap-2">

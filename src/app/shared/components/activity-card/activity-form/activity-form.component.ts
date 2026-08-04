@@ -16,7 +16,8 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
-import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
+import { ACTIVITY_TYPE_META, ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
+import { resolveEndDayOffset } from '../activity-time.util';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ViewportService } from '@app/core/services/viewport.service';
@@ -59,6 +60,8 @@ export class ActivityFormComponent {
     notes: this.fb.nonNullable.control<string>(''),
     startTime: this.fb.control<Date | null>(null),
     endTime: this.fb.control<Date | null>(null),
+    /** Voir DayActivityInstance.endDayOffset — 0 = même jour, synchronisé avec startTime/endTime (voir syncEndDayOffsetFromTimes) et modifiable via le sélecteur "J+N" (voir incrementEndDayOffset/decrementEndDayOffset). */
+    endDayOffset: this.fb.nonNullable.control<number>(0),
     booking: this.fb.group({
       status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
       deadline: this.fb.control<Date | null>(null),
@@ -81,11 +84,10 @@ export class ActivityFormComponent {
     return this.form.getRawValue();
   });
 
-  readonly bookingMeta = computed(() => {
-    const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
-    return BOOKING_STATUS_META[status];
-  });
-  
+  /** Couleur d'identité du type (voir ACTIVITY_TYPE_META.colorVar) — pilote le champ "Type" (remplace l'ancienne couleur par statut sur le champ "Etat résa", voir ROADMAP.md "UX / Interactions"). */
+  readonly typeColorVar = computed(() => ACTIVITY_TYPE_META[this.formValue().type].colorVar);
+
+
   // Contrôle Date dédié pour app-time-picker-dialog (durée), converti en minutes vers form.controls.duration.
   readonly durationTimeControl = this.fb.control<Date | null>(null);
 
@@ -138,6 +140,10 @@ export class ActivityFormComponent {
       ...a,
       startTime: this.timeStringToDate(a.startTime),
       endTime: this.timeStringToDate(a.endTime),
+      // Rétro-compatible (voir resolveEndDayOffset) : une instance jamais
+      // retouchée depuis l'introduction du champ retombe sur l'ancienne règle
+      // implicite (fin < début ⇒ +1 jour).
+      endDayOffset: resolveEndDayOffset(a.startTime, a.endTime, a.endDayOffset),
     };
 
     // CRUCIAL : { emitEvent: false } évite la boucle infinie avec le debounceTime plus bas
@@ -233,6 +239,7 @@ export class ActivityFormComponent {
       if (start) this.setEndFromStartAndDuration(start, duration);
       else if (end) this.setStartFromEndAndDuration(end, duration);
       this.syncDurationTimeControlFromForm();
+      this.syncEndDayOffsetFromTimes();
       this.isProgrammaticUpdate = false;
       return;
     }
@@ -242,6 +249,7 @@ export class ActivityFormComponent {
       const shouldKeepEnd = !!end && this.lastEdited.endTime >= this.lastEdited.duration;
       if (shouldKeepEnd) this.setDurationFromStartAndEnd(start, end);
       else this.setEndFromStartAndDuration(start, duration);
+      this.syncEndDayOffsetFromTimes();
       this.isProgrammaticUpdate = false;
       return;
     }
@@ -251,7 +259,47 @@ export class ActivityFormComponent {
     const shouldKeepStart = !!start && this.lastEdited.startTime >= this.lastEdited.duration;
     if (shouldKeepStart) this.setDurationFromStartAndEnd(start, end);
     else this.setStartFromEndAndDuration(end, duration);
+    this.syncEndDayOffsetFromTimes();
     this.isProgrammaticUpdate = false;
+  }
+
+  /**
+   * Remet `endDayOffset` en cohérence avec les heures actuelles : repasse à 0
+   * dès que la fin n'est plus avant le début (l'utilisateur a corrigé
+   * l'heure), ou le fait démarrer à 1 dès qu'une fin avant le début apparaît
+   * sans qu'un offset ne soit déjà positionné. Ne touche jamais un offset
+   * `>= 1` déjà en place (positionné manuellement via les flèches "J+N",
+   * voir incrementEndDayOffset/decrementEndDayOffset) tant que la plage
+   * horaire continue de franchir minuit.
+   */
+  private syncEndDayOffsetFromTimes(): void {
+    const start = this.form.controls.startTime.value;
+    const end = this.form.controls.endTime.value;
+    if (!start || !end) return;
+
+    const current = this.form.controls.endDayOffset.value;
+    const crossesMidnight = this.toMinutes(end) < this.toMinutes(start);
+
+    if (!crossesMidnight) {
+      if (current !== 0) this.form.controls.endDayOffset.setValue(0, { emitEvent: false });
+      return;
+    }
+    if (current < 1) this.form.controls.endDayOffset.setValue(1, { emitEvent: false });
+  }
+
+  /**
+   * Voir le sélecteur "J+N" du dialog `endTimePicker` (`TimePickerClockComponent`,
+   * ROADMAP.md "UX / Interactions") : les flèches ← → vivent désormais DANS
+   * ce dialog (mobile), pas dans ce form — ici, on ne fait que répercuter la
+   * valeur choisie une fois le dialog fermé sur OK.
+   */
+  protected onEndDayOffsetChange(newOffset: number): void {
+    this.form.controls.endDayOffset.setValue(newOffset);
+  }
+
+  /** Voir openStartTimeEditor — même contrat pour la fin (clic sur l'indicateur "J+N" en lecture seule du form, voir le template). No-op sur desktop (champs déjà inline, pas de dialog à ouvrir). */
+  protected openEndTimeEditor(): void {
+    if (this.viewport.isMobile()) this.endTimePickerRef().openDialog();
   }
 
   private setDurationFromStartAndEnd(start: Date, end: Date): void {

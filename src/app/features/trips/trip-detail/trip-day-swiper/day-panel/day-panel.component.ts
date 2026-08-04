@@ -39,6 +39,7 @@ import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 @Component({
   selector: 'app-day-panel',
@@ -46,7 +47,7 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TimelineComponent, ActivityCardComponent, ActivityEchoCardComponent, DayLogisticEntryComponent, PanelComponent, MessageComponent, SkeletonComponent,
-    NewActivityDraftComponent, DayLogisticBannerComponent,
+    NewActivityDraftComponent, DayLogisticBannerComponent, FabBottomProximityDirective,
   ],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
@@ -256,6 +257,11 @@ export class DayPanelComponent {
   /** Clic sur une occurrence logistique dans la timeline mini : scroll dans CE jour (pas de navigation vers l'onglet Logistique, contrairement au tap sur la carte elle-même). */
   onLogisticEntrySelected(occurrence: LogisticDayOccurrence): void {
     this.scrollSync.focusLogisticEntry(occurrence.logistic.id, occurrence.role);
+  }
+
+  /** Voir `FabBottomProximityDirective`/`TripCreationTargetService.avoidEdge` (ROADMAP.md "UX / Interactions") : évitement de bord du "+" flottant. */
+  onFabNearBottomChange(nearBottom: boolean): void {
+    this.fabTarget.setAvoidEdge(nearBottom);
   }
 
   /**

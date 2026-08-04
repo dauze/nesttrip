@@ -14,6 +14,7 @@ import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META, LogisticTypeMeta } from './logistic.constants';
 import { LogisticCardComponent } from './logistic-card/logistic-card.component';
 import { LogisticsCreationService } from './logistics-creation.service';
+import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 type SortMode = 'type' | 'chrono';
 const SORT_MODES: SortMode[] = ['type', 'chrono'];
@@ -51,7 +52,7 @@ function matchesSearch(title: string, term: string): boolean {
 @Component({
   selector: 'app-logistics-list',
   standalone: true,
-  imports: [CardComponent, MessageComponent, ButtonComponent, SelectButtonComponent, InputTextDirective, LogisticCardComponent],
+  imports: [CardComponent, MessageComponent, ButtonComponent, SelectButtonComponent, InputTextDirective, LogisticCardComponent, FabBottomProximityDirective],
   templateUrl: './logistics-list.component.html',
   styleUrl: './logistics-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -196,7 +197,8 @@ export class LogisticsListComponent {
 
   /** Point d'entrée pour le "+" flottant (voir TripCreationTargetService/TripDetailComponent.onFabActivate). */
   triggerCreate(): void {
-    this.creationService.startCreation();
+    this.creationService.startCreation('other', this.searchTerm());
+    this.clearSearch();
   }
 
   onSortModeChange(mode: SortMode | undefined): void {
@@ -221,5 +223,10 @@ export class LogisticsListComponent {
 
   clearSearch(): void {
     this.searchTerm.set('');
+  }
+
+  /** Voir `FabBottomProximityDirective`/`TripCreationTargetService.avoidEdge` (ROADMAP.md "UX / Interactions") : évitement de bord du "+" flottant. */
+  onFabNearBottomChange(nearBottom: boolean): void {
+    this.fabTarget.setAvoidEdge(nearBottom);
   }
 }

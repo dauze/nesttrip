@@ -88,7 +88,7 @@ badges
 connecteurs modernes
 meilleure lecture
 
-5. Carte Google
+5.a Carte Google
 
 La carte est aujourd'hui juste "posée".
 
@@ -102,6 +102,22 @@ overlay
 boutons flottants
 transitions
 effet de profondeur
+
+5.b Carte d'activity
+
+Je veux que la carte soit très ux, que l'on comprenne simplement ou cliquer pouyr effectuer les modification, et qu'elle ai un design très prémium, sans pour autant qu'elle pren,ne trop de place
+
+Travaille :
+
+coins
+ombre
+overlay
+transitions
+effet de profondeur
+séparation
+annimation
+la bordure sur le coté doit ressembler à l'exemple qui est dans public/bordure_activity_card.png
+tu peux prendre exemple sur public/inspiration_card.png sans pour autant faire identique : par exemple l'utilisation de chevron ne doit pas être reconduit, ni l'espacement entre les zones, mais les effets, les délimitations peuvent etre une bonne idée
 
 6. Chips des jours
 

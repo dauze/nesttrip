@@ -16,7 +16,7 @@
           <span class="col-3">~ {{ entry.occurrence.time | date:'HH:mm' }}</span>
 
           <span class="col-1">
-            <i class="pi pi-ticket text-lg nt-text-primary"></i>
+            <i [class]="LOGISTIC_TYPE_META[entry.occurrence.logistic.type].icon + ' text-lg'" [style.color]="'var(' + LOGISTIC_TYPE_META[entry.occurrence.logistic.type].colorVar + ')'"></i>
           </span>
 
           <span class="col-8">
@@ -37,7 +37,7 @@
 
           <!-- icône -->
           <span class="col-1">
-            <i [class]="ACTIVITY_TYPE_META[entry.activity.type]?.icon" class="text-lg nt-text-primary"></i>
+            <i [class]="ACTIVITY_TYPE_META[entry.activity.type].icon + ' text-lg'" [style.color]="'var(' + ACTIVITY_TYPE_META[entry.activity.type].colorVar + ')'"></i>
           </span>
 
           <!-- titre -->
@@ -56,7 +56,7 @@
           <span class="col-3">~ 00:00</span>
 
           <span class="col-1">
-            <i class="pi pi-history text-lg nt-text-muted"></i>
+            <i class="pi pi-history text-lg" [style.color]="'var(' + ACTIVITY_TYPE_META[entry.type].colorVar + ')'"></i>
           </span>
 
           <span class="col-8 nt-text-muted font-italic">

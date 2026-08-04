@@ -7,6 +7,7 @@ import { DatePipe } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
+import { LOGISTIC_TYPE_META } from '../../general-panel/logistics/logistic.constants';
 
 @Component({
   selector: 'app-timeline',
@@ -23,4 +24,5 @@ export class TimelineComponent {
   readonly logisticSelected = output<LogisticDayOccurrence>();
   readonly entries = input.required<MergedDayEntry[]>();
   readonly ACTIVITY_TYPE_META = ACTIVITY_TYPE_META;
+  readonly LOGISTIC_TYPE_META = LOGISTIC_TYPE_META;
 }

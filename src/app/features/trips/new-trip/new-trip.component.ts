@@ -130,7 +130,7 @@ export class NewTripComponent {
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
-        data: { initialTitle: this.form.value.ville ?? '', title: 'Ville / Pays', placeholder: 'Rechercher une ville...' },
+        data: { initialTitle: this.form.value.ville ?? '', title: 'Destination', placeholder: 'Rechercher une ville...' },
         panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
         autoFocus: '.title-edit-dialog__input',

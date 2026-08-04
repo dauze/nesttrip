@@ -12,8 +12,8 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 // Remplacement des anciens modèles par PlaceDetails
 import { LoadingState, PlaceSummary, PlaceDetails, PlacePhotoRef } from '@app/core/models/place.dto';
-import { BookingStatus } from '@core/enums/booking.status';
-import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
+import { ActivityType } from '@core/enums/activites-type.enum';
+import { ACTIVITY_TYPE_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
@@ -95,15 +95,20 @@ export class ActivityCardComponent {
 
   /**
    * Fourni par `TripActivitiesComponent` pour TOUTES les cartes de la vue
-   * "Ville" (tri par lieu), fusionnées ou non : la couleur de statut de
-   * réservation (bord gauche) et le pictogramme trombone n'ont de sens que
-   * rapportés à un jour précis, pas dans une vue organisée par lieu — les
-   * masquer sur une seule carte "représentante" d'un groupe fusionné et pas
-   * sur les autres cartes de la même vue créait une incohérence visuelle
-   * (voir ROADMAP.md, retour utilisateur du 2026-07-31). `false` par défaut
-   * (comportement normal partout ailleurs : jour, pool général).
+   * "Ville" (tri par lieu), fusionnées ou non : le pictogramme trombone n'a
+   * de sens que rapporté à un jour précis, pas dans une vue organisée par
+   * lieu — le masquer sur une seule carte "représentante" d'un groupe
+   * fusionné et pas sur les autres cartes de la même vue créait une
+   * incohérence visuelle (voir ROADMAP.md, retour utilisateur du 2026-07-31).
+   * `false` par défaut (comportement normal partout ailleurs : jour, pool
+   * général). Ne pilote plus la couleur du bord gauche (voir `typeColorVar`,
+   * désormais toujours affichée quel que soit le contexte — ROADMAP.md
+   * "UX / Interactions").
    */
   readonly hideBookingMeta = input(false);
+
+  /** Couleur d'identité du type d'activité (voir ACTIVITY_TYPE_META.colorVar) — pilote le bord gauche de la carte, toujours affichée (remplace l'ancienne couleur par statut de réservation). */
+  readonly typeColorVar = computed(() => ACTIVITY_TYPE_META[this.activity()?.type ?? ActivityType.ACTIVITE].colorVar);
 
   /** En contexte jour, `activityId` est un instanceId ; en contexte pool (vue générale), un poolId. */
   readonly activity = computed(() =>
@@ -128,11 +133,6 @@ export class ActivityCardComponent {
     return dayId
       ? { kind: 'dayActivityInstance', id: this.activityId(), dayId }
       : { kind: 'poolActivity', id: this.activityId() };
-  });
-
-  readonly bookingMeta = computed(() => {
-    const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
-    return BOOKING_STATUS_META[status];
   });
 
   readonly collapsed = linkedSignal(() => this.initCollapsed());

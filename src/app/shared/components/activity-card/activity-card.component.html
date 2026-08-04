@@ -6,7 +6,8 @@
     <app-panel
         [appSelectable]="selectableRef()" #sel="appSelectable"
         appLongPress (longPress)="sel.onLongPress()"
-        [ngClass]="hideBookingMeta() ? 'trip' : 'trip booking ' + bookingMeta().className"
+        class="trip"
+        [style.--activity-type-color]="'var(' + typeColorVar() + ')'"
         [toggleable]="true"
         [instant]="panelInstant()"
         [(collapsed)]="collapsed">

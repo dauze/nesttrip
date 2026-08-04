@@ -16,6 +16,7 @@ import { InputTextDirective } from '@app/shared/directives/input-text.directive'
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { TripActivitiesCreationService } from './trip-activities-creation.service';
 import { NewActivityDraftComponent } from '../../day-panel/new-activity-draft/new-activity-draft.component';
+import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 const UNCATEGORIZED_LABEL = 'À catégoriser';
 
@@ -48,7 +49,7 @@ function matchesSearch(title: string, address: string | undefined, term: string)
   standalone: true,
   imports: [
     PanelComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent,
-    SelectButtonComponent, InputTextDirective, DatePipe, ButtonComponent,
+    SelectButtonComponent, InputTextDirective, DatePipe, ButtonComponent, FabBottomProximityDirective,
   ],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
@@ -99,6 +100,7 @@ export class TripActivitiesComponent {
       getTripId: () => this.tripId(),
       getViewContainerRef: () => this.viewContainerRef,
       getSearchTerm: () => this.searchTerm(),
+      clearSearch: () => this.clearSearch(),
     });
 
     // "+" flottant (voir TripDetailComponent.addMenuItems, entrée "Activité") : ce
@@ -147,6 +149,11 @@ export class TripActivitiesComponent {
 
   clearSearch(): void {
     this.searchTerm.set('');
+  }
+
+  /** Voir `FabBottomProximityDirective`/`TripCreationTargetService.avoidEdge` (ROADMAP.md "UX / Interactions") : évitement de bord du "+" flottant. */
+  onFabNearBottomChange(nearBottom: boolean): void {
+    this.fabTarget.setAvoidEdge(nearBottom);
   }
 
   /** Nombre total d'activités visibles compte tenu du mode de tri courant — sert uniquement au message "aucun résultat". */

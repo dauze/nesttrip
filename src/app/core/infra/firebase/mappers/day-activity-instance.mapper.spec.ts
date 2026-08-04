@@ -34,6 +34,11 @@ describe('day-activity-instance.mapper', () => {
       expect(result.startTime).toBeUndefined();
       expect(result.endTime).toBeUndefined();
     });
+
+    it('lit endDayOffset tel quel, undefined si absent (rétro-compatibilité, voir resolveEndDayOffset)', () => {
+      expect(dayActivityInstanceFromFb({ ...baseFb, endDayOffset: 2 }).endDayOffset).toBe(2);
+      expect(dayActivityInstanceFromFb(baseFb).endDayOffset).toBeUndefined();
+    });
   });
 
   describe('dayActivityInstanceToFb', () => {
@@ -65,6 +70,13 @@ describe('day-activity-instance.mapper', () => {
       const fb = dayActivityInstanceToFb({ ...instance, startTime: '08:15' });
 
       expect(dayActivityInstanceFromFb(fb).startTime).toBe('08:15');
+    });
+
+    it('est symétrique (fromFb ∘ toFb) sur endDayOffset', () => {
+      const fb = dayActivityInstanceToFb({ ...instance, endDayOffset: 3 });
+
+      expect(fb.endDayOffset).toBe(3);
+      expect(dayActivityInstanceFromFb(fb).endDayOffset).toBe(3);
     });
   });
 });

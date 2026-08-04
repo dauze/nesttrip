@@ -160,11 +160,12 @@ export class NotesComponent {
   addItem(): void {
    const newItem: Item = {
       id: crypto.randomUUID(),
-      title: '',
+      title: this.searchTerm(),
       type: NotesType.TODO,
       elements: []
     };
     this.tripFacade.createItem(this.tripId(), newItem);
+    this.clearSearch();
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(
         `input[data-title-id="${newItem.id}"], textarea[data-title-id="${newItem.id}"]`

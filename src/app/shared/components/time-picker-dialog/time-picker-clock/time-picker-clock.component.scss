@@ -1,3 +1,82 @@
+// Ligne d'en-tête (cadran ET clavier, voir le template) : simple ligne
+// centrée par défaut, EXACTEMENT le layout d'avant l'introduction du
+// sélecteur "J+N" — aucun changement pour les pickers qui n'ont pas
+// `dayOffsetReference` (Début, Durée, tous les pickers logistique...).
+.clock-header-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+// Grille 3 colonnes symétriques (1fr / auto / 1fr) UNIQUEMENT pour le picker
+// "Heure de fin" d'une activité (`hasDayOffsetFeature`) : la colonne centrale
+// (heure) reste TOUJOURS centrée quel que soit le contenu de la colonne
+// droite, y compris quand `.clock-day-offset` est vide (pas de franchissement
+// de minuit) — c'est ce qui évite tout sautement visuel à l'apparition/
+// disparition du sélecteur "J+N" (voir ROADMAP.md "UX / Interactions") : la
+// largeur totale du dialog ne bouge jamais, seul le CONTENU de la colonne
+// droite apparaît/disparaît. `.clock-day-offset__spacer` (gauche) est un
+// simple mirroir vide, jamais rempli, uniquement pour équilibrer la grille.
+.clock-header-row--offset {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+}
+
+.clock-day-offset {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    // Colle au bord GAUCHE de sa colonne (celui du milieu, contre l'heure)
+    // plutôt que de centrer/étirer dans le 1fr disponible — reste visuellement
+    // accroché à l'heure au lieu de dériver vers le bord droit du dialog.
+    justify-self: start;
+    // Réserve la largeur max plausible ("< J+9 >") même vide : évite tout
+    // redimensionnement du dialog au moment où l'heure franchit minuit.
+    min-width: 5rem;
+}
+
+.clock-day-offset__spacer {
+    min-width: 0;
+}
+
+.clock-day-offset__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--nt-text-muted-color);
+    cursor: pointer;
+    transition: background-color var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+    &:hover {
+        background: var(--nt-content-hover-background);
+        color: var(--nt-text-color);
+    }
+}
+
+.clock-day-offset__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--nt-primary-color);
+    white-space: nowrap;
+}
+
+.clock-day-offset--shake {
+    animation: clock-day-offset-shake 300ms ease;
+}
+
+@keyframes clock-day-offset-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
 .clock-face {
     position: relative;
 

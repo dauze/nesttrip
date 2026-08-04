@@ -6,6 +6,16 @@ export interface LogisticDayOccurrence {
   role: string;
   /** Heure à afficher pour ce rôle (début pour un rôle "entrée", fin pour un rôle "sortie"). */
   time: Date;
+  /**
+   * Vol/train dont départ ET arrivée tombent le même jour (voir
+   * `getLogisticDayOccurrences`, cas `flight`/`train`) : une seule occurrence
+   * fusionnée porte les deux horaires plutôt que deux occurrences séparées
+   * (l'arrivée était sinon silencieusement perdue, `isEnd && !isStart` jamais
+   * vrai quand `isStart===isEnd`) — voir ROADMAP.md "UX / Interactions".
+   */
+  endTime?: Date;
+  /** Libellé du second rôle porté par `endTime` (ex. "Arrivée" en complément de `role: 'Départ'`) — présent seulement si `endTime` l'est. */
+  endRole?: string;
 }
 
 function startOfDay(date: Date): number {
@@ -41,22 +51,21 @@ export function getLogisticDayOccurrences(logistic: Logistic, dayId: Date): Logi
       if (isEnd) return [{ logistic, role: 'Check-out', time: endDateTime }];
       if (isBetween) return [{ logistic, role: 'Nuit sur place', time: startDateTime }];
       return [];
-    case 'flight': {
+    case 'flight':
+    case 'train': {
+      // Même jour de départ et d'arrivée : une seule occurrence fusionnée
+      // porte les deux horaires (voir la doc de `LogisticDayOccurrence.endTime`)
+      // plutôt que de perdre l'arrivée.
+      if (isStart && isEnd) return [{ logistic, role: 'Départ', time: startDateTime, endTime: endDateTime, endRole: 'Arrivée' }];
       const occurrences: LogisticDayOccurrence[] = [];
       if (isStart) occurrences.push({ logistic, role: 'Départ', time: startDateTime });
-      if (isEnd && !isStart) occurrences.push({ logistic, role: 'Arrivée', time: endDateTime });
+      if (isEnd) occurrences.push({ logistic, role: 'Arrivée', time: endDateTime });
       return occurrences;
     }
     case 'carRental': {
       const occurrences: LogisticDayOccurrence[] = [];
       if (isStart) occurrences.push({ logistic, role: 'Prise en charge', time: startDateTime });
       if (isEnd) occurrences.push({ logistic, role: 'Restitution', time: endDateTime });
-      return occurrences;
-    }
-    case 'train': {
-      const occurrences: LogisticDayOccurrence[] = [];
-      if (isStart) occurrences.push({ logistic, role: 'Départ', time: startDateTime });
-      if (isEnd && !isStart) occurrences.push({ logistic, role: 'Arrivée', time: endDateTime });
       return occurrences;
     }
     case 'other':

@@ -8,7 +8,7 @@
           <label for="activity-type" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-tag text-sm"></i>Type
           </label>
-          <app-select #typeSelect id="activity-type" label="Type" [options]="activityTypeOptions" formControlName="type" class="w-full min-w-0 transparent-select" />
+          <app-select #typeSelect id="activity-type" label="Type" class="booking w-full min-w-0 transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="activityTypeOptions" formControlName="type" />
         </div>
       </div>
       
@@ -16,9 +16,9 @@
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label for="booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
-            <i class="pi pi-bookmark text-sm"></i>Résa
+            <i class="pi pi-bookmark text-sm"></i>Etat résa
           </label>
-          <app-select #bookingSelect id="booking-status" label="Résa" [ngClass]="'booking ' + bookingMeta().className" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+          <app-select #bookingSelect id="booking-status" label="Etat résa" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -40,10 +40,26 @@
           <label for="end-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar-times text-sm"></i>Fin
           </label>
-          <app-time-picker-dialog #endTimePicker id="end-time" label="Heure de fin" formControlName="endTime" />
+          <div class="flex align-items-center gap-2 min-w-0">
+            <app-time-picker-dialog #endTimePicker id="end-time" label="Heure de fin" formControlName="endTime"
+              [dayOffsetReference]="formValue().startTime" [dayOffset]="formValue().endDayOffset"
+              (dayOffsetChange)="onEndDayOffsetChange($event)" />
+            @if (formValue().endDayOffset >= 1) {
+              <!--
+                Lecture seule ici à dessein (pas de flèches) : le réglage se
+                fait désormais dans le dialog "Heure de fin" lui-même (voir
+                TimePickerClockComponent, ROADMAP.md "UX / Interactions") — ce
+                badge ne fait que rappeler la valeur et ramener sur le même
+                éditeur que le clic sur l'heure.
+              -->
+              <button type="button" class="end-day-offset-badge flex-shrink-0" (click)="openEndTimeEditor()">
+                J+{{ formValue().endDayOffset }}
+              </button>
+            }
+          </div>
         </div>
       </div>
-      
+
       <app-divider class="m-1"/>
       
       <!-- DUREE -->

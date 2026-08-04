@@ -37,6 +37,7 @@
           [icon]="fabIcon()"
           [ariaLabel]="fabAriaLabel()"
           [bottomOffset]="chromeService.tabsNavBottomReserve()"
+          [avoidEdge]="fabTarget.avoidEdge()"
           (activate)="onFabActivate()" />
       }
       <app-menu #addMenu title="Ajouter" [items]="addMenuItems()" />

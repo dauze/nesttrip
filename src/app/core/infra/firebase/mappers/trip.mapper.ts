@@ -7,10 +7,21 @@ import { logisticFromFb, logisticToFb } from './logistic.mapper';
 export function tripFromFb(data: TripFirebase): Trip {
   return {
     ...data,
-    days: Object.entries(data.days).map(([key, value]) => ({
-      id: new Date(Number(key)),
-      activityIds: value.activityIds ?? [],
-    })),
+    // Trié par clé (epoch ms, voir CLAUDE.md "Clés dynamiques Firestore") :
+    // un champ `map` Firestore ne garantit PAS l'ordre de ses clés au retour
+    // (contrairement à l'ordre d'écriture) — sans ce tri, `trip.days` (et donc
+    // `TripStore._tripDays`, dont dépend `getDayActivitiesWithEchoes` pour
+    // localiser "i jours avant" par position dans le tableau) pouvait se
+    // retrouver mélangé après un simple aller-retour Firestore, cassant le
+    // repérage chronologique — observé en conditions réelles (Playwright) :
+    // l'ordre restait correct juste après création, puis se mélangeait dès la
+    // première resynchronisation consécutive à une édition.
+    days: Object.entries(data.days)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([key, value]) => ({
+        id: new Date(Number(key)),
+        activityIds: value.activityIds ?? [],
+      })),
     activities: Object.values(data.activities ?? {}).map((a) => activityFromFb(a)),
     dayActivityInstances: Object.values(data.dayActivityInstances ?? {}).map((a) => dayActivityInstanceFromFb(a)),
     logistics: Object.values(data.logistics ?? {}).map((r) => logisticFromFb(r)),

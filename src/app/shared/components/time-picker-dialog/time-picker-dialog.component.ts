@@ -67,6 +67,12 @@ export class TimePickerDialogComponent
     readonly label = input<string>('');
     /** Heure minimum (voir ROADMAP.md "UX / Interactions") : n'a de sens que si début/fin tombent le MÊME jour (comparaison en heure seule, `applySelectedDate` ignore la partie date) — laisser à `null` sinon. Toute saisie antérieure est remontée à cette valeur plutôt que rejetée silencieusement. */
     readonly minTime = input<Date | null>(null);
+    /** Voir `TimePickerClockData.dayOffsetReference` — active le sélecteur "J+N" dans le dialog mobile (uniquement le picker "Heure de fin" d'une activité, voir ROADMAP.md "UX / Interactions"). */
+    readonly dayOffsetReference = input<Date | null>(null);
+    /** Valeur courante de l'offset — n'a d'effet que si `dayOffsetReference` est fourni. */
+    readonly dayOffset = input(0);
+    /** Émis à la fermeture du dialog (OK uniquement, jamais Annuler) si `dayOffsetReference` est fourni et que l'offset a été manipulé via les flèches "J+N". */
+    readonly dayOffsetChange = output<number>();
 
     currentDate = signal<Date | null>(null);
 
@@ -113,8 +119,17 @@ export class TimePickerDialogComponent
     }
 
     openDialog(): void {
+        // Boîte mutable partagée avec TimePickerClockComponent (voir la doc de
+        // TimePickerClockData.dayOffset) : `undefined` pour tous les pickers
+        // qui ne fournissent pas `dayOffsetReference`, donc aucun coût/risque
+        // pour eux (le sélecteur "J+N" n'est même pas rendu côté clock).
+        const dayOffsetBox = this.dayOffsetReference() ? { value: this.dayOffset() } : undefined;
+
         const dialogRef = this.dialogService.open<Date | undefined, TimePickerClockData>(TimePickerClockComponent, {
-            data: { initialDate: this.currentDate(), mode: this.mode(), label: this.label() },
+            data: {
+                initialDate: this.currentDate(), mode: this.mode(), label: this.label(),
+                dayOffsetReference: this.dayOffsetReference(), dayOffset: dayOffsetBox,
+            },
             // Mode durée : le dialog s'ouvre directement en vue clavier (pas de
             // cadran). Le focus initial du champ heure passe par ce sélecteur
             // CDK plutôt que par un `effect()` côté TimePickerClockComponent :
@@ -131,6 +146,9 @@ export class TimePickerDialogComponent
                 this.closed.emit(undefined);
                 return;
             }
+            // Même sémantique que la date : un "Annuler" n'écrase rien, y
+            // compris l'offset manipulé pendant que le dialog était ouvert.
+            if (dayOffsetBox) this.dayOffsetChange.emit(dayOffsetBox.value);
             this.closed.emit(this.applySelectedDate(selected));
         });
     }

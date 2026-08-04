@@ -25,6 +25,8 @@ export interface DayActivityInstance {
   startTime?: string;
   /** Format "HH:mm" — heure du jour uniquement, aucune date associée (voir activity-time.util.ts). */
   endTime?: string;
+  /** Nombre de jours après le jour de placement où l'activité se termine réellement (0/absent = même jour) — voir `resolveEndDayOffset` (activity-time.util.ts) pour la résolution rétro-compatible, et `TripStore.getDayActivitiesWithEchoes` pour la génération des échos sur les jours intermédiaires/final. */
+  endDayOffset?: number;
   price: Price;
   booking: Booking;
   notes: string;
@@ -46,6 +48,8 @@ export interface Activity {
   startTime?: string;
   /** Format "HH:mm" — heure du jour uniquement, aucune date associée (voir activity-time.util.ts). */
   endTime?: string;
+  /** Voir `DayActivityInstance.endDayOffset` — absent en contexte pool (identité de pool, pas de placement). */
+  endDayOffset?: number;
   price: Price;
   booking: Booking;
   notes: string;

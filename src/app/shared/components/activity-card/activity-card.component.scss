@@ -1,22 +1,27 @@
 :host { display: block; }
-.booking    {
-    border-left-width: 0.4rem;
-    border-left-color: var(--booking-status-color);
+
+// Couleur d'identité du type d'activité (voir ActivityCardComponent.typeColorVar,
+// ROADMAP.md "UX / Interactions") — toujours affichée, plus conditionnée par
+// un statut de réservation (remplace l'ancienne classe `.booking` +
+// `--booking-status-color`, qui pilote toujours le bord des cartes
+// logistique, inchangé). `app-panel` est écrit directement dans CE template
+// (pas du contenu projeté), donc porte le même attribut de scope Angular que
+// `.not-dispatched` — pas besoin de `::ng-deep` ici.
+.trip {
+  border-left-width: 0.4rem;
+  border-left-color: var(--activity-type-color);
 }
 
-// `app-panel` est écrit directement dans CE template (pas du contenu
-// projeté), donc porte le même attribut de scope Angular que `.not-dispatched`
-// — contrairement à l'ancien `.p-panel` (une classe posée par PrimeNG sur un
-// élément interne à SA PROPRE vue), pas besoin de `::ng-deep` ici.
-// `border-left-style` reste `dashed` (hérité de la ligne au-dessus, pas
-// réécrit ici) : un `inset` posé par erreur ici rendait ce bord gauche avec
-// l'effet biseauté/assombri du navigateur (border-style: inset), qui masque
-// la couleur de statut réservation (`--booking-status-color`, voir `.booking`
-// ci-dessus) sous un liseré qui paraît noir — au lieu du même pointillé que
-// les 3 autres côtés, dans la même couleur que le bord gauche plein des
-// autres cartes.
+// Un `inset` posé par erreur ici rendait ce bord gauche avec l'effet
+// biseauté/assombri du navigateur (border-style: inset), qui masquerait la
+// couleur de type ci-dessus sous un liseré qui paraît noir. Seuls les 3
+// côtés hors bord gauche passent en pointillé : le bord gauche reste plein
+// et coloré par type même pour une carte "à assigner" (retour utilisateur,
+// voir ROADMAP.md).
 .not-dispatched > app-panel {
-  border-style: dashed;
+  border-top-style: dashed;
+  border-right-style: dashed;
+  border-bottom-style: dashed;
 }
 
 // Empêche le scroll tactile natif de concurrencer le drag manuel (pool ou

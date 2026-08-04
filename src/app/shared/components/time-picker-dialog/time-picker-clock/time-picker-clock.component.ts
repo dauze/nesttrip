@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, effect, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -21,6 +21,21 @@ export interface TimePickerClockData {
     mode: TimePickerMode;
     /** Titre du dialog — si vide, retombe sur un libellé générique selon `mode` (voir `TimePickerClockComponent.header`). */
     label: string;
+    /**
+     * Heure de référence (début) servant à détecter un franchissement de
+     * minuit — n'active le sélecteur "J+N" (voir ROADMAP.md "UX /
+     * Interactions") que si fourni ; `undefined`/`null` pour tous les autres
+     * pickers de l'app (début, durée, logistique...), qui ne connaissent pas
+     * cette notion.
+     */
+    dayOffsetReference?: Date | null;
+    /**
+     * Boîte mutable partagée avec `TimePickerDialogComponent` : les flèches
+     * "J+N" écrivent directement dedans (`.value`), lue par l'appelant après
+     * fermeture — évite de changer le type de retour du dialog (toujours
+     * `Date | undefined`, voir `TimePickerDialogComponent.openDialog`).
+     */
+    dayOffset?: { value: number };
 }
 
 /**
@@ -42,7 +57,7 @@ export interface TimePickerClockData {
     templateUrl: './time-picker-clock.component.html',
     styleUrl: './time-picker-clock.component.scss',
 })
-export class TimePickerClockComponent implements AfterViewInit {
+export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
 
     private readonly dialogRef = inject(DialogRef<Date | undefined>);
     private readonly data = inject<TimePickerClockData>(DIALOG_DATA);
@@ -83,6 +98,16 @@ export class TimePickerClockComponent implements AfterViewInit {
     tempMinute: string;
 
     selectionMode: 'hour' | 'minute' = 'hour';
+
+    /** Voir la doc de `TimePickerClockData.dayOffsetReference` — colonne "J+N" du header rendue (mais vide tant que `crossesToNextDay` est faux) uniquement pour ce picker. */
+    readonly hasDayOffsetFeature = !!this.data.dayOffsetReference;
+    private readonly dayOffsetReference = this.data.dayOffsetReference ?? null;
+    private readonly dayOffsetBox = this.data.dayOffset;
+
+    dayOffset = this.dayOffsetBox?.value ?? 0;
+
+    dayOffsetShaking = signal(false);
+    private shakeTimer?: ReturnType<typeof setTimeout>;
 
     // Taille réelle du cadran (`.clock-face`, 16.5rem en CSS) : lue une seule
     // fois dans `ngAfterViewInit` (pas dans les getters positionnels
@@ -139,8 +164,65 @@ export class TimePickerClockComponent implements AfterViewInit {
         }
     }
 
+    ngOnDestroy(): void {
+        if (this.shakeTimer) clearTimeout(this.shakeTimer);
+    }
+
     close(): void {
         this.dialogRef.close(undefined);
+    }
+
+    /** Voir la doc de `TimePickerClockData.dayOffsetReference` — vrai dès que l'heure en cours de sélection (pas encore validée) tombe avant l'heure de référence. */
+    get crossesToNextDay(): boolean {
+        if (!this.dayOffsetReference) return false;
+        const selectedMinutes = Number(this.tempHour) * 60 + Number(this.tempMinute);
+        const refMinutes = this.dayOffsetReference.getHours() * 60 + this.dayOffsetReference.getMinutes();
+        return selectedMinutes < refMinutes;
+    }
+
+    /**
+     * Valeur affichée/utilisée par le sélecteur "J+N" : au moins 1 dès qu'on
+     * franchit minuit, même si l'utilisateur n'a pas encore touché les
+     * flèches — même règle par défaut que `ActivityFormComponent.syncEndDayOffsetFromTimes`,
+     * appliquée ici DANS le dialog plutôt qu'après coup (sinon "J+0" s'affichait
+     * un instant avant tout tap sur une flèche).
+     */
+    get effectiveDayOffset(): number {
+        return this.crossesToNextDay ? Math.max(this.dayOffset, 1) : 0;
+    }
+
+    /** Flèche droite du sélecteur "J+N" — aucune limite haute (voir ROADMAP.md "UX / Interactions"). */
+    incrementDayOffset(): void {
+        this.dayOffset = this.effectiveDayOffset + 1;
+        this.writeDayOffset();
+    }
+
+    /** Flèche gauche : bloquée à 1 (jamais 0 par ce contrôle) — un tremblement signale la borne plutôt que de l'ignorer silencieusement. */
+    decrementDayOffset(): void {
+        const current = this.effectiveDayOffset;
+        if (current <= 1) {
+            this.triggerDayOffsetShake();
+            return;
+        }
+        this.dayOffset = current - 1;
+        this.writeDayOffset();
+    }
+
+    /**
+     * Répercute dans la boîte partagée (voir `TimePickerClockData.dayOffset`) —
+     * appelé à chaque tap sur une flèche ET depuis `validate()` (OK), pour que
+     * la valeur par défaut (1 dès qu'on franchit minuit, jamais touchée par
+     * l'utilisateur) soit bien commise, pas seulement celle explicitement
+     * choisie via les flèches.
+     */
+    private writeDayOffset(): void {
+        if (this.dayOffsetBox) this.dayOffsetBox.value = this.effectiveDayOffset;
+    }
+
+    private triggerDayOffsetShake(): void {
+        this.dayOffsetShaking.set(true);
+        if (this.shakeTimer) clearTimeout(this.shakeTimer);
+        this.shakeTimer = setTimeout(() => this.dayOffsetShaking.set(false), 300);
     }
 
     validate(): void {
@@ -154,6 +236,7 @@ export class TimePickerClockComponent implements AfterViewInit {
             return;
         }
         this.hasValidated = true;
+        this.writeDayOffset();
 
         const updatedDate =
             this.data.initialDate
