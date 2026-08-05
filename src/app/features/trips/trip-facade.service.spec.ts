@@ -354,4 +354,17 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
     tripSubject.next(baseTrip({ title: 'Voyage à Marseille' }));
     expect(facade.getTripTitle(tripId)()).toBe('Voyage à Marseille');
   });
+
+  /**
+   * `TripFacade.hasTrip` (nouveau, 2026-08-05) : sert à `TripSummaryComponent`
+   * pour savoir à partir de quand préférer le signal dédié protégé
+   * (`getTripDateRange`/`getTripTitle`) à la valeur "rapide" issue de
+   * `trips()` — voir la doc de `hasTrip` et le correctif de
+   * `TripSummaryComponent.tripDateRange`/`tripTitle` (régression "après
+   * modification des dates, ce sont les anciennes dates qui sont affichées").
+   */
+  it('hasTrip devient vrai une fois le trip hydraté (déjà vrai ici via le beforeEach)', () => {
+    expect(facade.hasTrip(tripId)).toBe(true);
+    expect(facade.hasTrip('un-autre-trip-jamais-chargé')).toBe(false);
+  });
 });

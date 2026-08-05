@@ -69,26 +69,55 @@ export class TripSummaryComponent {
    * encore résolu au tout premier rendu) — même pattern que l'ancien
    * `TripDetailComponent.tripTitle`, déplacé ici avec le header voyage (voir
    * ROADMAP.md "UX / Interactions", 2026-08-01).
+   *
+   * Une fois le trip hydraté (`tripFacade.hasTrip`), le signal dédié
+   * (`getTripTitle`) prend le dessus et le reste DÉFINITIVEMENT — `trips()`
+   * (liste) vient d'une souscription Firestore complètement SÉPARÉE
+   * (`getTrips$`, requête sur toute la collection pour l'accueil), qui
+   * recalcule `title` directement depuis le document brut à CHAQUE snapshot,
+   * sans passer par `_pendingTripFieldIds` : rien ne protège cette valeur
+   * pendant qu'une écriture est en vol. La préférer inconditionnellement
+   * (comme avant ce correctif) court-circuitait donc la protection déjà en
+   * place côté `getTripTitle`, seul le hasard du timing des deux
+   * souscriptions Firestore (doc vs collection) déterminant laquelle gagnait.
    */
   readonly tripTitle = computed(() => {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return '';
+    if (this.tripFacade.hasTrip(id)) return this.tripFacade.getTripTitle(id)();
     const fromList = this.tripFacade.trips().find(t => t.id === id);
     return fromList?.title ?? this.tripFacade.getTripTitle(id)();
   });
 
   /**
-   * Même pattern que `tripTitle` ci-dessus — signal dédié (voir
-   * `TripFacade.getTripDateRange`/`TripStore._tripDays`), pas `activeTrip()` :
-   * `TripHeaderComponent` ne doit se réactualiser que si le titre ou les
-   * jours de CE trip changent réellement (ROADMAP.md "Bugs / fixes", retour
-   * utilisateur : "toute la page rafraîchit" à l'édition du titre/de
-   * l'intervalle de dates, et un changement distant ne se voyait pas en
-   * direct).
+   * Même pattern/correctif que `tripTitle` ci-dessus — voir sa doc. Signal
+   * dédié (voir `TripFacade.getTripDateRange`/`TripStore._tripDays`), pas
+   * `activeTrip()` : `TripHeaderComponent` ne doit se réactualiser que si le
+   * titre ou les jours de CE trip changent réellement (ROADMAP.md "Bugs /
+   * fixes", retour utilisateur : "toute la page rafraîchit" à l'édition du
+   * titre/de l'intervalle de dates, et un changement distant ne se voyait
+   * pas en direct).
+   *
+   * **Régression corrigée (2026-08-05)** : `fromList` était préféré
+   * INCONDITIONNELLEMENT, y compris une fois le trip hydraté — `trips()`
+   * (liste) dérive `earliestDay`/`latestDay` directement des clés brutes du
+   * champ Firestore `days` à CHAQUE snapshot de la requête sur la COLLECTION
+   * `trips`, une souscription entièrement SÉPARÉE de celle du trip actif
+   * (`getTrip$`) et donc jamais protégée par `_pendingTripDayIds` (voir sa
+   * doc). Le multi-écriture d'une édition d'intervalle (plusieurs
+   * `addDay`/`removeDay`) laissait une fenêtre bien plus large qu'une seule
+   * écriture de titre pour que cette souscription non protégée délivre un
+   * snapshot reflétant un état INTERMÉDIAIRE (ou encore l'ancien état) —
+   * écrasant alors silencieusement le formulaire de dates avec une valeur
+   * périmée, symptôme "après modification, ce sont les anciennes dates qui
+   * sont affichées". `getTripDateRange` (protégé) est désormais préféré dès
+   * que le trip est hydraté ; `fromList` ne sert plus que de valeur de tout
+   * premier rendu, avant que `loadTrip`/`getTrip$` n'ait résolu.
    */
   readonly tripDateRange = computed<[Date, Date] | undefined>(() => {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return undefined;
+    if (this.tripFacade.hasTrip(id)) return this.tripFacade.getTripDateRange(id)();
     const fromList = this.tripFacade.trips().find(t => t.id === id);
     if (fromList?.earliestDay && fromList?.latestDay) return [fromList.earliestDay, fromList.latestDay];
     return this.tripFacade.getTripDateRange(id)();

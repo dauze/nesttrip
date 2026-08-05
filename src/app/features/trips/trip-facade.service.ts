@@ -107,6 +107,19 @@ export class TripFacade {
     this.store.removeTrip(tripId);
   }
 
+  /**
+   * `true` dès que ce trip est hydraté dans le store (`loadTrip` a reçu au
+   * moins un snapshot via `getTrip$`) — sert à `TripSummaryComponent` pour
+   * savoir quand arrêter de préférer la valeur "rapide" issue de la liste
+   * des trips (`trips()`, alimentée par une souscription Firestore SÉPARÉE
+   * et non protégée par `_pendingTripFieldIds`/`_pendingTripDayIds`, voir
+   * leur doc) au profit du signal dédié protégé (`getTripTitle`/
+   * `getTripDateRange`) une fois ce dernier réellement disponible.
+   */
+  hasTrip(tripId: string): boolean {
+    return this.store.hasTrip(tripId);
+  }
+
   removeDay(tripId: string, dayId: Date): void {
     this.store.removeDay(tripId, dayId);
   }
