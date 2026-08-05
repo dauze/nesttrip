@@ -416,7 +416,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
     const day = trip.days.find(d => new Date(d.id).toDateString() === today);
-    return day ? day.id.toISOString() : 'activities';
+    return day ? day.id.toISOString() : 'summary';
   }
 
   /**
