@@ -149,6 +149,27 @@ export class TripStore {
    * toute la page").
    */
   readonly _tripTitle = signal<Record<string, string>>({});
+  /**
+   * @internal — mêmes id de trip que `_tripTitle`/`_tripCurrency` avec une
+   * écriture Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression
+   * confirmée par retour utilisateur : "toute la page se réactualise" à
+   * chaque édition du titre). Tant qu'un tripId est dans ce set,
+   * `TripFacade.mergeFromRemote` ignore ENTIÈREMENT le titre/la devise de ce
+   * trip (même logique que `_pendingActivityIds`) : sans ça, le snapshot de
+   * CONFIRMATION qui suit systématiquement l'écriture voyait `_trips[tripId]`
+   * (jamais mis à jour par `updateTripTitle`, seul `_tripTitle` l'est,
+   * exprès — voir sa doc) comme "différent" du titre fraîchement confirmé,
+   * donc TOUJOURS "changé" à chaque édition, même quand rien n'a réellement
+   * bougé côté distant — ce qui redonnait une nouvelle référence à
+   * `activeTrip()` (et tout ce qui en dépend) à chaque frappe. Une fois
+   * l'écriture confirmée (retirée de ce set), un snapshot qui diffère
+   * réellement de la valeur effective courante (`_tripTitle[tripId] ??
+   * _trips[tripId].title`) met à jour `_trips` ET efface `_tripTitle[tripId]`
+   * (voir `mergeFromRemote`) : c'est ce qui permet à un renommage fait par un
+   * AUTRE collaborateur de s'appliquer en direct plutôt que de rester masqué
+   * indéfiniment par mon propre renommage passé.
+   */
+  readonly _pendingTripFieldIds = signal<Set<string>>(new Set());
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
@@ -290,6 +311,33 @@ export class TripStore {
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
   private readonly tripCurrencyByTrip = new Map<string, Signal<string>>();
   private readonly tripTitleByTrip = new Map<string, Signal<string>>();
+  private readonly tripDateRangeByTrip = new Map<string, Signal<[Date, Date] | undefined>>();
+
+  /**
+   * Plage de dates du trip (1er jour, dernier jour), dérivée de
+   * `_tripDays`/`_days` — même raison que `getTripTitle`/`getTripCurrency` de
+   * ne PAS passer par `activeTrip()` : `TripHeaderComponent` (formulaire
+   * titre + dates) ne doit se réactualiser QUE si le titre ou les jours de
+   * CE trip changent réellement, jamais pour une raison sans rapport ailleurs
+   * dans le trip (voir ROADMAP.md "Bugs / fixes"). `equal` structurel (voir
+   * `structurallyEqual`) : réordonner `_tripDays` sans changer l'ensemble des
+   * jours (rare, mais possible) ne notifie pas non plus les consommateurs si
+   * les bornes min/max restent identiques.
+   */
+  getTripDateRange(tripId: string): Signal<[Date, Date] | undefined> {
+    if (!this.tripDateRangeByTrip.has(tripId)) {
+      this.tripDateRangeByTrip.set(
+        tripId,
+        computed(() => {
+          const dayKeys = this._tripDays()[tripId] ?? [];
+          if (!dayKeys.length) return undefined;
+          const times = dayKeys.map((key) => new Date(key).getTime());
+          return [new Date(Math.min(...times)), new Date(Math.max(...times))] as [Date, Date];
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
+      );
+    }
+    return this.tripDateRangeByTrip.get(tripId)!;
+  }
 
   /** Devise par défaut du trip — voir `_tripCurrency` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.defaultCurrency` (valeur d'hydratation) puis 'EUR'. */
   getTripCurrency(tripId: string): Signal<string> {
@@ -647,9 +695,24 @@ export class TripStore {
     });
   }
 
+  private markTripFieldPending(tripId: string): void {
+    this._pendingTripFieldIds.update((set) => new Set(set).add(tripId));
+  }
+
+  /** Retiré même en cas d'échec d'écriture : un échec n'a rien écrit côté Firestore, rien à protéger d'un prochain snapshot (voir la doc de `_pendingTripFieldIds`). */
+  private clearTripFieldPending(tripId: string): void {
+    this._pendingTripFieldIds.update((set) => {
+      if (!set.has(tripId)) return set;
+      const copy = new Set(set);
+      copy.delete(tripId);
+      return copy;
+    });
+  }
+
   updateTripTitle(tripId: string, title: string): void {
     // 1. Signal dédié (voir `_tripTitle`), pas `_trips`.
     this._tripTitle.update((map) => ({ ...map, [tripId]: title }));
+    this.markTripFieldPending(tripId);
 
     this._tripsResult.update((list) =>
       list?.map(item =>
@@ -660,9 +723,11 @@ export class TripStore {
     );
 
     // 2. Persistance Firestore
-    this.tripPersistenceService.updateTripTitle(tripId, title).catch((err) => {
-      console.error('[TripStore] Erreur update trip Firestore :', err);
-    });
+    this.tripPersistenceService.updateTripTitle(tripId, title)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
   }
 
   updateTripCurrency(tripId: string, currency: string): void {
@@ -670,11 +735,14 @@ export class TripStore {
 
     // 1. Signal dédié (voir `_tripCurrency`), pas `_trips`.
     this._tripCurrency.update((map) => ({ ...map, [tripId]: currency }));
+    this.markTripFieldPending(tripId);
 
     // 2. Persistance Firestore
-    this.tripPersistenceService.updateTripCurrency(tripId, currency).catch((err) => {
-      console.error('[TripStore] Erreur update devise trip Firestore :', err);
-    });
+    this.tripPersistenceService.updateTripCurrency(tripId, currency)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update devise trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
   }
 
   removeTrip(tripId: string) {

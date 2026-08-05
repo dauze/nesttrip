@@ -48,6 +48,18 @@
   }
 }
 
+// Padding gauche/droite pour accueil-trip/new-trip/login (flux normal) —
+// même valeur que `.tab-content-wrapper` en trip-detail (`--nt-space-1`, voir
+// trip-day-swiper.component.scss) pour rester uniforme entre tous les
+// écrans (retour utilisateur, ROADMAP.md "Bugs / fixes"). trip-detail
+// n'hérite jamais de ce padding (son contenu est `position: fixed`, hors du
+// flux de `.app-content`) : les deux valeurs doivent donc être tenues à jour
+// ensemble si l'une des deux change.
+.app-content {
+  padding-left: var(--nt-space-1);
+  padding-right: var(--nt-space-1);
+}
+
 // Icône engrenage : rotation douce pendant que le menu réglages s'ouvre/se
 // ferme (ROADMAP.md "### UI") — appliquée au bouton entier (pas juste l'`<i>`
 // interne, hors de portée de cette feuille scopée à cause de l'encapsulation

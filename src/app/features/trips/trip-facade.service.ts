@@ -211,6 +211,8 @@ export class TripFacade {
   getTripCurrency = this.store.getTripCurrency.bind(this.store);
   /** Titre du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTitle). */
   getTripTitle = this.store.getTripTitle.bind(this.store);
+  /** Plage de dates (1er jour, dernier jour) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore.getTripDateRange). */
+  getTripDateRange = this.store.getTripDateRange.bind(this.store);
   // 1. Exposer le sélecteur et la commande
   getTripMembers = this.store.getTripMembers.bind(this.store);
   getLogistic = this.store.getLogistic.bind(this.store);
@@ -527,23 +529,54 @@ export class TripFacade {
       this.store._tripDays.update((map) => ({ ...map, [trip.id]: remoteDayKeysList }));
     }
 
-    // 3quater. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire) :
-    // même bug que ci-dessus, `_trips[trip.id]` n'était jamais réécrit après
-    // l'hydratation initiale — et même piège de stabilité de référence : ne
-    // réécrire QUE si l'une de ces valeurs a réellement changé (comparaison
-    // explicite, même principe que `_tripMembers.update` juste en dessous).
+    // 3quater. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire).
+    //
     // `_tripTitle`/`_tripCurrency` (signaux dédiés, voir leur doc dans
-    // TripStore) shadowent déjà toute édition locale en cours via
-    // `getTripTitle`/`getTripCurrency` — aucun risque de "retour en arrière"
-    // ici pendant leur propre debounce.
+    // TripStore) shadowent une édition locale en cours — mais tant que rien
+    // ne protège `trip.id` pendant l'écriture Firestore en vol
+    // (`_pendingTripFieldIds`, voir sa doc), le snapshot de CONFIRMATION qui
+    // suit systématiquement CETTE écriture comparait `trip.title` (déjà
+    // confirmé) à l'ANCIEN `_trips[trip.id].title` (jamais mis à jour par
+    // `updateTripTitle`, exprès) : TOUJOURS "différent", donc `_trips`
+    // réécrit à CHAQUE frappe débattue sur le titre, même sans aucun
+    // changement réel — régression confirmée par retour utilisateur ("toute
+    // la page se réactualise" à l'édition du titre/des dates). Corrigé en
+    // ignorant tout le bloc tant que `trip.id` est pending (même principe que
+    // `pendingIds` pour les activités), ET en comparant, une fois cette
+    // protection levée, contre la valeur EFFECTIVE courante
+    // (`_tripTitle[trip.id] ?? _trips[trip.id].title`) plutôt que contre
+    // `_trips[trip.id].title` seul : si elle égale déjà la valeur distante
+    // (mon écriture vient d'être confirmée), rien à faire. Si elle diffère
+    // (un AUTRE collaborateur a renommé depuis), `_trips` est mis à jour ET
+    // le shadow est effacé — sans ce dernier point, un renommage distant
+    // ultérieur par quelqu'un d'autre restait indéfiniment masqué par mon
+    // propre renommage passé (voir ROADMAP.md, "si quelqu'un le met à jour
+    // en distant, ce n'est pas mis à jour en temps réel").
+    const isTripFieldPending = this.store._pendingTripFieldIds().has(trip.id);
     const currentTrip = this.store._trips()[trip.id];
-    const primitivesChanged =
-      !!currentTrip &&
-      (currentTrip.title !== trip.title ||
+    const currentTripTitleShadow = this.store._tripTitle()[trip.id];
+    const currentTripCurrencyShadow = this.store._tripCurrency()[trip.id];
+
+    let primitivesChanged = false;
+    let titleShadowChanged = false;
+    let currencyShadowChanged = false;
+
+    if (!isTripFieldPending && currentTrip) {
+      const effectiveTitle = currentTripTitleShadow ?? currentTrip.title;
+      const effectiveCurrency = currentTripCurrencyShadow ?? currentTrip.defaultCurrency;
+      const titleReallyChanged = effectiveTitle !== trip.title;
+      const currencyReallyChanged = effectiveCurrency !== trip.defaultCurrency;
+
+      primitivesChanged =
+        titleReallyChanged ||
+        currencyReallyChanged ||
         currentTrip.ville !== trip.ville ||
         currentTrip.ownerId !== trip.ownerId ||
-        currentTrip.defaultCurrency !== trip.defaultCurrency ||
-        currentTrip.placeId !== trip.placeId);
+        currentTrip.placeId !== trip.placeId;
+
+      titleShadowChanged = titleReallyChanged && currentTripTitleShadow !== undefined;
+      currencyShadowChanged = currencyReallyChanged && currentTripCurrencyShadow !== undefined;
+    }
 
     // À PARTIR D'ICI : chaque écriture de signal est CONDITIONNELLE, comparée
     // à l'état actuel (`recordsShallowEqual`/`arraysEqual`, voir leur doc en
@@ -585,6 +618,25 @@ export class TripFacade {
           placeId: trip.placeId,
         },
       }));
+    }
+    // Un AUTRE collaborateur a changé le titre/la devise depuis mon dernier
+    // renommage local confirmé (voir la doc du bloc 3quater ci-dessus) :
+    // efface le shadow pour que `getTripTitle`/`getTripCurrency` retombent
+    // sur `_trips[trip.id]` (qui vient d'être mis à jour juste au-dessus) —
+    // sinon ce renommage distant resterait masqué indéfiniment.
+    if (titleShadowChanged) {
+      this.store._tripTitle.update((map) => {
+        const copy = { ...map };
+        delete copy[trip.id];
+        return copy;
+      });
+    }
+    if (currencyShadowChanged) {
+      this.store._tripCurrency.update((map) => {
+        const copy = { ...map };
+        delete copy[trip.id];
+        return copy;
+      });
     }
     // Firestore ne garantit pas l'ordre des clés d'un champ map (`activities`) :
     // reconstruire l'ordre du pool à partir de `trip.activities` à chaque

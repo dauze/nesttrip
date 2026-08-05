@@ -8,7 +8,6 @@ import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
-import { Trip } from '../../trip.model';
 
 @Component({
   selector: 'app-trip-header',
@@ -23,7 +22,8 @@ export class TripHeaderComponent {
   private readonly dialogService = inject(DialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
 
-  readonly trip = input<Trip | null>(null);
+  /** Signal dédié (voir `TripFacade.getTripDateRange`/`TripStore._tripDays`), pas `activeTrip()` — voir la doc du constructeur. */
+  readonly dateRange = input<[Date, Date] | undefined>(undefined);
   readonly title = input<string>('');
 
   readonly titleChange = output<string>();
@@ -43,18 +43,22 @@ export class TripHeaderComponent {
     return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
   });
 
-  private lastPatchedTripId: string | null = null;
-
   constructor() {
-    // Initialise la plage de dates une seule fois par trip chargé (et seulement
-    // quand les jours sont dispo), pour ne pas écraser une saisie en cours de l'utilisateur.
+    // Resynchronise le formulaire à CHAQUE changement réel de `dateRange`
+    // (signal dédié — voir sa doc) : que ce changement vienne de ma propre
+    // édition (répercutée en optimiste) ou d'un AUTRE collaborateur
+    // (ROADMAP.md "Bugs / fixes", "un changement distant de l'intervalle de
+    // dates n'était pas mis à jour en temps réel"). Contrairement à l'ancien
+    // `trip` (recomposé par `activeTrip()`, qui variait aussi pour des
+    // raisons totalement sans rapport ailleurs dans le trip — ROADMAP.md,
+    // "toute la page se réactualise"), `dateRange` ne change QUE si les
+    // jours du trip changent réellement : plus besoin de garde "une seule
+    // fois par trip", `emitEvent:false` suffit à ne pas re-déclencher
+    // `onDatesSelected` en boucle.
     effect(() => {
-      const trip = this.trip();
-      if (!trip || !trip.days.length) return;
-      if (this.lastPatchedTripId === trip.id) return;
-
-      this.lastPatchedTripId = trip.id;
-      this.patchFromTrip(trip);
+      const range = this.dateRange();
+      if (!range) return;
+      this.patchFromRange(range);
     });
   }
 
@@ -97,16 +101,12 @@ export class TripHeaderComponent {
 
   /** Permet au parent de revenir à la plage d'origine si l'utilisateur annule une suppression. */
   resetDates(): void {
-    const trip = this.trip();
-    if (!trip || !trip.days.length) return;
-    this.patchFromTrip(trip);
+    const range = this.dateRange();
+    if (!range) return;
+    this.patchFromRange(range);
   }
 
-  private patchFromTrip(trip: Trip): void {
-    const sorted = trip.days.slice().sort((a, b) => a.id.getTime() - b.id.getTime());
-    this.dateForm.patchValue(
-      { dates: [sorted[0].id, sorted[sorted.length - 1].id] },
-      { emitEvent: false }
-    );
+  private patchFromRange([start, end]: [Date, Date]): void {
+    this.dateForm.patchValue({ dates: [start, end] }, { emitEvent: false });
   }
 }

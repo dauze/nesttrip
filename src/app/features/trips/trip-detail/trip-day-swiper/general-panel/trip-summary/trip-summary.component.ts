@@ -77,6 +77,23 @@ export class TripSummaryComponent {
     return fromList?.title ?? this.tripFacade.getTripTitle(id)();
   });
 
+  /**
+   * Même pattern que `tripTitle` ci-dessus — signal dédié (voir
+   * `TripFacade.getTripDateRange`/`TripStore._tripDays`), pas `activeTrip()` :
+   * `TripHeaderComponent` ne doit se réactualiser que si le titre ou les
+   * jours de CE trip changent réellement (ROADMAP.md "Bugs / fixes", retour
+   * utilisateur : "toute la page rafraîchit" à l'édition du titre/de
+   * l'intervalle de dates, et un changement distant ne se voyait pas en
+   * direct).
+   */
+  readonly tripDateRange = computed<[Date, Date] | undefined>(() => {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) return undefined;
+    const fromList = this.tripFacade.trips().find(t => t.id === id);
+    if (fromList?.earliestDay && fromList?.latestDay) return [fromList.earliestDay, fromList.latestDay];
+    return this.tripFacade.getTripDateRange(id)();
+  });
+
   /** Carte partagée avec la vue jour/l'ancien onglet Activités, "prêtée" à ce contexte tant qu'il est actif. */
   readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
 

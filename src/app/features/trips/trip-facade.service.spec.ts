@@ -253,4 +253,68 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
 
     expect(facade.activeTrip()!.days.map((d) => d.id.getTime())).toEqual([day2.getTime()]);
   });
+
+  it('getTripDateRange reste stable si les jours ne changent pas, et se met à jour quand ils changent réellement (local ou distant)', () => {
+    tripSubject.next(baseTrip({ days: [{ id: day1, activityIds: [] }] }));
+    const rangeBefore = facade.getTripDateRange(tripId)();
+    expect(rangeBefore).toEqual([day1, day1]);
+
+    // Snapshot sans rapport (édition d'une activité) : la plage ne doit pas changer de référence.
+    tripSubject.next(
+      baseTrip({
+        days: [{ id: day1, activityIds: [] }],
+        activities: [poolActivity()],
+      }),
+    );
+    expect(facade.getTripDateRange(tripId)()).toBe(rangeBefore);
+
+    // Un jour est réellement ajouté à distance (ex. un autre collaborateur a étendu le voyage).
+    tripSubject.next(
+      baseTrip({
+        days: [{ id: day1, activityIds: [] }, { id: day2, activityIds: [] }],
+        activities: [poolActivity()],
+      }),
+    );
+    const rangeAfter = facade.getTripDateRange(tripId)();
+    expect(rangeAfter).not.toBe(rangeBefore);
+    expect(rangeAfter).toEqual([day1, day2]);
+  });
+
+  it("ne casse pas la référence de _trips en confirmant un renommage local (régression \"toute la page se réactualise\" à l'édition du titre)", async () => {
+    const tripsRefBefore = store._trips();
+
+    facade.updateTripTitle(tripId, 'Voyage à Lyon');
+    expect(facade.getTripTitle(tripId)()).toBe('Voyage à Lyon');
+
+    // Snapshot de confirmation, avant même que l'écriture Firestore (mockée,
+    // asynchrone) ne soit résolue — `trip.id` est encore "pending" : le bloc
+    // titre/devise de `mergeFromRemote` doit être entièrement ignoré.
+    tripSubject.next(baseTrip({ title: 'Voyage à Lyon' }));
+    expect(store._trips()).toBe(tripsRefBefore);
+
+    // Laisse le `.finally()` de la promesse (mockée résolue) vider le pending.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Nouveau snapshot confirmé, cette fois pending levé : la valeur
+    // effective (shadow "Voyage à Lyon") égale déjà le titre distant, donc
+    // toujours aucune écriture dans _trips.
+    tripSubject.next(baseTrip({ title: 'Voyage à Lyon' }));
+    expect(store._trips()).toBe(tripsRefBefore);
+    expect(facade.getTripTitle(tripId)()).toBe('Voyage à Lyon');
+  });
+
+  it('applique un renommage fait par un AUTRE collaborateur même après mon propre renommage local confirmé', async () => {
+    facade.updateTripTitle(tripId, 'Voyage à Lyon');
+    await Promise.resolve();
+    await Promise.resolve();
+    tripSubject.next(baseTrip({ title: 'Voyage à Lyon' }));
+    expect(facade.getTripTitle(tripId)()).toBe('Voyage à Lyon');
+
+    // Un AUTRE collaborateur renomme entre-temps, pas moi (pas de nouvel
+    // appel à updateTripTitle) : le prochain snapshot distant doit s'appliquer
+    // en direct, pas rester masqué par mon renommage passé.
+    tripSubject.next(baseTrip({ title: 'Voyage à Marseille' }));
+    expect(facade.getTripTitle(tripId)()).toBe('Voyage à Marseille');
+  });
 });

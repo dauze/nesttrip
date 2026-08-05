@@ -1,6 +1,6 @@
 <div class="trip-summary-body">
   <app-trip-header
-    [trip]="tripFacade.activeTrip()"
+    [dateRange]="tripDateRange()"
     [title]="tripTitle()"
     (titleChange)="onTitleChange($event)"
     (datesChange)="onDatesChange($event)">
