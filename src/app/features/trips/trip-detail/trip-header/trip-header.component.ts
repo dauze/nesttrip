@@ -35,11 +35,27 @@ export class TripHeaderComponent {
     dates: this.fb.control<Date[] | null>(null),
   });
 
-  /** Libellé "Date : " affiché en lecture seule à côté du crayon — voir `openDatePicker`. */
+  /**
+   * Libellé "Date : " affiché en lecture seule à côté du crayon — voir
+   * `openDatePicker`.
+   *
+   * Dérivé de `dateRange()` (signal d'entrée), PAS de `this.dateForm.value`
+   * (régression 2026-08-05, ROADMAP.md "Bugs / fixes" : "la date n'est pas
+   * changée après la sélection") : `FormGroup.value` est un getter ordinaire,
+   * pas un signal — un `computed()` qui le lit ne suit AUCUNE dépendance
+   * traçable et se fige donc définitivement après sa toute première
+   * évaluation, qu'il s'agisse d'une sélection utilisateur (qui patch le
+   * form) ou d'un changement distant (`patchFromRange`, plus bas). `dateRange`
+   * est la source de vérité que `patchFromRange` recopie déjà DANS le form ;
+   * la lire directement ici la rend réellement réactive, y compris pour ma
+   * propre sélection (le cheminement `onDatesSelected` → `datesChange` →
+   * `TripFacade.addDay`/`removeDay` → `_tripDays`/`_days` est synchrone :
+   * `dateRange()` reflète la nouvelle plage sans latence perceptible).
+   */
   readonly dateRangeLabel = computed(() => {
-    const dates = this.dateForm.value.dates;
-    const [start, end] = dates ?? [];
-    if (!start || !end) return '';
+    const range = this.dateRange();
+    if (!range) return '';
+    const [start, end] = range;
     return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
   });
 
