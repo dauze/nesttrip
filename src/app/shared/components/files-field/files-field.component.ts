@@ -4,6 +4,7 @@ import { ChipComponent } from '@app/shared/components/chip/chip.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
 import { FileService } from '@core/services/file.service';
+import { fileIcon as fileIconFor, openFile as openFileUrl } from '@app/shared/utils/file-icon';
 
 export interface FileRef {
   url: string;
@@ -72,17 +73,11 @@ export class FilesFieldComponent {
   }
 
   openFile(file: FileRef): void {
-    window.open(file.url, '_blank', 'noopener');
+    openFileUrl(file);
   }
 
   fileIcon(name: string): string {
-    const ext = name.split('.').pop()?.toLowerCase() ?? '';
-    const map: Record<string, string> = {
-      pdf: 'pi-file-pdf',
-      jpg: 'pi-image', jpeg: 'pi-image', png: 'pi-image', webp: 'pi-image',
-      doc: 'pi-file-word', docx: 'pi-file-word',
-    };
-    return `pi ${map[ext] ?? 'pi-file'}`;
+    return fileIconFor(name);
   }
 
   private stopUploading(name: string): void {

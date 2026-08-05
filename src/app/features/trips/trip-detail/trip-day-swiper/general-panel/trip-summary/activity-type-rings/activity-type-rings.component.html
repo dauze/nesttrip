@@ -33,7 +33,7 @@
         <span class="rings-chart__legend-dot" [style.--ring-color]="'var(' + entry.colorVar + ')'"></span>
         <i [class]="entry.icon"></i>
         <span class="rings-chart__legend-label">{{ entry.label }}</span>
-        <span class="rings-chart__legend-count">{{ entry.count }}</span>
+        <span class="rings-chart__legend-count">{{ entry.valueLabel ?? entry.count }}</span>
       </li>
     }
   </ul>

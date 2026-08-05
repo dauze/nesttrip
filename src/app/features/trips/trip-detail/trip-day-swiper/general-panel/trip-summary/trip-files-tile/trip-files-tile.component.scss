@@ -1,0 +1,34 @@
+// `display:flex; flex-direction:column` (PAS `block`, contrairement au reste
+// des tuiles) : cet hôte est lui-même le flex-item étiré par
+// `.trip-summary-tiles` (`align-items:stretch`, classe `trip-summary-tile`
+// posée depuis le parent) — il a donc une VRAIE hauteur "used" (pas un
+// pourcentage) à faire descendre jusqu'à `<app-card [fillHeight]>` en
+// dessous (`flex-1` sur celle-ci) pour que sa propre liste scrollable
+// (`.trip-files-tile__list`) puisse s'y borner correctement.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// `flex-1` (déjà posé par `[fillHeight]` sur `.app-card__body`, voir
+// card.component.scss) ne suffit pas seul à borner la hauteur d'un enfant
+// scrollable : un flex-item garde par défaut `min-height: auto` (grandit
+// avec son contenu tant que rien ne dit le contraire), ce qui aurait fait
+// grandir toute la tuile — et donc la RANGÉE entière (`align-items:stretch`,
+// voir trip-summary.component.scss) — avec la liste au lieu de la faire
+// défiler dans la hauteur déjà disponible (celle de la tuile "Dépenses"
+// voisine, retour utilisateur : "il y a un scroll sur la carte, elle doit
+// pas être trop longue").
+.trip-files-tile__list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.trip-files-tile__file-name {
+  display: inline-block;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

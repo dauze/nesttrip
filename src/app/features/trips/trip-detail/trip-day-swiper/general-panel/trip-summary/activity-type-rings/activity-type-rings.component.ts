@@ -5,8 +5,11 @@ export interface RingChartEntry {
   icon: string;
   /** Variable CSS (`--nt-activity-*`/`--nt-logistic-*`, voir tokens.scss). */
   colorVar: string;
+  /** Valeur brute de cette entrée (nombre d'éléments pour `typeBreakdown`, montant pour `expenseBreakdown`) — sert de repli pour la légende si `valueLabel` n'est pas fourni, et à l'`aria-label` du graphique. */
   count: number;
-  /** Part de `count` dans le total (TOUTES catégories confondues, pas seulement le top 5 affiché) — voir TripSummaryComponent.typeBreakdown. */
+  /** Texte affiché dans la légende à la place de `count` tel quel (ex. "45.00 €" pour une dépense) — `TripSummaryComponent.expenseBreakdown`. Repli sur `count` si absent (ex. `typeBreakdown`, un simple nombre d'éléments). */
+  valueLabel?: string;
+  /** Part de `count` dans le total (TOUTES catégories/dépenses confondues, pas seulement le top affiché) — voir `TripSummaryComponent.typeBreakdown`/`expenseBreakdown`. */
   share: number;
 }
 
@@ -23,12 +26,17 @@ const STROKE_WIDTH = 9;
 const RING_STEP = 13;
 
 /**
- * Anneaux concentriques "types d'activité" (ROADMAP.md "### UI", Résumé) —
- * un anneau par catégorie (top 5, activités + transport + logement
- * combinés), longueur d'arc proportionnelle à sa part du total. Inspiré des
+ * Anneaux concentriques génériques (ROADMAP.md "### UI", Résumé) — un anneau
+ * par entrée, longueur d'arc proportionnelle à sa part du total. Inspiré des
  * anneaux d'activité façon montre connectée, MAIS chaque anneau représente
- * ici une catégorie différente (pas la progression d'une même métrique) —
- * voir `public/graphisme.png` (référence visuelle fournie par l'utilisateur).
+ * ici une catégorie/valeur différente (pas la progression d'une même
+ * métrique) — voir `public/graphisme.png` (référence visuelle fournie par
+ * l'utilisateur). Deux usages dans ce trip (`TripSummaryComponent`, nom du
+ * composant resté `activity-type-rings` pour l'historique) : `typeBreakdown`
+ * (top 5 types d'activité/transport/logement, tuile "Résumé" à l'origine) et
+ * `expenseBreakdown` (top 4 plus grosses dépenses + "Autre", tuile
+ * "Dépenses", 2026-08-05) — `count`/`valueLabel` portent alors un MONTANT
+ * plutôt qu'un nombre d'éléments, voir la doc de `RingChartEntry`.
  *
  * SVG pur (pas de librairie de graphique) : piste grise fixe + arc coloré
  * par `stroke-dasharray`, un seul `<svg>` avec un cercle par anneau, tourné

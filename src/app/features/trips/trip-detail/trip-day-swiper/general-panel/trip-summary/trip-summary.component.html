@@ -35,18 +35,14 @@
             <i class="pi pi-pencil"></i>
           </button>
         </div>
-        <div class="trip-summary-total-wrapper flex-1 flex align-items-center justify-content-center">
-          <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
-        </div>
+        <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
+        @if (expenseBreakdown().length > 0) {
+          <app-activity-type-rings [entries]="expenseBreakdown()" />
+        }
       </div>
     </app-card>
 
-    <app-card class="trip-summary-tile">
-      <div cardTitle>Résumé</div>
-      @if (typeBreakdown().length > 0) {
-        <app-activity-type-rings [entries]="typeBreakdown()" />
-      }
-    </app-card>
+    <app-trip-files-tile class="trip-summary-tile" [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
   </div>
 
   <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
