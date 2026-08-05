@@ -435,35 +435,67 @@ export class TripFacade {
     // ajouté/supprimé par un autre collaborateur pendant que ce trip est déjà
     // ouvert ne se répercutait donc jamais localement (ROADMAP.md "Bugs /
     // fixes", "les dates de début et de fin... ne sont pas rafraîchies en
-    // dynamique"). Même remplacement complet keyed sur `trip.days` que
-    // `_dayActivityIds` ci-dessus : `addDay`/`removeDay` sont des écritures
-    // ponctuelles non debouncées (pas de `DebounceWriter`), donc pas besoin
-    // du même mécanisme anti-flicker à base de `pendingIds` que les entités
-    // qui, elles, passent par un writer débouncé.
+    // dynamique"). CONDITIONNEL, comparé à l'ensemble des clés déjà connues
+    // (pas juste "toujours réécrire comme `_dayActivityIds`") : `activeTrip`
+    // recompose `Trip` depuis `_trips`+`_tripDays`+`_days` (voir CLAUDE.md) —
+    // écrire une NOUVELLE référence à CHAQUE snapshot distant (donc à chaque
+    // frappe débattue sur N'IMPORTE QUELLE activité du trip, puisque tout vit
+    // dans le même document Firestore) casserait la stabilité de référence
+    // que `activeTrip`/l'UI optimiste reposent dessus — régression confirmée
+    // par retour utilisateur (tout se réactualisait à chaque édition de champ).
+    // `addDay`/`removeDay` sont des écritures ponctuelles non debouncées (pas
+    // de `DebounceWriter`), donc pas besoin du même mécanisme anti-flicker à
+    // base de `pendingIds` que les entités qui, elles, passent par un writer
+    // débouncé — seulement de ne toucher le signal QUE si l'ensemble des
+    // jours a réellement changé.
     const previousTripDayKeys = this.store._tripDays()[trip.id] ?? [];
-    const remoteDayKeys = new Set(trip.days.map((d) => d.id.toISOString()));
-    const newDays = { ...this.store._days() };
-    for (const dayKey of previousTripDayKeys) {
-      if (!remoteDayKeys.has(dayKey)) delete newDays[dayKey];
-    }
-    for (const day of trip.days) {
-      newDays[day.id.toISOString()] = { ...day, activityIds: [] };
+    const previousTripDayKeySet = new Set(previousTripDayKeys);
+    const remoteDayKeysList = trip.days.map((d) => d.id.toISOString());
+    const remoteDayKeySet = new Set(remoteDayKeysList);
+    const daysChanged =
+      previousTripDayKeySet.size !== remoteDayKeySet.size ||
+      remoteDayKeysList.some((key) => !previousTripDayKeySet.has(key));
+
+    if (daysChanged) {
+      const currentDays = this.store._days();
+      const newDays = { ...currentDays };
+      for (const dayKey of previousTripDayKeys) {
+        if (!remoteDayKeySet.has(dayKey)) delete newDays[dayKey];
+      }
+      for (const day of trip.days) {
+        // Ne remplace que les jours réellement NOUVEAUX : un jour déjà connu
+        // n'a rien de plus à porter ici (`activityIds` toujours vidé dans ce
+        // map, voir `hydrate()`) — préserve sa référence pour les jours
+        // inchangés plutôt que de la recréer sans raison.
+        const key = day.id.toISOString();
+        if (!newDays[key]) newDays[key] = { ...day, activityIds: [] };
+      }
+      this.store._days.set(newDays);
+      this.store._tripDays.update((map) => ({ ...map, [trip.id]: remoteDayKeysList }));
     }
 
     // 3ter. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire) :
     // même bug que ci-dessus, `_trips[trip.id]` n'était jamais réécrit après
-    // l'hydratation initiale. `_tripTitle`/`_tripCurrency` (signaux dédiés,
-    // voir leur doc dans TripStore) shadowent déjà toute édition locale en
-    // cours via `getTripTitle`/`getTripCurrency` — aucun risque de "retour en
-    // arrière" ici pendant leur propre debounce.
+    // l'hydratation initiale — et même piège de stabilité de référence : ne
+    // réécrire QUE si l'une de ces valeurs a réellement changé (comparaison
+    // explicite, même principe que `_tripMembers.update` juste en dessous).
+    // `_tripTitle`/`_tripCurrency` (signaux dédiés, voir leur doc dans
+    // TripStore) shadowent déjà toute édition locale en cours via
+    // `getTripTitle`/`getTripCurrency` — aucun risque de "retour en arrière"
+    // ici pendant leur propre debounce.
     const currentTrip = this.store._trips()[trip.id];
+    const primitivesChanged =
+      !!currentTrip &&
+      (currentTrip.title !== trip.title ||
+        currentTrip.ville !== trip.ville ||
+        currentTrip.ownerId !== trip.ownerId ||
+        currentTrip.defaultCurrency !== trip.defaultCurrency ||
+        currentTrip.placeId !== trip.placeId);
 
     this.store._poolActivities.set(newPoolActivities);
     this.store._dayActivityInstances.set(newInstances);
     this.store._dayActivityIds.set(newDayActivityIds);
-    this.store._days.set(newDays);
-    this.store._tripDays.update((map) => ({ ...map, [trip.id]: trip.days.map((d) => d.id.toISOString()) }));
-    if (currentTrip) {
+    if (primitivesChanged) {
       this.store._trips.update((map) => ({
         ...map,
         [trip.id]: {
