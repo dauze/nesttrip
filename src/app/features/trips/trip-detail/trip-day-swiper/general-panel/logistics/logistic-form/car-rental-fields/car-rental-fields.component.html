@@ -5,6 +5,8 @@
     [initialPlace]="initialPickupPlace()"
     (placeSelected)="pickupPlaceSelected.emit($event)" />
 
+  <app-divider class="m-1" />
+
   <app-place-autocomplete-field
     label="Lieu de restitution"
     placeholder="Rechercher un lieu..."

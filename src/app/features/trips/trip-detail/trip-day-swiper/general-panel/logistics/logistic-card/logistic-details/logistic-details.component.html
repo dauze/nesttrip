@@ -5,15 +5,15 @@
         <label for="logistic-type" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-list text-sm"></i>Type
         </label>
-        <app-select id="logistic-type" label="Type" class="booking w-full transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="typeOptions" formControlName="type" />
+        <app-select id="logistic-type" label="Type" class="booking w-max min-w-0 transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="typeOptions" formControlName="type" />
       </div>
     </div>
     <div class="col-6 p-0 pl-1 min-w-0" formGroupName="booking">
       <div class="flex flex-column gap-1 w-full min-w-0">
         <label for="logistic-booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
-          <i class="pi pi-bookmark text-sm"></i>Résa
+          <i class="pi pi-bookmark text-sm"></i>Statut
         </label>
-        <app-select #bookingSelect id="logistic-booking-status" label="Résa" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+        <app-select #bookingSelect id="logistic-booking-status" label="Statut" [options]="bookingStatusOptions" formControlName="status" class="w-max min-w-0 transparent-select" />
       </div>
     </div>
   </div>
@@ -22,7 +22,7 @@
 
   @switch (selectedType()) {
     @case ('logement') {
-      <app-logistic-place-info [place]="currentPlaces().place" />
+      <app-logistic-place-info [place]="currentPlaces().place" [showLeadingDivider]="false" />
     }
     @case ('flight') {
       <div class="grid m-0">
@@ -31,7 +31,7 @@
             <label for="logistic-airline" class="nt-text-muted text-sm flex align-items-center gap-1">
               <i class="pi pi-tag text-sm"></i>Compagnie
             </label>
-            <input id="logistic-airline" type="text" formControlName="airline" placeholder="Air France" class="nt-inline-field w-full" />
+            <input id="logistic-airline" type="text" formControlName="airline" placeholder="Air France" class="nt-inline-field nt-content-sized-field" />
           </div>
         </div>
         <div class="col-6 p-0 pl-1 min-w-0">
@@ -39,10 +39,11 @@
             <label for="logistic-flight-number" class="nt-text-muted text-sm flex align-items-center gap-1">
               <i class="pi pi-hashtag text-sm"></i>N° de vol
             </label>
-            <input id="logistic-flight-number" type="text" formControlName="flightNumber" placeholder="AF1234" class="nt-inline-field w-full" />
+            <input id="logistic-flight-number" type="text" formControlName="flightNumber" placeholder="AF1234" class="nt-inline-field nt-content-sized-field" />
           </div>
         </div>
       </div>
+      <app-divider class="m-1" />
       <app-flight-fields
         [initialDepartureAirport]="currentPlaces().departureAirport"
         [initialArrivalAirport]="currentPlaces().arrivalAirport"
@@ -61,8 +62,9 @@
         <label for="logistic-company" class="nt-text-muted text-sm flex align-items-center gap-1">
           <i class="pi pi-tag text-sm"></i>Loueur
         </label>
-        <input id="logistic-company" type="text" formControlName="company" placeholder="Hertz, Europcar..." class="nt-inline-field w-full" />
+        <input id="logistic-company" type="text" formControlName="company" placeholder="Hertz, Europcar..." class="nt-inline-field nt-content-sized-field" />
       </div>
+      <app-divider class="m-1" />
       <app-car-rental-fields
         [initialPickupPlace]="currentPlaces().pickupPlace"
         [initialDropoffPlace]="currentPlaces().dropoffPlace"
@@ -117,22 +119,26 @@
 
   <app-divider class="m-1" />
 
-  <div class="flex flex-column gap-1">
-    <label for="logistic-price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
-      <i class="pi pi-euro text-sm"></i>Prix
-    </label>
-    <app-price-field #priceField inputId="logistic-price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-full min-w-0" />
-  </div>
-
-  @if (showDeadline()) {
-    <app-divider class="m-1" />
-    <div class="flex flex-column gap-1 w-full min-w-0" formGroupName="booking">
-      <label for="logistic-booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'nt-text-warning' : 'nt-text-muted'">
-        <i class="pi pi-calendar text-xs"></i>Deadline
-      </label>
-      <app-date-picker inputId="logistic-booking-deadline" formControlName="deadline" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
+  <div class="grid m-0">
+    <div class="col-6 p-0 pr-1 min-w-0">
+      <div class="flex flex-column gap-1">
+        <label for="logistic-price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
+          <i class="pi pi-euro text-sm"></i>Prix
+        </label>
+        <app-price-field #priceField inputId="logistic-price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-max min-w-0" />
+      </div>
     </div>
-  }
+    @if (showDeadline()) {
+      <div class="col-6 p-0 pl-1 min-w-0" formGroupName="booking">
+        <div class="flex flex-column gap-1 w-full min-w-0">
+          <label for="logistic-booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'nt-text-warning' : 'nt-text-muted'">
+            <i class="pi pi-calendar text-xs"></i>Deadline
+          </label>
+          <app-date-picker inputId="logistic-booking-deadline" formControlName="deadline" placeholder="Aucune deadline" class="w-max transparent-inputtext" />
+        </div>
+      </div>
+    }
+  </div>
 
   <app-divider class="m-1" />
 

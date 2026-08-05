@@ -5,6 +5,8 @@
     [initialPlace]="initialDepartureAirport()"
     (placeSelected)="departureAirportSelected.emit($event)" />
 
+  <app-divider class="m-1" />
+
   <app-place-autocomplete-field
     label="Aéroport d'arrivée"
     placeholder="Rechercher un aéroport..."

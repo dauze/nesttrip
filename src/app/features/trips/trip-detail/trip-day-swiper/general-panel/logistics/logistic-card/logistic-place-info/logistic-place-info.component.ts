@@ -34,6 +34,19 @@ export class LogisticPlaceInfoComponent {
   readonly place = input<PlaceSummary | undefined>(undefined);
   /** Jour de référence pour "ouvert maintenant" — défaut à aujourd'hui si absent (une réservation n'est pas rattachée à un jour précis). */
   readonly referenceDate = input<Date | undefined>(undefined);
+  /**
+   * `false` uniquement pour l'usage "logement" de `LogisticDetailsComponent`
+   * (ROADMAP.md "Bugs / fixes", retour utilisateur : "2 séparateurs collés
+   * entre Résa et info Google") : ce composant est le SEUL contenu du bloc
+   * "champs propres au type" pour ce type (pas de champ "adresse" séparé, le
+   * lieu se choisit via le titre) — le `<app-divider>` déjà rendu par le
+   * PARENT juste avant ce bloc suffit, une 2e ici serait collée à la
+   * première. Partout ailleurs (aéroports, lieux de prise en charge/
+   * restitution, gares...), ce composant suit toujours un VRAI champ de
+   * recherche, jamais directement un autre `<app-divider>` : son propre
+   * séparateur reste donc nécessaire par défaut (`true`).
+   */
+  readonly showLeadingDivider = input(true);
 
   private readonly requestedPlaceId = signal<string>('');
   private readonly placeId$ = toObservable(this.requestedPlaceId).pipe(distinctUntilChanged());

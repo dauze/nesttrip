@@ -1,5 +1,7 @@
 @if (isVisible()) {
-  <app-divider class="m-1" />
+  @if (showLeadingDivider()) {
+    <app-divider class="m-1" />
+  }
 
   <div class="flex flex-column gap-2 mb-1">
     <span class="font-semibold text-sm nt-text-muted">Google</span>
