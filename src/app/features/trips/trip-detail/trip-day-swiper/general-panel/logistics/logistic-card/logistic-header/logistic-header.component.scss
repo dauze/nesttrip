@@ -1,0 +1,62 @@
+:host { display: block; }
+
+.logistic-header__thumb {
+  width: 3rem;
+  height: 3rem;
+}
+
+// Icône du type (voir logistic-header.component.html) : contrairement à
+// `ActivityHeaderComponent.thumb`, où l'icône de repli n'est qu'un fallback
+// rarement visible (une photo Google la remplace la plupart du temps), c'est
+// ICI le contenu normal et permanent (aucune photo pour une réservation) —
+// son centrage devient donc bien plus visible, et le glyphe de certaines
+// icônes PrimeIcons (`pi-car`...) n'est pas parfaitement centré dans son
+// propre carré typographique, ce qui le rapprochait visuellement du bord de
+// la pastille (retour utilisateur, ROADMAP.md "Bugs / fixes" : "il manque un
+// padding sur les logos... elle touche le bord"). Réduit d'un cran par
+// rapport à `text-xl` (1.25rem) pour laisser plus de marge tout autour.
+.logistic-header__thumb-icon {
+  font-size: 1.1rem;
+}
+
+.logistic-header__meta-icon {
+  font-size: 0.65rem;
+}
+
+.logistic-header__title-computed {
+  min-width: 0;
+}
+
+// Date/heure cliquables séparément (voir ROADMAP.md "UX / Interactions") :
+// ouvrent le picker correspondant du form plutôt que de déplier/replier le
+// panneau (comportement par défaut d'un clic ailleurs dans le header).
+.logistic-header__datetime-part {
+  cursor: pointer;
+  border-radius: var(--nt-radius-sm);
+  transition: color var(--nt-transition-duration) ease;
+
+  &:hover {
+    color: var(--nt-text-color);
+    text-decoration: underline;
+  }
+}
+
+// Même gabarit que `.activity-header__pencil` (ActivityHeaderComponent) : un
+// texte simple (pas un champ) n'invite pas à taper dedans, le crayon reste le
+// seul point d'entrée explicite pour l'éditer.
+.logistic-header__pencil {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+}

@@ -1,7 +1,7 @@
 @if (count() > 0) {
-  <div class="selection-action-bar">
+  <div class="selection-action-bar flex align-items-center justify-content-between gap-3" [style.min-height.px]="minHeight()">
     <span class="selection-action-bar__count">{{ count() }} sélectionné{{ count() > 1 ? 's' : '' }}</span>
-    <div class="selection-action-bar__actions">
+    <div class="selection-action-bar__actions flex gap-2">
       <app-button label="Annuler" severity="secondary" (click)="cancelSelection.emit()" />
       <app-button label="Supprimer" icon="pi pi-trash" severity="danger" (click)="deleteSelected.emit()" />
     </div>

@@ -1,0 +1,26 @@
+<div class="notes-edit-dialog flex flex-column">
+  <div class="notes-edit-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="notes-edit-dialog__title">{{ data.title }}</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <textarea
+    #textareaEl
+    appTextarea
+    class="notes-edit-dialog__textarea"
+    [value]="value()"
+    [placeholder]="data.placeholder"
+    (input)="onInput($any($event.target).value)"></textarea>
+
+  <div class="notes-edit-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
+    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
+    <app-button label="OK" (click)="confirm()" />
+  </div>
+</div>

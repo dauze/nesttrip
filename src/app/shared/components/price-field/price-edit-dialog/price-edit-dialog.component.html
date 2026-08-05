@@ -1,0 +1,23 @@
+<div class="price-edit-dialog flex flex-column">
+  <div class="price-edit-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="price-edit-dialog__title">{{ data.title }}</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <div class="price-edit-dialog__body flex flex-column align-items-center justify-content-center gap-3">
+    <app-input-number [formControl]="amountControl" inputClass="price-edit-dialog__amount" />
+    <app-select label="Devise" [options]="data.currencyOptions" [formControl]="currencyControl" class="w-max" />
+  </div>
+
+  <div class="price-edit-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
+    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
+    <app-button label="OK" (click)="confirm()" />
+  </div>
+</div>

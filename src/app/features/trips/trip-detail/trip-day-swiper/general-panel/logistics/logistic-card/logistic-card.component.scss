@@ -1,0 +1,73 @@
+:host { display: block; }
+
+// Uniformisé avec `.trip` (ActivityCardComponent, ROADMAP.md "### UI") : même
+// bordure gauche en dégradé par couleur d'IDENTITÉ (type logistique, plus
+// statut de réservation), même ombre douce au repos, même apparition
+// fondu/translation. `app-panel` est écrit directement dans CE template (pas
+// du contenu projeté), porte le même attribut de scope Angular — pas besoin
+// de `::ng-deep` (voir le même raisonnement dans activity-card.component.scss).
+.reservation {
+  position: relative;
+  border-left-width: 0;
+  box-shadow: var(--nt-shadow-xs);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 220ms ease, transform 220ms ease, box-shadow var(--nt-transition-duration) ease;
+
+  // Même correctif que `.trip` (ActivityCardComponent, ROADMAP.md "### UI",
+  // "pas de padding entre le border-left et le logo") : compense la barre
+  // colorée ci-dessous (0.4rem, `::before`) pour retrouver 0.5rem de
+  // respiration après elle, comme sur les 3 autres côtés. Le CORPS déplié
+  // (`content-padding-left`) ET le header (`header-padding-left`, logo du
+  // type — visible même repliée, oublié par le premier correctif, voir
+  // ROADMAP.md "Bugs / fixes", "plus grand padding entre le border left et
+  // le logo").
+  --nt-panel-content-padding-left: 0.9rem;
+  --nt-panel-header-padding-left: 0.9rem;
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.reservation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.4rem;
+  border-radius: var(--nt-content-border-radius) 0 0 var(--nt-content-border-radius);
+  background: linear-gradient(
+    180deg,
+    var(--logistic-type-color) 0%,
+    color-mix(in srgb, var(--logistic-type-color) 55%, transparent) 100%
+  );
+}
+
+// Réservation déjà terminée (endDateTime < maintenant) — voir
+// LogisticCardComponent.timeStatus / ROADMAP.md "Administratif". Même
+// traitement que .not-dispatched côté activités (activity-card.component.scss) :
+// contour en pointillés + grisée, pour un langage visuel cohérent entre les
+// deux listes. Le bord gauche (dégradé, voir `::before` ci-dessus) reste
+// plein/coloré même ici, seuls les 3 autres côtés passent en pointillé.
+.logistic-past {
+  opacity: 0.55;
+
+  &.reservation {
+    border-top-style: dashed;
+    border-right-style: dashed;
+    border-bottom-style: dashed;
+  }
+}
+
+// Date(s) pas encore renseignée(s) (voir LogisticCardComponent.timeStatus) :
+// même contour en pointillés que .logistic-past/.not-dispatched, SANS
+// l'opacité réduite — il ne s'agit pas d'un élément "terminé" à discrétiser,
+// au contraire on veut inciter à la compléter, donc rester bien visible.
+.logistic-undated.reservation {
+  border-top-style: dashed;
+  border-right-style: dashed;
+  border-bottom-style: dashed;
+}

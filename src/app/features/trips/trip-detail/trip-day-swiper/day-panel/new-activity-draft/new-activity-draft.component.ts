@@ -1,4 +1,4 @@
-import { Component, afterNextRender, computed, inject, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
@@ -20,6 +20,7 @@ export interface NewActivityDraftResult {
 @Component({
   selector: 'app-new-activity-draft',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, AutoCompleteComponent],
   templateUrl: './new-activity-draft.component.html',
   styleUrl: './new-activity-draft.component.scss',
@@ -27,12 +28,15 @@ export interface NewActivityDraftResult {
 export class NewActivityDraftComponent {
   private readonly googlePlaceService = inject(GooglePlaceService);
 
+  /** Préremplit le titre (et la recherche Google associée) — ex. texte déjà tapé dans la barre de recherche/filtre avant de cliquer "+", voir ROADMAP.md. */
+  readonly initialTitle = input('');
+
   readonly confirmed = output<NewActivityDraftResult>();
   readonly cancelled = output<void>();
 
   private readonly autocomplete = viewChild.required<AutoCompleteComponent<PlaceSummary>>('autocomplete');
 
-  private readonly searchTerm = signal('');
+  private readonly searchTerm = signal(this.initialTitle());
   private readonly searchState = toSignal(
     this.googlePlaceService.search$(toObservable(this.searchTerm)),
     { initialValue: { status: 'idle' } as LoadingState<PlaceSummary[]> },
@@ -44,7 +48,7 @@ export class NewActivityDraftComponent {
   });
   readonly searching = computed(() => this.searchState().status === 'loading');
 
-  readonly titleControl = new FormControl('', { nonNullable: true });
+  readonly titleControl = new FormControl(this.initialTitle(), { nonNullable: true });
 
   /** Une seule soumission possible (Entrée/blur/sélection peuvent sinon se chevaucher). */
   private submitted = false;

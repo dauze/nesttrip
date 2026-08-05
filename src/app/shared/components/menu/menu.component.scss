@@ -1,6 +1,4 @@
 .app-menu-panel {
-  display: flex;
-  flex-direction: column;
   gap: 0.125rem;
   min-width: 12rem;
   padding: 0.25rem;
@@ -11,6 +9,14 @@
   box-shadow: var(--nt-overlay-popover-shadow);
 }
 
+.app-menu-panel__title {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.25rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
 .app-menu-panel__group-label {
   padding: 0.5rem 0.75rem;
   font-weight: 600;
@@ -19,10 +25,6 @@
 }
 
 .app-menu-panel__item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
   padding: 0.5rem 0.75rem;
   border: none;
   border-radius: var(--nt-radius-sm);
@@ -51,3 +53,11 @@
     }
   }
 }
+
+// Styles du tiroir MOBILE (`.app-menu-overlay--mobile`/`.app-menu-backdrop--mobile`,
+// posés comme `panelClass`/`backdropClass` par MenuComponent.open() sur
+// `.cdk-overlay-pane`/le backdrop CDK, en dehors de l'arbre de vue de ce
+// composant) : voir src/styles/menu.scss (global) — même topologie que
+// `.app-select-overlay--mobile` dans select.scss, un sélecteur composé
+// commençant par ces classes ne peut pas vivre dans cette feuille scopée
+// (voir la doc de --nt-primary-color dans tokens.scss sur ce piège).

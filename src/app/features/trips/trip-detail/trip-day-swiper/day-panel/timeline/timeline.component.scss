@@ -1,2 +1,61 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
 // (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
+
+// Ligne de timeline (ROADMAP.md "### UI"/DESIGN.md "Timeline") : remplace
+// l'ancienne grille `col-3`/`col-1`/`col-8` (PrimeFlex, largeurs figées) par
+// un flex simple — heure en largeur fixe, badge icône, titre qui prend le
+// reste. Meilleure lecture, plus proche d'Apple Calendar/Flighty qu'un
+// tableau brut.
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.25rem 0;
+}
+
+.timeline-time {
+  flex: 0 0 3.25rem;
+  color: var(--nt-text-muted-color);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+// Badge icône (DESIGN.md "badges", "connecteurs modernes") : fond teinté
+// (couleur du type à faible opacité) plutôt qu'une icône nue — même logique
+// de teinte que `DayLogisticEntryComponent`/`ActivityCardComponent`.
+.timeline-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--timeline-badge-color) 16%, transparent);
+  color: var(--timeline-badge-color);
+
+  i {
+    font-size: var(--nt-icon-size-sm);
+  }
+}
+
+.timeline-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline-echo {
+  opacity: 0.75;
+}
+
+// Séparateur allégé (hair, pas hairline) : simple respiration entre deux
+// lignes plutôt qu'un vrai filet marqué — la timeline se lit déjà par ses
+// badges colorés, pas besoin d'un trait fort en plus.
+.timeline-divider {
+  --nt-content-border-width: var(--nt-border-width-hair);
+}

@@ -1,6 +1,93 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
-// (composant de FEATURE, pas une primitive shared — plus de `:host` ici).
+// (composant de FEATURE, pas une primitive shared — plus de `:host` ici en
+// principe). Exception ici : `TripDayMapHostService.moveTo` place cet élément
+// (le `<app-trip-day-map>` lui-même, pas de div racine propre dans son
+// template — voir trip-day-map.component.html) directement comme enfant de
+// `.sticky-map`. C'est donc LUI, et lui seul, qui doit relayer la hauteur
+// concrète de `.sticky-map` (voir day-panel.component.scss) vers `app-panel`
+// (`height:100%`, voir `PanelComponent.fillHeight`/panel.component.scss) —
+// sans ce maillon la chaîne `flex`/`height:100%` s'arrête net ici, faute de
+// wrapper interne à qui déléguer. Sans effet en layout empilé (mobile) :
+// `.sticky-map` n'y a pas de hauteur explicite, un `height:100%` contre un
+// parent `auto` est traité comme `auto`, donc ignoré.
+:host {
+  height: 100%;
+}
+
+// Carte sticky (ROADMAP.md "### UI") : le CADRE extérieur (`.map-panel`) doit
+// paraître accroché à la toolbar — aucun coin arrondi en haut, AUCUNE
+// bordure visible sur les CÔTÉS (voir retour utilisateur "on voit les
+// bordures sur les côtés, il ne faut pas, elle doit faire la taille de
+// l'écran") : `.day-fixed-map` (trip-day-swiper) est déjà pleine largeur,
+// une bordure latérale ici casserait cet effet. Le hairline du HAUT, lui, est
+// gardé (retour utilisateur, ROADMAP.md "### UI" : "je veux un petit border
+// sur le dessus de la map... mais discrete") — une légère séparation
+// volontaire avec la toolbar, dans le même hairline discret que la bordure
+// basse déjà présente (héritée du `:host` par défaut d'`app-panel`, jamais
+// retirée). `.map-panel` cible directement l'élément `<app-panel>` déclaré
+// dans CE template (pas du contenu projeté) : porte le même attribut de
+// scope Angular, pas besoin de `::ng-deep` (voir le même raisonnement dans
+// activity-card.component.scss).
+.map-panel {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+// La map elle-même GARDE un vrai cadre arrondi sur les 4 coins (y compris en
+// haut) et un padding autour (hérité de `.app-panel__content-inner`, plus
+// `flushContent` retiré ici) : seul le CADRE EXTÉRIEUR (`.map-panel`
+// ci-dessus) est flush contre la toolbar, la carte elle-même reste "encadrée"
+// avec un peu d'air tout autour (retour utilisateur : "le conteneur n'a pas
+// de radius en haut, ok, mais la map doit en avoir, idem pour le padding").
 .map-container {
-  border-radius: 0.1875rem;
+  border-radius: var(--nt-content-border-radius);
   overflow: hidden;
+}
+
+// Icônes du footer togglable (voir `footerToggle`/`[panelFooter]`,
+// panel.component.html) : "pi-map" à sa taille d'origine (retour utilisateur
+// — ne pas la grossir) au-dessus d'une poignée "grabber" (capsule arrondie,
+// public/map-collapse.png) plutôt qu'un `pi-minus` — footer le plus fin
+// possible (retour utilisateur), d'où le padding réduit du bouton lui-même
+// (voir panel.component.scss `.app-panel__footer-toggle`, pas touché ici) et
+// un espacement minimal entre les deux éléments.
+.map-panel__footer-icons {
+  gap: 0.25rem;
+  padding: 0.125rem 0;
+
+  i {
+    font-size: var(--nt-icon-size-sm);
+  }
+}
+
+// Doublé en LONGUEUR uniquement (retour utilisateur, ROADMAP.md "### UI") :
+// l'épaisseur (`height`) reste inchangée, seule la largeur de la capsule double.
+.map-panel__grabber {
+  width: 4rem;
+  height: 0.25rem;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-text-muted-color);
+  opacity: 0.5;
+}
+
+// Layout scindé (voir `PanelComponent.fillHeight`, activé depuis le
+// template) : chaîne de `flex:1`/`height:100%` jusqu'à `<google-map>`, qui
+// reçoit alors `[height]="'100%'"` — tous les maillons de cette chaîne
+// vivent dans des fichiers qu'on possède (celui-ci, panel.component.scss,
+// day-panel.component.scss pour `.sticky-map`), donc en CSS normal, sans
+// `::ng-deep`/`!important` pour aller forcer l'intérieur d'un composant tiers
+// (@angular/google-maps) — seule la valeur finale ('100%') lui est transmise
+// via son input public `[height]`, documenté pour cet usage.
+.map-container--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  google-map {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
 }

@@ -1,11 +1,12 @@
-import { Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { Location } from '@angular/common';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
 import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.component';
 import { AuthService } from '@core/services/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs';
+import { Observable, filter, map, merge, startWith } from 'rxjs';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
@@ -18,11 +19,16 @@ import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
+import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
+import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
+import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
+import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
@@ -43,15 +49,25 @@ import { UserProfileService } from '@app/core/services/user-profile.service';
     GooglePlaceService,
     PhotoViewerService,
     UserProfileService,
+    FlightStatusRefreshService,
   ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',
 })
 export class TripsComponent {
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly authService = inject(AuthService);
+  private readonly tripFacade = inject(TripFacade);
   protected readonly chromeService = inject(TripChromeService);
+  protected readonly themeService = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly themeOptions: SelectButtonOption<ThemeMode>[] = [
+    { label: '', value: 'light', icon: 'pi pi-sun' },
+    { label: '', value: 'dark', icon: 'pi pi-moon' },
+    { label: '', value: 'system', icon: 'pi pi-desktop' },
+  ];
 
   private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
 
@@ -80,17 +96,53 @@ export class TripsComponent {
     });
   }
 
+  /**
+   * Fusionne les `NavigationEnd` du Router ET les changements bruts de
+   * `Location` (voir `TripDetailComponent.updateFragment`/`bindPopState`,
+   * ROADMAP.md "UX / Interactions") : la navigation par tab/jour à l'intérieur
+   * d'un trip passe par `Location.go`/le bouton "retour" navigateur, jamais
+   * par le Router — sans cette 2e source, `currentUrl` restait figé sur la
+   * toute première URL Router (sans fragment) et ne recevait plus aucune
+   * mise à jour après un retour navigateur, cassant `toolbarTitle` (retombe
+   * sur "NestTrip" alors qu'on est toujours sur le même trip).
+   */
   readonly currentUrl = toSignal(
-    this.router.events.pipe(
-      filter((e) => e instanceof NavigationEnd),
-      map((e) => (e as NavigationEnd).urlAfterRedirects),
-      startWith(this.router.url),
-    ),
+    merge(
+      this.router.events.pipe(
+        filter((e) => e instanceof NavigationEnd),
+        map((e) => (e as NavigationEnd).urlAfterRedirects),
+      ),
+      new Observable<string>((observer) => {
+        const subscription = this.location.subscribe(() => observer.next(this.location.path(true)));
+        return () => subscription.unsubscribe();
+      }),
+    ).pipe(startWith(this.router.url)),
   );
 
   readonly showBack = computed(() => {
     const url = this.currentUrl() ?? '';
     return /^\/trips\/.+/.test(url);
+  });
+
+  /**
+   * Remplace "NestTrip" par le nom du voyage sur l'écran de détail (voir
+   * ROADMAP.md "UX / Interactions") — garde-fou de longueur simple (CSS
+   * ellipsis, voir styleUrl) plutôt qu'une troncature JS, le titre complet
+   * reste dispo au survol via l'attribut `title`.
+   *
+   * Id de trip extrait de l'URL (pas de `activeTrip()?.id`) : `getTripTitle`
+   * est un signal dédié, indépendant de `activeTrip()` (voir
+   * TripStore._tripTitle) — passer par `activeTrip()` ne serait-ce que pour
+   * son `id` réintroduirait une dépendance à CE signal, donc un recalcul de
+   * `toolbarTitle` à chaque mutation du trip actif (pas seulement son titre).
+   * `[^/?#]+` (pas juste `[^/?]+`) : `currentUrl` peut désormais porter un
+   * fragment (`/trips/abc#day-1`, voir sa doc) — sans exclure `#`, l'id
+   * capturé embarquait le fragment entier, cassant `getTripTitle(id)`.
+   */
+  readonly toolbarTitle = computed(() => {
+    if (!this.showBack()) return 'NestTrip';
+    const id = (this.currentUrl() ?? '').match(/^\/trips\/([^/?#]+)/)?.[1];
+    return (id ? this.tripFacade.getTripTitle(id)() : '') || 'NestTrip';
   });
 
   readonly menuItems: AppMenuItem[] = [
@@ -108,5 +160,9 @@ export class TripsComponent {
 
   goBack(): void {
     this.router.navigate(['/trips']);
+  }
+
+  protected onThemeChange(mode: ThemeMode | undefined): void {
+    if (mode) this.themeService.setMode(mode);
   }
 }

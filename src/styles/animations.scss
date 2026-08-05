@@ -85,6 +85,19 @@ html.nav-back::view-transition-new(root) {
   transition: transform 150ms cubic-bezier(.2, 0, .2, 1);
 }
 
+/*
+ * Sans cette règle, CDK réordonne bien les cartes survolées via un
+ * `transform` inline pendant le drag, mais sans transition dessus : elles
+ * "sautent" instantanément à la place laissée libre au lieu de glisser
+ * (contrairement au drag-and-drop maison, où ce glissement est animé à la
+ * main) — c'est cette règle, absente jusqu'ici, qui manquait pour avoir la
+ * même animation que le drag-and-drop maison sur les cartes qui se
+ * déplacent pour laisser la place à la carte en cours de survol.
+ */
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 150ms cubic-bezier(.2, 0, .2, 1);
+}
+
 .cdk-drag-placeholder {
   visibility: hidden;
 }

@@ -8,6 +8,14 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
+      // Exception ciblée (ROADMAP.md "### UI", préférence "carte repliée par
+      // défaut") : le client peut modifier UNIQUEMENT ce champ précis de son
+      // propre document — tout le reste (companions...) reste réservé au
+      // serveur (Cloud Functions, Admin SDK), voir `allow write: if false`
+      // juste en dessous, qui continue de s'appliquer à tout le reste.
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mapCollapsedByDefault']);
       allow write: if false; // écrit uniquement côté serveur (Cloud Functions, Admin SDK)
     }
   }

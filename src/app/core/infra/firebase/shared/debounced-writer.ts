@@ -7,6 +7,8 @@ export abstract class DebounceWriter<K, T extends { key: K }> {
   protected abstract write(updates: T[]): Promise<unknown>;
 
   readonly syncing = signal(false);
+  /** `true` dès qu'un flush échoue (retry programmé), remis à `false` au flush réussi suivant — voir l'indicateur de sauvegarde (SaveStatusBarComponent) qui agrège ce signal sur tous les writers. */
+  readonly hasError = signal(false);
   private readonly pending = new Map<K, T>();
   private readonly trigger$ = new Subject<void>();
 
@@ -33,8 +35,10 @@ export abstract class DebounceWriter<K, T extends { key: K }> {
     this.pending.clear();
 
     return from(this.write(updates)).pipe(
+      tap(() => this.hasError.set(false)),
       catchError((err) => {
         console.error('Persistence failed, retry scheduled', err);
+        this.hasError.set(true);
         updates.forEach((u) => this.pending.set(u.key, u));
         // Sans ce retrigger, la queue reste bloquée tant qu'aucune
         // nouvelle frappe utilisateur n'appelle queue().

@@ -1,5 +1,5 @@
 <div class="flex justify-content-center align-items-center bg-transparent p-3" style="min-width: 24rem; min-height: 100dvh;">
-  <app-card class="w-full p-2" >
+  <app-card class="w-full p-2 login-card" >
     <form [formGroup]="form" (ngSubmit)="submitEmail()">
     <div class="text-center mb-5">
       <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
@@ -11,7 +11,7 @@
       </p>
     </div>
 
-    <div class="flex flex-column gap-4">
+    <div class="flex flex-column gap-3">
       <app-button
         label="Continuer avec Google"
         icon="pi pi-google"

@@ -3,6 +3,7 @@ export const environment = {
   apiUrl: 'https://api-awwo5nlqxa-ew.a.run.app/api',
   googleMapsApiKey: 'AIzaSyCY1yuPqItpuw55dZLPBLPO6oR1YfmPVdY',
   googleMapsMapId: '403df5014d376766111d7b84',
+  flightsApiKey: '050e026034msh0b0ce059558e55bp12a280jsn531885a9faf0',
   firebase: {
     apiKey: "AIzaSyBkknHakNu9wgl8peo5lC5Xf_D7Aqy8t34",
     authDomain: "nesttrip-2e34b.firebaseapp.com",

@@ -12,5 +12,6 @@ export function userProfileFromFb(data: UserProfileFirebase): UserProfile {
         { uid: c.uid, email: c.email, displayName: c.displayName ?? undefined },
       ]),
     ),
+    mapCollapsedByDefault: data.mapCollapsedByDefault,
   };
 }

@@ -16,6 +16,16 @@
   box-sizing: border-box;
 }
 
+// Flash de tap bleu par défaut de WebKit/Blink mobile sur tout élément
+// cliquable — un calque de rendu à PART de `outline`/`:focus-visible`
+// (voir plus bas), qui ne le supprime pas : persistait sur mobile (carte de
+// voyage cliquable d'accueil-trip notamment) malgré l'anneau de focus déjà
+// neutralisé. Retiré partout, `:focus-visible` reste le seul indicateur de
+// focus voulu.
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 :root {
   --p-font-family: 'Plus Jakarta Sans', sans-serif;
   font-family: var(--p-font-family), serif;
@@ -30,8 +40,41 @@
 
 body {
   padding-bottom: 50px;
-  margin-top: 0.3rem;
+  // `margin` complet (pas seulement `margin-top`) : le navigateur pose 8px
+  // par défaut sur les 4 côtés (UA stylesheet) — ne zérofier QUE le haut
+  // laissait les 8px par défaut à droite/gauche/en bas, invisibles sur
+  // trip-detail (contenu `position: fixed`, ignore la marge de `body`) mais
+  // bien réels sur accueil-trip/new-trip/login (flux normal) — retour
+  // utilisateur, ROADMAP.md "Bugs / fixes" : padding gauche/droite trop gros
+  // sur ces écrans PAR RAPPORT à trip-detail (qui, lui, applique
+  // volontairement `--nt-space-1` via `.app-content`/`.tab-content-wrapper`,
+  // voir trips.component.scss/trip-day-swiper.component.scss).
+  margin: 0.3rem 0 0;
   color: var(--nt-text-color);
+  background-color: var(--nt-page-background);
+}
+
+// Anneau de focus clavier/clic thémé (`--nt-focus-ring-*`, tokens.scss),
+// remplace le anneau bleu par défaut du navigateur sur tout élément
+// focusable custom (cartes cliquables `role="button"` + `tabindex="0"`,
+// ex. accueil-trip, panel...) sans rien retirer pour les champs de
+// formulaire natifs (déjà stylés via leur propre `box-shadow`, voir
+// form-fields.scss).
+:focus-visible {
+  outline: var(--nt-focus-ring-width) var(--nt-focus-ring-style) var(--nt-focus-ring-color);
+  outline-offset: var(--nt-focus-ring-offset);
+}
+
+// Garde-fou global : le `min-width: 24rem` posé localement sur `.app-content`
+// (trips.component.html) ne protège plus trip-detail depuis que son contenu
+// (header, swiper de jours) est passé en `position: fixed` — un élément fixed
+// a pour containing block le VIEWPORT, pas `.app-content`, donc n'hérite plus
+// de son min-width et peut se tasser jusqu'au chevauchement. Posé ici au
+// niveau racine, ça vaut pour tout l'écran (fixed compris) : sous 24rem, un
+// scroll horizontal apparaît plutôt qu'un tassement.
+html,
+body {
+  min-width: 24rem;
 }
 
 /* ---------------------------------------------------------------------
@@ -41,8 +84,22 @@ body {
  * scrollbar body EN PLUS de celui du slide actif. Scopé à cette classe pour
  * ne pas casser le scroll body classique des autres écrans (accueil-trip,
  * new-trip, login).
+ *
+ * `overflow: hidden` seulement sur `body`, PAS sur `html` : en mode
+ * standards, `document.scrollingElement` (celui que Chrome regarde pour
+ * décider si le geste "tirer pour actualiser" est possible) est `<html>`,
+ * pas `<body>` — le laisser `overflow: hidden` désactivait le pull-to-refresh
+ * natif sur tout l'écran trip-detail (voir ROADMAP.md), en plus du
+ * `overscroll-behavior: contain` déjà retiré des slides. Sans contenu en
+ * flux normal dans `<body>` (tout est `position: fixed`, voir
+ * trip-day-swiper.component.scss), `<html>` n'a de toute façon rien à
+ * scroller réellement : le rendre "scrollable" ne réintroduit donc pas le
+ * double-scrollbar que ce garde-fou évite.
  * ------------------------------------------------------------------- */
-html.trip-detail-active,
+html.trip-detail-active {
+  height: 100%;
+}
+
 html.trip-detail-active body {
   height: 100%;
   overflow: hidden;
@@ -58,11 +115,13 @@ html.trip-detail-active body {
 // chacun de ces composants.
 app-trip-day-swiper,
 app-trip-tabs-nav,
+app-mobile-trip-nav,
+app-day-picker-sheet,
 app-day-panel,
-app-general-panel,
 app-trip-day-map,
 app-timeline,
 app-trip-activities,
+app-logistics-list,
 app-notes {
   display: block;
 }

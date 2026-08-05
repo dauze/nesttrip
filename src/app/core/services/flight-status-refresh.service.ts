@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { EMPTY, Observable, tap } from 'rxjs';
-import { FlightReservation, FlightStatus } from '@core/models/reservation.dto';
+import { FlightLogistic, FlightStatus } from '@core/models/logistic.dto';
 import { FlightStatusApiService } from './flight-status-api.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 
@@ -17,7 +17,10 @@ function diffHours(a: Date, b: Date): number {
  * en plus fréquent à l'approche du vol. `manual` : trop loin dans le temps,
  * seul le bouton de rafraîchissement manuel fonctionne.
  */
-export function getRefreshPhase(flight: FlightReservation, now: Date): RefreshPhase {
+export function getRefreshPhase(flight: FlightLogistic, now: Date): RefreshPhase {
+  // Pas de date renseignée : rien à programmer, seul le rafraîchissement manuel a un sens (et est de toute façon bloqué par forceRefresh tant que la date n'est pas là).
+  if (!flight.startDateTime || !flight.endDateTime) return 'manual';
+
   const hoursToDeparture = diffHours(flight.startDateTime, now);
   const hoursSinceArrival = diffHours(now, flight.endDateTime);
 
@@ -39,34 +42,40 @@ export const REFRESH_INTERVAL_MS: Record<RefreshPhase, number | null> = {
  * compare `statusFetchedAt` à l'intervalle de la phase courante et ne fait
  * rien si la donnée n'est pas encore périmée — les autres membres du trip
  * reçoivent la mise à jour gratuitement via `onSnapshot` (cache Firestore
- * partagé, voir `ReservationPersistenceService.updateFlightStatus`).
+ * partagé, voir `LogisticPersistenceService.updateFlightStatus`).
  */
-@Injectable({ providedIn: 'root' })
+// Pas `providedIn: 'root'` : dépend de `TripFacade`, lui-même scopé à
+// `/trips` (voir TripsComponent.providers) — un root singleton qui dépend
+// d'un service component-scopé n'a de garantie de fonctionner que si sa
+// toute première construction a lieu depuis un contexte qui a ce provider
+// dans sa chaîne d'ancêtres, ce qui n'est pas fiable (NG0201/NG0200 observés
+// en pratique). Fourni explicitement au même niveau que TripFacade.
+@Injectable()
 export class FlightStatusRefreshService {
   private readonly api = inject(FlightStatusApiService);
   private readonly tripFacade = inject(TripFacade);
 
-  refreshIfStale(tripId: string, reservation: FlightReservation, now = new Date()): void {
-    if (!reservation.flightNumber) return;
+  refreshIfStale(tripId: string, logistic: FlightLogistic, now = new Date()): void {
+    if (!logistic.flightNumber || !logistic.startDateTime) return;
 
-    const phase = getRefreshPhase(reservation, now);
+    const phase = getRefreshPhase(logistic, now);
     const intervalMs = REFRESH_INTERVAL_MS[phase];
     if (intervalMs === null) return;
 
-    const lastFetch = reservation.statusFetchedAt?.getTime() ?? 0;
+    const lastFetch = logistic.statusFetchedAt?.getTime() ?? 0;
     if (now.getTime() - lastFetch < intervalMs) return;
 
-    this.forceRefresh(tripId, reservation).subscribe({
+    this.forceRefresh(tripId, logistic).subscribe({
       error: (err) => console.error('[FlightStatusRefreshService] Erreur rafraîchissement auto :', err),
     });
   }
 
   /** Bouton de rafraîchissement manuel : ignore la fraîcheur, toujours un vrai appel réseau. No-op tant que le n° de vol n'est pas encore renseigné. */
-  forceRefresh(tripId: string, reservation: FlightReservation): Observable<FlightStatus> {
-    if (!reservation.flightNumber) return EMPTY;
+  forceRefresh(tripId: string, logistic: FlightLogistic): Observable<FlightStatus> {
+    if (!logistic.flightNumber || !logistic.startDateTime) return EMPTY;
 
-    return this.api.getStatus$(reservation.flightNumber, reservation.startDateTime).pipe(
-      tap((status) => this.tripFacade.updateFlightStatus(tripId, reservation, status, new Date())),
+    return this.api.getStatus$(logistic.flightNumber, logistic.startDateTime).pipe(
+      tap((status) => this.tripFacade.updateFlightStatus(tripId, logistic, status, new Date())),
     );
   }
 }

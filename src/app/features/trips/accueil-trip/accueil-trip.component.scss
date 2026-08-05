@@ -1,0 +1,15 @@
+// Clic sur une carte de voyage (voir accueil-trip.component.html) : pas
+// d'anneau de focus ici (voir reset.scss pour l'anneau global par défaut) —
+// juste le titre et la flèche qui se colorent, moins intrusif sur une zone
+// aussi large. `:focus` et PAS `:focus-visible` : ce dernier ne matche pas
+// un clic souris/tap tactile sur un `div[tabindex]` (heuristique Chromium —
+// seul un vrai focus clavier le déclenche), alors que le but ici est
+// justement de réagir au clic/tap, pas seulement à la navigation clavier.
+.trip-select-row:focus {
+  outline: none;
+
+  .trip-select-row__title,
+  .trip-select-row__arrow {
+    color: var(--nt-primary-color);
+  }
+}

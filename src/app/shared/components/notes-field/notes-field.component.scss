@@ -1,0 +1,40 @@
+// Desktop (branche `@else`, `.app-textarea` posée par `TextareaDirective`) :
+// aucune règle ici, rendu 100% inchangé par rapport à l'ancien textarea
+// inline (voir ROADMAP.md, "sur desktop l'affichage ET la saisie ne doivent
+// pas changer").
+
+:host {
+  display: block;
+}
+
+// Trigger mobile : transparent (pas de bordure/fond), se fond dans la carte
+// comme le reste du texte — pas la classe utilitaire `.transparent-textarea`
+// (elle cible des variables consommées par `.app-textarea`, sans objet ici
+// puisque ce n'est pas un `<textarea>`).
+.notes-field-trigger {
+  display: -webkit-box;
+  // Largeur au contenu, pas la pleine largeur de la colonne (ROADMAP.md
+  // "Bugs / fixes", retour utilisateur) : ne touche QUE le déclencheur
+  // mobile (`display:-webkit-box`, cette classe n'existe pas côté desktop,
+  // voir la branche `@else` du template — son `<textarea class="w-full">`
+  // reste volontairement pleine largeur, un textarea multi-lignes a besoin
+  // de place pour taper confortablement).
+  width: max-content;
+  max-width: 100%;
+  padding: var(--nt-layout-gap-stacked);
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.notes-field-trigger__text {
+  color: var(--nt-text-color);
+}
+
+.notes-field-trigger__placeholder {
+  color: var(--nt-text-muted-color);
+}

@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
@@ -11,12 +12,14 @@ import {
   AfterViewInit,
   OnDestroy,
   Injector,
-  NgZone,
   afterNextRender,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { DayPanelComponent } from './day-panel/day-panel.component';
-import { GeneralPanelComponent } from './general-panel/general-panel.component';
+import { TripSummaryComponent } from './general-panel/trip-summary/trip-summary.component';
+import { TripActivitiesComponent } from './general-panel/trip-activities/trip-activities.component';
+import { LogisticsListComponent } from './general-panel/logistics/logistics-list.component';
+import { NotesComponent } from './general-panel/notes/notes.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
@@ -27,8 +30,9 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, GeneralPanelComponent, TripDayMapComponent],
+  imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent],
   providers: [SwiperLockService, TripDayMapHostService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
@@ -36,10 +40,12 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
 export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly lockService = inject(SwiperLockService);
   private readonly injector = inject(Injector);
-  private readonly zone = inject(NgZone);
-  private readonly mapHost = inject(TripDayMapHostService);
+  protected readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
+  private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
+  private readonly mapAnchorRef = viewChild<ElementRef<HTMLElement>>('mapAnchor');
+  private dayFixedMapObserver?: ResizeObserver;
 
   // --- Synchro chrome (toolbar + header) au fil du scroll du slide actif ---
   // Un `scroll` DOM event seul ne suffit pas : les navigateurs le dispatchent
@@ -54,6 +60,9 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private chromeRafLoop?: number;
   private lastChromeScrollTop = -1;
   private chromeIdleFrames = 0;
+  /** Garde-fou anti-emballement, même principe que DayScrollSyncService.frameBudget (voir sa doc). */
+  private chromeFrameBudget = 0;
+  private static readonly CHROME_MAX_FRAMES_WITHOUT_IDLE = 600;
 
   readonly trip = input.required<Trip>();
   readonly tabs = input<TripTab[]>([]);
@@ -88,6 +97,49 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const map = this.dayMapRef();
       if (map) this.mapHost.register(map);
+    });
+
+    // Conteneur fixe "carte jour" (voir sa doc dans le template) : enregistré
+    // une seule fois auprès de TripDayMapHostService, avec un ResizeObserver
+    // qui alimente `--fixed-map-height` (day-panel.component.scss) pour que le
+    // contenu scrollable du jour réserve exactement l'espace équivalent —
+    // 0 quand vide (layout scindé, ou aucun jour actif). Enregistré aussi
+    // auprès de `TripChromeService.registerChromeElement` : reçoit ainsi le
+    // MÊME `translateY` que la toolbar au hide-on-scroll (mobile), pour ne
+    // jamais laisser de trou entre les deux quand la toolbar se masque
+    // (retour utilisateur) — les deux glissent comme un seul bloc soudé.
+    effect((onCleanup) => {
+      const el = this.dayFixedMapRef()?.nativeElement;
+      this.mapHost.registerDayFixedContainer(el ?? null);
+      if (!el) return;
+
+      this.dayFixedMapObserver?.disconnect();
+      this.dayFixedMapObserver = new ResizeObserver(() => {
+        this.mapHost.setDayFixedContainerHeight(el.getBoundingClientRect().height);
+      });
+      this.dayFixedMapObserver.observe(el);
+
+      const unregisterChrome = this.chromeService.registerChromeElement(el);
+      onCleanup(() => {
+        this.dayFixedMapObserver?.disconnect();
+        unregisterChrome();
+      });
+    });
+
+    // Reparque la carte dès que l'onglet actif n'est ni un jour ni Résumé
+    // (Activités/Logistique/Listes, qui n'affichent aucune carte) — sans ça,
+    // `.day-fixed-map` gardait le noeud DOM déplacé par le dernier jour
+    // visité et restait affiché par-dessus ces onglets au lieu de se fermer
+    // (aucun de ces 3 composants n'appelle jamais `moveTo` pour la réclamer).
+    effect(() => {
+      const id = this.activeId();
+      const anchor = this.mapAnchorRef()?.nativeElement;
+      if (!id || !anchor) return;
+
+      const isMapOwningTab = id === 'summary' || this.sortedDays().some(d => d.id.toISOString() === id);
+      if (isMapOwningTab) return;
+
+      this.mapHost.park(anchor);
     });
 
     // Réactif à `isLocked()` lui-même (pas juste au changement de jour actif,
@@ -166,6 +218,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('touchmove', this.wakeChromeLoop);
     window.removeEventListener('wheel', this.wakeChromeLoop);
     if (this.chromeRafLoop) cancelAnimationFrame(this.chromeRafLoop);
+    this.dayFixedMapObserver?.disconnect();
   }
 
   private waitForStableLayout(): void {
@@ -194,6 +247,23 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       spaceBetween: 8,
       longSwipesRatio: 0.45,
       longSwipesMs: 250,
+      // Pull-to-refresh natif cassé sur cet écran (voir ROADMAP.md) : cause
+      // trouvée dans Swiper lui-même (swiper-core.mjs, onTouchMove) — avec le
+      // `threshold` par défaut (0), Swiper appelle `e.preventDefault()` dès le
+      // tout premier pixel de mouvement, AVANT même d'avoir assez de données
+      // (~5px cumulés) pour déterminer si le geste est un swipe horizontal ou
+      // un scroll vertical (`data.isScrolling`, calculé seulement une fois ce
+      // seuil atteint). Une fois `preventDefault()` appelé une seule fois sur
+      // un touchmove, Chrome désengage définitivement le geste natif "tirer
+      // pour actualiser" pour toute la suite du geste, même si Swiper se rend
+      // compte juste après que c'était un scroll vertical et n'y touche plus.
+      // En relevant `threshold` à une valeur qui dépasse ce seuil de
+      // détection, `onTouchMove` sort désormais AVANT le premier
+      // `preventDefault()` tant que la direction n'est pas connue, et une fois
+      // connue, un geste vertical retourne sans jamais l'appeler — 10px reste
+      // imperceptible pour un vrai swipe volontaire entre jours (bien plus de
+      // 10px de déplacement).
+      threshold: 10,
       cssMode: false,
       injectStyles: [`
         .swiper {
@@ -292,9 +362,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly wakeChromeLoop = (): void => {
     this.chromeIdleFrames = 0;
     if (this.chromeRafLoop == null) {
-      this.zone.runOutsideAngular(() => {
-        this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
-      });
+      this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
     }
   };
 
@@ -305,6 +373,17 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
    * ainsi visuellement collé au scroll réel, sans retard perceptible.
    */
   private readonly chromeTick = (): void => {
+    this.chromeFrameBudget++;
+    if (this.chromeFrameBudget > TripDaySwiperComponent.CHROME_MAX_FRAMES_WITHOUT_IDLE) {
+      console.error(
+        '[TripDaySwiperComponent] Boucle rAF (chrome) arrêtée après', this.chromeFrameBudget,
+        'frames sans repos — diagnostic :',
+        { lastChromeScrollTop: this.lastChromeScrollTop, isDragging: this.isDragging, isTransitioning: this.isTransitioning },
+      );
+      this.chromeRafLoop = undefined;
+      return;
+    }
+
     const swiper = this.swiperRef()?.nativeElement?.swiper;
     const activeSlide = swiper?.slides?.[swiper.activeIndex] as HTMLElement | undefined;
     const scrollTop = activeSlide?.scrollTop ?? 0;
@@ -313,9 +392,8 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       this.lastChromeScrollTop = scrollTop;
       this.chromeIdleFrames = 0;
       // setScrollTop écrit le transform directement en DOM (voir
-      // TripChromeService) — pas de signal/template en jeu, donc pas besoin
-      // de rentrer dans la zone Angular : rester outside-zone de bout en bout
-      // évite tout passage par la détection de changement sur ce chemin chaud.
+      // TripChromeService) — pas de signal/template en jeu, donc ce chemin
+      // chaud ne déclenche aucune détection de changement (app zoneless).
       this.chromeService.setScrollTop(scrollTop);
     } else {
       this.chromeIdleFrames++;
@@ -325,6 +403,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       this.chromeRafLoop = requestAnimationFrame(this.chromeTick);
     } else {
       this.chromeRafLoop = undefined;
+      this.chromeFrameBudget = 0;
     }
   };
 

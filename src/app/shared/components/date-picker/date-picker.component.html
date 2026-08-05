@@ -1,17 +1,39 @@
-<button
-  type="button"
-  class="app-date-picker__trigger"
-  [id]="inputId()"
-  [class.app-date-picker__trigger--open]="isOpen()"
-  [disabled]="isDisabled()"
-  (click)="toggle()">
-  <span class="app-date-picker__label" [class.app-date-picker__label--placeholder]="!displayText()">
-    {{ displayText() || placeholder() }}
-  </span>
-</button>
+@if (viewport.isMobile()) {
+  <button
+    type="button"
+    class="app-date-picker__trigger flex align-items-center gap-2 w-full"
+    [id]="inputId()"
+    [class.app-date-picker__trigger--open]="isOpen()"
+    [disabled]="isDisabled()"
+    (click)="toggle()">
+    <span class="app-date-picker__label" [class.app-date-picker__label--placeholder]="!displayText()">
+      {{ displayText() || placeholder() }}
+    </span>
+  </button>
+} @else {
+  <div class="app-date-picker__trigger app-date-picker__trigger--desktop flex align-items-center w-full" [class.app-date-picker__trigger--open]="isOpen()">
+    <input
+      type="text"
+      class="app-date-picker__input"
+      [style.min-width.ch]="inputMinWidthCh()"
+      [id]="inputId()"
+      [disabled]="isDisabled()"
+      [placeholder]="placeholder()"
+      [value]="draftText() ?? displayText()"
+      (focus)="onInputFocus($any($event.target))"
+      (input)="draftText.set($any($event.target).value)"
+      (keydown.enter)="onInputEnter($any($event.target))"
+      (click)="onFieldClick()"
+      (blur)="commitDraft()" />
+    <i class="pi pi-calendar app-date-picker__icon" aria-hidden="true"></i>
+  </div>
+}
 
 <ng-template #panel>
   <div class="app-date-picker-panel">
+    @if (label()) {
+      <div class="app-date-picker-panel__label">{{ label() }}</div>
+    }
     <div class="app-date-picker-panel__header">
       <button type="button" class="app-date-picker-panel__nav" (click)="prevPage()" aria-label="Précédent">
         <i class="pi pi-chevron-left"></i>
@@ -58,6 +80,8 @@
                   [class.app-date-picker-panel__day--range-start]="isRangeStart(day)"
                   [class.app-date-picker-panel__day--range-end]="isRangeEnd(day)"
                   [class.app-date-picker-panel__day--in-range]="isInRange(day)"
+                  [class.app-date-picker-panel__day--disabled]="isDayDisabled(day)"
+                  [disabled]="isDayDisabled(day)"
                   (mouseenter)="onDayHover(day)"
                   (click)="selectDay(day)">
                   {{ day.getDate() }}

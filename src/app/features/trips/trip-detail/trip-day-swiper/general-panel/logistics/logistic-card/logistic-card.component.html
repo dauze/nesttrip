@@ -1,0 +1,27 @@
+@if (logistic(); as logistic) {
+  <div #cardContainer>
+    <app-panel
+        [appSelectable]="selectableRef()" #sel="appSelectable"
+        appLongPress (longPress)="sel.onLongPress()"
+        class="reservation"
+        [style.--logistic-type-color]="'var(' + typeColorVar() + ')'"
+        [ngClass]="(timeStatus() === 'past' ? ' logistic-past' : '') + (timeStatus() === 'undated' ? ' logistic-undated' : '')"
+        [toggleable]="true" [(collapsed)]="collapsed">
+      <div panelHeader class="flex align-items-center gap-2 w-full">
+        <app-checkbox
+          class="nt-select-checkbox flex-shrink-0"
+          [checked]="sel.isSelected()"
+          (click)="sel.onCheckboxClick($event)"
+        />
+        <app-logistic-header class="flex-1 min-w-0" [logistic]="logistic" (titleEdited)="onTitleChanged($event)" (placeSelected)="onHeaderPlaceSelected($event)" (dateTimeClicked)="onDateTimeClicked($event)" />
+        @if (timeStatus() === 'current') {
+          <app-tag severity="success" value="En cours" class="flex-shrink-0" />
+        }
+      </div>
+
+      <app-logistic-details #details [tripId]="tripId()" [logistic]="logistic" />
+      <app-divider class="m-1" />
+      <app-files-field [files]="logistic.files" [storagePathPrefix]="filesStoragePathPrefix()" (filesChange)="onFilesChange($event)" />
+    </app-panel>
+  </div>
+}

@@ -64,9 +64,9 @@
   // (providePrimeNG), supprimé en Phase 9. Sans cette ligne, le rendu natif
   // du navigateur (scrollbars, contrôles de formulaire, fond d'overscroll
   // mobile) reste bloqué en clair même en dark mode — et `light-dark()`,
-  // utilisé massivement par primeflex.css (voir shim juste plus bas),
-  // choisirait toujours sa branche claire faute de savoir que la page
-  // supporte aussi le sombre.
+  // utilisé par quelques classes de layout-utilities.scss (surface-card,
+  // surface-border, text-900), choisirait toujours sa branche claire faute
+  // de savoir que la page supporte aussi le sombre.
   color-scheme: light dark;
 
   // Palette primary (definePreset dans app.config.ts)
@@ -112,6 +112,21 @@
   --nt-content-hover-background: var(--nt-surface-100);
   --nt-content-border-color: var(--nt-surface-200);
   --nt-content-border-radius: var(--nt-radius-md);
+  // Épaisseur de bordure des cartes/panels — indirection (pas directement
+  // `--nt-border-width-hairline` dans panel.component.scss) pour permettre à
+  // UN sous-arbre précis de la redéfinir en cascade sans toucher le reste de
+  // l'app : `.tab-content-wrapper` (day/général, ROADMAP.md "### UI", "réduire
+  // de moitié le border de tous les contenus de daytrip") la redéfinit à
+  // `--nt-border-width-hair`, tous les autres panels (dialogs, login...)
+  // gardent cette valeur par défaut.
+  --nt-content-border-width: var(--nt-border-width-hairline);
+
+  // Fond de page (body, toolbar, carte épinglée en mode empilé) — distinct de
+  // `--nt-content-background` (cartes/panels) pour qu'on distingue visuellement
+  // les cartes du fond, dans les deux modes (voir ROADMAP.md "UX / Interactions" :
+  // le fond blanc en mode clair ne se différenciait pas des cartes, elles aussi
+  // blanches).
+  --nt-page-background: var(--nt-surface-50);
 
   // Overlays (dialog, popover/select/autocomplete...)
   --nt-overlay-background: var(--nt-surface-0);
@@ -139,13 +154,24 @@
 
   // Rayons de bordure — en rem (jamais en px, cohérent avec le reste du
   // thème : un rayon doit suivre l'échelle typographique de l'utilisateur,
-  // pas rester figé en pixels physiques).
+  // pas rester figé en pixels physiques). Échelle agrandie (ROADMAP.md
+  // "### UI", "aggrandi les border radius") par rapport aux valeurs Aura
+  // d'origine — direction "premium" plus arrondie (DESIGN.md) — tout en
+  // gardant `--nt-radius-xs` intact (checkbox, volontairement anguleuse).
   --nt-radius-none: 0;
   --nt-radius-xs: 0.125rem;
   --nt-radius-sm: 0.25rem;
-  --nt-radius-md: 0.375rem;
-  --nt-radius-lg: 0.5rem;
-  --nt-radius-xl: 0.75rem;
+  --nt-radius-md: 0.5rem;
+  --nt-radius-lg: 0.75rem;
+  --nt-radius-xl: 1rem;
+  // Coins hauts d'un tiroir/bottom-sheet (day-picker-sheet, dispatch-overlay) —
+  // valeur déjà utilisée telle quelle avant tokenisation, juste nommée ici.
+  --nt-radius-2xl: 1.75rem;
+  // Forme pilule/capsule (chips, FAB, select-button "subtle") — `999px` plutôt
+  // qu'une valeur en `rem` : s'adapte automatiquement à N'IMPORTE QUELLE
+  // hauteur d'élément (toujours un demi-cercle à chaque bout), contrairement
+  // à un rayon fixe qui ne "ferme" parfaitement qu'à UNE hauteur précise.
+  --nt-radius-pill: 999px;
 
   // Largeurs de bordure — échelle unique pour tous les `border: Npx solid`
   // en dur trouvés dans les composants (panel, menu, fieldset, toolbar,
@@ -155,12 +181,92 @@
   // le reste du thème.
   --nt-border-width-hairline: 0.0625rem;
   --nt-border-width-thick: 0.125rem;
+  // Distincte de `--nt-border-width-thick` (2px, utilisée ailleurs pour le
+  // chevron d'`app-panel` — un composant partagé, pas question d'y toucher) :
+  // le panel de groupe (ville/jour/à-assigner) du pool d'activités doit se
+  // distinguer visuellement des cartes d'activité qu'il contient, elles-mêmes
+  // en `--nt-border-width-hairline` (1px) — un écart d'1px (hairline vs
+  // thick) s'est révélé imperceptible à l'oeil (vérifié via capture d'écran),
+  // d'où cette 3e valeur dédiée, plus nettement plus épaisse.
+  --nt-border-width-group: 0.1875rem;
+
+  // Bordure fine dédiée au contenu jour/général (cartes/panels) une fois la
+  // toolbar débarrassée de la sienne (voir ROADMAP.md "### UI", "toolbar
+  // n'aura plus de border, tu peux réduire de moitié le border de tous les
+  // contenus de daytrip") — moitié de `--nt-border-width-hairline`. Réservée
+  // à ce contexte précis (panel/activity-card), jamais un remplacement
+  // global du hairline standard (champs de formulaire, overlays...).
+  --nt-border-width-hair: 0.03125rem;
+
+  // Échelle d'élévation (ombres) — direction "premium" DESIGN.md : diffuses
+  // et douces plutôt que denses/dures, une seule échelle réutilisée partout
+  // au lieu des valeurs `box-shadow` dupliquées en dur trouvées composant par
+  // composant (FAB, mobile-trip-nav, marker photo...). `--nt-shadow-xs` = à
+  // peine perceptible (repos), `--nt-shadow-lg` = élément flottant au-dessus
+  // de tout le reste (FAB, bottom sheet).
+  --nt-shadow-xs: 0 0.0625rem 0.125rem rgba(15, 23, 42, 0.06);
+  --nt-shadow-sm: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.08);
+  --nt-shadow-md: 0 0.375rem 1rem -0.125rem rgba(15, 23, 42, 0.12);
+  --nt-shadow-lg: 0 0.75rem 2rem -0.375rem rgba(15, 23, 42, 0.18);
+
+  // Échelle de taille d'icône — remplace les `font-size` ad hoc trouvés sur
+  // les `<i class="pi ...">` composant par composant (0.65rem, 0.7rem,
+  // 0.85em, 0.9375rem, 1.15rem...), appliquée progressivement aux
+  // composants retouchés (pas un balayage global d'un coup, voir ROADMAP.md).
+  --nt-icon-size-sm: 0.875rem;
+  --nt-icon-size-md: 1rem;
+  --nt-icon-size-lg: 1.25rem;
+
+  // Grille d'espacement unique — alias des valeurs déjà utilisées par les
+  // utilitaires `.gap-*`/`.p-*` (layout-utilities.scss) et par
+  // `--nt-layout-gap-*` ci-dessous, pour que les prochains composants y
+  // réfèrent directement plutôt que des valeurs en rem dupliquées au cas par
+  // cas (ROADMAP.md "### UI", "grille de spacing unique").
+  --nt-space-1: 0.25rem;
+  --nt-space-2: 0.5rem;
+  --nt-space-3: 0.75rem;
+  --nt-space-4: 1rem;
+  --nt-space-5: 1.5rem;
+  --nt-space-6: 2rem;
 
   // Flou de fond (backdrop-filter) — une seule valeur pour tous les
   // masques/tiroirs (dialog, select mobile, date-picker mobile,
   // dispatch-overlay), qui utilisaient jusqu'ici 3 valeurs différentes
   // (4px/6px) sans raison fonctionnelle de diverger.
   --nt-blur-backdrop: 0.375rem;
+
+  // Largeur max des colonnes de contenu (jour/général : carte, timeline,
+  // activités, notes, réservations) sur grand écran — évite qu'une carte
+  // d'activité ou une liste s'étire sur toute la largeur d'un écran
+  // desktop, ce qui rend les clics à côté (au lieu de dessus) fréquents.
+  // Pas de limite en dessous (mobile) : un `max-width` n'a aucun effet tant
+  // que le viewport reste plus étroit que la valeur.
+  --nt-content-max-width: 40rem;
+
+  // Espacement entre blocs du layout jour/général (carte, timeline, bandeau
+  // réservation, activités...) : une seule paire de valeurs, réutilisée
+  // partout au lieu de `gap: 0.25rem`/`0.5rem` répété au cas par cas — mêmes
+  // valeurs que les utilitaires `.gap-1`/`.gap-2` (layout-utilities.scss),
+  // qui les référencent désormais plutôt que de les dupliquer. `--nt-layout-gap-split`
+  // est aussi la valeur (en px) de `SPLIT_CHROME_GAP_PX` dans
+  // `trip-chrome.service.ts` (header/barre des jours/contenu, voir ROADMAP.md
+  // "UI Desktop") — ce service raisonne en pixels réels mesurés, pas en CSS
+  // var, donc dupliquée là plutôt que lue dynamiquement, à garder synchronisée
+  // si retouchée ici.
+  --nt-layout-gap-stacked: 0.25rem;
+  --nt-layout-gap-split: 0.5rem;
+
+  // Marge de respiration au-dessus de la carte épinglée (day-panel ET pool
+  // Général, `.sticky-map`) en mode empilé (mobile) : sans elle, `top:
+  // var(--sticky-top-offset,0px)` colle la carte EXACTEMENT au bord haut de
+  // l'écran une fois le chrome masqué — visuellement comme si elle dépassait
+  // de l'écran plutôt que de s'y arrêter avec une marge. Uniquement en mode
+  // empilé : en layout scindé, `.sticky-map` occupe une hauteur calculée
+  // précisément (`100dvh - ...`), ajouter cette marge là-bas la ferait
+  // déborder en bas — chaque `.sticky-map` remet donc `top` à
+  // `var(--sticky-top-offset,0px)` (sans cette marge) dans son `@media`
+  // scindé (voir day-panel.component.scss/trip-activities.component.scss).
+  --nt-sticky-map-top-gap: 0.25rem;
 
   // Mouvement — courbe d'accélération dupliquée telle quelle dans
   // styles.scss (transitions de navigation, dispatch-overlay) et les
@@ -183,18 +289,29 @@
   // d'ordre lisible d'un coup d'œil, sans les valeurs à 4 chiffres qui
   // trainaient avant (1090, 1100, 1200, 1300, 9000...), qui ne voulaient
   // rien dire de plus que "un peu plus que l'autre".
-  // - header/toolbar : chrome fixe de l'appli (voir .app-trip-header-fixed
-  //   / .app-toolbar) — le toolbar doit rester au dessus du header.
+  // - toolbar : chrome fixe de l'appli (voir .app-toolbar).
   // - overlay-backdrop : fonds/masques semi-transparents (dispatch-overlay).
   // - overlay-content : le contenu flottant lui-même, au dessus de son
   //   propre backdrop (dispatch-ball) — les overlays @angular/cdk/overlay
   //   (dialog, menu, select, autocomplete, date-picker) vivent tous dans
   //   .cdk-overlay-container, dont le z-index (1000) dépasse déjà tout ça.
+  // - fixed-map : carte "jour" sortie du scroll (.day-fixed-map,
+  //   TripDaySwiperComponent) — juste sous la toolbar, mais au-dessus du
+  //   contenu normal qui défile en dessous (ROADMAP.md "### UI"). MÊME
+  //   valeur que --z-app-toolbar (retour utilisateur, ROADMAP.md "### UI") :
+  //   à un z-index strictement inférieur, le `box-shadow` de la toolbar (qui
+  //   peint AU-DELÀ de sa propre boîte) passait par-dessus la carte malgré un
+  //   écart de 0px entre les deux — lisible comme un filet d'ombre flottant
+  //   entre toolbar et carte plutôt qu'une continuité franche. À égalité de
+  //   z-index, l'ordre DOM tranche (.app-toolbar est déclaré avant
+  //   <router-outlet>/.app-content dans trips.component.html, voir sa doc) :
+  //   la carte, plus tardive dans le DOM, peint par-dessus l'ombre de la
+  //   toolbar plutôt que l'inverse.
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
-  --z-app-header: 10;
   --z-app-toolbar: 20;
+  --z-fixed-map: 20;
   --z-overlay-backdrop: 30;
   --z-overlay-content: 40;
   --z-drag-portal: 100;
@@ -207,6 +324,32 @@
   --nt-green-500: #12b76e;
   --nt-blue-500: #1570ef;
   --nt-yellow-500: #f79009;
+
+  // Couleurs d'identité par type logistique (voir LOGISTIC_TYPE_META.colorVar)
+  // — teintes choisies pour ne pas entrer en collision avec le teal primaire
+  // ni avec les couleurs de statut ci-dessus.
+  --nt-logistic-logement: #8B5CF6;
+  --nt-logistic-flight: #06B6D4;
+  --nt-logistic-carrental: #84CC16;
+  --nt-logistic-train: #EC4899;
+  --nt-logistic-other: #78716C;
+
+  // Couleurs d'identité par type d'activité (voir ACTIVITY_TYPE_META.colorVar,
+  // ROADMAP.md "UX / Interactions") — remplacent la couleur par statut de
+  // réservation sur le bord gauche des cartes d'activité. Distinctes des
+  // couleurs `--nt-logistic-*` ci-dessus. HEBERGEMENT/TRANSPORT : types
+  // legacy masqués à la création (voir HIDDEN_ACTIVITY_TYPES) mais gardent
+  // une couleur pour les activités déjà existantes.
+  --nt-activity-repas: #F97316;
+  --nt-activity-transport: #64748B;
+  --nt-activity-hebergement: #B45309;
+  --nt-activity-visite: #F43F5E;
+  --nt-activity-activite: #f79009;
+  --nt-activity-shopping: #D946EF;
+  --nt-activity-detente: #1570ef ;
+  --nt-activity-evenement: #6366F1;
+  --nt-activity-nature: #12b76e;
+  --nt-activity-soins: #14B8A6;
 
   // "Secondary"/neutre (Button, Tag...) — PAS un simple alias vers
   // --nt-surface-100/200/300 : ces primitives gardent la même convention de
@@ -227,116 +370,230 @@
   // (un simple gris n'y suffit pas visuellement) mais un blanc translucide.
   --nt-skeleton-bg: var(--nt-surface-200);
   --nt-skeleton-shimmer: rgba(255, 255, 255, 0.4);
+}
 
-  // -----------------------------------------------------------------------
-  // Shim de compatibilité `--p-*` pour PrimeFlex (encore installé, Phase 11
-  // pas encore faite) : ses classes utilitaires encore utilisées dans le
-  // projet (`surface-*`, `text-color(-secondary)`, `text-primary`,
-  // `border-round`...) référencent des variables `--p-*` que PrimeNG
-  // définissait lui-même à l'exécution (`providePrimeNG`) — supprimées en
-  // Phase 9, ce qui les rendait invisibles (valeur `initial`, propriété
-  // ignorée) plutôt que juste "mal colorées". Set réduit au strict
-  // nécessaire (audité via un script one-off comparant les classes
-  // réellement utilisées dans les templates aux règles de primeflex.css qui
-  // référencent `--p-*`) — à supprimer entièrement avec le reste de
-  // PrimeFlex en Phase 11.
-  //
-  // `--p-surface-*` : palette PLATE (pas de redéfinition par mode, contrairement
-  // à `--nt-surface-*` juste au-dessus) — primeflex fait lui-même le choix
-  // clair/sombre via `light-dark(var(--p-surface-100), var(--p-surface-700))`
-  // (deux NOMBRES différents de la même échelle statique, pas la même
-  // variable réévaluée), donc ces valeurs doivent rester les mêmes qu'on
-  // soit en clair ou en sombre.
-  --p-surface-0: #ffffff;
-  --p-surface-50: #f8fafc;
-  --p-surface-100: #f1f5f9;
-  --p-surface-200: #e2e8f0;
-  // 700/800/900/950 : ce sont les couleurs à utiliser côté DARK de
-  // light-dark() (voir primeflex.css — .surface-card, .surface-border...),
-  // donc alignées sur l'échelle zinc de --nt-surface-700/800/900/950 en dark
-  // mode (tokens.scss ci-dessus), pas sur la palette slate du light mode :
-  // sinon les fonds/bordures posés via ces classes utilitaires (ex.
-  // surface-card+surface-border du skeleton trip-detail) ressortent
-  // bleutés (slate) au lieu du gris neutre du reste du thème sombre.
-  --p-surface-700: #3f3f46;
-  --p-surface-800: #27272a;
-  --p-surface-900: #18181b;
-  --p-surface-950: #09090b;
-  --p-content-border-radius: var(--nt-content-border-radius);
-  --p-red-500: var(--nt-red-500);
-  --p-yellow-500: var(--nt-yellow-500);
+// Voir la doc de `--nt-shadow-*` dans le bloc `:root` ci-dessus : mêmes
+// ombres en clair et en sombre gonfleraient un fond déjà très foncé sans
+// jamais s'y détacher (un halo noir de plus sur du noir/ardoise) — le dark
+// mode reprend la même géométrie (offsets/flous inchangés) avec une opacité
+// nettement plus forte, seul levier qui reste lisible sur fond sombre.
+@mixin nt-shadow-dark-tokens {
+  --nt-shadow-xs: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.24);
+  --nt-shadow-sm: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.32);
+  --nt-shadow-md: 0 0.375rem 1rem -0.125rem rgba(0, 0, 0, 0.4);
+  --nt-shadow-lg: 0 0.75rem 2rem -0.375rem rgba(0, 0, 0, 0.55);
+}
 
-  // Ceux-ci, à l'inverse, doivent suivre le mode (pas de light-dark() côté
-  // primeflex pour ces 3 classes) : simple alias vers nos jetons `--nt-*`
-  // déjà auto-adaptatifs (redéfinis dans le bloc @media plus bas) — une
-  // référence `var()` se ré-évalue à chaque usage dans le contexte courant,
-  // pas besoin de les redéfinir une deuxième fois dans ce bloc.
-  --p-text-color: var(--nt-text-color);
-  --p-text-muted-color: var(--nt-text-muted-color);
-  --p-primary-color: var(--nt-primary-color);
+@mixin nt-shadow-light-tokens {
+  --nt-shadow-xs: 0 0.0625rem 0.125rem rgba(15, 23, 42, 0.06);
+  --nt-shadow-sm: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.08);
+  --nt-shadow-md: 0 0.375rem 1rem -0.125rem rgba(15, 23, 42, 0.12);
+  --nt-shadow-lg: 0 0.75rem 2rem -0.375rem rgba(15, 23, 42, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --nt-primary-color: var(--nt-primary-400);
-    --nt-primary-contrast-color: var(--nt-surface-900);
-    --nt-primary-hover-color: var(--nt-primary-300);
-    --nt-primary-active-color: var(--nt-primary-200);
-
-    // Palette surface (zinc — valeur par défaut Aura en dark)
-    --nt-surface-0: #ffffff;
-    --nt-surface-50: #fafafa;
-    --nt-surface-100: #f4f4f5;
-    --nt-surface-200: #e4e4e7;
-    --nt-surface-300: #d4d4d8;
-    --nt-surface-400: #a1a1aa;
-    --nt-surface-500: #71717a;
-    --nt-surface-600: #52525b;
-    --nt-surface-700: #3f3f46;
-    --nt-surface-800: #27272a;
-    --nt-surface-900: #18181b;
-    --nt-surface-950: #09090b;
-
-    --nt-text-color: var(--nt-surface-0);
-    --nt-text-hover-color: var(--nt-surface-0);
-    --nt-text-muted-color: var(--nt-surface-400);
-    --nt-text-hover-muted-color: var(--nt-surface-300);
-
-    --nt-content-background: var(--nt-surface-900);
-    --nt-content-hover-background: var(--nt-surface-800);
-    --nt-content-border-color: var(--nt-surface-700);
-
-    --nt-overlay-background: var(--nt-surface-900);
-    --nt-overlay-border-color: var(--nt-surface-700);
-    --nt-mask-background: rgba(0, 0, 0, 0.6);
-
-    --nt-form-field-background: var(--nt-surface-950);
-    --nt-form-field-disabled-background: var(--nt-surface-700);
-    --nt-form-field-border-color: var(--nt-surface-600);
-    --nt-form-field-hover-border-color: var(--nt-surface-500);
-    --nt-form-field-invalid-border-color: #fca5a5;
-    --nt-form-field-color: var(--nt-surface-0);
-    --nt-form-field-disabled-color: var(--nt-surface-400);
-    --nt-form-field-placeholder-color: var(--nt-surface-400);
-    --nt-form-field-icon-color: var(--nt-surface-400);
-
-    // Teintes plus claires que la version light (lisibilité sur fond sombre),
-    // mais gardent la même intensité/saturation relative — voir la version
-    // light plus haut pour le raisonnement.
-    --nt-red-500: #ff6166;
-    --nt-green-500: #32d583;
-    --nt-blue-500: #53b1fd;
-    --nt-yellow-500: #fdb022;
-
-    --nt-secondary-bg: var(--nt-surface-800);
-    --nt-secondary-hover-bg: var(--nt-surface-700);
-    --nt-secondary-active-bg: var(--nt-surface-600);
-    --nt-secondary-color: var(--nt-surface-300);
-    --nt-secondary-outlined-color: var(--nt-surface-400);
-    --nt-secondary-outlined-hover-bg: rgba(255, 255, 255, 0.04);
-    --nt-secondary-outlined-active-bg: rgba(255, 255, 255, 0.16);
-
-    --nt-skeleton-bg: rgba(255, 255, 255, 0.06);
-    --nt-skeleton-shimmer: rgba(255, 255, 255, 0.04);
+    @include nt-shadow-dark-tokens;
   }
+}
+
+:root[data-theme='dark'] {
+  @include nt-shadow-dark-tokens;
+}
+
+:root[data-theme='light'] {
+  @include nt-shadow-light-tokens;
+}
+
+// Jetons redéfinis par mode — factorisés en mixins pour être appliqués à la
+// fois via la media query (mode "système", voir ThemeService) et via
+// l'attribut `data-theme` posé par ThemeService sur `<html>` quand
+// l'utilisateur choisit explicitement clair/sombre dans le menu réglages
+// (roue crantée) plutôt que de suivre l'OS — voir CLAUDE.md/ROADMAP.md.
+// `:root[data-theme='...']` a une spécificité plus élevée qu'un simple
+// `:root` posé dans un `@media`, donc un choix explicite l'emporte toujours
+// sur la préférence système, quel que soit l'ordre des règles.
+@mixin nt-dark-tokens {
+  --nt-primary-color: var(--nt-primary-400);
+  --nt-primary-contrast-color: var(--nt-surface-900);
+  --nt-primary-hover-color: var(--nt-primary-300);
+  --nt-primary-active-color: var(--nt-primary-200);
+
+  // Palette surface (zinc — valeur par défaut Aura en dark)
+  --nt-surface-0: #ffffff;
+  --nt-surface-50: #fafafa;
+  --nt-surface-100: #f4f4f5;
+  --nt-surface-200: #e4e4e7;
+  --nt-surface-300: #d4d4d8;
+  --nt-surface-400: #a1a1aa;
+  --nt-surface-500: #71717a;
+  --nt-surface-600: #52525b;
+  --nt-surface-700: #3f3f46;
+  --nt-surface-800: #27272a;
+  --nt-surface-900: #18181b;
+  --nt-surface-950: #09090b;
+
+  --nt-text-color: var(--nt-surface-0);
+  --nt-text-hover-color: var(--nt-surface-0);
+  --nt-text-muted-color: var(--nt-surface-400);
+  --nt-text-hover-muted-color: var(--nt-surface-300);
+
+  --nt-content-background: var(--nt-surface-900);
+  --nt-content-hover-background: var(--nt-surface-800);
+  --nt-content-border-color: var(--nt-surface-700);
+  --nt-page-background: var(--nt-surface-950);
+
+  --nt-overlay-background: var(--nt-surface-900);
+  --nt-overlay-border-color: var(--nt-surface-700);
+  --nt-mask-background: rgba(0, 0, 0, 0.6);
+
+  --nt-form-field-background: var(--nt-surface-950);
+  --nt-form-field-disabled-background: var(--nt-surface-700);
+  --nt-form-field-border-color: var(--nt-surface-600);
+  --nt-form-field-hover-border-color: var(--nt-surface-500);
+  --nt-form-field-invalid-border-color: #fca5a5;
+  --nt-form-field-color: var(--nt-surface-0);
+  --nt-form-field-disabled-color: var(--nt-surface-400);
+  --nt-form-field-placeholder-color: var(--nt-surface-400);
+  --nt-form-field-icon-color: var(--nt-surface-400);
+
+  // Teintes plus claires que la version light (lisibilité sur fond sombre),
+  // mais gardent la même intensité/saturation relative — voir la version
+  // light plus haut pour le raisonnement.
+  --nt-red-500: #ff6166;
+  --nt-green-500: #32d583;
+  --nt-blue-500: #53b1fd;
+  --nt-yellow-500: #fdb022;
+
+  --nt-logistic-logement: #A78BFA;
+  --nt-logistic-flight: #22D3EE;
+  --nt-logistic-carrental: #A3E635;
+  --nt-logistic-train: #F472B6;
+  --nt-logistic-other: #A8A29E;
+
+  --nt-activity-repas: #FB923C;
+  --nt-activity-transport: #94A3B8;
+  --nt-activity-hebergement: #D97706;
+  --nt-activity-visite:#FB7185;
+  --nt-activity-activite: #fdb022;
+  --nt-activity-shopping: #E879F9;
+  --nt-activity-detente:  #53b1fd;
+  --nt-activity-evenement: #818CF8;
+  --nt-activity-nature: #32d583;
+  --nt-activity-soins: #2DD4BF;
+
+  --nt-secondary-bg: var(--nt-surface-800);
+  --nt-secondary-hover-bg: var(--nt-surface-700);
+  --nt-secondary-active-bg: var(--nt-surface-600);
+  --nt-secondary-color: var(--nt-surface-300);
+  --nt-secondary-outlined-color: var(--nt-surface-400);
+  --nt-secondary-outlined-hover-bg: rgba(255, 255, 255, 0.04);
+  --nt-secondary-outlined-active-bg: rgba(255, 255, 255, 0.16);
+
+  --nt-skeleton-bg: rgba(255, 255, 255, 0.06);
+  --nt-skeleton-shimmer: rgba(255, 255, 255, 0.04);
+}
+
+// Mirroir exact des valeurs par défaut (light) déclarées dans `:root`
+// ci-dessus, pour pouvoir les réaffirmer explicitement quand l'utilisateur
+// choisit "clair" alors que l'OS est en sombre (sinon le bloc `@media`
+// resterait actif malgré le choix explicite).
+@mixin nt-light-tokens {
+  --nt-primary-color: var(--nt-primary-500);
+  --nt-primary-contrast-color: #ffffff;
+  --nt-primary-hover-color: var(--nt-primary-600);
+  --nt-primary-active-color: var(--nt-primary-700);
+
+  --nt-surface-0: #ffffff;
+  --nt-surface-50: #f8fafc;
+  --nt-surface-100: #f1f5f9;
+  --nt-surface-200: #e2e8f0;
+  --nt-surface-300: #cbd5e1;
+  --nt-surface-400: #94a3b8;
+  --nt-surface-500: #64748b;
+  --nt-surface-600: #475569;
+  --nt-surface-700: #334155;
+  --nt-surface-800: #1e293b;
+  --nt-surface-900: #0f172a;
+  --nt-surface-950: #020617;
+
+  --nt-text-color: var(--nt-surface-700);
+  --nt-text-hover-color: var(--nt-surface-800);
+  --nt-text-muted-color: var(--nt-surface-500);
+  --nt-text-hover-muted-color: var(--nt-surface-600);
+
+  --nt-content-background: var(--nt-surface-0);
+  --nt-content-hover-background: var(--nt-surface-100);
+  --nt-content-border-color: var(--nt-surface-200);
+  --nt-page-background: var(--nt-surface-50);
+
+  --nt-overlay-background: var(--nt-surface-0);
+  --nt-overlay-border-color: var(--nt-surface-200);
+  --nt-mask-background: rgba(0, 0, 0, 0.4);
+
+  --nt-form-field-background: var(--nt-surface-0);
+  --nt-form-field-disabled-background: var(--nt-surface-200);
+  --nt-form-field-border-color: var(--nt-surface-300);
+  --nt-form-field-hover-border-color: var(--nt-surface-400);
+  --nt-form-field-invalid-border-color: #f87171;
+  --nt-form-field-color: var(--nt-surface-700);
+  --nt-form-field-disabled-color: var(--nt-surface-500);
+  --nt-form-field-placeholder-color: var(--nt-surface-500);
+  --nt-form-field-icon-color: var(--nt-surface-400);
+
+  --nt-red-500: #f5222d;
+  --nt-green-500: #12b76e;
+  --nt-blue-500: #1570ef;
+  --nt-yellow-500: #f79009;
+
+  --nt-logistic-logement: #8B5CF6;
+  --nt-logistic-flight: #06B6D4;
+  --nt-logistic-carrental: #84CC16;
+  --nt-logistic-train: #EC4899;
+  --nt-logistic-other: #78716C;
+
+  --nt-activity-repas: #F97316;
+  --nt-activity-transport: #64748B;
+  --nt-activity-hebergement: #B45309;
+  --nt-activity-visite:  #F43F5E;
+  --nt-activity-activite: #f79009;
+  --nt-activity-shopping: #D946EF;
+  --nt-activity-detente: #1570ef;
+  --nt-activity-evenement: #6366F1;
+  --nt-activity-nature: #12b76e;
+  --nt-activity-soins: #14B8A6;
+
+  --nt-secondary-bg: var(--nt-surface-100);
+  --nt-secondary-hover-bg: var(--nt-surface-200);
+  --nt-secondary-active-bg: var(--nt-surface-300);
+  --nt-secondary-color: var(--nt-surface-600);
+  --nt-secondary-outlined-color: var(--nt-surface-500);
+  --nt-secondary-outlined-hover-bg: var(--nt-surface-50);
+  --nt-secondary-outlined-active-bg: var(--nt-surface-100);
+
+  --nt-skeleton-bg: var(--nt-surface-200);
+  --nt-skeleton-shimmer: rgba(255, 255, 255, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include nt-dark-tokens;
+  }
+}
+
+:root[data-theme='dark'] {
+  // `color-scheme: light dark` (posé plus haut) laisse le navigateur choisir
+  // la branche en fonction de la préférence OS — ce qui pilote aussi bien le
+  // rendu natif (scrollbars, contrôles de formulaire, fond d'overscroll
+  // mobile) que `light-dark()` (voir plus haut, layout-utilities.scss). Sans
+  // ce réglage explicite, un choix de thème manuel dans l'appli n'avait aucun
+  // effet sur ces deux mécanismes : ils continuaient de suivre le thème du
+  // système/navigateur quoi qu'il arrive (voir ROADMAP.md).
+  color-scheme: dark;
+  @include nt-dark-tokens;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  @include nt-light-tokens;
 }

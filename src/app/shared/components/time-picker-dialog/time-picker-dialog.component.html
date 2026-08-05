@@ -1,17 +1,17 @@
 @if (viewport.isMobile()) {
     <div
-        class="custom-time-input-trigger flex justify-content-start align-items-center"
+        class="custom-time-input-trigger flex justify-content-start align-items-center "
         role="button"
         tabindex="0"
         (click)="openDialog()"
     >
-        {{ displayText }}
+        {{ displayText() }}
     </div>
 } @else {
     <app-time-fields
         variant="flat"
-        [hour]="hourText"
-        [minute]="minuteText"
+        [hour]="hourText()"
+        [minute]="minuteText()"
         (hourChange)="onHourFieldChange($event)"
         (minuteChange)="onMinuteFieldChange($event)"
     />

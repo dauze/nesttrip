@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
-import { Trip } from '@app/features/trips/trip.model';
+import { Trip, TripSummary } from '@app/features/trips/trip.model';
 
 export abstract class TripRepository {
-  abstract getTrips$(): Observable<Pick<Trip, 'id' | 'title'| 'ownerId'>[]>;
+  abstract getTrips$(): Observable<TripSummary[]>;
   abstract getTrip$(id: string): Observable<Trip>;
 }

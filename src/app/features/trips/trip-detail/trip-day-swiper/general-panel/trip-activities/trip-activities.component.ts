@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, signal, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ViewContainerRef, computed, effect, inject, input, signal, viewChildren } from '@angular/core';
+import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
@@ -14,10 +16,12 @@ import { InputTextDirective } from '@app/shared/directives/input-text.directive'
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { TripActivitiesCreationService } from './trip-activities-creation.service';
 import { NewActivityDraftComponent } from '../../day-panel/new-activity-draft/new-activity-draft.component';
+import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 const UNCATEGORIZED_LABEL = 'À catégoriser';
 
 type SortMode = 'city' | 'chrono';
+const SORT_MODES: SortMode[] = ['city', 'chrono'];
 
 /** Une ligne de la vue "Ville" : une ou plusieurs `PoolActivity` partageant le même `placeId` (doublons créés séparément sur des jours différents), affichées comme une seule carte "représentante". */
 interface CityRow {
@@ -45,7 +49,7 @@ function matchesSearch(title: string, address: string | undefined, term: string)
   standalone: true,
   imports: [
     PanelComponent, MessageComponent, ActivityCardComponent, CardComponent, NewActivityDraftComponent,
-    SelectButtonComponent, InputTextDirective, DatePipe, ButtonComponent,
+    SelectButtonComponent, InputTextDirective, DatePipe, ButtonComponent, FabBottomProximityDirective,
   ],
   templateUrl: './trip-activities.component.html',
   styleUrl: './trip-activities.component.scss',
@@ -57,17 +61,23 @@ export class TripActivitiesComponent {
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   protected readonly creationService = inject(TripActivitiesCreationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly fabTarget = inject(TripCreationTargetService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
 
   readonly tripId = input.required<string>();
 
-  readonly sortMode = signal<SortMode>('chrono');
+  // Restaure le tri depuis l'URL (?sort=...) au montage — voir onSortModeChange,
+  // qui l'y écrit à chaque changement (voir ROADMAP.md).
+  readonly sortMode = signal<SortMode>(this.readSortModeFromUrl() ?? 'city');
   readonly searchTerm = signal('');
 
   readonly sortOptions: SelectButtonOption<SortMode>[] = [
+        { label: 'Lieu', value: 'city', icon: 'pi pi-map-marker' },
     { label: 'Chronologie', value: 'chrono', icon: 'pi pi-calendar' },
-    { label: 'Lieu', value: 'city', icon: 'pi pi-map-marker' },
   ];
 
   private readonly normalizedSearch = computed(() => this.searchTerm().trim().toLowerCase());
@@ -89,16 +99,48 @@ export class TripActivitiesComponent {
       getCards: () => this.activityCards(),
       getTripId: () => this.tripId(),
       getViewContainerRef: () => this.viewContainerRef,
+      getSearchTerm: () => this.searchTerm(),
+      clearSearch: () => this.clearSearch(),
     });
+
+    // "+" flottant (voir TripDetailComponent.addMenuItems, entrée "Activité") : ce
+    // tab est un singleton comme un jour, donc un enregistrement one-shot au
+    // montage suffit (pas d'effect, pas d'input dont dépendre).
+    const unregisterFab = this.fabTarget.register('activities', () => this.triggerCreate());
+    this.destroyRef.onDestroy(unregisterFab);
+
+    // Demande de création différée (voir TripCreationTargetService.requestCreateOnMount) :
+    // le "+" depuis Logistique/Listes navigue d'abord vers cet onglet, PUIS pose
+    // cette demande — consommée ici dès que ce composant est effectivement monté
+    // (même schéma que NotesFocusService/LogisticFocusService).
+    effect(() => {
+      const pending = this.fabTarget.pendingCreate();
+      if (!pending || pending.id !== 'activities') return;
+      this.fabTarget.clearPendingCreate(pending.token);
+      this.triggerCreate();
+    });
+
   }
 
-  /** Point d'entrée pour le bouton "+" flottant, porté par `GeneralPanelComponent` (pas ce composant). */
+  /** Point d'entrée pour le bouton "+" flottant (voir TripCreationTargetService/TripDetailComponent.addMenuItems). */
   triggerCreate(): void {
     this.creationService.startCreation();
   }
 
   onSortModeChange(mode: SortMode | undefined): void {
-    if (mode) this.sortMode.set(mode);
+    if (!mode) return;
+    this.sortMode.set(mode);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { sort: mode },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private readSortModeFromUrl(): SortMode | null {
+    const value = this.route.snapshot.queryParamMap.get('sort');
+    return SORT_MODES.includes(value as SortMode) ? (value as SortMode) : null;
   }
 
   onSearchInput(event: Event): void {
@@ -107,6 +149,11 @@ export class TripActivitiesComponent {
 
   clearSearch(): void {
     this.searchTerm.set('');
+  }
+
+  /** Voir `FabBottomProximityDirective`/`TripCreationTargetService.avoidEdge` (ROADMAP.md "UX / Interactions") : évitement de bord du "+" flottant. */
+  onFabNearBottomChange(nearBottom: boolean): void {
+    this.fabTarget.setAvoidEdge(nearBottom);
   }
 
   /** Nombre total d'activités visibles compte tenu du mode de tri courant — sert uniquement au message "aucun résultat". */

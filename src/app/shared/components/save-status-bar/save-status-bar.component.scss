@@ -1,0 +1,41 @@
+// Vrai `position: fixed`, tout en haut du viewport (avant toute autre barre
+// fixe de l'appli) — comme FloatingAddButtonComponent, monté une seule fois
+// par TripsComponent, HORS du swiper de jours pour ne jamais hériter d'un
+// `transform` d'ancêtre.
+:host {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-overlay-content);
+  pointer-events: none;
+}
+
+// Fine barre (pas un bandeau) : juste un liseré de couleur qui glisse de
+// gauche à droite, façon barre de progression de navigateur — pas de texte,
+// discret par design (voir ROADMAP.md).
+.save-status-bar {
+  height: 0.15rem;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+}
+
+.save-status-bar__runner {
+  height: 0.15rem;
+  width: 30%;
+  background: var(--nt-green-500);
+  border-radius: var(--nt-radius-md);
+  animation: save-status-bar-slide 1.8s ease-in-out;
+}
+
+.save-status-bar--error .save-status-bar__runner {
+  background: var(--nt-red-500);
+  animation-duration: 1.4s;
+  animation-iteration-count: infinite;
+}
+
+@keyframes save-status-bar-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(333%); }
+}

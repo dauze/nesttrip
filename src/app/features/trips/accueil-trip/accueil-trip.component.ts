@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -11,6 +11,7 @@ import { SelectionModeService } from '@app/shared/services/selection-mode.servic
 import { SelectionActionBarComponent } from '@app/shared/components/selection-action-bar/selection-action-bar.component';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { TripFacade } from '../trip-facade.service';
+import { TripSummary } from '../trip.model';
 import { AuthService } from '@app/core/services/auth.service';
 import { NgClass } from '@angular/common';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
@@ -18,6 +19,7 @@ import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 @Component({
   selector: 'app-accueil-trip',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CardComponent,
     ButtonComponent,
@@ -32,6 +34,7 @@ import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
     SelectionActionBarComponent,
   ],
   templateUrl: 'accueil-trip.component.html',
+  styleUrl: 'accueil-trip.component.scss',
   // Une instance dédiée (voir SelectionModeService) : le mode sélection de
   // cet écran ne doit jamais se mélanger avec celui de trip-detail.
   providers: [SelectionModeService],
@@ -46,6 +49,40 @@ export class AccueilTripComponent {
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;
   readonly user = this.authService.getCurrentUser();
+
+  constructor() {
+    // Redirection directe, UNIQUEMENT à l'ouverture de la web app (juste
+    // après un login, voir AuthService.justLoggedIn) — jamais lors d'un
+    // retour manuel depuis un trip, sinon impossible de revenir sur cet écran
+    // (voir ROADMAP.md, tentative précédente désactivée pour cette raison).
+    // Consommé une seule fois, dès que le chargement des trips aboutit :
+    // - aucun trip -> écran "Nouveau voyage" directement (rien à afficher ici) ;
+    // - un trip ACTIF (voir `isActiveTrip`) -> ce trip directement, qu'il y en
+    //   ait d'autres ou non (décision actée, voir ROADMAP.md "UX / Interactions") ;
+    // - sinon (aucun trip actif, un ou plusieurs) -> reste sur cet écran.
+    effect(() => {
+      if (!this.authService.justLoggedIn() || this.tripsLoading()) return;
+
+      this.authService.justLoggedIn.set(false);
+      const trips = this.trips();
+
+      if (trips.length === 0) {
+        this.router.navigate(['/trips/new']);
+        return;
+      }
+
+      const active = trips.find((t) => this.isActiveTrip(t));
+      if (active) this.router.navigate(['/trips', active.id]);
+    });
+  }
+
+  /** Un trip est "actif" si la date du jour tombe dans l'intervalle (inclusif) `earliestDay`-`latestDay` — voir ROADMAP.md "UX / Interactions" et `TripSummary`. Comparaison en date seule (minuit local), l'heure n'a pas de sens ici. */
+  private isActiveTrip(trip: TripSummary): boolean {
+    if (!trip.earliestDay || !trip.latestDay) return false;
+    const dateOnly = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const today = dateOnly(new Date());
+    return today >= dateOnly(trip.earliestDay) && today <= dateOnly(trip.latestDay);
+  }
 
   selectTrip(id: string): void {
     this.router.navigate(['/trips', id]);

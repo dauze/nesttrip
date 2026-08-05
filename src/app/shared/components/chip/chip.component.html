@@ -3,7 +3,7 @@
 }
 <ng-content />
 @if (removable()) {
-  <button type="button" class="app-chip__remove" aria-label="Retirer" (click)="onRemoveClick($event)">
+  <button type="button" class="app-chip__remove inline-flex align-items-center justify-content-center" aria-label="Retirer" (click)="onRemoveClick($event)">
     <i class="pi pi-times"></i>
   </button>
 }

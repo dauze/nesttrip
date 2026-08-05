@@ -1,0 +1,13 @@
+// `display: contents` (PAS `block`) : ce composant peut rendre RIEN
+// (`@if (isVisible())` dans le template, aucun lieu sélectionné) — sans ça,
+// son hôte reste quand même un flex-item à part entière du parent
+// (`.logistic-details`, `flex flex-column gap-2`), et `gap` insère de
+// l'espace de part et d'autre de CE flex-item même vide (0px de contenu),
+// entre les deux `<app-divider>` qui l'entourent dans
+// `logistic-details.component.html` — d'où un bloc "vide entre deux
+// séparateurs" visible dès qu'aucun lieu n'est encore choisi (ROADMAP.md
+// "Bugs / fixes", retour utilisateur : "zones avec double separator vide à
+// tort"). `display: contents` retire l'hôte du calcul de layout : ses propres
+// enfants (rien, ou le `<app-divider>`/bloc Google/`<app-panel>` internes une
+// fois visible) deviennent directement les flex-items du parent.
+:host { display: contents; }

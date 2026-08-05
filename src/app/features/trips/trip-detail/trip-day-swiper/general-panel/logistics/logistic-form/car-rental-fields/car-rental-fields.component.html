@@ -1,0 +1,15 @@
+<div class="flex flex-column gap-2">
+  <app-place-autocomplete-field
+    label="Lieu de prise en charge"
+    placeholder="Rechercher un lieu..."
+    [initialPlace]="initialPickupPlace()"
+    (placeSelected)="pickupPlaceSelected.emit($event)" />
+
+  <app-divider class="m-1" />
+
+  <app-place-autocomplete-field
+    label="Lieu de restitution"
+    placeholder="Rechercher un lieu..."
+    [initialPlace]="initialDropoffPlace()"
+    (placeSelected)="dropoffPlaceSelected.emit($event)" />
+</div>

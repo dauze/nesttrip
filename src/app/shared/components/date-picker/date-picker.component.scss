@@ -17,10 +17,6 @@
 }
 
 .app-date-picker__trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
   border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
   border-radius: var(--nt-form-field-border-radius);
@@ -57,6 +53,47 @@
 
 .app-date-picker__label--placeholder {
   color: var(--nt-form-field-placeholder-color);
+}
+
+// Variante desktop (saisie clavier + clic n'importe où dans la zone, voir la
+// doc de la classe) : le trigger reste un conteneur (pas un `<button>`) mais
+// n'a plus qu'un seul enfant interactif, l'`<input>` — l'icône calendrier est
+// purement décorative (`.app-date-picker__icon`, `pointer-events:none`),
+// positionnée dedans en suffixe.
+.app-date-picker__trigger--desktop {
+  position: relative;
+  cursor: text;
+  padding: 0;
+}
+
+.app-date-picker__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
+  // Espace réservé pour l'icône calendrier en suffixe, voir .app-date-picker__icon.
+  padding-right: 2rem;
+
+  &:focus {
+    outline: none;
+  }
+
+  &::placeholder {
+    color: var(--nt-form-field-placeholder-color);
+  }
+}
+
+.app-date-picker__icon {
+  position: absolute;
+  top: 50%;
+  right: var(--nt-form-field-padding-x);
+  transform: translateY(-50%);
+  color: var(--nt-text-muted-color);
+  pointer-events: none;
 }
 
 // Le panneau (.app-date-picker-panel et tout ce qu'il contient) est attaché

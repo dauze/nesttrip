@@ -69,9 +69,20 @@ export class PhotoViewerService {
     });
 
     lightbox.addFilter('thumbEl', () => triggerEl);
-    lightbox.addFilter('placeholderSrc', (placeholderSrc) =>
-      triggerEl instanceof HTMLImageElement ? triggerEl.currentSrc || triggerEl.src : placeholderSrc,
-    );
+    // Placeholder de la miniature cliquée réservé au tout premier slide
+    // affiché à l'ouverture (`content.slide.isFirstSlide`, cf. PhotoSwipe
+    // `Content.load` : "use image-based placeholder only for the first
+    // slide"). Sans cette garde, ce filtre écrasait la valeur par défaut
+    // (`false` pour tout slide qui n'est pas le premier) et renvoyait
+    // toujours la miniature d'ORIGINE — donc en swipant vers une autre
+    // photo, celle-ci s'affichait un instant avec la miniature de la
+    // précédente en guise de placeholder, avant que sa vraie image ne
+    // charge (le "clignotement" : l'ancienne photo semblait s'afficher
+    // brièvement avant la nouvelle).
+    lightbox.addFilter('placeholderSrc', (placeholderSrc, content) => {
+      if (!content.slide?.isFirstSlide) return placeholderSrc;
+      return triggerEl instanceof HTMLImageElement ? triggerEl.currentSrc || triggerEl.src : placeholderSrc;
+    });
 
     // PhotoSwipe ne connaît au départ que ref+dimensions (pas d'URL) : on
     // n'appelle le backend que quand PhotoSwipe charge réellement ce slide

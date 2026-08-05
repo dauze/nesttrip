@@ -10,10 +10,6 @@
 }
 
 .app-select-button__item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
   flex: 1 1 0;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
   border: none;
@@ -41,30 +37,107 @@
 // Pilule compacte, largeur auto : pour une bascule secondaire affichée sous
 // un `'solid'` déjà présent (ex. tri Ville/Chronologique sous Activités/Notes),
 // pour ne pas visuellement dupliquer une même barre pleine largeur deux fois.
+// Rendu "switch" (voir la doc de classe) : une pastille glissante
+// (.app-select-button__thumb) plutôt qu'un simple box-shadow sur l'item actif.
+// Contour posé sur le CONTENEUR (enveloppe les 2 boutons), jamais sur un item
+// individuel (aucun des deux n'a de bordure propre) — retour utilisateur :
+// un item non sélectionné ne doit montrer aucun contour à lui seul, seul le
+// pourtour de la pilule entière en a un, sous la pastille (voir ROADMAP.md).
 :host(.app-select-button--subtle) {
+  position: relative;
   display: inline-flex;
   width: auto;
-  border-radius: 999px;
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-secondary-bg);
-  padding: 0.2rem;
+  // `--nt-form-field-border-color` (même token que le variant 'solid' juste
+  // au-dessus) plutôt que `--nt-content-border-color` : plus contrasté contre
+  // le fond de la pilule ET contre la page — un hairline avec le ton "content"
+  // (subtil par design) se voyait mal du côté de la pastille primary, lisible
+  // uniquement du côté sans pastille, donnant l'impression à tort de
+  // n'entourer qu'un seul bouton (retour utilisateur, voir ROADMAP.md).
+  // 0.1875rem (3px) plutôt que le token `--nt-border-width-thick` (2px, pas
+  // assez large au goût de l'utilisateur) — pas de token existant au-delà,
+  // valeur littérale ponctuelle pour ce composant.
+  // Marge généreuse (pas juste un hairline de séparation) : retour
+  // utilisateur — le pourtour sombre doit rester clairement visible AUTOUR
+  // de la pastille colorée, pas juste l'effleurer (voir ROADMAP.md, schéma
+  // de référence "le noir un peu plus large que le bouton coloré").
+  padding: 0.35rem;
   gap: 0.15rem;
+  // Mesuré : le contour (border ci-dessus) enveloppe déjà symétriquement les
+  // 2 boutons (vérifié par bounding box, ~8px de marge des 2 côtés) — mais
+  // restait peu perceptible du côté de la pastille primary (le contraste
+  // fort pastille/fond fait "disparaître" visuellement un simple liseré fin
+  // juste à côté). Ombre portée en plus pour que TOUTE la pilule se lise
+  // comme un seul objet posé/encadré, plutôt que de compter uniquement sur
+  // le contraste de couleur du contour — `--nt-shadow-sm` (diffuse, quasi
+  // symétrique) plutôt que `--nt-overlay-popover-shadow` (nettement plus
+  // lourde en bas qu'en haut) : cette dernière donnait l'impression que la
+  // pilule "penchait"/n'était pas centrée verticalement dans sa ligne
+  // (retour utilisateur, ROADMAP.md "### UI").
+  box-shadow: var(--nt-shadow-sm);
+}
+
+// 3 couches demandées explicitement par l'utilisateur (voir ROADMAP.md) :
+// 1. le conteneur (`--nt-secondary-bg`, "zone grise") qui englobe tout ;
+// 2. cette "piste" (`--nt-form-field-background`) DANS la zone grise,
+//    qui englobe les 2 boutons (remplit tout le contenu, du bord du
+//    padding à l'autre — mêmes marges que le thumb ci-dessous) ;
+// 3. la pastille (couleur primary) par-dessus, sur le bouton sélectionné.
+// Élément dédié plutôt qu'un fond sur le conteneur lui-même : la "zone
+// grise" (couche 1) doit rester visible tout autour (le padding), donc la
+// couche 2 ne peut pas être simplement `background` sur `:host`.
+.app-select-button__track {
+  position: absolute;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  left: 0.2rem;
+  right: 0.2rem;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-form-field-background);
+  pointer-events: none;
+}
+
+// `left`/`width` posés en JS (px mesurés, voir SelectButtonComponent.thumbRect)
+// plutôt qu'un simple `100% / options().length` : les items sont à largeur
+// auto (contenu), jamais égale entre 2 options. `top`/`bottom` alignés sur le
+// `padding` du conteneur ci-dessus (même marge visible tout autour).
+.app-select-button__thumb {
+  position: absolute;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-primary-color);
+  transition: left var(--nt-transition-duration) ease, width var(--nt-transition-duration) ease;
+  pointer-events: none;
 }
 
 :host(.app-select-button--subtle) .app-select-button__item {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
-  border-right: none;
-  border-radius: 999px;
+  border: none;
+  border-radius: var(--nt-radius-pill);
   padding: 0.35rem 0.85rem;
   font-size: 0.85rem;
   color: var(--nt-text-muted-color);
+  // LE bug trouvé par l'utilisateur (via l'inspecteur) : la règle de base
+  // `.app-select-button__item` (ligne 16 plus haut, pensée pour le variant
+  // 'solid') pose `background: var(--nt-form-field-background)` — jamais
+  // réinitialisée ici jusqu'à présent. Chaque item (pas seulement l'actif)
+  // peignait donc SA PROPRE couleur de fond opaque, quasi noire en dark
+  // theme, masquant le fond partagé du conteneur (`--nt-secondary-bg`) sauf
+  // dans le mince interstice padding/gap — d'où l'impression tenace de "2
+  // boîtes séparées" plutôt qu'une seule pilule commune, quoi que je change
+  // par ailleurs (contour, ombre, marge). Transparent : seul le conteneur
+  // (et la pastille, pour l'item actif) fournit un fond visuel désormais.
+  background: transparent;
 }
 
-:host(.app-select-button--subtle) .app-select-button__item:hover:not(.app-select-button__item--active) {
-  background: var(--nt-content-hover-background);
-}
-
+// Pas de hover sur l'item non sélectionné pour CE variant (demande explicite
+// utilisateur) — contrairement au variant 'solid', qui garde le sien (règle
+// de base `.app-select-button__item:hover`, non touchée ici).
 :host(.app-select-button--subtle) .app-select-button__item--active {
-  background: var(--nt-content-background);
-  color: var(--nt-text-color);
-  box-shadow: var(--nt-overlay-popover-shadow);
+  background: transparent;
+  color: var(--nt-primary-contrast-color);
 }

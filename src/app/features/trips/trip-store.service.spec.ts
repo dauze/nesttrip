@@ -1,0 +1,363 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { TripStore } from './trip-store.service';
+import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
+import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
+import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
+import { LogisticPersistenceService } from '@app/core/infra/firebase/services/persistence/logistic-persistence.service';
+import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
+import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
+import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
+import { CollaborationService } from '@app/core/services/collaboration.service';
+import { ActivityType } from '@core/enums/activites-type.enum';
+import { BookingStatus } from '@core/enums/booking.status';
+import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+
+/** Writer débouncé factice : reproduit l'API publique de `DebounceWriter` (voir shared/debounced-writer.ts) sans jamais toucher Firestore. */
+function fakeWriter() {
+  return {
+    syncing: signal(false),
+    hasError: signal(false),
+    queueUpdate: vi.fn(),
+  };
+}
+
+describe('TripStore', () => {
+  const tripId = 't1';
+  const dayId = new Date('2026-08-01T00:00:00.000Z');
+
+  let activityWriter: ReturnType<typeof fakeWriter>;
+  let instanceWriter: ReturnType<typeof fakeWriter>;
+  let store: TripStore;
+
+  function poolActivity(overrides: Partial<PoolActivity> = {}): PoolActivity {
+    return { id: 'pool-1', title: 'Tour Eiffel', files: [], photoRefs: [], ...overrides };
+  }
+
+  function instance(overrides: Partial<DayActivityInstance> = {}): DayActivityInstance {
+    return {
+      id: 'instance-1',
+      activityId: 'pool-1',
+      type: ActivityType.VISITE,
+      duration: 60,
+      price: { amount: 0, currency: 'EUR' },
+      booking: { status: BookingStatus.NOT_NEEDED },
+      notes: '',
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    activityWriter = fakeWriter();
+    instanceWriter = fakeWriter();
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ActivityPersistenceService, useValue: activityWriter },
+        { provide: DayActivityInstancePersistenceService, useValue: instanceWriter },
+        { provide: DayActivitiesPersistenceService, useValue: fakeWriter() },
+        { provide: LogisticPersistenceService, useValue: fakeWriter() },
+        { provide: NotesPersistenceService, useValue: fakeWriter() },
+        {
+          provide: TripPersistenceService,
+          useValue: {
+            createTrip: vi.fn().mockResolvedValue(undefined),
+            updateTripTitle: vi.fn().mockResolvedValue(undefined),
+            updateTripCurrency: vi.fn().mockResolvedValue(undefined),
+            removeTrip: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: DayPersistenceService,
+          useValue: {
+            addDay: vi.fn().mockResolvedValue(undefined),
+            removeDay: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: CollaborationService,
+          useValue: {
+            addCollaborator: vi.fn().mockReturnValue(of({ success: true, uid: 'u1', email: 'a@b.com', displayName: null })),
+            removeCollaborator: vi.fn().mockReturnValue(of({ success: true })),
+          },
+        },
+      ],
+    });
+
+    store = TestBed.inject(TripStore);
+  });
+
+  describe('updatePoolActivity — mise à jour optimiste', () => {
+    it('met à jour le signal immédiatement, avant toute confirmation Firestore', () => {
+      store.createGeneralActivity(tripId, poolActivity());
+
+      store.updatePoolActivity(tripId, poolActivity({ title: 'Tour Eiffel (rénovée)' }));
+
+      expect(store.getPoolActivity('pool-1')().title).toBe('Tour Eiffel (rénovée)');
+      expect(activityWriter.queueUpdate).toHaveBeenCalledWith(tripId, expect.objectContaining({ title: 'Tour Eiffel (rénovée)' }));
+    });
+
+    it('marque l\'activité pending dès la commande, sans attendre le writer', () => {
+      store.updatePoolActivity(tripId, poolActivity());
+
+      expect(store._pendingActivityIds().has('pool-1')).toBe(true);
+    });
+  });
+
+  describe('anti-flicker (_pendingActivityIds)', () => {
+    it("reste protégée tant que l'un des deux writers (pool ou instance) est encore en train de synchroniser", () => {
+      store.updatePoolActivity(tripId, poolActivity());
+      expect(store._pendingActivityIds().has('pool-1')).toBe(true);
+
+      activityWriter.syncing.set(true);
+      TestBed.tick();
+
+      expect(store._pendingActivityIds().has('pool-1')).toBe(true);
+    });
+
+    it('ne relâche la protection que lorsque les DEUX writers redeviennent idle en même temps', () => {
+      store.updatePoolActivity(tripId, poolActivity());
+      store.updateDayActivityInstance(tripId, instance());
+      expect(store._pendingActivityIds()).toEqual(new Set(['pool-1', 'instance-1']));
+
+      // Le writer d'instances est encore en train de flush : la protection doit tenir,
+      // même si le writer d'activités, lui, est déjà retombé à idle.
+      instanceWriter.syncing.set(true);
+      activityWriter.syncing.set(false);
+      TestBed.tick();
+      expect(store._pendingActivityIds()).toEqual(new Set(['pool-1', 'instance-1']));
+
+      // Les deux writers sont maintenant idle : tout le lot pending est relâché d'un coup.
+      instanceWriter.syncing.set(false);
+      TestBed.tick();
+      expect(store._pendingActivityIds().size).toBe(0);
+    });
+  });
+
+  describe('updateTripCurrency — signal dédié, indépendant de _trips/activeTrip', () => {
+    function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
+      store._trips.set({
+        [tripId]: {
+          id: tripId,
+          ville: 'Paris',
+          title: 'Voyage',
+          ownerId: 'u1',
+          members: {},
+          days: [],
+          activities: [],
+          dayActivityInstances: [],
+          logistics: [],
+          notes: { id: 'n1', items: [] },
+          defaultCurrency: 'EUR',
+          ...overrides,
+        },
+      });
+      store._activeTripId.set(tripId);
+    }
+
+    it("met à jour getTripCurrency() sans changer la référence de _trips ni de activeTrip()", () => {
+      seedTrip();
+      const tripsBefore = store._trips();
+      const activeTripBefore = store.activeTrip();
+
+      store.updateTripCurrency(tripId, 'USD');
+
+      expect(store.getTripCurrency(tripId)()).toBe('USD');
+      expect(store._trips()).toBe(tripsBefore);
+      expect(store.activeTrip()).toBe(activeTripBefore);
+    });
+
+    it("retombe sur trip.defaultCurrency tant qu'aucun changement n'a été fait, puis 'EUR' à défaut", () => {
+      seedTrip({ defaultCurrency: 'JPY' });
+      expect(store.getTripCurrency(tripId)()).toBe('JPY');
+      expect(store.getTripCurrency('trip-inconnu')()).toBe('EUR');
+    });
+  });
+
+  describe('updateTripTitle — signal dédié, indépendant de _trips/activeTrip', () => {
+    function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
+      store._trips.set({
+        [tripId]: {
+          id: tripId,
+          ville: 'Paris',
+          title: 'Voyage',
+          ownerId: 'u1',
+          members: {},
+          days: [],
+          activities: [],
+          dayActivityInstances: [],
+          logistics: [],
+          notes: { id: 'n1', items: [] },
+          defaultCurrency: 'EUR',
+          ...overrides,
+        },
+      });
+      store._activeTripId.set(tripId);
+    }
+
+    it("met à jour getTripTitle() sans changer la référence de _trips ni de activeTrip()", () => {
+      seedTrip();
+      const tripsBefore = store._trips();
+      const activeTripBefore = store.activeTrip();
+
+      store.updateTripTitle(tripId, 'Nouveau titre');
+
+      expect(store.getTripTitle(tripId)()).toBe('Nouveau titre');
+      expect(store._trips()).toBe(tripsBefore);
+      expect(store.activeTrip()).toBe(activeTripBefore);
+    });
+
+    it("retombe sur trip.title tant qu'aucun renommage n'a été fait, puis '' à défaut", () => {
+      seedTrip({ title: 'Voyage au Japon' });
+      expect(store.getTripTitle(tripId)()).toBe('Voyage au Japon');
+      expect(store.getTripTitle('trip-inconnu')()).toBe('');
+    });
+  });
+
+  describe('createActivity — création pool + instance en une commande', () => {
+    it("compose immédiatement la vue du jour à partir du form de l'instance et de l'identité du pool", () => {
+      store.createActivity(tripId, dayId, poolActivity(), instance());
+
+      const dayActivities = store.getDayActivities(dayId)();
+
+      expect(dayActivities).toHaveLength(1);
+      expect(dayActivities[0]).toMatchObject({
+        id: 'instance-1',
+        activityId: 'pool-1',
+        title: 'Tour Eiffel',
+        type: ActivityType.VISITE,
+      });
+    });
+
+    it('insère les nouvelles activités en tête de journée, pas en fin (voir ROADMAP.md "Activités")', () => {
+      store.createActivity(tripId, dayId, poolActivity({ id: 'pool-1' }), instance({ id: 'instance-1', activityId: 'pool-1' }));
+      store.createActivity(tripId, dayId, poolActivity({ id: 'pool-2' }), instance({ id: 'instance-2', activityId: 'pool-2' }));
+
+      const ids = store.getDayActivities(dayId)().map((a) => a.id);
+      expect(ids).toEqual(['instance-2', 'instance-1']);
+    });
+  });
+
+  describe('updateDayActivityInstance — placement chronologique automatique', () => {
+    function seedDay(ids: string[], instancesById: Record<string, DayActivityInstance>) {
+      const dayKey = dayId.toISOString();
+      store._tripDays.set({ [tripId]: [dayKey] });
+      store._dayActivityIds.set({ [dayKey]: ids });
+      store._dayActivityInstances.set(instancesById);
+    }
+
+    it("replace une instance nouvellement datée au bon endroit chronologique, sans retrier les activités non datées entre elles", () => {
+      const morning = instance({ id: 'morning', startTime: '09:00' });
+      const evening = instance({ id: 'evening', startTime: '18:00' });
+      const untimedA = instance({ id: 'untimed-a' });
+      const untimedB = instance({ id: 'untimed-b' });
+
+      seedDay(
+        ['untimed-b', 'untimed-a', 'morning', 'evening'],
+        { 'untimed-b': untimedB, 'untimed-a': untimedA, morning, evening },
+      );
+
+      store.updateDayActivityInstance(tripId, { ...untimedA, startTime: '12:00' });
+
+      expect(store._dayActivityIds()[dayId.toISOString()]).toEqual(['untimed-b', 'morning', 'untimed-a', 'evening']);
+    });
+
+    it("ne touche pas l'ordre si l'instance mise à jour n'a pas de startTime", () => {
+      seedDay(['a', 'b'], { a: instance({ id: 'a' }), b: instance({ id: 'b' }) });
+
+      store.updateDayActivityInstance(tripId, instance({ id: 'a', notes: 'note modifiée' }));
+
+      expect(store._dayActivityIds()[dayId.toISOString()]).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('getDayActivitiesWithEchoes — écho lié (activité à cheval sur minuit)', () => {
+    const day2 = new Date(dayId.getTime() + 24 * 60 * 60 * 1000);
+
+    function seedTwoDays() {
+      store._tripDays.set({ [tripId]: [dayId.toISOString(), day2.toISOString()] });
+    }
+
+    it("affiche un écho sur le jour suivant si l'activité franchit minuit", () => {
+      seedTwoDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-night' }),
+        instance({ id: 'night', activityId: 'pool-night', startTime: '22:00', endTime: '01:00' }),
+      );
+
+      const entries = store.getDayActivitiesWithEchoes(tripId, day2)();
+
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({
+        kind: 'echo',
+        originInstanceId: 'night',
+        title: 'Tour Eiffel',
+        startTime: '00:00',
+        endTime: '01:00',
+      });
+    });
+
+    it("ne crée pas d'écho pour une activité qui ne franchit pas minuit", () => {
+      seedTwoDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-day' }),
+        instance({ id: 'day-act', activityId: 'pool-day', startTime: '10:00', endTime: '11:00' }),
+      );
+
+      const entries = store.getDayActivitiesWithEchoes(tripId, day2)();
+
+      expect(entries).toEqual([]);
+    });
+
+    it("ne plante pas sur le premier jour du trip (pas de jour précédent)", () => {
+      seedTwoDays();
+
+      const entries = store.getDayActivitiesWithEchoes(tripId, dayId)();
+
+      expect(entries).toEqual([]);
+    });
+  });
+
+  describe('getDayActivitiesWithEchoes — endDayOffset explicite (plusieurs jours)', () => {
+    const day2 = new Date(dayId.getTime() + 24 * 60 * 60 * 1000);
+    const day3 = new Date(dayId.getTime() + 2 * 24 * 60 * 60 * 1000);
+
+    function seedThreeDays() {
+      store._tripDays.set({ [tripId]: [dayId.toISOString(), day2.toISOString(), day3.toISOString()] });
+    }
+
+    it('génère un écho par jour intermédiaire (sans endTime) et un écho final (avec endTime) pour endDayOffset=2', () => {
+      seedThreeDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-trek' }),
+        instance({ id: 'trek', activityId: 'pool-trek', startTime: '08:00', endTime: '17:00', endDayOffset: 2 }),
+      );
+
+      const day2Entries = store.getDayActivitiesWithEchoes(tripId, day2)();
+      const day3Entries = store.getDayActivitiesWithEchoes(tripId, day3)();
+
+      expect(day2Entries).toHaveLength(1);
+      expect(day2Entries[0]).toMatchObject({ kind: 'echo', originInstanceId: 'trek', startTime: '00:00', endTime: undefined });
+
+      expect(day3Entries).toHaveLength(1);
+      expect(day3Entries[0]).toMatchObject({ kind: 'echo', originInstanceId: 'trek', startTime: '00:00', endTime: '17:00' });
+    });
+
+    it("ne crée aucun écho au-delà d'endDayOffset", () => {
+      seedThreeDays();
+      store.createActivity(
+        tripId, dayId,
+        poolActivity({ id: 'pool-onenight' }),
+        instance({ id: 'onenight', activityId: 'pool-onenight', startTime: '22:00', endTime: '01:00', endDayOffset: 1 }),
+      );
+
+      const day3Entries = store.getDayActivitiesWithEchoes(tripId, day3)();
+
+      expect(day3Entries).toEqual([]);
+    });
+  });
+});

@@ -9,18 +9,26 @@
 // de l'espace du header est donc déléguée à un "sticky spacer" NATIF (voir
 // day-panel/general-panel .chrome-spacer) — géré entièrement par le
 // compositeur, donc parfaitement synchrone avec le scroll, sans aucun JS.
-// left/right: 0.5rem — reproduit le ml-2/mr-2 posé sur .app-content
-// (trips.component.html), qu'un conteneur position:fixed n'hérite plus (voir
-// la même remarque sur .app-trip-header-fixed dans trip-detail.component.scss).
+// left/right : `--nt-space-1` (0.25rem) — un aller-retour (retiré puis remis
+// à `--nt-space-2`/0.5rem, ROADMAP.md "Bugs / fixes") s'est révélé 2x trop
+// large (retour utilisateur) ; `--nt-space-1` est la valeur correcte, la
+// moitié de `--nt-space-2`.
 // Pas de `width` explicite ici : avec `left`+`right` déjà posés, une largeur
 // figée forcerait le navigateur à ignorer `right` (propriétés surcontraintes).
 .tab-content-wrapper {
   position: fixed;
   top: 0;
-  left: 0.5rem;
-  right: 0.5rem;
+  left: var(--nt-space-1);
+  right: var(--nt-space-1);
   height: 100dvh;
   display: block;
+  // Bordures de contenu réduites de moitié dans TOUT le jour/général
+  // (ROADMAP.md "### UI", "la toolbar n'aura plus de border, tu peux réduire
+  // de moitié le border de tous les contenus de daytrip") — redéfinit
+  // `--nt-content-border-width` (voir tokens.scss) en cascade pour ce
+  // sous-arbre uniquement ; le reste de l'app (dialogs, login...) garde le
+  // hairline standard.
+  --nt-content-border-width: var(--nt-border-width-hair);
 }
 
 // Chaque slide devient son propre conteneur de scroll isolé (voir
@@ -36,19 +44,65 @@ swiper-slide {
   box-sizing: border-box;
   height: 100%;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  // PAS de `overscroll-behavior: contain` ici (retiré) : ça bloquait le geste
+  // natif Chrome "swipe vers le bas pour actualiser" en haut d'un slide (voir
+  // ROADMAP.md), car ce geste dépend de l'overscroll qui remonte jusqu'au
+  // navigateur. Sans risque de scroll-bleed pour autant : `html.trip-detail-active`/
+  // son `body` restent `overflow: hidden` (voir styles/reset.scss), donc rien
+  // ne peut visuellement scroller au-delà du slide même si l'overscroll chaîne.
   -webkit-overflow-scrolling: touch;
   transition: transform 150ms ease-out;
   filter: blur(var(--slide-blur, 0px));
 }
 
 // Position par défaut avant le premier appendChild du TripDayMapHostService.
-// La carte est ensuite déplacée dans .sticky-map du day-panel actif, qui lui
-// impose ses propres styles de positionnement.
+// La carte est ensuite déplacée soit dans .sticky-map du day-panel actif
+// (layout scindé), soit dans .day-fixed-map ci-dessous (layout empilé).
 .map-anchor {
   position: absolute;
   width: 0;
   height: 0;
   overflow: hidden;
   visibility: hidden;
+}
+
+// Carte "jour" réellement hors du scroll (ROADMAP.md "### UI") : position
+// fixed juste sous la toolbar, MÊME largeur qu'elle (edge-to-edge, pas la
+// colonne de lecture `--nt-content-max-width` utilisée par le contenu) et
+// AUCUN écart avec elle — `top` vaut la hauteur de la toolbar seule, sans le
+// petit gap de respiration utilisé ailleurs (`--chrome-top-offset`), pour
+// qu'elle paraisse vraiment accrochée dessous. Vide (donc 0 hauteur) tant
+// qu'aucun jour n'y a déplacé la carte (Résumé/Activités/..., ou layout
+// scindé où `DayPanelComponent` cible son propre `.sticky-map` à la place) —
+// z-index entre la toolbar et le contenu normal.
+//
+.day-fixed-map {
+  position: fixed;
+  top: var(--chrome-toolbar-height, 0px);
+  left: 0;
+  right: 0;
+  z-index: var(--z-fixed-map);
+  overflow: hidden;
+}
+
+// `background`/`box-shadow` UNIQUEMENT quand une carte y est effectivement
+// déplacée (`--active`, voir le binding dans le template sur
+// `mapHost.dayFixedContainerHeight() > 0`) — jamais sur le conteneur vide
+// (Résumé/Activités/Logistique/Listes, ou layout scindé) : un `box-shadow`
+// dessine sa propre ligne même sur un élément haut de 0px, ce qui aurait
+// peint un filet d'ombre sous la toolbar partout, pas seulement sur un jour.
+// Posé ICI (pas seulement sur `.map-panel` à l'intérieur) : garantit la
+// continuité de couleur avec la toolbar en TOUTE circonstance (y compris le
+// bref instant d'une bascule collapse/expand, où la hauteur mesurée de
+// `.map-panel` peut différer d'une frame de celle de ce conteneur) — retour
+// utilisateur, un filet clair/blanc apparaissait entre toolbar et carte en
+// dark mode. Même token d'élévation que le FAB (`--nt-shadow-lg`) : l'un des
+// éléments les plus "au-dessus" de l'app, doit clairement flotter sur le
+// contenu qui défile dessous. `transform` : suit le hide-on-scroll de la
+// toolbar (voir TripDaySwiperComponent, `registerChromeElement`) — sans ça,
+// la carte restait figée pendant que la toolbar se masquait au scroll,
+// laissant un trou (retour utilisateur).
+.day-fixed-map--active {
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-lg);
 }

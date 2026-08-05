@@ -5,31 +5,61 @@
   </div>
 
   <div class="flex flex-column gap-2">
-    @for (activity of activities(); track activity.id; let last = $last) {
-      <div class="grid align-items-center cursor-pointer" 
-          role="button" 
-          tabindex="0" 
-          (click)="activitySelected.emit(activity.id)"
-          (keydown.enter)="activitySelected.emit(activity.id)">
-        
-        <!-- durée -->
-        <span class="col-3">
-          ~ {{ activity.startTime  | date:'HH:mm' }}
-        </span>
-        
-        <!-- icône -->
-        <span class="col-1">
-          <i [class]="ACTIVITY_TYPE_META[activity.type]?.icon" class="text-lg nt-text-primary"></i>
-        </span>
-        
-        <!-- titre -->
-        <span class="col-8">
-          {{ activity.title }}
-        </span>
-        
-      </div>
+    @for (entry of entries(); track entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id; let last = $last) {
+      @if (entry.kind === 'logistic') {
+        <div class="timeline-row cursor-pointer"
+            role="button"
+            tabindex="0"
+            (click)="logisticSelected.emit(entry.occurrence)"
+            (keydown.enter)="logisticSelected.emit(entry.occurrence)">
+
+          <span class="timeline-time">{{ entry.occurrence.time | date:'HH:mm' }}</span>
+
+          <span class="timeline-badge" [style.--timeline-badge-color]="'var(' + LOGISTIC_TYPE_META[entry.occurrence.logistic.type].colorVar + ')'">
+            <i [class]="LOGISTIC_TYPE_META[entry.occurrence.logistic.type].icon"></i>
+          </span>
+
+          <span class="timeline-title">
+            {{ entry.occurrence.role }} — {{ entry.occurrence.logistic.title }}
+          </span>
+        </div>
+      } @else if (entry.kind === 'activity') {
+        <div class="timeline-row cursor-pointer"
+            role="button"
+            tabindex="0"
+            (click)="activitySelected.emit(entry.activity.id)"
+            (keydown.enter)="activitySelected.emit(entry.activity.id)">
+
+          <span class="timeline-time">{{ entry.activity.startTime }}</span>
+
+          <span class="timeline-badge" [style.--timeline-badge-color]="'var(' + ACTIVITY_TYPE_META[entry.activity.type].colorVar + ')'">
+            <i [class]="ACTIVITY_TYPE_META[entry.activity.type].icon"></i>
+          </span>
+
+          <span class="timeline-title">
+            {{ entry.activity.title }}
+          </span>
+        </div>
+      } @else {
+        <div class="timeline-row cursor-pointer timeline-echo"
+            role="button"
+            tabindex="0"
+            (click)="echoSelected.emit(entry)"
+            (keydown.enter)="echoSelected.emit(entry)">
+
+          <span class="timeline-time">00:00</span>
+
+          <span class="timeline-badge" [style.--timeline-badge-color]="'var(' + ACTIVITY_TYPE_META[entry.type].colorVar + ')'">
+            <i class="pi pi-history"></i>
+          </span>
+
+          <span class="timeline-title nt-text-muted font-italic">
+            suite de {{ entry.title }}
+          </span>
+        </div>
+      }
        @if (!last) {
-      <app-divider class="m-0"></app-divider>
+      <app-divider class="m-0 timeline-divider"></app-divider>
        }
     }
   </div>

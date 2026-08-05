@@ -1,9 +1,11 @@
 import {
+    ChangeDetectionStrategy,
     Component,
     forwardRef,
     inject,
     input,
-    output
+    output,
+    signal
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
@@ -35,6 +37,7 @@ import { TimeFieldsComponent } from './time-fields/time-fields.component';
 @Component({
     selector: 'app-time-picker-dialog',
     standalone: true,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         CommonModule,
         TimeFieldsComponent
@@ -60,15 +63,23 @@ export class TimePickerDialogComponent
     /** 'duration' désactive le cadran horloge (une durée n'est pas une heure sur 24h) : saisie clavier uniquement. */
     readonly mode = input<TimePickerMode>('time');
 
-    /** Titre du dialog mobile (ex. "Sélectionner l'heure de début") — retombe sur un libellé générique selon `mode` si non fourni, voir TimePickerClockComponent. */
+    /** Titre du dialog mobile (ex. "Heure de début") — court, même registre que les autres dialogs (Titre, Notes, Prix) ; retombe sur un libellé générique selon `mode` si non fourni, voir TimePickerClockComponent. */
     readonly label = input<string>('');
+    /** Heure minimum (voir ROADMAP.md "UX / Interactions") : n'a de sens que si début/fin tombent le MÊME jour (comparaison en heure seule, `applySelectedDate` ignore la partie date) — laisser à `null` sinon. Toute saisie antérieure est remontée à cette valeur plutôt que rejetée silencieusement. */
+    readonly minTime = input<Date | null>(null);
+    /** Voir `TimePickerClockData.dayOffsetReference` — active le sélecteur "J+N" dans le dialog mobile (uniquement le picker "Heure de fin" d'une activité, voir ROADMAP.md "UX / Interactions"). */
+    readonly dayOffsetReference = input<Date | null>(null);
+    /** Valeur courante de l'offset — n'a d'effet que si `dayOffsetReference` est fourni. */
+    readonly dayOffset = input(0);
+    /** Émis à la fermeture du dialog (OK uniquement, jamais Annuler) si `dayOffsetReference` est fourni et que l'offset a été manipulé via les flèches "J+N". */
+    readonly dayOffsetChange = output<number>();
 
-    currentDate: Date | null = null;
+    currentDate = signal<Date | null>(null);
 
-    displayText = '--:--';
+    displayText = signal('--:--');
 
-    hourText = '00';
-    minuteText = '00';
+    hourText = signal('00');
+    minuteText = signal('00');
 
     onChange?: (value: Date | null) => void;
 
@@ -81,19 +92,21 @@ export class TimePickerDialogComponent
         value: Date | null
     ): void {
 
-        this.currentDate = value;
+        this.currentDate.set(value);
 
         if (value instanceof Date) {
 
-            this.hourText = String(value.getHours()).padStart(2, '0');
-            this.minuteText = String(value.getMinutes()).padStart(2, '0');
-            this.displayText = `${this.hourText}:${this.minuteText}`;
+            const hour = String(value.getHours()).padStart(2, '0');
+            const minute = String(value.getMinutes()).padStart(2, '0');
+            this.hourText.set(hour);
+            this.minuteText.set(minute);
+            this.displayText.set(`${hour}:${minute}`);
 
         } else {
 
-            this.hourText = '00';
-            this.minuteText = '00';
-            this.displayText = '--:--';
+            this.hourText.set('00');
+            this.minuteText.set('00');
+            this.displayText.set('--:--');
         }
     }
 
@@ -106,8 +119,17 @@ export class TimePickerDialogComponent
     }
 
     openDialog(): void {
+        // Boîte mutable partagée avec TimePickerClockComponent (voir la doc de
+        // TimePickerClockData.dayOffset) : `undefined` pour tous les pickers
+        // qui ne fournissent pas `dayOffsetReference`, donc aucun coût/risque
+        // pour eux (le sélecteur "J+N" n'est même pas rendu côté clock).
+        const dayOffsetBox = this.dayOffsetReference() ? { value: this.dayOffset() } : undefined;
+
         const dialogRef = this.dialogService.open<Date | undefined, TimePickerClockData>(TimePickerClockComponent, {
-            data: { initialDate: this.currentDate, mode: this.mode(), label: this.label() },
+            data: {
+                initialDate: this.currentDate(), mode: this.mode(), label: this.label(),
+                dayOffsetReference: this.dayOffsetReference(), dayOffset: dayOffsetBox,
+            },
             // Mode durée : le dialog s'ouvre directement en vue clavier (pas de
             // cadran). Le focus initial du champ heure passe par ce sélecteur
             // CDK plutôt que par un `effect()` côté TimePickerClockComponent :
@@ -124,29 +146,75 @@ export class TimePickerDialogComponent
                 this.closed.emit(undefined);
                 return;
             }
-            this.applySelectedDate(selected);
-            this.closed.emit(selected);
+            // Même sémantique que la date : un "Annuler" n'écrase rien, y
+            // compris l'offset manipulé pendant que le dialog était ouvert.
+            //
+            // Ordre important : `closed` (qui pousse la nouvelle heure de fin
+            // dans le form) DOIT être émis avant `dayOffsetChange`. La nouvelle
+            // heure de fin déclenche côté ActivityFormComponent un recalcul qui
+            // réévalue `endDayOffset` à partir des heures seules (voir
+            // syncEndDayOffsetFromTimes) — si l'offset explicite choisi via les
+            // flèches "J+N" du dialog était appliqué AVANT, ce recalcul pouvait
+            // l'écraser silencieusement (retour à 0) dès que l'heure choisie
+            // n'était pas strictement antérieure à l'heure de début, même si
+            // l'utilisateur avait explicitement avancé jusqu'à J+1. En
+            // appliquant l'offset en dernier, le choix explicite de
+            // l'utilisateur gagne toujours sur la déduction automatique.
+            this.closed.emit(this.applySelectedDate(selected));
+            if (dayOffsetBox) this.dayOffsetChange.emit(dayOffsetBox.value);
         });
     }
 
     onHourFieldChange(value: string): void {
-        const date = this.currentDate ? new Date(this.currentDate) : new Date();
+        const current = this.currentDate();
+        const date = current ? new Date(current) : this.blankDate();
         date.setHours(Number(value) || 0, date.getMinutes(), 0, 0);
         this.applySelectedDate(date);
     }
 
     onMinuteFieldChange(value: string): void {
-        const date = this.currentDate ? new Date(this.currentDate) : new Date();
+        const current = this.currentDate();
+        const date = current ? new Date(current) : this.blankDate();
         date.setMinutes(Number(value) || 0, 0, 0);
         this.applySelectedDate(date);
     }
 
-    private applySelectedDate(date: Date): void {
-        this.currentDate = date;
-        this.hourText = String(date.getHours()).padStart(2, '0');
-        this.minuteText = String(date.getMinutes()).padStart(2, '0');
-        this.displayText = `${this.hourText}:${this.minuteText}`;
-        this.onChange?.(this.currentDate);
+    /**
+     * Base neutre (00:00) pour une saisie clavier partant de rien — jamais
+     * `new Date()` telle quelle : sinon saisir seulement l'heure (champ minute
+     * pas encore touché) fait hériter les minutes de l'INSTANT de la frappe,
+     * pas d'une valeur neutre (même piège que le drag and drop, voir
+     * ROADMAP.md "Lorsque je drag and drop les activités...").
+     */
+    private blankDate(): Date {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }
+
+    private applySelectedDate(rawDate: Date): Date {
+        const date = this.clampToMinTime(rawDate);
+        const hour = String(date.getHours()).padStart(2, '0');
+        const minute = String(date.getMinutes()).padStart(2, '0');
+        this.currentDate.set(date);
+        this.hourText.set(hour);
+        this.minuteText.set(minute);
+        this.displayText.set(`${hour}:${minute}`);
+        this.onChange?.(date);
         this.onTouch?.();
+        return date;
+    }
+
+    /** Voir la doc de `minTime` — ne compare que l'heure/minute, ignore la partie date des deux côtés (le champ ne connaît que l'heure du jour, pas quel jour). */
+    private clampToMinTime(date: Date): Date {
+        const min = this.minTime();
+        if (!min) return date;
+        const dateMinutes = date.getHours() * 60 + date.getMinutes();
+        const minMinutes = min.getHours() * 60 + min.getMinutes();
+        if (dateMinutes >= minMinutes) return date;
+
+        const clamped = new Date(date);
+        clamped.setHours(min.getHours(), min.getMinutes(), 0, 0);
+        return clamped;
     }
 }

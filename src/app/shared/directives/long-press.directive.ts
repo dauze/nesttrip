@@ -11,6 +11,25 @@ const MOVE_THRESHOLD_PX = 10;
  * sur `pointerdown`/`pointermove`, pour ne jamais gêner le scroll tactile
  * natif (contrairement à `ActivityCardComponent.updateDragState`, qui a une
  * bonne raison de le faire sur sa propre poignée de drag).
+ *
+ * `pointermove`/`pointerup`/`pointercancel` sont écoutés sur `document`, PAS
+ * sur l'élément lui-même : dès qu'un drag démarre sur la poignée d'une carte
+ * (`ActivityCardComponent.updateDragState`), `document.documentElement`
+ * capture le pointer (`setPointerCapture`) pour le reste du geste — tous les
+ * events suivants sont alors retargetés vers `<html>` et ne bubblent plus
+ * jusqu'à cet élément. Des listeners posés ICI seraient donc "sourds" au
+ * mouvement/relâchement pendant tout le drag, et le timer de long-press irait
+ * jusqu'au bout sans jamais être annulé — c'était le bug (voir ROADMAP.md,
+ * "le mode drag and drop lance le mode modification à tort") : démarrer un
+ * drag déclenchait le mode sélection ~500ms plus tard, alors que l'utilisateur
+ * était déjà en train de dragger. `document` reste dans le chemin de
+ * propagation même après un retarget vers `<html>` (qui EST `document`'s
+ * enfant), donc les events y arrivent toujours.
+ *
+ * Un `pointerdown` qui démarre SUR une poignée de drag (`.drag-handle` du
+ * drag maison, `[cdkDragHandle]` pour Notes) n'arme jamais le timer : la
+ * poignée est exclusivement réservée au drag, jamais à la sélection, même si
+ * l'utilisateur reste appuyé sans bouger avant de vraiment dragger.
  */
 @Directive({
   selector: '[appLongPress]',
@@ -26,22 +45,21 @@ export class LongPressDirective {
   private timer?: ReturnType<typeof setTimeout>;
   private startX = 0;
   private startY = 0;
+  private activePointerId?: number;
 
   constructor() {
     afterNextRender(() => {
       const el = this.elementRef.nativeElement;
       el.addEventListener('pointerdown', this.onPointerDown);
-      el.addEventListener('pointermove', this.onPointerMove);
-      el.addEventListener('pointerup', this.clear);
-      el.addEventListener('pointercancel', this.clear);
-      el.addEventListener('pointerleave', this.clear);
+      document.addEventListener('pointermove', this.onPointerMove);
+      document.addEventListener('pointerup', this.onPointerEnd);
+      document.addEventListener('pointercancel', this.onPointerEnd);
 
       this.destroyRef.onDestroy(() => {
         el.removeEventListener('pointerdown', this.onPointerDown);
-        el.removeEventListener('pointermove', this.onPointerMove);
-        el.removeEventListener('pointerup', this.clear);
-        el.removeEventListener('pointercancel', this.clear);
-        el.removeEventListener('pointerleave', this.clear);
+        document.removeEventListener('pointermove', this.onPointerMove);
+        document.removeEventListener('pointerup', this.onPointerEnd);
+        document.removeEventListener('pointercancel', this.onPointerEnd);
         this.clear();
       });
     });
@@ -52,19 +70,34 @@ export class LongPressDirective {
     // uniquement par la checkbox, voir SelectableDirective).
     if (event.pointerType === 'mouse') return;
 
+    // Poignée de drag : jamais de long-press-sélection, voir la doc de classe.
+    if ((event.target as HTMLElement).closest('.drag-handle, [cdkDragHandle]')) return;
+
+    this.clearTimer();
     this.startX = event.clientX;
     this.startY = event.clientY;
-    this.clear();
+    this.activePointerId = event.pointerId;
     this.timer = setTimeout(() => this.longPress.emit(), this.longPressDelay());
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) return;
     const movedX = Math.abs(event.clientX - this.startX);
     const movedY = Math.abs(event.clientY - this.startY);
     if (movedX > MOVE_THRESHOLD_PX || movedY > MOVE_THRESHOLD_PX) this.clear();
   };
 
+  private readonly onPointerEnd = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) return;
+    this.clear();
+  };
+
   private readonly clear = (): void => {
+    this.activePointerId = undefined;
+    this.clearTimer();
+  };
+
+  private readonly clearTimer = (): void => {
     if (!this.timer) return;
     clearTimeout(this.timer);
     this.timer = undefined;

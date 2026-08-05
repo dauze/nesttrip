@@ -1,7 +1,30 @@
+<div class="notes-root">
 <app-card>
-<div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="items()" (cdkDropListDropped)="onDrop($event)">
-  @for (item of items(); track item.id) {
-    <app-panel [toggleable]="true" cdkDrag
+<div class="notes-search flex-shrink-0">
+  <i class="pi pi-search notes-search__icon nt-text-muted"></i>
+  <input
+    appInputText
+    type="text"
+    [value]="searchTerm()"
+    (input)="onSearchInput($event)"
+    placeholder="Rechercher dans les listes"
+    class="w-full notes-search__input" />
+  @if (searchTerm()) {
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      size="small"
+      severity="secondary"
+      class="notes-search__clear"
+      (click)="clearSearch()"
+    />
+  }
+</div>
+
+<div cdkDropList class="flex flex-column gap-2" [cdkDropListData]="filteredItems()" (cdkDropListDropped)="onDrop($event)">
+  @for (item of filteredItems(); track item.id) {
+    <app-panel [toggleable]="true" cdkDrag [cdkDragDisabled]="!!searchTerm().trim()"
                [appSelectable]="selectableRef(item.id)" #sel="appSelectable"
                appLongPress (longPress)="sel.onLongPress()">
       <div panelHeader class="flex align-items-center gap-2 w-full overflow-hidden min-w-0">
@@ -13,7 +36,7 @@
         <span cdkDragHandle class="flex-shrink-0 cursor-move swiper-no-swiping drag-handle-hitbox"><i class="pi pi-bars"></i></span>
         <textarea
           appTextarea
-          class="flex-1 overflow-hidden font-bold min-w-0 transparent-textarea"
+          class="overflow-hidden font-bold min-w-0 transparent-textarea nt-capped-inline-field nt-content-sized-field"
           [rows]="1"
           [value]="item.title"
           (blur)="updateTitle(item, $any($event.target).value.trim())"
@@ -31,6 +54,27 @@
           />
         </div>
       </div>
+      <div class="flex align-items-center gap-1 pl-3 pr-3 pb-1 flex-wrap">
+        @if (linkedActivity(item); as linked) {
+          <app-chip
+            icon="pi pi-map-marker"
+            [removable]="true"
+            (click)="navigateToLinkedActivity(linked.dayId, linked.activity.id)"
+            (remove)="unlinkActivity(item)"
+            class="nt-bg-subtle text-sm cursor-pointer">
+            {{ linked.activity.title }}
+          </app-chip>
+        } @else {
+          <app-button
+            label="Lier une activité"
+            icon="pi pi-link"
+            [text]="true"
+            size="small"
+            severity="secondary"
+            (click)="openLinkActivityDialog(item)"
+          />
+        }
+      </div>
       <div
         cdkDropList
         [cdkDropListData]="item.elements"
@@ -42,8 +86,7 @@
           <div class="flex align-items-center gap-2 w-full pl-3 pr-3"
           cdkDrag>
             <span cdkDragHandle class="flex-shrink-0 cursor-move text-sm w-1rem swiper-no-swiping drag-handle-hitbox">
-              <i class="pi pi-ellipsis-v"></i>
-              <i class="pi pi-ellipsis-v"></i>
+              <i class="pi pi-grip-vertical"></i>
             </span>
             @if (item.type === NotesType.TODO) {
               <app-checkbox
@@ -56,7 +99,7 @@
               appTextarea
               [rows]="1"
               [value]="point.text"
-              class="flex-1 overflow-hidden min-w-0 transparent-textarea"
+              class="flex-1 overflow-hidden min-w-0 transparent-textarea nt-capped-inline-field"
               [class.line-through]="item.type === NotesType.TODO && point.checked"
               [class.nt-text-muted]="item.type === NotesType.TODO && point.checked"
               (input)="onTextChange(item, $index, $any($event.target).value)"
@@ -110,7 +153,7 @@
                     appTextarea
                     [rows]="1"
                     [value]="point.text"
-                    class="flex-1 overflow-hidden min-w-0  transparent-textarea"
+                    class="flex-1 overflow-hidden min-w-0 transparent-textarea nt-capped-inline-field"
                     [class.line-through]="item.type === NotesType.TODO && point.checked"
                     [class.nt-text-muted]="item.type === NotesType.TODO && point.checked"
                     (input)="onTextChange(item, $index, $any($event.target).value)"
@@ -150,6 +193,14 @@
       text="Aucune notes pour l'instant, n'hésitez pas à en créer avec le bouton +."
       class="w-full flex justify-content-center"
     />
+  } @else if (matchCount() === 0) {
+    <app-message
+      severity="info"
+      icon="pi pi-search"
+      text="Aucun résultat pour cette recherche."
+      class="w-full flex justify-content-center"
+    />
   }
 </div>
 </app-card>
+</div>

@@ -1,45 +1,58 @@
-<div class="day-panel-root flex flex-column">
-  <app-day-reservation-banner [tripId]="tripId()" [dayId]="dayId()" />
-  @if (activities().length > 0) {
-    <app-timeline [activities]="activities()" (activitySelected)="scrollSync.focusActivity($event)"/>
-    <div #stickyMap class="sticky-map">
-      @if (!activeMapComponent()) {
-        <app-panel [toggleable]="true" [collapsed]="collapsed()">
-          <div panelHeader class="flex align-items-center gap-2">
-            <i class="pi pi-calendar"></i>
-            <span>Carte</span>
-          </div>
-          <app-skeleton height="250px" width="100%" borderRadius="3px" />
-        </app-panel>
+<div class="day-panel-root" [appFabBottomProximity]="active()" (nearBottomChange)="onFabNearBottomChange($event)">
+  <!-- Empilé sur mobile (`.day-panel-map-group`/`.day-panel-activities-group`
+       en `display:contents`, voir day-panel.component.scss) : les 4 blocs
+       redeviennent des enfants flex DIRECTS de `.day-panel-body`, réordonnés
+       via `order` (bandeau, timeline, carte, activités — ordre historique).
+       En layout scindé (voir ViewportService), ces 2 groupes redeviennent de
+       VRAIES boîtes (colonnes indépendantes l'une de l'autre en hauteur) :
+       timeline+carte à gauche, bandeau+activités à droite, sans ligne de
+       grille partagée entre les deux — sinon la hauteur de la plus haute
+       "ligne" (ex. timeline vs bandeau, souvent bien plus court) forcerait un
+       vide sous l'élément le plus court. Le `swiper-slide` ancêtre reste
+       l'UNIQUE conteneur de scroll dans les deux cas (aucun scroll imbriqué
+       introduit ici), donc toute la mécanique de DayScrollSyncService/
+       DayReorderService (offsets de cartes, snap, drag) continue de
+       fonctionner sans changement. -->
+  <div class="day-panel-body" [class.day-panel-body--no-map]="timelineEntries().length === 0">
+    <div class="day-panel-map-group">
+      @if (timelineEntries().length > 0) {
+        <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
+          (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
+          (logisticSelected)="onLogisticEntrySelected($event)"/>
+        <div #stickyMap class="sticky-map"></div>
       }
     </div>
-  }
-  <app-panel [toggleable]="true"  [(collapsed)]="activitiesCollapsed"
-  (afterToggle)="onActivitiesPanelToggled()">
-    <div panelHeader class="flex align-items-center gap-2">
-      <i class="pi pi-calendar"></i>
-      <span>Activités</span>
+    <div class="day-panel-activities-group">
+      <app-day-logistic-banner class="day-panel-banner" [tripId]="tripId()" [dayId]="dayId()" />
+      <app-panel [noHeader]="true" class="activities-column">
+        <div class="flex flex-column gap-2">
+          <div #activityList class="flex flex-column gap-2">
+            @for (entry of timelineEntries(); track entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id) {
+              @if (entry.kind === 'logistic') {
+                <app-day-logistic-entry [occurrence]="entry.occurrence" [tripId]="tripId()" (dragHandleDown)="reorderService.onDragHandleDown($event)" />
+              } @else if (entry.kind === 'activity') {
+                <app-activity-card [inDayList]="true" (dragHandleDown)="reorderService.onDragHandleDown($event)" [initCollapsed]="false"
+          [activityId]="entry.activity.id" [dayId]="dayId()" [tripId]="tripId()" />
+              } @else {
+                <app-activity-echo-card [echo]="entry" />
+              }
+            }
+            @if (creationService.draftActive()) {
+              <app-new-activity-draft
+                (confirmed)="creationService.confirmDraft($event)"
+                (cancelled)="creationService.cancelDraft()" />
+            }
+          </div>
+          @if (timelineEntries().length === 0 && !creationService.draftActive()) {
+              <app-message
+                severity="info"
+                icon="pi pi-info-circle"
+                text="Aucune activitée pour l'instant, n'hésitez pas à en créer avec le bouton +."
+                class="w-full flex justify-content-center"
+              />
+            }
+        </div>
+      </app-panel>
     </div>
-    <div class="flex flex-column gap-2">
-      <div #activityList class="flex flex-column gap-2">
-        @for (activity of activities(); track activity.id) {
-            <app-activity-card [inDayList]="true" (dragHandleDown)="reorderService.onDragHandleDown($event)" [initCollapsed]="false"
-      [activityId]="activity.id" [dayId]="dayId()" [tripId]="tripId()" />
-        }
-        @if (creationService.draftActive()) {
-          <app-new-activity-draft
-            (confirmed)="creationService.confirmDraft($event)"
-            (cancelled)="creationService.cancelDraft()" />
-        }
-      </div>
-      @if (activities().length === 0 && !creationService.draftActive()) {
-          <app-message
-            severity="info"
-            icon="pi pi-info-circle"
-            text="Aucune activitée pour l'instant, n'hésitez pas à en créer avec le bouton +."
-            class="w-full flex justify-content-center"
-          />
-        }
-    </div>
-  </app-panel>
+  </div>
 </div>

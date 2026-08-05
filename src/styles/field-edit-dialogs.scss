@@ -1,0 +1,68 @@
+/* ---------------------------------------------------------------------
+ * Habillage des tiroirs mobile de type "champ dédié" (notes, prix, titre —
+ * `NotesFieldComponent`/`PriceFieldComponent`/`TitleEditDialogComponent`),
+ * ouverts via `DialogService` (`@angular/cdk/dialog`). Classes globales
+ * (pas scopées à un composant) : le panel CDK est ajouté dans
+ * `.cdk-overlay-container`, en dehors de l'arbre de vue du composant hôte.
+ * Sélecteur à 3 classes pour gagner par spécificité sur
+ * `.cdk-overlay-pane.app-dialog-panel` (dialog.scss) quel que soit l'ordre
+ * de chargement des feuilles CSS.
+ *
+ * IMPORTANT : le centrage (horizontal ET vertical) reste le comportement
+ * PAR DÉFAUT de `DialogService`/`Dialog.open()` — aucune `positionStrategy`
+ * custom ici, ne pas en ajouter une pour "ancrer en haut" ou autre : une
+ * tentative précédente en CSS pur (`position:fixed`/`left`/`transform`)
+ * décentrait le panneau horizontalement (le centrage par défaut est déjà
+ * géré par le wrapper CDK via flexbox, une valeur `transform:translateX(-50%)`
+ * posée en plus sur le panneau lui-même le décale au lieu de le centrer).
+ * Ces classes ne redéfinissent donc QUE ce qui doit vraiment changer par
+ * rapport à `.app-dialog-panel` (largeur, hauteur max, overflow) — tout le
+ * reste (centrage, fond, ombre, coins arrondis, animation d'entrée) reste
+ * hérité de la règle de base, déjà correcte partout ailleurs dans l'app.
+ * `max-height` réserve la même marge (1rem) en haut/bas qu'en largeur
+ * (`calc(100vw - 2rem)`) — cohérent une fois le panneau centré et à sa taille
+ * maximale. `--nt-visual-viewport-height` (VisualViewportService), pas
+ * `100dvh` : vérifié que `dvh` ne suit PAS le rétrécissement du clavier
+ * virtuel sur tous les navigateurs (contrairement à ce qu'affirmait ce
+ * commentaire jusqu'ici) — seul `visualViewport` le fait de façon fiable, voir
+ * dialog.scss pour la même variable posée sur `.cdk-global-overlay-wrapper`
+ * (nécessaire aussi pour que le panneau reste CENTRÉ dans l'espace restant,
+ * pas seulement plafonné en hauteur).
+ *
+ * Les trois tiroirs (`app-price-dialog-panel`, `app-wide-dialog-panel` pour
+ * notes/titre) partagent volontairement l'anatomie et les boutons
+ * "Annuler"/"OK" en pied de panneau (voir chaque composant) — uniformité
+ * demandée explicitement par l'utilisateur, ne pas réintroduire un pattern
+ * différent (ex. plein écran forcé, header avec OK inline) pour un futur
+ * tiroir de ce type sans repasser par cette discussion. Le header
+ * titre/croix suit désormais la même position que `<app-dialog-frame>`
+ * (titre à gauche, croix de fermeture à droite) — uniformisation demandée
+ * le 2026-07-31 sur TOUS les dialogs de l'app, y compris ceux-ci qui avaient
+ * jusque-là la croix à gauche.
+ * ------------------------------------------------------------------- */
+
+// Prix : panneau compact, taille de contenu (montant + devise, toujours
+// court) — juste plus étroit que le `max-width` par défaut (28rem).
+.cdk-overlay-pane.app-dialog-panel.app-price-dialog-panel {
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: calc(var(--nt-visual-viewport-height, 100dvh) - 2rem);
+}
+
+// Notes / titre (recherche Google) : plus large (zone d'écriture ou liste
+// de résultats), hauteur AUTO plafonnée par `dvh` — PAS plein écran forcé :
+// avec seulement 1 ligne de note ou 2 suggestions, le panneau reste petit,
+// il ne grandit que si le contenu (texte tapé, `NotesEditDialogComponent` ;
+// liste de résultats, `TitleEditDialogComponent`) en a besoin. PAS
+// d'`overflow-y:auto` ici (contrairement à une version précédente) : ça
+// créait une 2e surface de scroll (le panneau ENTIER, en plus de la liste/du
+// textarea), ce qui pouvait faire défiler la popup entière au lieu du seul
+// contenu — le titre en haut n'était alors plus garanti visible. On reste
+// sur `overflow: hidden` (hérité de `.app-dialog-panel`, dialog.scss) :
+// header/pied restent des enfants flex statiques (jamais scrollés), seul
+// l'élément scrollable interne de chaque composant (`overflow-y:auto` posé
+// sur le `<textarea>` ou la liste) absorbe le dépassement, via la chaîne
+// `min-height:0` posée sur chaque ancêtre flex (voir chaque composant).
+.cdk-overlay-pane.app-dialog-panel.app-wide-dialog-panel {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(var(--nt-visual-viewport-height, 100dvh) - 2rem);
+}

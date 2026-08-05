@@ -1,0 +1,49 @@
+<div class="trip-summary-body">
+  <app-trip-header
+    [dateRange]="tripDateRange()"
+    [title]="tripTitle()"
+    (titleChange)="onTitleChange($event)"
+    (datesChange)="onDatesChange($event)">
+    <app-trip-collaborators
+      trip-actions
+      [tripId]="tripId()" />
+  </app-trip-header>
+
+  @if (hasMapPoints()) {
+    <app-card>
+      <div #mapContainer class="trip-summary-map-container"></div>
+      @if (!activeMapComponent()) {
+        <app-skeleton height="250px" width="100%" borderRadius="3px" />
+      }
+    </app-card>
+  }
+
+  <div class="trip-summary-tiles flex gap-1">
+    <app-card class="trip-summary-tile" [fillHeight]="true">
+      <div cardTitle>Dépenses</div>
+      <div class="flex flex-column gap-2 flex-1">
+        <div class="flex align-items-center gap-1">
+          <span class="text-sm flex-shrink-0">Devise :</span>
+          <app-select
+            #currencySelect
+            label="Devise"
+            [options]="currencyOptions"
+            [formControl]="currencyControl"
+            class="w-max transparent-select no-chevron"
+          />
+          <button type="button" class="trip-summary__pencil flex-shrink-0" aria-label="Modifier la devise" (click)="openCurrencyPanel()">
+            <i class="pi pi-pencil"></i>
+          </button>
+        </div>
+        <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
+        @if (expenseBreakdown().length > 0) {
+          <app-activity-type-rings [entries]="expenseBreakdown()" />
+        }
+      </div>
+    </app-card>
+
+    <app-trip-files-tile class="trip-summary-tile" [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
+  </div>
+
+  <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
+</div>

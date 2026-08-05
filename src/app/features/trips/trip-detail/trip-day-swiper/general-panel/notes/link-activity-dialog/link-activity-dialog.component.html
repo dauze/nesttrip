@@ -1,0 +1,28 @@
+<div class="link-activity-dialog flex flex-column">
+  <div class="link-activity-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="link-activity-dialog__title">Lier une activité</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <div class="link-activity-dialog__list">
+    @if (isEmpty()) {
+      <div class="link-activity-dialog__empty">Aucune activité placée sur un jour pour l'instant.</div>
+    }
+    @for (row of rows(); track row.kind === 'header' ? 'header-' + row.label : row.activity.id) {
+      @if (row.kind === 'header') {
+        <div class="link-activity-dialog__section-header">{{ row.label }}</div>
+      } @else {
+        <button type="button" class="link-activity-dialog__option" (click)="select(row.activity)">
+          <span class="link-activity-dialog__option-name">{{ row.activity.title }}</span>
+        </button>
+      }
+    }
+  </div>
+</div>

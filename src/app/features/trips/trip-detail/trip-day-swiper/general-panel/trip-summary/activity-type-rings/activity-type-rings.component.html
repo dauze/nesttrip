@@ -1,0 +1,40 @@
+<div class="rings-chart">
+  <svg
+    [attr.viewBox]="'0 0 ' + viewBoxSize + ' ' + viewBoxSize"
+    class="rings-chart__svg"
+    role="img"
+    [attr.aria-label]="'Répartition par type — ' + entries().map(e => e.label + ' ' + e.count).join(', ')">
+    <g [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'">
+      @for (ring of rings(); track ring.label) {
+        <circle
+          class="rings-chart__track"
+          [attr.cx]="center"
+          [attr.cy]="center"
+          [attr.r]="ring.radius"
+          [attr.stroke-width]="strokeWidth"
+          fill="none" />
+        <circle
+          class="rings-chart__arc"
+          [attr.cx]="center"
+          [attr.cy]="center"
+          [attr.r]="ring.radius"
+          [attr.stroke-width]="strokeWidth"
+          [attr.stroke-dasharray]="ring.dashArray"
+          [style.--ring-color]="'var(' + ring.colorVar + ')'"
+          fill="none"
+          stroke-linecap="round" />
+      }
+    </g>
+  </svg>
+
+  <ul class="rings-chart__legend">
+    @for (entry of entries(); track entry.label) {
+      <li class="rings-chart__legend-item">
+        <span class="rings-chart__legend-dot" [style.--ring-color]="'var(' + entry.colorVar + ')'"></span>
+        <i [class]="entry.icon"></i>
+        <span class="rings-chart__legend-label">{{ entry.label }}</span>
+        <span class="rings-chart__legend-count">{{ entry.valueLabel ?? entry.count }}</span>
+      </li>
+    }
+  </ul>
+</div>

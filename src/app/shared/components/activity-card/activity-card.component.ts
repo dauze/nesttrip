@@ -1,5 +1,5 @@
 import {
-  ChangeDetectorRef, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject,
   input, linkedSignal, output, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -12,14 +12,14 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 // Remplacement des anciens modèles par PlaceDetails
 import { LoadingState, PlaceSummary, PlaceDetails, PlacePhotoRef } from '@app/core/models/place.dto';
-import { BookingStatus } from '@core/enums/booking.status';
-import { ACTIVITY_TYPE_META, BOOKING_STATUS_META } from './activity.constants';
+import { ActivityType } from '@core/enums/activites-type.enum';
+import { ACTIVITY_TYPE_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
-import { ActivityFilesComponent } from './activity-files/activity-files.component';
+import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
@@ -37,14 +37,17 @@ import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 const HOLD_DELAY_MS = 20;
 /** Laisse le temps à l'animation de repli du panneau de se terminer avant de décrocher la carte. */
 const PANEL_COLLAPSE_DELAY_MS = 300;
+/** Laisse le temps à l'animation de dépli du panneau de se terminer avant d'ouvrir un éditeur du form (voir `openStartTime`) — même valeur que `PANEL_EXPAND_DELAY_MS` dans LogisticCardComponent. */
+const PANEL_EXPAND_DELAY_MS = 300;
 
 @Component({
   selector: 'app-activity-card',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, PanelComponent, DividerComponent, CheckboxComponent,
     ActivityHeaderComponent, ActivityFormComponent,
-    ActivityFilesComponent, ActivityGoogleInfoComponent,
+    FilesFieldComponent, ActivityGoogleInfoComponent,
     SelectableDirective, LongPressDirective,
   ],
   templateUrl: './activity-card.component.html',
@@ -69,7 +72,17 @@ export class ActivityCardComponent {
   /** Optionnel : absent quand l'activité n'est pas (encore) rattachée à un jour (vue générale). */
   readonly dayId = input<Date | undefined>(undefined);
   readonly activityId = input.required<string>();
-  /** true uniquement pour les cartes rendues dans la liste réordonnable d'un jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans `startDispatchGesture`. */
+  /**
+   * true uniquement pour les cartes rendues dans la liste réordonnable d'un
+   * jour (DayPanelComponent) — gouverne la désambiguïsation du geste dans
+   * `startDispatchGesture`, ET (voir le template) si le form d'édition
+   * (`app-activity-form`) est monté. `dayId()` seul ne suffit pas pour cette
+   * 2e décision : TripActivitiesComponent (onglet Activités, tri
+   * chronologique) passe aussi `dayId` — nécessaire pour résoudre la bonne
+   * instance via `getDayActivity` — sans pour autant vouloir un form éditable
+   * inline dans cette vue d'ensemble en lecture (voir ROADMAP.md, "le détail
+   * était affiché à tort en mode chronologie").
+   */
   readonly inDayList = input(false);
   /**
    * Fourni uniquement par TripActivitiesComponent pour une carte "représentante"
@@ -79,6 +92,23 @@ export class ActivityCardComponent {
    * cette seule activité de pool).
    */
   readonly assignedPlacementsOverride = input<{ dayId: Date; instanceId: string }[] | undefined>(undefined);
+
+  /**
+   * Fourni par `TripActivitiesComponent` pour TOUTES les cartes de la vue
+   * "Ville" (tri par lieu), fusionnées ou non : le pictogramme trombone n'a
+   * de sens que rapporté à un jour précis, pas dans une vue organisée par
+   * lieu — le masquer sur une seule carte "représentante" d'un groupe
+   * fusionné et pas sur les autres cartes de la même vue créait une
+   * incohérence visuelle (voir ROADMAP.md, retour utilisateur du 2026-07-31).
+   * `false` par défaut (comportement normal partout ailleurs : jour, pool
+   * général). Ne pilote plus la couleur du bord gauche (voir `typeColorVar`,
+   * désormais toujours affichée quel que soit le contexte — ROADMAP.md
+   * "UX / Interactions").
+   */
+  readonly hideBookingMeta = input(false);
+
+  /** Couleur d'identité du type d'activité (voir ACTIVITY_TYPE_META.colorVar) — pilote le bord gauche de la carte, toujours affichée (remplace l'ancienne couleur par statut de réservation). */
+  readonly typeColorVar = computed(() => ACTIVITY_TYPE_META[this.activity()?.type ?? ActivityType.ACTIVITE].colorVar);
 
   /** En contexte jour, `activityId` est un instanceId ; en contexte pool (vue générale), un poolId. */
   readonly activity = computed(() =>
@@ -105,11 +135,6 @@ export class ActivityCardComponent {
       : { kind: 'poolActivity', id: this.activityId() };
   });
 
-  readonly bookingMeta = computed(() => {
-    const status = this.activity()?.booking?.status ?? BookingStatus.NOT_NEEDED;
-    return BOOKING_STATUS_META[status];
-  });
-
   readonly collapsed = linkedSignal(() => this.initCollapsed());
   /** Piloté par `collapseInstantly()` : coupe la transition CSS du panel le temps d'un repli forcé, pour ne jamais laisser le drag manuel capturer un état mi-animé. */
   protected readonly panelInstant = signal(false);
@@ -118,8 +143,18 @@ export class ActivityCardComponent {
    * Émis dès le pointerdown sur la poignée quand `inDayList()` est vrai —
    * DayPanelComponent prend alors intégralement la main sur le geste
    * (collapse, suivi du pointeur, réordonnancement). Voir `startDispatchGesture`.
+   * `rowId` (pas `activityId`) : DayReorderService pilote une liste unifiée
+   * activités + logistique (voir DraggableDayRow), même émetteur générique
+   * pour les deux composants.
    */
-  readonly dragHandleDown = output<{ x: number; y: number; pointerId: number; activityId: string }>();
+  readonly dragHandleDown = output<{ x: number; y: number; pointerId: number; rowId: string }>();
+
+  /** Voir `DraggableDayRow` — DayReorderService pilote une liste unifiée activités + logistique. */
+  get rowId(): string {
+    return this.activityId();
+  }
+
+  readonly kind = 'activity' as const;
 
   /** true pendant que cette carte est décrochée pour être déposée sur un autre jour. */
   readonly isBeingDragged = computed(() => this.dispatchService.isDraggedActivity(this.activityId()));
@@ -153,6 +188,12 @@ export class ActivityCardComponent {
   /** Mobile uniquement, post-création (voir DayActivityCreationService) : démarre le chaînage Type→Résa→Début→Fin→Prix. No-op hors contexte jour (pool général, où `app-activity-form` n'est jamais monté). */
   startGuidedEntry(): void {
     this.formComponent()?.startGuidedEntry();
+  }
+
+  /** Clic sur l'heure du header (voir ActivityHeaderComponent, ROADMAP.md "UX / Interactions") : déplie la carte puis ouvre l'éditeur d'heure du form (tiroir mobile, champ déjà visible sur desktop une fois dépliée). */
+  protected openStartTime(): void {
+    this.collapsed.set(false);
+    setTimeout(() => this.formComponent()?.openStartTimeEditor(), PANEL_EXPAND_DELAY_MS);
   }
 
   // --- Sélection d'un lieu depuis l'autocomplete + récupération des photos ---
@@ -283,6 +324,26 @@ export class ActivityCardComponent {
     this.dayActivityFocusService.requestFocus(placement.dayId.toISOString(), placement.instanceId);
   }
 
+  /** Chemin Storage des fichiers de cette activité — préfixe SANS le nom de fichier final, voir `FilesFieldComponent.storagePathPrefix`. */
+  protected readonly filesStoragePathPrefix = computed(() => `trips/${this.tripId()}/${this.activity()?.activityId}`);
+
+  /** `(filesChange)` de `FilesFieldComponent` (ROADMAP.md "### UI", dédup avec LogisticCardComponent) : les fichiers vivent uniquement sur l'activité de pool, jamais dupliqués par instance — voir CLAUDE.md. */
+  onFilesChange(files: FileRef[]): void {
+    const activity = this.activity();
+    if (!activity) return;
+
+    this.tripFacade.updatePoolActivity(this.tripId(), {
+      id: activity.activityId,
+      title: activity.title,
+      placeId: activity.placeId,
+      address: activity.address,
+      latitude: activity.latitude,
+      longitude: activity.longitude,
+      photoRefs: activity.photoRefs,
+      files,
+    });
+  }
+
   onTitleChanged(newTitle: string): void {
     const activity = this.activity();
     if (!activity) return;
@@ -347,7 +408,7 @@ export class ActivityCardComponent {
     this.clearHoldTimer();
 
     if (this.inDayList()) {
-      this.dragHandleDown.emit({ x, y, pointerId, activityId: this.activityId() });
+      this.dragHandleDown.emit({ x, y, pointerId, rowId: this.activityId() });
       return;
     }
 
@@ -450,9 +511,16 @@ export class ActivityCardComponent {
   }
 
   private resolveRingColor(el: HTMLElement): string {
-    const panelEl = el.querySelector('.p-panel') as HTMLElement | null;
+    // `.booking` (+ la classe de statut) est posée sur `<app-panel>` lui-même
+    // (voir le template) : `--booking-status-color` est une variable CSS,
+    // elle n'est visible qu'en descendant du DOM depuis cet élément, jamais
+    // en remontant depuis `el` (le conteneur ANCÊTRE). L'ancien sélecteur
+    // `.p-panel` datait de PrimeNG (avant le remplacement par PanelComponent,
+    // voir PRIMENG_MIGRATION.md) et ne matche plus rien depuis : on retombait
+    // donc toujours sur la couleur primaire au lieu de la couleur de statut.
+    const panelEl = el.querySelector('.booking') as HTMLElement | null;
     const value = getComputedStyle(panelEl ?? el).getPropertyValue('--booking-status-color').trim();
-    return value || 'var(--p-primary-color)';
+    return value || 'var(--nt-primary-color)';
   }
 
   get element(): HTMLElement {

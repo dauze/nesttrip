@@ -7,7 +7,7 @@ import { SelectionModeService } from '@app/shared/services/selection-mode.servic
  * Exécute la suppression groupée des 4 types d'entités sélectionnables d'un
  * trip (activités de pool, instances de jour, réservations, notes) derrière
  * une seule confirmation — remplace les corbeilles unitaires de
- * ActivityCardComponent/ReservationCardComponent/NotesComponent. Fourni par
+ * ActivityCardComponent/LogisticCardComponent/NotesComponent. Fourni par
  * TripDetailComponent, à côté de la SelectionModeService qu'il consomme.
  */
 @Injectable()
@@ -36,8 +36,8 @@ export class TripItemDeletionService {
             case 'dayActivityInstance':
               this.tripFacade.removeDayActivityInstance(tripId, item.id, item.dayId);
               break;
-            case 'reservation':
-              this.tripFacade.removeReservation(tripId, item.id);
+            case 'logistic':
+              this.tripFacade.removeLogistic(tripId, item.id);
               break;
             case 'noteItem':
               this.tripFacade.removeItem(tripId, item.id);

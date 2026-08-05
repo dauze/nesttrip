@@ -1,0 +1,37 @@
+:host {
+  display: block;
+}
+
+// Retour utilisateur (voir ROADMAP.md "UX / Interactions") : un bord gauche
+// coloré seul, sans bord sur les 3 autres côtés, faisait "bizarre" — un
+// essai avec un point de couleur à la place a semblé insuffisant une fois le
+// fond teinté en place ("le fond est de couleur, ça peut faire bien
+// maintenant") : bord gauche RÉTABLI, combiné au léger lavis de fond dans la
+// même teinte (`color-mix`, très faible opacité) qui, lui, reste — c'est
+// cette combinaison bord+fond (pas le bord seul comme avant) qui évite l'effet
+// "bizarre" initial.
+.trip-tasks-tile__item {
+  display: flex;
+  align-items: center;
+  appearance: none;
+  border: none;
+  border-left: 0.25rem solid var(--task-color);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--nt-content-border-radius, 0.5rem);
+  background: color-mix(in srgb, var(--task-color) 7%, var(--nt-content-background));
+  color: var(--nt-text-color);
+  font-size: 0.875rem;
+  transition: background-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: color-mix(in srgb, var(--task-color) 14%, var(--nt-content-background));
+  }
+}
+
+.trip-tasks-tile__label {
+  min-width: 0;
+}

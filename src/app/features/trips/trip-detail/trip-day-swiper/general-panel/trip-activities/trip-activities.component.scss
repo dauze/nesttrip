@@ -41,3 +41,21 @@
 .trip-activities__day-label {
   text-transform: capitalize;
 }
+
+// Racine du composant (anciennement portée par le wrapper `GeneralPanelComponent`,
+// dissous — voir ROADMAP.md "UX / Interactions") : réserve l'espace toolbar +
+// header voyage + barre des jours EN DEHORS du scrollport, même mécanique que
+// `.day-panel-root` (day-panel.component.scss). Plus de carte dans cet onglet
+// (déplacée vers TripSummaryComponent, voir ROADMAP.md "UX / Interactions",
+// 2026-08-01) : une seule colonne, plus de bascule empilé/scindé à gérer ici.
+.trip-activities-body {
+  padding-top: var(--chrome-top-offset, 0px);
+  // `+ var(--nt-layout-gap-stacked, 0.25rem)` (ROADMAP.md "### UI") : respiration entre le
+  // dernier élément et la barre du bas, sinon aucun espace.
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-layout-gap-stacked, 0.25rem);
+}

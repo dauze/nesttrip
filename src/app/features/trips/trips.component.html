@@ -1,5 +1,11 @@
-<div #toolbarRef class="app-toolbar">
-  <app-toolbar class="mb-2 mt-1 ml-1 mr-1">
+<app-save-status-bar />
+<div
+  #toolbarRef
+  class="app-toolbar"
+  [class.app-toolbar--flush]="chromeService.dayPanelActive()"
+  [style.--nt-chrome-gap.px]="chromeService.chromeGapPx()"
+>
+  <app-toolbar>
     <div toolbarStart class="w-3rem flex justify-content-center">
       @if (showBack()) {
         <app-button
@@ -11,11 +17,22 @@
       }
     </div>
 
-    <span toolbarCenter class="nesttrip-logo">NestTrip</span>
+    <span toolbarCenter class="nesttrip-logo" [attr.title]="toolbarTitle()">{{ toolbarTitle() }}</span>
 
     <div toolbarEnd class="w-3rem flex justify-content-center">
-      <app-menu #menu [items]="menuItems" />
+      <app-menu #menu [items]="menuItems">
+        <div menuTop class="app-menu-theme-picker flex flex-column">
+          <div class="app-menu-theme-picker__label">Thème</div>
+          <app-select-button
+            [options]="themeOptions"
+            [value]="themeService.mode()"
+            (valueChange)="onThemeChange($event)"
+          />
+        </div>
+      </app-menu>
       <app-button
+        class="app-settings-btn"
+        [class.app-settings-btn--open]="menu.isOpen()"
         (click)="menu.toggle($event)"
         icon="pi pi-cog"
         [rounded]="true"

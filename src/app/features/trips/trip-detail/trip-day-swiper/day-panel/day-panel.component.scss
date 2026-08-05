@@ -1,5 +1,6 @@
 // Réserve l'espace TOOLBAR + header voyage (--chrome-top-offset = les deux
-// cumulés, voir TripChromeService.chromeHeight) + barre des jours, tous
+// cumulés, + la barre des jours quand elle est passée en haut — voir
+// TripChromeService.contentTopOffset) + barre des jours, tous
 // `position:fixed` (voir trip-detail.component.scss / trip-day-swiper.component.scss)
 // EN DEHORS du scrollport (le swiper-slide parent n'a lui-même AUCUN padding) :
 // un position:sticky à l'intérieur (.sticky-map) doit rester libre de coller
@@ -29,18 +30,123 @@
 // hérite normalement à travers les descendants, quel que soit l'élément qui
 // la lit.
 .day-panel-root {
-  padding-top: var(--chrome-top-offset, 0px);
-  padding-bottom: var(--chrome-tabs-nav-height, 0px);
+  // `+ --fixed-map-height` (ROADMAP.md "### UI") : la carte "jour" n'occupe
+  // plus d'espace de FLUX ici (déplacée hors du swiper en layout empilé, voir
+  // TripDayMapHostService.dayFixedContainer/`.day-fixed-map`) — ce contenu
+  // doit donc réserver lui-même l'équivalent en haut, sans quoi il remonterait
+  // sous la carte fixe. Vaut 0 en layout scindé (le conteneur fixe y reste
+  // vide, `.sticky-map` local reprend son rôle habituel). `+ --nt-layout-gap-stacked` :
+  // un `gap` flex ne s'applique jamais entre le padding du conteneur et son
+  // PREMIER enfant (uniquement entre enfants) — sans cet ajout, l'écart entre
+  // la carte et "Vue d'ensemble de la journée" était plus serré que le gap
+  // normal entre les AUTRES blocs (retour utilisateur, ROADMAP.md "### UI").
+  // `--day-map-chrome-offset` (pas `--chrome-top-offset` directement, voir
+  // trip-day-swiper.component.html) : en layout empilé (`--fixed-map-height`
+  // > 0), la carte est DÉJÀ collée exactement sous la toolbar SEULE
+  // (`.day-fixed-map { top: --chrome-toolbar-height }`, sans le gap-1 de
+  // respiration inclus dans `--chrome-top-offset`, pensé pour un contenu
+  // SANS carte) — réutiliser `--chrome-top-offset` ici comptait ce gap-1 une
+  // seconde fois, gonflant l'écart carte->"Vue d'ensemble" au-delà du
+  // `--nt-layout-gap-stacked` voulu (retour utilisateur, ROADMAP.md "### UI",
+  // "la map n'est toujours pas collée à la toolbar"). En layout scindé
+  // (`--fixed-map-height` vaut 0), `--day-map-chrome-offset` retombe sur
+  // `--chrome-top-offset` complet (toolbar + barre des jours), inchangé.
+  padding-top: calc(var(--day-map-chrome-offset, 0px) + var(--fixed-map-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+  // `+ var(--nt-layout-gap-stacked, 0.25rem)` (ROADMAP.md "### UI") : sans ça, le dernier
+  // élément touchait exactement le haut de la barre du bas, aucune
+  // respiration — même correctif appliqué aux 4 autres onglets (Résumé/
+  // Activités/Logistique/Listes).
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+  // Centre le contenu (carte, timeline, activités) dans une colonne de
+  // largeur raisonnable sur grand écran plutôt que de l'étirer sur toute la
+  // largeur — voir --nt-content-max-width (tokens.scss) et ROADMAP.md.
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
+}
+
+// Empilé par défaut (mobile) : `.day-panel-map-group`/`.day-panel-activities-group`
+// n'existent qu'en DOM/code (voir day-panel.component.html), pas en boîte
+// (`display:contents`) — leurs enfants (bandeau, timeline, carte, activités)
+// deviennent des enfants flex DIRECTS de `.day-panel-body`, réordonnés via
+// `order` ci-dessous pour retrouver l'ordre historique (bandeau, timeline,
+// carte, activités) indépendamment de leur groupement en DOM.
+.day-panel-body {
+  display: flex;
+  flex-direction: column;
+  // --nt-layout-gap-stacked/--nt-layout-gap-split (tokens.scss, mêmes valeurs
+  // que gap-1/gap-2 dans layout-utilities.scss) : un seul endroit qui espace
+  // TOUS les blocs de façon homogène, plutôt que des marges ad hoc au cas par cas.
+  gap: var(--nt-layout-gap-stacked, 0.25rem);
+}
+
+.day-panel-map-group,
+.day-panel-activities-group {
+  display: contents;
+}
+
+// Bandeau logistique (Check-in/Check-out, Nuit sur place...) désormais APRÈS
+// "Vue d'ensemble de la journée" (order 3, retour utilisateur, ROADMAP.md
+// "### UI" : il apparaissait avant, cassant la continuité carte -> vue
+// d'ensemble -> reste du contenu).
+.day-panel-banner {
+  order: 3;
+}
+
+// La carte (order 1) reste la toute première chose sous le chrome fixe
+// (toolbar/barre des jours), en continuité visuelle immédiate — la "vue
+// d'ensemble de la journée" (timeline, order 2) vient juste après, qu'elle
+// soit ouverte ou repliée, puis le bandeau logistique (order 3, voir
+// ci-dessus). Sticky positioning gère seule le repositionnement du contenu
+// suivant selon la hauteur courante de la carte, sans calcul JS supplémentaire.
+.day-panel-timeline {
+  order: 2;
 }
 
 .sticky-map {
+  order: 1;
   position: sticky;
-  top: 0;
+  // JAMAIS `0` en dur : voir la doc de `TripChromeService.stickyContentTop`
+  // (colle sinon derrière le chrome fixe en layout desktop, qui ne se masque
+  // jamais au scroll contrairement au mobile). `+ --nt-sticky-map-top-gap` :
+  // marge de respiration une fois le chrome masqué (mobile), voir sa doc
+  // dans tokens.scss — remis à `var(--sticky-top-offset, 0px)` seul (sans
+  // cette marge) dans le `@media` scindé plus bas.
+  top: calc(var(--sticky-top-offset, 0px) + var(--nt-sticky-map-top-gap, 0px));
   z-index: 10;
-  background: Canvas;
-  margin-top: -0.5rem;
-  padding-top: 0.5rem;
-  border-radius: 0 0 var(--nt-radius-md) var(--nt-radius-md);
+  background: var(--nt-page-background);
+  // PAS de padding-top ici (relicat retiré — voir ROADMAP.md) : il s'ajoutait
+  // par-dessus le `gap` de `.day-panel-body` entre la timeline et la carte,
+  // gonflant spécifiquement CET écart au-delà de gap-1/gap-2. L'espacement
+  // avec l'élément précédent est déjà entièrement géré par ce `gap`.
+  // Sans ombre, la carte épinglée (app-panel plein cadre, coins arrondis,
+  // bordure) n'avait AUCUNE séparation visuelle avec les cartes d'activité
+  // qui défilent juste en dessous (elles n'ont volontairement pas de z-index,
+  // voir trip-detail.component.scss) : le contenu disparaissait sous un
+  // rectangle plat avec une coupure nette, lisible comme un bug d'empilement
+  // plutôt qu'un vrai "sticky" voulu — voir ROADMAP.md. `--nt-shadow-md`
+  // (ROADMAP.md "### UI") plutôt que le popover : offset/spread pensés pour
+  // ne porter QUE vers le bas (voir tokens.scss), sans liseré visible dans le
+  // petit espace au-dessus de la carte — elle doit paraître en continuité
+  // directe avec la toolbar, jamais séparée par une ombre là-haut.
+  box-shadow: var(--nt-shadow-md);
+}
+
+// Layout empilé (mobile) une fois la carte partagée déjà chargée : la carte
+// réelle vit dans `.day-fixed-map` (hors du swiper, voir
+// `DayPanelComponent.mapContainerEl`), CE conteneur local ne sert alors plus
+// QUE de squelette de chargement (`@if (!activeMapComponent())` dans le
+// template) — vide dès que la carte est active, ne laissant qu'un
+// commentaire Angular (`<!--container-->`, ne compte pas pour `:empty`).
+// Sans ce `display:none`, ce `div` vide participait quand même au `gap` flex
+// de `.day-panel-body` (order 1, juste avant la timeline), doublant l'écart
+// déjà réservé par `padding-top` ci-dessus (retour utilisateur, ROADMAP.md
+// "### UI", "trop d'espace entre la map et le premier élément").
+.sticky-map:empty {
+  display: none;
+}
+
+.activities-column {
+  order: 4;
 }
 
 // L'ancien second bloc `:host { scroll-margin-top: var(--sticky-height, 0px); }`
@@ -48,3 +154,91 @@
 // (aucun `setProperty`/`[style.--sticky-height]`), ce bloc résolvait donc
 // toujours au fallback `0px` — CSS mort, vestige d'une itération antérieure
 // au système de réservation d'espace "volontairement statique" ci-dessus.
+
+// Layout scindé (desktop ou mobile paysage, voir ROADMAP.md "UI Desktop" et
+// ViewportService.isSplitLayout — même seuil dupliqué ici, comme
+// ViewportService/styles.scss le font déjà pour leur propre breakpoint) :
+// `.day-panel-map-group`/`.day-panel-activities-group` redeviennent de VRAIES
+// boîtes (colonnes flex indépendantes l'une de l'autre en hauteur — c'est ÇA
+// qui évite le vide sous le bandeau réservation quand la timeline, à côté,
+// est plus haute : pas de ligne de grille/flex PARTAGÉE entre les 2 colonnes).
+// `.sticky-map` garde `position:sticky` (inchangé) : le `swiper-slide`
+// ancêtre reste l'unique scrollport, pas de conteneur de scroll imbriqué.
+@media (orientation: landscape) and (min-width: 700px) {
+  // Pas de max-width ici (contrairement au mode empilé, voir plus haut) :
+  // la colonne carte est justement censée profiter de TOUT l'espace
+  // disponible (`flex:1 1 auto` sur `.day-panel-map-group` plus bas) — un
+  // plafond ici aurait recréé les bandes vides gauche/droite que ce layout
+  // cherche précisément à éviter sur grand écran.
+  .day-panel-root {
+    max-width: none;
+  }
+
+  .day-panel-body {
+    flex-direction: row;
+    // PAS `flex-start` : les 2 colonnes doivent s'étirer à la hauteur de la
+    // plus grande (`stretch`, valeur par défaut de `align-items` — explicite
+    // ici pour la doc). Sans ça, la colonne carte (courte : timeline + carte)
+    // n'aurait de "place pour rester collée" que sur SA PROPRE hauteur — la
+    // carte sticky "décrocherait" et défilerait hors champ bien avant la fin
+    // de la liste d'activités (souvent bien plus longue). Avec `stretch`, la
+    // colonne carte s'étire jusqu'à la hauteur de la colonne activités : le
+    // surplus est juste de l'espace vide sous la carte (jamais affiché, la
+    // carte ne grandit pas dedans — `.sticky-map` n'a ni `flex-grow` ni
+    // `height:100%`), qui sert de piste de "collage" pour tout le scroll.
+    align-items: stretch;
+    gap: var(--nt-layout-gap-split, 0.5rem);
+  }
+
+  .day-panel-map-group,
+  .day-panel-activities-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nt-layout-gap-split, 0.5rem);
+    min-width: 0;
+  }
+
+  // La carte prend TOUT l'espace disponible (la donnée spatiale profite de la
+  // largeur, contrairement à une carte d'activité) ; la colonne activités
+  // reste à une largeur de lecture confortable, jamais étirée sur tout le
+  // reste de l'écran.
+  .day-panel-map-group {
+    flex: 1 1 auto;
+  }
+
+  .day-panel-activities-group {
+    flex: 0 1 32rem;
+  }
+
+  // Sans activité, ni la timeline ni la carte ne sont rendues (voir le `@if`
+  // dans le template) : masque la colonne de gauche, désormais vide, ET
+  // libère la colonne activités de son plafond de largeur (`flex:0 1 32rem`
+  // n'a de sens qu'À CÔTÉ de la carte) — sinon elle restait collée à gauche
+  // avec tout le reste de l'écran vide à droite, pas terrible pour un état
+  // vide. Recentrée avec le même plafond que le mode empilé (`--nt-content-max-width`).
+  .day-panel-body--no-map .day-panel-map-group {
+    display: none;
+  }
+
+  .day-panel-body--no-map .day-panel-activities-group {
+    flex: 1 1 auto;
+    max-width: var(--nt-content-max-width);
+    margin-inline: auto;
+  }
+
+  .sticky-map {
+    // Pas de marge de respiration ici (contrairement au mode empilé,
+    // `--nt-sticky-map-top-gap`) : la hauteur ci-dessous est calculée au
+    // pixel près pour occuper tout l'espace vertical disponible, l'ajouter
+    // ferait déborder la carte en bas de l'écran.
+    top: var(--sticky-top-offset, 0px);
+    // Hauteur concrète = point de départ de la chaîne flex/`height:100%`
+    // jusqu'à `<google-map>` (voir `PanelComponent.fillHeight` et
+    // trip-day-map.component.scss) : CSS normal, aucun `!important`
+    // nécessaire ici (rien d'autre ne pose de style inline sur cet élément).
+    // Basée sur `--chrome-top-offset` (pas `--sticky-top-offset`, resterait
+    // à 0 en `split-hideable`) : une hauteur volontairement conservatrice,
+    // cohérente même avant que le chrome ne finisse de se masquer.
+    height: calc(100dvh - var(--chrome-top-offset, 0px) - 1.5rem);
+  }
+}

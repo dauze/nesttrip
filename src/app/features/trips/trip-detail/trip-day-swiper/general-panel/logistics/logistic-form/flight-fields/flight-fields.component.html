@@ -1,0 +1,15 @@
+<div class="flex flex-column gap-2">
+  <app-place-autocomplete-field
+    label="Aéroport de départ"
+    placeholder="Rechercher un aéroport..."
+    [initialPlace]="initialDepartureAirport()"
+    (placeSelected)="departureAirportSelected.emit($event)" />
+
+  <app-divider class="m-1" />
+
+  <app-place-autocomplete-field
+    label="Aéroport d'arrivée"
+    placeholder="Rechercher un aéroport..."
+    [initialPlace]="initialArrivalAirport()"
+    (placeSelected)="arrivalAirportSelected.emit($event)" />
+</div>
