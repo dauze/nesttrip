@@ -154,6 +154,29 @@ export class TripChromeService {
    */
   readonly stickyContentTop = computed(() => (this.mode() === 'split-pinned' ? this.contentTopOffset() : 0));
 
+  /**
+   * Hauteur du chrome fixe RÉELLEMENT visible à l'instant T (px) — à
+   * utiliser pour tout calcul de scroll ponctuel qui doit centrer/positionner
+   * un élément en tenant compte du chrome qui peut le recouvrir (ex.
+   * `LogisticsListComponent.focusCardWhenReady`, ROADMAP.md "Bugs / fixes" :
+   * "le scroll ne centre pas l'élément logistique, décalage de la hauteur de
+   * la toolbar"). `scrollIntoView({block:'center'})` natif ignore totalement
+   * ce chrome `position:fixed` (il ne réduit pas la hauteur de mesure du
+   * scrollport, juste la recouvre visuellement) : centrer "à l'aveugle"
+   * revient donc à centrer sur une zone dont le HAUT est masqué par le
+   * chrome quand il est visible — d'où le décalage constaté.
+   *
+   * Lecture PONCTUELLE et non-réactive de `currentTranslateY` (jamais un
+   * signal, voir la doc de classe) : `contentTopOffset()` est l'espace
+   * TOTAL réservé en haut du contenu (chrome pleinement déployé) ;
+   * `currentTranslateY` (toujours <= 0) est le décalage en cours — leur
+   * somme, bornée à 0, donne la portion encore effectivement visible (0 une
+   * fois le chrome entièrement masqué au scroll).
+   */
+  getVisibleChromeHeight(): number {
+    return Math.max(0, this.contentTopOffset() + this.currentTranslateY);
+  }
+
   registerHeight(key: ChromeKey, px: number): void {
     this.heights.update(current => ({ ...current, [key]: px }));
   }

@@ -1,4 +1,4 @@
-<form [formGroup]="form" class="logistic-details compact-form flex flex-column gap-2">
+<form [formGroup]="form" class="logistic-details compact-form flex flex-column gap-1">
   <div class="grid m-0">
     <div class="col-6 p-0 pr-1 min-w-0">
       <div class="flex flex-column gap-1 w-full min-w-0">
@@ -86,7 +86,9 @@
     }
   }
 
-  <app-divider class="m-1" />
+  @if (hasTypeSpecificContent()) {
+    <app-divider class="m-1" />
+  }
 
   <div class="grid m-0">
     <div class="col-6 p-0 pr-1 min-w-0">
@@ -123,6 +125,7 @@
   </div>
 
   @if (showDeadline()) {
+    <app-divider class="m-1" />
     <div class="flex flex-column gap-1 w-full min-w-0" formGroupName="booking">
       <label for="logistic-booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'nt-text-warning' : 'nt-text-muted'">
         <i class="pi pi-calendar text-xs"></i>Deadline

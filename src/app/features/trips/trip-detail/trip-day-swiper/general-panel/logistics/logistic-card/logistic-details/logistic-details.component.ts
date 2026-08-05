@@ -138,6 +138,20 @@ export class LogisticDetailsComponent {
 
   readonly selectedType = computed(() => this.formValue().type);
   readonly dateLabels = computed(() => LOGISTIC_TYPE_META[this.selectedType()]);
+  /**
+   * `'logement'` est le seul type dont le bloc de champs propre au type
+   * (`@switch` du template) peut être ENTIÈREMENT vide : pas de champ
+   * "adresse" dédié (le lieu se choisit via le titre, voir
+   * `LogisticHeaderComponent`), seule `<app-logistic-place-info>` y est
+   * rendue, qui elle-même ne rend rien tant qu'aucun lieu Google n'est
+   * choisi. Sans ce garde-fou, les DEUX `<app-divider>` qui entourent ce
+   * bloc dans le template restaient toutes les deux affichées de part et
+   * d'autre d'un bloc vide — "deux séparateurs" côte à côte (ROADMAP.md
+   * "Bugs / fixes", retour utilisateur : "zones avec double separator vide
+   * à tort"). Les autres types ont toujours au moins un champ visible
+   * (compagnie/n° de vol, loueur, champ lieu "facultatif"...), jamais ce cas.
+   */
+  readonly hasTypeSpecificContent = computed(() => this.selectedType() !== 'logement' || !!this.currentPlaces().place?.placeId);
   /** Couleur d'identité du type (ROADMAP.md "### UI", uniformisation avec ActivityFormComponent) — même mécanisme `.booking`/`--booking-status-color` (select.component.scss), déplacé du champ Résa vers le champ Type ici aussi. */
   readonly typeColorVar = computed(() => LOGISTIC_TYPE_META[this.selectedType()].colorVar);
   readonly currentPlaces = computed(() => this.selectedPlaces());

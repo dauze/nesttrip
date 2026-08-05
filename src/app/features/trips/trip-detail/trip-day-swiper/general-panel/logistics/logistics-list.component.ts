@@ -11,10 +11,12 @@ import { LogisticFocusService } from '@app/features/trips/trip-detail/logistic-f
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { ViewportService } from '@core/services/viewport.service';
+import { TripChromeService } from '@core/services/trip-chrome.service';
 import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META, LogisticTypeMeta } from './logistic.constants';
 import { LogisticCardComponent } from './logistic-card/logistic-card.component';
 import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
+import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
 
 type SortMode = 'type' | 'chrono';
 const SORT_MODES: SortMode[] = ['type', 'chrono'];
@@ -65,6 +67,7 @@ export class LogisticsListComponent {
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly viewport = inject(ViewportService);
+  private readonly chromeService = inject(TripChromeService);
 
   private readonly logisticCards = viewChildren(LogisticCardComponent);
 
@@ -180,15 +183,41 @@ export class LogisticsListComponent {
     // Deux rAF avant de scroller (ROADMAP.md "Bugs / fixes", même correctif
     // que `DayReorderService` pour le même symptôme) : `collapsed.set(false)`
     // ne déplie pas la carte de façon synchrone (transition CSS + rendu
-    // Angular) — sans cette attente, `scrollIntoView` mesure encore la
-    // géométrie "carte repliée", pas sa position finale une fois dépliée.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => card.element.scrollIntoView({ behavior: 'smooth', block: 'center' })),
-    );
+    // Angular) — sans cette attente, on mesurerait encore la géométrie
+    // "carte repliée", pas sa position finale une fois dépliée.
+    requestAnimationFrame(() => requestAnimationFrame(() => this.scrollCardToVisibleCenter(card.element)));
     if (startGuided) {
       const done = card.startGuidedEntry();
       if (originDayId && this.viewport.isMobile()) done.then(() => this.dayActivityFocusService.requestFocus(originDayId));
     }
+  }
+
+  /**
+   * Centre `el` dans la zone RÉELLEMENT visible du scrollport (ROADMAP.md
+   * "Bugs / fixes" : "le scroll ne centre pas l'élément logistique,
+   * décalage de la hauteur de la toolbar") — remplace le `scrollIntoView`
+   * natif utilisé auparavant, aveugle au chrome fixe (`TripChromeService`,
+   * `position:fixed`, se masque au scroll sans jamais réduire la hauteur de
+   * mesure du scrollport) : centrer "à l'aveugle" revenait à centrer sur une
+   * zone dont le haut peut être recouvert par la toolbar, d'où le décalage.
+   * `getVisibleChromeHeight()` donne la portion encore effectivement visible
+   * du chrome à l'instant du calcul (0 une fois masqué au scroll).
+   */
+  private scrollCardToVisibleCenter(el: HTMLElement): void {
+    const container = getScrollContainer(el);
+    if (!container) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = el.getBoundingClientRect();
+    const visibleChromeHeight = this.chromeService.getVisibleChromeHeight();
+
+    const targetCenterInContainer = targetRect.top - containerRect.top + targetRect.height / 2;
+    const desiredCenterInContainer = visibleChromeHeight + (containerRect.height - visibleChromeHeight) / 2;
+
+    smoothScrollTo(container, container.scrollTop + (targetCenterInContainer - desiredCenterInContainer));
   }
 
   onSortModeChange(mode: SortMode | undefined): void {

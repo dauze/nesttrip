@@ -1,6 +1,6 @@
 <div class="logistic-header__row flex align-items-center gap-2 w-full min-w-0">
   <div class="logistic-header__thumb flex-shrink-0 border-round overflow-hidden flex align-items-center justify-content-center" [style.background-color]="'color-mix(in srgb, var(' + typeMeta[logistic().type].colorVar + ') 16%, transparent)'">
-    <i [class]="'pi text-xl ' + typeMeta[logistic().type].icon" [style.color]="'var(' + typeMeta[logistic().type].colorVar + ')'"></i>
+    <i [class]="'pi logistic-header__thumb-icon ' + typeMeta[logistic().type].icon" [style.color]="'var(' + typeMeta[logistic().type].colorVar + ')'"></i>
   </div>
 
   <div class="logistic-header__meta flex flex-column flex-1 min-w-0 gap-1">

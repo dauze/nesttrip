@@ -6,8 +6,20 @@ import { UserProfileService } from './user-profile.service';
 export class GoogleMapPanelService {
   private readonly userProfileService = inject(UserProfileService);
 
-  // 1. Le signal privé qui stocke l'état (écriture interne uniquement)
-  private readonly _isCollapsed = signal<boolean>(false);
+  // 1. Le signal privé qui stocke l'état (écriture interne uniquement) —
+  // `true` (repliée) par défaut, PAS `false` (ROADMAP.md "Bugs / fixes",
+  // retour utilisateur : "la carte est ouverte par défaut, il y a un
+  // sautement de la carte qui s'affiche ouverte puis se ferme"). La
+  // préférence Firestore (`mapCollapsedByDefault`, voir l'`effect` ci-dessous)
+  // n'arrive qu'APRÈS le tout premier rendu (lecture asynchrone) : partir de
+  // `false` affichait donc systématiquement la carte OUVERTE un instant,
+  // même pour un utilisateur ayant explicitement choisi "repliée" — le
+  // flag ne faisait alors que la refermer après coup, jamais visible avant.
+  // Partir de `true` élimine ce flash dans le cas (majoritaire une fois la
+  // préférence choisie) où elle vaut `true` ; dans le cas contraire, la
+  // carte s'ouvre dès que la préférence connue le demande — un dépliage
+  // reste moins perturbant visuellement qu'un repliage inattendu.
+  private readonly _isCollapsed = signal<boolean>(true);
 
   // 2. Le signal public en lecture seule (récupération de la donnée)
   readonly isCollapsed = this._isCollapsed.asReadonly();

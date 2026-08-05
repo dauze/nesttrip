@@ -28,9 +28,17 @@ describe('GoogleMapPanelService', () => {
     service = TestBed.inject(GoogleMapPanelService);
   });
 
-  it("reste à false tant que la préférence Firestore n'est pas encore connue", () => {
+  /**
+   * `true` (repliée) par défaut, PAS `false` (ROADMAP.md "Bugs / fixes",
+   * retour utilisateur : "la carte est ouverte par défaut... il vaut mieux
+   * qu'elle soit fermée par défaut et qu'elle s'ouvre si besoin") : la
+   * préférence Firestore n'arrivant qu'après le tout premier rendu, partir
+   * de `false` affichait systématiquement un flash "ouverte puis repliée"
+   * dès que la préférence réelle valait `true`.
+   */
+  it("reste à true (repliée) tant que la préférence Firestore n'est pas encore connue", () => {
     TestBed.tick();
-    expect(service.isCollapsed()).toBe(false);
+    expect(service.isCollapsed()).toBe(true);
   });
 
   /**
@@ -44,39 +52,39 @@ describe('GoogleMapPanelService', () => {
    */
   it("applique la préférence Firestore dès qu'elle arrive, même après le premier rendu", () => {
     TestBed.tick();
-    expect(service.isCollapsed()).toBe(false);
+    expect(service.isCollapsed()).toBe(true);
 
-    mapCollapsedByDefault.set(true);
+    mapCollapsedByDefault.set(false);
     TestBed.tick();
 
-    expect(service.isCollapsed()).toBe(true);
+    expect(service.isCollapsed()).toBe(false);
   });
 
   it("n'écrase pas une préférence Firestore chargée entre-temps si l'utilisateur bascule manuellement avant qu'elle arrive", () => {
     // Bascule manuelle (clic utilisateur réel, via `setCollapse`) avant que
     // la préférence Firestore ne soit connue.
-    service.setCollapse(true);
-    expect(setMapCollapsedByDefault).toHaveBeenCalledWith(true);
+    service.setCollapse(false);
+    expect(setMapCollapsedByDefault).toHaveBeenCalledWith(false);
 
     // La préférence Firestore arrive ENSUITE, avec une valeur différente :
     // ne doit PAS écraser le choix explicite déjà fait dans cette session
     // (voir la doc de `seeded`).
-    mapCollapsedByDefault.set(false);
+    mapCollapsedByDefault.set(true);
     TestBed.tick();
 
-    expect(service.isCollapsed()).toBe(true);
+    expect(service.isCollapsed()).toBe(false);
   });
 
   it('toggleCollapse alterne bien la valeur courante et persiste', () => {
     TestBed.tick();
-    expect(service.isCollapsed()).toBe(false);
-
-    service.toggleCollapse();
     expect(service.isCollapsed()).toBe(true);
-    expect(setMapCollapsedByDefault).toHaveBeenCalledWith(true);
 
     service.toggleCollapse();
     expect(service.isCollapsed()).toBe(false);
     expect(setMapCollapsedByDefault).toHaveBeenCalledWith(false);
+
+    service.toggleCollapse();
+    expect(service.isCollapsed()).toBe(true);
+    expect(setMapCollapsedByDefault).toHaveBeenCalledWith(true);
   });
 });
