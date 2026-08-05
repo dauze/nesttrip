@@ -86,7 +86,6 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 
 ### Qualité / process
 
-- Améliorer le .ico (manifest + png) : depuis un téléphone, "exporter comme application" (PWA) génère une icône floue. Il faut un vrai jeu d'icônes + manifest. Mis de côté pour l'instant, le logo pouvant encore changer.
 - Tests e2e avec Claude (skills, agents, bonnes pratiques)
 - Secret de déploiement pour la release
 - tout passer en strategy onpush
@@ -113,6 +112,7 @@ Ce document sert de référence pour le projet : ce qui est déjà en place (à 
 - Note en début de page
 - Nouveau style carte "activité" (2 lignes, photo Google Photos)
 - Drag and drop des activités
+- Manifest PWA + vrai jeu d'icônes (192/512, maskable, apple-touch-icon) pour une icône nette à l'installation mobile
 - Popup de suppression réservée (accès restreint)
 - Header modifiable et stylé (infos voyage)
 - Menu de sélection/création de voyages
