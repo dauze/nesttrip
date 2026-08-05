@@ -161,6 +161,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   readonly contentReady = signal(false);
   private readyFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private contentReadyTripId: string | null = null;
 
   readonly sortedDays = computed(() =>
     this.facade.activeTrip()?.days
@@ -280,9 +281,23 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Le skeleton (voir `contentReady`) ne doit réapparaître que lors d'un
+    // VRAI changement de trip (navigation vers un autre id) — pas à chaque
+    // fois que `activeTrip()` change de RÉFÉRENCE, ce qui arrive aussi pour
+    // le MÊME trip dès qu'un jour est ajouté/supprimé (`_tripDays`/`_days`,
+    // voir CLAUDE.md "activeTrip") : `activeTrip()` recompose alors un nouvel
+    // objet `Trip` même quand `id` n'a pas bougé. Sans le garde-fou
+    // `contentReadyTripId` (même principe que `initializedTripId` juste
+    // au-dessus), CE bloc se redéclenchait à CHAQUE édition d'intervalle de
+    // dates (locale OU distante, ROADMAP.md "Bugs / fixes", retour
+    // utilisateur : "la modification des dates entraîne l'affichage du
+    // skeleton") — masquant jusqu'à 4s (filet de sécurité ci-dessous) un
+    // contenu déjà à jour, avec l'impression trompeuse que "les dates n'ont
+    // pas changé" une fois le skeleton reparti.
     effect(() => {
       const id = this.facade.activeTrip()?.id;
-      if (!id) return;
+      if (!id || this.contentReadyTripId === id) return;
+      this.contentReadyTripId = id;
 
       this.contentReady.set(false);
       this.clearReadyFallback();
