@@ -170,6 +170,26 @@ export class TripStore {
    * indéfiniment par mon propre renommage passé.
    */
   readonly _pendingTripFieldIds = signal<Set<string>>(new Set());
+  /**
+   * @internal — tripIds avec au moins un `addDay`/`removeDay` encore en vol
+   * (ROADMAP.md "Bugs / fixes", régression confirmée par retour utilisateur :
+   * "la modification des dates lance toujours le rechargement"). Modifier
+   * l'intervalle de dates déclenche PLUSIEURS `addDay`/`removeDay` d'un coup
+   * (un par jour ajouté/retiré), chacun une écriture Firestore ponctuelle
+   * SÉPARÉE — sans protection, un snapshot de confirmation intermédiaire
+   * (reflétant SEULEMENT une partie des jours déjà écrits côté serveur, les
+   * autres écritures n'ayant pas encore atterri) semblait "différent" de
+   * l'état local optimiste (qui, lui, a déjà TOUS les jours) : `_days`/
+   * `_tripDays` étaient alors réécrits À CHAQUE écriture individuelle
+   * confirmée, retriggant `activeTrip()` plusieurs fois de suite pour UNE
+   * seule action utilisateur. Compteur (pas un simple Set) car plusieurs
+   * `addDay`/`removeDay` peuvent être en vol simultanément pour le MÊME trip
+   * — tant que le compteur n'est pas retombé à 0, `TripFacade.mergeFromRemote`
+   * ignore ENTIÈREMENT le bloc `_days`/`_tripDays` de ce trip (même principe
+   * que `_pendingTripFieldIds` ci-dessus).
+   */
+  readonly _pendingTripDayIds = signal<Set<string>>(new Set());
+  private readonly pendingTripDayCounts = new Map<string, number>();
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
@@ -699,6 +719,29 @@ export class TripStore {
     this._pendingTripFieldIds.update((set) => new Set(set).add(tripId));
   }
 
+  /** Voir la doc de `_pendingTripDayIds` — compteur, plusieurs `addDay`/`removeDay` peuvent être en vol en même temps pour le même trip. */
+  private markTripDayPending(tripId: string): void {
+    const count = (this.pendingTripDayCounts.get(tripId) ?? 0) + 1;
+    this.pendingTripDayCounts.set(tripId, count);
+    if (count === 1) this._pendingTripDayIds.update((set) => new Set(set).add(tripId));
+  }
+
+  /** Retiré même en cas d'échec d'écriture (voir `clearTripFieldPending`) — ne décrémente le compteur partagé qu'une fois, jamais sous 0. */
+  private clearTripDayPending(tripId: string): void {
+    const count = (this.pendingTripDayCounts.get(tripId) ?? 0) - 1;
+    if (count > 0) {
+      this.pendingTripDayCounts.set(tripId, count);
+      return;
+    }
+    this.pendingTripDayCounts.delete(tripId);
+    this._pendingTripDayIds.update((set) => {
+      if (!set.has(tripId)) return set;
+      const copy = new Set(set);
+      copy.delete(tripId);
+      return copy;
+    });
+  }
+
   /** Retiré même en cas d'échec d'écriture : un échec n'a rien écrit côté Firestore, rien à protéger d'un prochain snapshot (voir la doc de `_pendingTripFieldIds`). */
   private clearTripFieldPending(tripId: string): void {
     this._pendingTripFieldIds.update((set) => {
@@ -1139,9 +1182,12 @@ export class TripStore {
       [tripId]: (trips[tripId] ?? []).filter(id => id !== dayKey),
     }));
 
-    this.dayPersistenceService.removeDay(tripId, dayId).catch(err => {
-      console.error('[TripStore] Erreur suppression day Firestore :', err);
-    });
+    this.markTripDayPending(tripId);
+    this.dayPersistenceService.removeDay(tripId, dayId)
+      .catch(err => {
+        console.error('[TripStore] Erreur suppression day Firestore :', err);
+      })
+      .finally(() => this.clearTripDayPending(tripId));
   }
 
   addDay(tripId: string, day: Day): void {
@@ -1168,9 +1214,11 @@ export class TripStore {
       }));
 
       // Firestore
+      this.markTripDayPending(tripId);
       this.dayPersistenceService.addDay(tripId, day)
         .catch((err) => {
           console.error('[TripStore] Erreur ajout day Firestore :', err);
-        });
+        })
+        .finally(() => this.clearTripDayPending(tripId));
     }
 }

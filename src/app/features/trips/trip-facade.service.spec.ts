@@ -30,10 +30,12 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
   const tripId = 't1';
   const day1 = new Date('2026-08-01T00:00:00.000Z');
   const day2 = new Date('2026-08-02T00:00:00.000Z');
+  const day3 = new Date('2026-08-03T00:00:00.000Z');
 
   let facade: TripFacade;
   let store: TripStore;
   let tripSubject: Subject<Trip>;
+  let dayPersistence: { addDay: ReturnType<typeof vi.fn>; removeDay: ReturnType<typeof vi.fn> };
 
   function baseTrip(overrides: Partial<Trip> = {}): Trip {
     return {
@@ -70,6 +72,7 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
 
   beforeEach(() => {
     tripSubject = new Subject<Trip>();
+    dayPersistence = { addDay: vi.fn().mockResolvedValue(undefined), removeDay: vi.fn().mockResolvedValue(undefined) };
 
     TestBed.configureTestingModule({
       providers: [
@@ -89,13 +92,7 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
             removeTrip: vi.fn().mockResolvedValue(undefined),
           },
         },
-        {
-          provide: DayPersistenceService,
-          useValue: {
-            addDay: vi.fn().mockResolvedValue(undefined),
-            removeDay: vi.fn().mockResolvedValue(undefined),
-          },
-        },
+        { provide: DayPersistenceService, useValue: dayPersistence },
         {
           provide: CollaborationService,
           useValue: {
@@ -252,6 +249,46 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
     tripSubject.next(baseTrip({ days: [{ id: day2, activityIds: [] }] }));
 
     expect(facade.activeTrip()!.days.map((d) => d.id.getTime())).toEqual([day2.getTime()]);
+  });
+
+  it("ignore les snapshots intermédiaires pendant que plusieurs addDay sont en vol (édition de l'intervalle de dates, régression \"lance toujours le rechargement\")", async () => {
+    let resolveSecond!: () => void;
+    dayPersistence.addDay
+      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { resolveSecond = resolve; }));
+
+    tripSubject.next(baseTrip({ days: [{ id: day1, activityIds: [] }] }));
+
+    // Édition de l'intervalle de dates : ajoute day2 ET day3 d'un coup (2
+    // `addDay` en vol pour le même trip, comme `TripSummaryComponent.onDatesChange`).
+    store.addDay(tripId, { id: day2, activityIds: [] });
+    store.addDay(tripId, { id: day3, activityIds: [] });
+    expect(facade.activeTrip()!.days.length).toBe(3);
+
+    // Laisse le premier `addDay` (day2) se résoudre, pas le second (day3 encore en vol).
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Snapshot INTERMÉDIAIRE : le serveur ne reflète encore QUE day2, pas
+    // day3 (écriture encore en vol) — ne doit PAS faire "reculer" l'état
+    // local (day3 doit rester présent, l'UI ne doit pas cligoter).
+    tripSubject.next(baseTrip({ days: [{ id: day1, activityIds: [] }, { id: day2, activityIds: [] }] }));
+    expect(facade.activeTrip()!.days.map((d) => d.id.getTime()).sort()).toEqual(
+      [day1.getTime(), day2.getTime(), day3.getTime()].sort(),
+    );
+
+    // La 2e écriture se confirme à son tour.
+    resolveSecond();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Snapshot final, cette fois avec les 3 jours : pending levé, tout concorde déjà.
+    tripSubject.next(
+      baseTrip({ days: [{ id: day1, activityIds: [] }, { id: day2, activityIds: [] }, { id: day3, activityIds: [] }] }),
+    );
+    expect(facade.activeTrip()!.days.map((d) => d.id.getTime()).sort()).toEqual(
+      [day1.getTime(), day2.getTime(), day3.getTime()].sort(),
+    );
   });
 
   it('getTripDateRange reste stable si les jours ne changent pas, et se met à jour quand ils changent réellement (local ou distant)', () => {

@@ -429,6 +429,16 @@ export class TripFacade {
 
     // 3. Ensemble des clés de jour du trip côté distant, calculé UNE fois et
     // réutilisé ci-dessous par `_dayActivityIds` ET `_days`/`_tripDays`.
+    // `isTripDayPending` (voir `_pendingTripDayIds`) : au moins un
+    // `addDay`/`removeDay` est encore en vol pour CE trip — modifier
+    // l'intervalle de dates déclenche PLUSIEURS écritures ponctuelles d'un
+    // coup, chacune confirmée séparément ; sans cette protection, un
+    // snapshot intermédiaire (ne reflétant qu'UNE PARTIE des jours déjà
+    // écrits côté serveur) semblait "différent" de l'état local optimiste
+    // (qui, lui, a déjà TOUS les jours) à CHAQUE écriture individuelle
+    // confirmée — régression confirmée par retour utilisateur ("la
+    // modification des dates lance toujours le rechargement").
+    const isTripDayPending = this.store._pendingTripDayIds().has(trip.id);
     const previousTripDayKeys = this.store._tripDays()[trip.id] ?? [];
     const previousTripDayKeySet = new Set(previousTripDayKeys);
     const remoteDayKeysList = trip.days.map((d) => d.id.toISOString());
@@ -487,9 +497,15 @@ export class TripFacade {
     // Jour retiré CÔTÉ DE CE TRIP (toujours connu avant, plus dans le
     // snapshot distant) : ses instances n'ont plus de jour, l'entrée n'a plus
     // de sens — jamais touché pour les jours des AUTRES trips (hors
-    // `previousTripDayKeySet`, qui ne scope que CE trip).
-    for (const dayKey of previousTripDayKeys) {
-      if (!remoteDayKeySet.has(dayKey)) delete newDayActivityIds[dayKey];
+    // `previousTripDayKeySet`, qui ne scope que CE trip). Sauté tant qu'un
+    // `addDay`/`removeDay` est en vol (`isTripDayPending`) : un jour tout
+    // juste ajouté localement mais pas encore confirmé par ce snapshot
+    // serait sinon supprimé ici à tort (il n'est "connu avant" que
+    // localement, `remoteDayKeySet` ne l'a pas encore).
+    if (!isTripDayPending) {
+      for (const dayKey of previousTripDayKeys) {
+        if (!remoteDayKeySet.has(dayKey)) delete newDayActivityIds[dayKey];
+      }
     }
 
     // 3ter. `_days`/`_tripDays` : jamais mis à jour ici jusqu'ici (seul
@@ -508,8 +524,9 @@ export class TripFacade {
     // jours a réellement changé (`previousTripDayKeySet`/`remoteDayKeySet`,
     // calculés en 3bis ci-dessus).
     const daysChanged =
-      previousTripDayKeySet.size !== remoteDayKeySet.size ||
-      remoteDayKeysList.some((key) => !previousTripDayKeySet.has(key));
+      !isTripDayPending &&
+      (previousTripDayKeySet.size !== remoteDayKeySet.size ||
+        remoteDayKeysList.some((key) => !previousTripDayKeySet.has(key)));
 
     if (daysChanged) {
       const currentDays = this.store._days();

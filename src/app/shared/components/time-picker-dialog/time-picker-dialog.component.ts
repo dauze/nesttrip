@@ -148,8 +148,20 @@ export class TimePickerDialogComponent
             }
             // Même sémantique que la date : un "Annuler" n'écrase rien, y
             // compris l'offset manipulé pendant que le dialog était ouvert.
-            if (dayOffsetBox) this.dayOffsetChange.emit(dayOffsetBox.value);
+            //
+            // Ordre important : `closed` (qui pousse la nouvelle heure de fin
+            // dans le form) DOIT être émis avant `dayOffsetChange`. La nouvelle
+            // heure de fin déclenche côté ActivityFormComponent un recalcul qui
+            // réévalue `endDayOffset` à partir des heures seules (voir
+            // syncEndDayOffsetFromTimes) — si l'offset explicite choisi via les
+            // flèches "J+N" du dialog était appliqué AVANT, ce recalcul pouvait
+            // l'écraser silencieusement (retour à 0) dès que l'heure choisie
+            // n'était pas strictement antérieure à l'heure de début, même si
+            // l'utilisateur avait explicitement avancé jusqu'à J+1. En
+            // appliquant l'offset en dernier, le choix explicite de
+            // l'utilisateur gagne toujours sur la déduction automatique.
             this.closed.emit(this.applySelectedDate(selected));
+            if (dayOffsetBox) this.dayOffsetChange.emit(dayOffsetBox.value);
         });
     }
 
