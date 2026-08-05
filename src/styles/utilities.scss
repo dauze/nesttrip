@@ -93,6 +93,15 @@
   max-width: 24rem;
 }
 
+// Taille au contenu, pas à l'espace flex disponible (ROADMAP.md "Bugs /
+// fixes" — titre d'une liste dans l'onglet Listes) : `field-sizing: content`
+// (support natif moderne, pas de mesure JS) fait suivre au champ exactement
+// la largeur de sa valeur au lieu de s'étirer avec `flex-1`/`w-full` — à
+// combiner avec `.nt-capped-inline-field` pour plafonner un titre très long.
+.nt-content-sized-field {
+  field-sizing: content;
+}
+
 .transparent-inputtext {
   --p-inputtext-border-color: transparent;
   --p-inputtext-hover-border-color: transparent;

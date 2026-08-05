@@ -44,6 +44,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   protected readonly chromeService = inject(TripChromeService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
   private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
+  private readonly mapAnchorRef = viewChild<ElementRef<HTMLElement>>('mapAnchor');
   private dayFixedMapObserver?: ResizeObserver;
 
   // --- Synchro chrome (toolbar + header) au fil du scroll du slide actif ---
@@ -123,6 +124,22 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
         this.dayFixedMapObserver?.disconnect();
         unregisterChrome();
       });
+    });
+
+    // Reparque la carte dès que l'onglet actif n'est ni un jour ni Résumé
+    // (Activités/Logistique/Listes, qui n'affichent aucune carte) — sans ça,
+    // `.day-fixed-map` gardait le noeud DOM déplacé par le dernier jour
+    // visité et restait affiché par-dessus ces onglets au lieu de se fermer
+    // (aucun de ces 3 composants n'appelle jamais `moveTo` pour la réclamer).
+    effect(() => {
+      const id = this.activeId();
+      const anchor = this.mapAnchorRef()?.nativeElement;
+      if (!id || !anchor) return;
+
+      const isMapOwningTab = id === 'summary' || this.sortedDays().some(d => d.id.toISOString() === id);
+      if (isMapOwningTab) return;
+
+      this.mapHost.park(anchor);
     });
 
     // Réactif à `isLocked()` lui-même (pas juste au changement de jour actif,

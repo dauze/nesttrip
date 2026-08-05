@@ -195,7 +195,12 @@ export class ActivityDayDispatchOverlayComponent {
       // Demande de scroll vers l'activité tout juste déposée, une fois le
       // jour cible actif — DayPanelComponent la consomme dès qu'il le
       // devient (préchargement possible avant, voir DayActivityFocusService).
-      this.dayFocusService.requestFocus(req.dayKey, instanceId);
+      // UNIQUEMENT depuis un jour (déplacement d'une instance existante,
+      // ROADMAP.md "Bugs / fixes") : depuis le pool général, le drop crée une
+      // NOUVELLE instance sans jamais quitter le pool, contrairement au
+      // déplacement inter-jours qui doit lui suivre l'activité sur le jour
+      // cible.
+      if (req.origin === 'day') this.dayFocusService.requestFocus(req.dayKey, instanceId);
     });
 
     // Bascule "remplissage" de la miniature clonée (voir cloneOriginHeaderInto) :

@@ -19,6 +19,27 @@
   width: 100%;
 }
 
+// Même gabarit que `.trip-header__pencil`/`.logistic-header__pencil`/
+// `.activity-header__pencil` (ROADMAP.md "Bugs / fixes") : le select devise
+// perd son chevron (`no-chevron`, discret à côté du montant), ce crayon
+// redevient donc le seul indice visuel explicite qu'il est éditable.
+.trip-summary__pencil {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+}
+
 .trip-summary-tiles {
   align-items: stretch;
 }

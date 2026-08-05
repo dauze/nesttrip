@@ -25,11 +25,15 @@
         <div class="flex align-items-center gap-1">
           <span class="text-sm flex-shrink-0">Devise :</span>
           <app-select
+            #currencySelect
             label="Devise"
             [options]="currencyOptions"
             [formControl]="currencyControl"
             class="w-max transparent-select no-chevron"
           />
+          <button type="button" class="trip-summary__pencil flex-shrink-0" aria-label="Modifier la devise" (click)="openCurrencyPanel()">
+            <i class="pi pi-pencil"></i>
+          </button>
         </div>
         <div class="trip-summary-total-wrapper flex-1 flex align-items-center justify-content-center">
           <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>

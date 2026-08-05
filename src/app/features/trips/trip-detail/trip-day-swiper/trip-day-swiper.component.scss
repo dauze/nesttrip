@@ -9,17 +9,20 @@
 // de l'espace du header est donc déléguée à un "sticky spacer" NATIF (voir
 // day-panel/general-panel .chrome-spacer) — géré entièrement par le
 // compositeur, donc parfaitement synchrone avec le scroll, sans aucun JS.
-// left/right réduits (ROADMAP.md "### UI", "inutile de gaspiller de la
-// place") — ne reproduit plus le ml-2/mr-2 (0.5rem) de `.app-content` comme
-// avant : ce conteneur est spécifique à la vue jour/général, pas partagé
-// avec accueil-trip/new-trip, rien n'oblige plus les deux à rester alignés.
+// left/right : reproduit le ml-2/mr-2 (0.5rem, `--nt-space-2`) de
+// `.app-content` (trips.component.html), qu'un conteneur position:fixed
+// n'hérite plus (voir la même remarque sur .app-trip-header-fixed dans
+// trip-detail.component.scss) — un essai de réduction à `--nt-space-1`
+// (ROADMAP.md "### UI") a été abandonné (retour utilisateur : le padding
+// gauche/droite avait complètement disparu visuellement), remis à
+// `--nt-space-2` pour rester uniforme avec les autres paddings de l'app.
 // Pas de `width` explicite ici : avec `left`+`right` déjà posés, une largeur
 // figée forcerait le navigateur à ignorer `right` (propriétés surcontraintes).
 .tab-content-wrapper {
   position: fixed;
   top: 0;
-  left: var(--nt-space-1);
-  right: var(--nt-space-1);
+  left: var(--nt-space-2);
+  right: var(--nt-space-2);
   height: 100dvh;
   display: block;
   // Bordures de contenu réduites de moitié dans TOUT le jour/général

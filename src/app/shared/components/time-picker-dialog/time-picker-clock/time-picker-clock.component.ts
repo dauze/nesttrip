@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TimeFieldsComponent } from '@app/shared/components/time-picker-dialog/time-fields/time-fields.component';
 
 interface ClockItem {
@@ -53,7 +54,7 @@ export interface TimePickerClockData {
     selector: 'app-time-picker-clock',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, ButtonComponent, DialogFrameComponent, TimeFieldsComponent],
+    imports: [CommonModule, ButtonComponent, DialogFrameComponent, TimeFieldsComponent, MessageComponent],
     templateUrl: './time-picker-clock.component.html',
     styleUrl: './time-picker-clock.component.scss',
 })
@@ -99,7 +100,7 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
 
     selectionMode: 'hour' | 'minute' = 'hour';
 
-    /** Voir la doc de `TimePickerClockData.dayOffsetReference` — colonne "J+N" du header rendue (mais vide tant que `crossesToNextDay` est faux) uniquement pour ce picker. */
+    /** Voir la doc de `TimePickerClockData.dayOffsetReference` — colonne "J+N" du header rendue (toujours, dès "J+0") uniquement pour ce picker. */
     readonly hasDayOffsetFeature = !!this.data.dayOffsetReference;
     private readonly dayOffsetReference = this.data.dayOffsetReference ?? null;
     private readonly dayOffsetBox = this.data.dayOffset;
@@ -172,8 +173,14 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
         this.dialogRef.close(undefined);
     }
 
-    /** Voir la doc de `TimePickerClockData.dayOffsetReference` — vrai dès que l'heure en cours de sélection (pas encore validée) tombe avant l'heure de référence. */
-    get crossesToNextDay(): boolean {
+    /**
+     * Vrai dès que l'heure en cours de sélection (pas encore validée) tombe
+     * avant l'heure de référence (début) — sert UNIQUEMENT au calcul de
+     * `endBeforeStartAtDayZero` ci-dessous, plus à conditionner l'affichage
+     * du sélecteur "J+N" (toujours visible désormais, voir ROADMAP.md "Bugs
+     * / fixes").
+     */
+    private get isEndBeforeStart(): boolean {
         if (!this.dayOffsetReference) return false;
         const selectedMinutes = Number(this.tempHour) * 60 + Number(this.tempMinute);
         const refMinutes = this.dayOffsetReference.getHours() * 60 + this.dayOffsetReference.getMinutes();
@@ -181,14 +188,26 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * Valeur affichée/utilisée par le sélecteur "J+N" : au moins 1 dès qu'on
-     * franchit minuit, même si l'utilisateur n'a pas encore touché les
-     * flèches — même règle par défaut que `ActivityFormComponent.syncEndDayOffsetFromTimes`,
-     * appliquée ici DANS le dialog plutôt qu'après coup (sinon "J+0" s'affichait
-     * un instant avant tout tap sur une flèche).
+     * Le contrôle "heure de fin < heure de début" ne s'applique qu'à J+0
+     * (ROADMAP.md "Bugs / fixes", retour utilisateur) : au-delà (J+1, J+2...),
+     * n'importe quelle heure est valide puisqu'il s'agit explicitement d'un
+     * autre jour. Plus jamais d'auto-bascule silencieuse vers J+1 : une heure
+     * de fin antérieure à J+0 est désormais une erreur bloquante tant que
+     * l'utilisateur n'a pas lui-même avancé le sélecteur.
+     */
+    get endBeforeStartAtDayZero(): boolean {
+        return this.dayOffset === 0 && this.isEndBeforeStart;
+    }
+
+    /**
+     * Valeur affichée/utilisée par le sélecteur "J+N" — toujours visible dès
+     * "J+0" (ROADMAP.md "Bugs / fixes") : reste à 0 tant que l'utilisateur n'a
+     * pas explicitement cliqué la flèche droite, même si l'heure choisie est
+     * antérieure à l'heure de début (voir `endBeforeStartAtDayZero`, qui
+     * bloque alors la validation plutôt que de déduire silencieusement J+1).
      */
     get effectiveDayOffset(): number {
-        return this.crossesToNextDay ? Math.max(this.dayOffset, 1) : 0;
+        return this.dayOffset;
     }
 
     /** Flèche droite du sélecteur "J+N" — aucune limite haute (voir ROADMAP.md "UX / Interactions"). */
@@ -197,10 +216,10 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
         this.writeDayOffset();
     }
 
-    /** Flèche gauche : bloquée à 1 (jamais 0 par ce contrôle) — un tremblement signale la borne plutôt que de l'ignorer silencieusement. */
+    /** Flèche gauche : bloquée à 0 (jamais négatif) — un tremblement signale la borne plutôt que de l'ignorer silencieusement. */
     decrementDayOffset(): void {
         const current = this.effectiveDayOffset;
-        if (current <= 1) {
+        if (current <= 0) {
             this.triggerDayOffsetShake();
             return;
         }
@@ -210,10 +229,7 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Répercute dans la boîte partagée (voir `TimePickerClockData.dayOffset`) —
-     * appelé à chaque tap sur une flèche ET depuis `validate()` (OK), pour que
-     * la valeur par défaut (1 dès qu'on franchit minuit, jamais touchée par
-     * l'utilisateur) soit bien commise, pas seulement celle explicitement
-     * choisie via les flèches.
+     * appelé à chaque tap sur une flèche ET depuis `validate()` (OK).
      */
     private writeDayOffset(): void {
         if (this.dayOffsetBox) this.dayOffsetBox.value = this.effectiveDayOffset;
@@ -311,7 +327,10 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
 
             if (!this.isDragging) {
                 this.gestureHandled = true;
-                this.validate();
+                // Pas de validation/fermeture automatique si le résultat est
+                // invalide à J+0 (ROADMAP.md "Bugs / fixes") : l'utilisateur
+                // reste sur le cadran, bouton OK grisé + message sous le cadran.
+                if (!this.endBeforeStartAtDayZero) this.validate();
             }
         }
     }
@@ -376,7 +395,10 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
 
         if (this.selectionMode === 'hour') {
             this.selectionMode = 'minute';
-        } else {
+        } else if (!this.endBeforeStartAtDayZero) {
+            // Pas de validation/fermeture automatique si le résultat est
+            // invalide à J+0 (ROADMAP.md "Bugs / fixes") : l'utilisateur
+            // reste sur le cadran, bouton OK grisé + message sous le cadran.
             this.validate();
         }
     }

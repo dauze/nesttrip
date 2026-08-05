@@ -2,7 +2,10 @@
 
 .activity-echo-card {
   appearance: none;
-  border: none;
+  // Entouré comme les autres cartes du jour (ROADMAP.md "Bugs / fixes",
+  // "le 'suite de ...' d'une activité doit être entouré pour faire
+  // uniforme") — même hairline que `PanelComponent`/`CardComponent`.
+  border: var(--nt-content-border-width) solid var(--nt-content-border-color);
   cursor: pointer;
   text-align: left;
   padding: 0.5rem 0.75rem;

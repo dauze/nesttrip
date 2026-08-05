@@ -34,15 +34,13 @@
 
                 @if (hasDayOffsetFeature) {
                     <div class="clock-day-offset" [class.clock-day-offset--shake]="dayOffsetShaking()">
-                        @if (crossesToNextDay) {
-                            <button type="button" class="clock-day-offset__arrow" (click)="decrementDayOffset()" aria-label="Un jour de moins">
-                                <i class="pi pi-chevron-left"></i>
-                            </button>
-                            <span class="clock-day-offset__label">J+{{ effectiveDayOffset }}</span>
-                            <button type="button" class="clock-day-offset__arrow" (click)="incrementDayOffset()" aria-label="Un jour de plus">
-                                <i class="pi pi-chevron-right"></i>
-                            </button>
-                        }
+                        <button type="button" class="clock-day-offset__arrow" (click)="decrementDayOffset()" aria-label="Un jour de moins">
+                            <i class="pi pi-chevron-left"></i>
+                        </button>
+                        <span class="clock-day-offset__label">J+{{ effectiveDayOffset }}</span>
+                        <button type="button" class="clock-day-offset__arrow" (click)="incrementDayOffset()" aria-label="Un jour de plus">
+                            <i class="pi pi-chevron-right"></i>
+                        </button>
                     </div>
                 }
             </div>
@@ -120,19 +118,25 @@
 
                 @if (hasDayOffsetFeature) {
                     <div class="clock-day-offset" [class.clock-day-offset--shake]="dayOffsetShaking()">
-                        @if (crossesToNextDay) {
-                            <button type="button" class="clock-day-offset__arrow" (click)="decrementDayOffset()" aria-label="Un jour de moins">
-                                <i class="pi pi-chevron-left"></i>
-                            </button>
-                            <span class="clock-day-offset__label">J+{{ effectiveDayOffset }}</span>
-                            <button type="button" class="clock-day-offset__arrow" (click)="incrementDayOffset()" aria-label="Un jour de plus">
-                                <i class="pi pi-chevron-right"></i>
-                            </button>
-                        }
+                        <button type="button" class="clock-day-offset__arrow" (click)="decrementDayOffset()" aria-label="Un jour de moins">
+                            <i class="pi pi-chevron-left"></i>
+                        </button>
+                        <span class="clock-day-offset__label">J+{{ effectiveDayOffset }}</span>
+                        <button type="button" class="clock-day-offset__arrow" (click)="incrementDayOffset()" aria-label="Un jour de plus">
+                            <i class="pi pi-chevron-right"></i>
+                        </button>
                     </div>
                 }
             </div>
 
+        }
+
+        @if (endBeforeStartAtDayZero) {
+            <app-message
+                severity="error"
+                text="L'heure de fin doit être supérieure à l'heure de début."
+                class="w-full"
+            />
         }
 
     </div>
@@ -175,6 +179,7 @@
 
                 <app-button
                     label="OK"
+                    [disabled]="endBeforeStartAtDayZero"
                     (click)="validate()"
                 />
             </div>

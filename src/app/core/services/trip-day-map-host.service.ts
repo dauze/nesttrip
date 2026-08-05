@@ -75,4 +75,24 @@ export class TripDayMapHostService {
       requestAnimationFrame(() => google.maps.event.trigger(googleMap, 'resize'));
     }
   }
+
+  /**
+   * Reparque la carte dans un conteneur neutre (invisible, `.map-anchor`)
+   * quand l'onglet actif n'en réclame la propriété ni en 'day' ni en
+   * 'general' (Activités/Logistique/Listes, qui n'affichent aucune carte) —
+   * sans ça, `.day-fixed-map` (mobile, hors du swiper) gardait le noeud DOM
+   * de la carte déplacé par le dernier jour visité, donc restait visible
+   * (hauteur non nulle) par-dessus ces onglets au lieu de se fermer. Ne
+   * touche PAS `currentOwner` : rien ne le lit tant que la carte est
+   * effectivement masquée dans l'ancre.
+   */
+  park(anchor: HTMLElement): void {
+    const map = this.mapComponent();
+    if (!map) return;
+
+    const node = map.elementRef.nativeElement as HTMLElement;
+    if (node.parentElement === anchor) return;
+
+    anchor.appendChild(node);
+  }
 }

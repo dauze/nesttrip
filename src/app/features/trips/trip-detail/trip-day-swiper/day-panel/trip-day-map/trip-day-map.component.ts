@@ -112,11 +112,27 @@ export class TripDayMapComponent {
   private lastPointsKey: string | null = null;
 
   constructor() {
+    // `collapsed` (linkedSignal) résout sa valeur INITIALE contre le défaut
+    // synchrone de `GoogleMapPanelService.isCollapsed()` (`false`), bien avant
+    // que la vraie préférence Firestore de l'utilisateur (asynchrone) n'ait
+    // eu le temps d'arriver — repropager cette toute première valeur marquait
+    // `GoogleMapPanelService.seeded` à tort (voir `setCollapse`), empêchant
+    // ENSUITE la vraie préférence de jamais s'appliquer une fois chargée
+    // (ROADMAP.md "Bugs / fixes", "la récupération du flag... ne fonctionne
+    // pas" — la carte repartait toujours dépliée par défaut). Ce flag ignore
+    // donc ce tout premier passage, quel que soit le contexte ; les passages
+    // suivants (vrai toggle utilisateur du footer, ou changement de contexte)
+    // continuent de repropager normalement.
+    let hasRepropagatedCollapsed = false;
     effect(() => {
+      const collapsed = this.collapsed();
+      const owner = this.mapHost.currentOwner();
+      const isInitialRun = !hasRepropagatedCollapsed;
+      hasRepropagatedCollapsed = true;
       // Contexte 'general' : rien à repropager, `collapsed` y est une
       // constante (voir sa doc) — jamais modifiable par l'utilisateur.
-      if (this.mapHost.currentOwner() === 'general') return;
-      this.googleMapPanelService.setCollapse(this.collapsed());
+      if (isInitialRun || owner === 'general') return;
+      this.googleMapPanelService.setCollapse(collapsed);
     });
 
     effect(() => {

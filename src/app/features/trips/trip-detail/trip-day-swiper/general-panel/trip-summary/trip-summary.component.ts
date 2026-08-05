@@ -58,6 +58,7 @@ export class TripSummaryComponent {
 
   private readonly mapContainerRef = viewChild<ElementRef<HTMLElement>>('mapContainer');
   private readonly headerRef = viewChild(TripHeaderComponent);
+  private readonly currencySelectRef = viewChild<SelectComponent<string>>('currencySelect');
 
   readonly tripId = input.required<string>();
   /** Slide "Résumé" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
@@ -235,6 +236,11 @@ export class TripSummaryComponent {
 
   protected onTitleChange(title: string): void {
     this.tripFacade.updateTripTitle(this.tripId(), title);
+  }
+
+  /** Crayon dédié à côté de "Devise :" (ROADMAP.md "Bugs / fixes") : le select lui-même perd son chevron (`no-chevron`, pour rester discret à côté du montant), le crayon redevient donc le seul indice visuel qu'il est éditable. */
+  protected openCurrencyPanel(): void {
+    this.currencySelectRef()?.openPanel();
   }
 
   /**

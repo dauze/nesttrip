@@ -430,9 +430,52 @@ export class TripFacade {
       newDayActivityIds[dayKey] = pendingLocalOnly.length ? [...remoteIds, ...pendingLocalOnly] : [...remoteIds];
     }
 
+    // 3bis. `_days`/`_tripDays` : jamais mis à jour ici jusqu'ici (seul
+    // `hydrate()`, au tout premier chargement, les écrivait) — un jour
+    // ajouté/supprimé par un autre collaborateur pendant que ce trip est déjà
+    // ouvert ne se répercutait donc jamais localement (ROADMAP.md "Bugs /
+    // fixes", "les dates de début et de fin... ne sont pas rafraîchies en
+    // dynamique"). Même remplacement complet keyed sur `trip.days` que
+    // `_dayActivityIds` ci-dessus : `addDay`/`removeDay` sont des écritures
+    // ponctuelles non debouncées (pas de `DebounceWriter`), donc pas besoin
+    // du même mécanisme anti-flicker à base de `pendingIds` que les entités
+    // qui, elles, passent par un writer débouncé.
+    const previousTripDayKeys = this.store._tripDays()[trip.id] ?? [];
+    const remoteDayKeys = new Set(trip.days.map((d) => d.id.toISOString()));
+    const newDays = { ...this.store._days() };
+    for (const dayKey of previousTripDayKeys) {
+      if (!remoteDayKeys.has(dayKey)) delete newDays[dayKey];
+    }
+    for (const day of trip.days) {
+      newDays[day.id.toISOString()] = { ...day, activityIds: [] };
+    }
+
+    // 3ter. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire) :
+    // même bug que ci-dessus, `_trips[trip.id]` n'était jamais réécrit après
+    // l'hydratation initiale. `_tripTitle`/`_tripCurrency` (signaux dédiés,
+    // voir leur doc dans TripStore) shadowent déjà toute édition locale en
+    // cours via `getTripTitle`/`getTripCurrency` — aucun risque de "retour en
+    // arrière" ici pendant leur propre debounce.
+    const currentTrip = this.store._trips()[trip.id];
+
     this.store._poolActivities.set(newPoolActivities);
     this.store._dayActivityInstances.set(newInstances);
     this.store._dayActivityIds.set(newDayActivityIds);
+    this.store._days.set(newDays);
+    this.store._tripDays.update((map) => ({ ...map, [trip.id]: trip.days.map((d) => d.id.toISOString()) }));
+    if (currentTrip) {
+      this.store._trips.update((map) => ({
+        ...map,
+        [trip.id]: {
+          ...currentTrip,
+          title: trip.title,
+          ville: trip.ville,
+          ownerId: trip.ownerId,
+          defaultCurrency: trip.defaultCurrency,
+          placeId: trip.placeId,
+        },
+      }));
+    }
     // Firestore ne garantit pas l'ordre des clés d'un champ map (`activities`) :
     // reconstruire l'ordre du pool à partir de `trip.activities` à chaque
     // snapshot ferait "sauter" les activités existantes dès qu'on en ajoute

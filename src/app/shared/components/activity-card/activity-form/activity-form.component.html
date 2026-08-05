@@ -8,7 +8,7 @@
           <label for="activity-type" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-tag text-sm"></i>Type
           </label>
-          <app-select #typeSelect id="activity-type" label="Type" class="booking w-full min-w-0 transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="activityTypeOptions" formControlName="type" />
+          <app-select #typeSelect id="activity-type" label="Type" class="booking w-max min-w-0 transparent-select" [style.--booking-status-color]="'var(' + typeColorVar() + ')'" [options]="activityTypeOptions" formControlName="type" />
         </div>
       </div>
       
@@ -16,9 +16,9 @@
       <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label for="booking-status" class="nt-text-muted text-sm flex align-items-center gap-1">
-            <i class="pi pi-bookmark text-sm"></i>Etat résa
+            <i class="pi pi-bookmark text-sm"></i>Statut
           </label>
-          <app-select #bookingSelect id="booking-status" label="Etat résa" [options]="bookingStatusOptions" formControlName="status" class="w-full min-w-0 transparent-select" />
+          <app-select #bookingSelect id="booking-status" label="Statut" [options]="bookingStatusOptions" formControlName="status" class="w-max min-w-0 transparent-select" />
         </div>
       </div>
       
@@ -78,7 +78,7 @@
           <label for="price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-euro text-sm"></i>Prix
           </label>
-          <app-price-field #priceField inputId="price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-full min-w-0" />
+          <app-price-field #priceField inputId="price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-max min-w-0" />
         </div>
       </div>
       

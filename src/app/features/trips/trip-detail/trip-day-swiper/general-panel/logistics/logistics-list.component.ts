@@ -177,7 +177,14 @@ export class LogisticsListComponent {
 
     this.logisticFocusService.clear(token);
     card.collapsed.set(false);
-    card.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Deux rAF avant de scroller (ROADMAP.md "Bugs / fixes", même correctif
+    // que `DayReorderService` pour le même symptôme) : `collapsed.set(false)`
+    // ne déplie pas la carte de façon synchrone (transition CSS + rendu
+    // Angular) — sans cette attente, `scrollIntoView` mesure encore la
+    // géométrie "carte repliée", pas sa position finale une fois dépliée.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => card.element.scrollIntoView({ behavior: 'smooth', block: 'center' })),
+    );
     if (startGuided) {
       const done = card.startGuidedEntry();
       if (originDayId && this.viewport.isMobile()) done.then(() => this.dayActivityFocusService.requestFocus(originDayId));
