@@ -13,4 +13,6 @@ export interface DayActivityInstanceFirebase {
   notes?: string;
   startTime?: string;
   endTime?: string;
+  /** Voir DayActivityInstance.endDayOffset (activity.model.ts). */
+  endDayOffset?: number;
 }

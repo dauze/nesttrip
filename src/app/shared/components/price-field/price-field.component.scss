@@ -1,0 +1,28 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+// Trigger mobile uniquement — desktop (branche `@else`) reprend tel quel
+// le rendu inline précédent (`.transparent-inputtext`/`.transparent-select`),
+// inchangé.
+.price-field-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  // Toutes valeurs confondues (pas seulement haut/bas) : même padding que les
+  // autres champs du formulaire "compact" (`--nt-layout-gap-stacked`, voir
+  // tokens.scss/utilities.scss) — voir ROADMAP.md, "uniformiser tous les
+  // padding sur les données des formulaire des activités".
+  padding: var(--nt-layout-gap-stacked);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.price-field-trigger__value {
+  color: var(--nt-text-color);
+}
+
+.price-field-trigger__placeholder {
+  color: var(--nt-text-muted-color);
+}

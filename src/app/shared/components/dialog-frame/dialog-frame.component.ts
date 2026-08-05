@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 /**
  * Habillage visuel commun (header + titre + bouton fermer, zone de contenu,
@@ -10,6 +10,7 @@ import { Component, input, output } from '@angular/core';
 @Component({
   selector: 'app-dialog-frame',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dialog-frame.component.html',
   styleUrl: './dialog-frame.component.scss',
 })

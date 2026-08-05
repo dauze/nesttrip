@@ -58,7 +58,7 @@
               </div>
             }
 
-          @if (data.openingHours) {
+          @if (data.openingHours.length) {
             <app-panel header="Horaires d'ouverture" [toggleable]="true" [collapsed]="true" class="mt-1">
               <ul class="list-none p-0 m-0 flex flex-column gap-1">
                 @for (line of data.openingHours; track $index) {

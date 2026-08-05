@@ -1,4 +1,4 @@
-import { Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
 
 export interface PanelToggleEvent {
   collapsed: boolean;
@@ -48,10 +48,15 @@ export interface PanelToggleEvent {
 @Component({
   selector: 'app-panel',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './panel.component.html',
   styleUrl: './panel.component.scss',
   host: {
     class: 'app-panel',
+    '[class.app-panel--fill-height]': 'fillHeight()',
+    '[class.app-panel--thick-border]': 'thickBorder()',
+    '[class.app-panel--collapsed]': 'collapsed()',
+    '[class.app-panel--bare]': 'bare()',
   },
 })
 export class PanelComponent {
@@ -59,6 +64,56 @@ export class PanelComponent {
   readonly toggleable = input(false);
   readonly collapsed = model(false);
   readonly instant = input(false);
+  /**
+   * Optionnel : masque entièrement le header (texte/icônes projetées ET
+   * bouton de bascule) ainsi que le border/background du host — utilisé par
+   * `TripDayMapComponent` pour la carte du pool en contexte 'general'
+   * (onglet Résumé, voir ROADMAP.md "UX / Interactions", 2026-08-01) : plus
+   * besoin d'un panel visible/repliable là où elle est hébergée dans un
+   * `app-card` qui joue déjà ce rôle. N'affecte aucun autre appelant (défaut
+   * `false`, comportement historique inchangé) — le contenu projeté (voir
+   * `<ng-content>` plus bas) n'est jamais concerné : seul le HEADER de CE
+   * composant est masqué via `@if`, jamais le contenu qu'il enveloppe.
+   */
+  readonly bare = input(false);
+  /**
+   * Optionnel : le panel s'étire pour occuper toute la hauteur de SON PROPRE
+   * parent (au lieu de se dimensionner sur son contenu, comportement par
+   * défaut) — utilisé par `TripDayMapComponent` en layout scindé (carte à
+   * gauche pleine hauteur, voir ROADMAP.md "UI Desktop"). N'affecte aucun
+   * autre appelant (défaut `false`, comportement historique inchangé).
+   */
+  readonly fillHeight = input(false);
+  /**
+   * Optionnel : bordure `--nt-border-width-thick` au lieu du hairline par
+   * défaut — utilisé par les conteneurs de groupe (ville/jour/à-assigner) du
+   * pool d'activités de l'onglet Général, pour les distinguer visuellement
+   * des `ActivityCardComponent` qu'ils contiennent (même composant `app-panel`
+   * pour les deux, voir ROADMAP.md "UX / Interactions"). N'affecte aucun
+   * autre appelant (défaut `false`).
+   */
+  readonly thickBorder = input(false);
+  /**
+   * Optionnel : remplace le header (texte/chevron habituels) par un footer
+   * togglable sous le contenu — utilisé par `TripDayMapComponent` en contexte
+   * 'day' (ROADMAP.md "### UI", carte sticky) : la carte n'a plus de header
+   * du tout, seul un footer (`[panelFooter]`) permet de la replier/déplier.
+   * Indépendant de `toggleable()` (toujours requis en plus pour que le clic
+   * fonctionne réellement, voir `toggle()`) — n'affecte aucun autre appelant
+   * (défaut `false`).
+   */
+  readonly footerToggle = input(false);
+  /**
+   * Optionnel : supprime uniquement le header (texte/chevron), garde le
+   * border/background/radius normal du panel — contrairement à `bare()`, qui
+   * supprime aussi le chrome visuel (utilisé quand un ancêtre joue déjà ce
+   * rôle, ex. `app-card`). Utilisé par le panel "Activités" du jour
+   * (ROADMAP.md "### UI") : reste un vrai panel visuellement délimité, mais
+   * non togglable et sans titre — simplifie le scroll vers une activité (plus
+   * besoin de vérifier/attendre un état ouvert). N'affecte aucun autre
+   * appelant (défaut `false`).
+   */
+  readonly noHeader = input(false);
 
   readonly beforeToggle = output<PanelToggleEvent>();
   readonly afterToggle = output<PanelToggleEvent>();
@@ -67,6 +122,31 @@ export class PanelComponent {
 
   /** Plafond figé le temps d'une transition déclenchée par `toggle()` ; `null` = pas de plafond (état au repos une fois dépliée). */
   protected readonly maxHeightPx = signal<number | null>(null);
+
+  /**
+   * Clic (ou Entrée/Espace, le contenu étant focusable quand toggleable)
+   * n'importe où dans le header — pas seulement le bouton bascule : replie/
+   * déplie, sauf sur une zone interactive du header PROJETÉ (poignée de
+   * drag, image, bouton crayon, checkbox de sélection...) — exclusion large
+   * basée sur la sémantique HTML native (`button`/`a`/`input`/`textarea`/
+   * `select`/`img`) + la convention `.drag-handle`/`[cdkDragHandle]` du
+   * projet, plutôt qu'une liste figée par appelant (voir ROADMAP.md).
+   * `CheckboxComponent` étant un vrai `<button>`, il est déjà couvert (et son
+   * propre clic stoppe de toute façon sa propagation, voir SelectableDirective).
+   *
+   * Pas de `role="button"` sur ce conteneur (juste `tabindex`) : il englobe
+   * de VRAIS éléments interactifs projetés (checkbox, bouton crayon...), et
+   * `role="button"` dessus créerait un bouton imbriqué dans un bouton,
+   * sémantique ARIA invalide. Le bouton de bascule dédié reste, lui,
+   * parfaitement accessible au clavier indépendamment de tout ceci.
+   */
+  protected onHeaderContentClick(event: Event): void {
+    if (!this.toggleable()) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select, img, .drag-handle, [cdkDragHandle]')) return;
+    if (event instanceof KeyboardEvent && event.key === ' ') event.preventDefault();
+    this.toggle();
+  }
 
   protected toggle(): void {
     if (!this.toggleable()) return;

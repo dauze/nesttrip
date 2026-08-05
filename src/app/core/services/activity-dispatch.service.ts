@@ -143,43 +143,6 @@ export class ActivityDispatchService {
   private readonly onContextMenuBound = (e: Event) => e.preventDefault();
 
   // ── Ancrages géométriques ────────────────────────────────────────────────
-  // Enregistré une fois par TripTabsNavComponent : permet à l'overlay de
-  // connaître, à la demande, le rectangle de départ de son animation
-  // d'ouverture (la barre d'onglets). En `signal` (pas un simple champ) :
-  // TripTabsNavComponent n'est monté qu'une fois le trip chargé
-  // (async, derrière un `@if`), donc potentiellement APRÈS le premier rendu
-  // de l'overlay — un `afterNextRender` one-shot côté overlay peut donc
-  // s'exécuter alors que cet élément n'existe pas encore. En signal, l'overlay
-  // peut réagir au moment réel de l'enregistrement plutôt qu'à un instant fixe.
-  private readonly navBarElSignal = signal<HTMLElement | null>(null);
-
-  registerNavBarElement(el: HTMLElement): void {
-    this.navBarElSignal.set(el);
-  }
-
-  getNavBarRect(): DOMRect | null {
-    return this.navBarElSignal()?.getBoundingClientRect() ?? null;
-  }
-
-  /**
-   * Élément source pour le clone DOM de la réplique affichée par l'overlay
-   * (voir ActivityDayDispatchOverlayComponent.cloneNavBarInto) : le `<p-tabs>`
-   * interne, pas `navBarEl` (le host `app-trip-tabs-nav`, qui porte les
-   * classes utilitaires de positionnement `fixed bottom-0 left-0 right-0`
-   * posées par le parent — les cloner ferait fuir le clone hors de son
-   * conteneur `.dispatch-overlay__replica`). Même remarque qu'au-dessus sur
-   * le choix d'un signal plutôt qu'un champ simple.
-   */
-  private readonly navBarCloneSourceSignal = signal<HTMLElement | null>(null);
-
-  registerNavBarCloneSource(el: HTMLElement): void {
-    this.navBarCloneSourceSignal.set(el);
-  }
-
-  getNavBarCloneSource(): HTMLElement | null {
-    return this.navBarCloneSourceSignal();
-  }
-
   /**
    * Point d'ancrage `position:fixed` hors du swiper de jours (enregistré une
    * fois par TripDetailComponent, en frère de app-activity-day-dispatch-overlay)
@@ -200,9 +163,21 @@ export class ActivityDispatchService {
     return this.dragPortalEl ?? null;
   }
 
-  /** Appelé par l'overlay après chaque rendu/scroll de la grille de jours. */
+  /**
+   * Appelé par l'overlay après chaque rendu/scroll de la grille de jours.
+   * Réévalue immédiatement le survol à la dernière position connue du
+   * pointeur : sans ça, si le calendrier s'ouvre directement sous un doigt
+   * resté immobile (cas fréquent — le doigt n'a pas besoin de bouger pour
+   * atteindre une cellule déjà sous lui), aucun `pointermove` ne survient
+   * pour déclencher `updateHoverFromPoint`, et le survol reste `null` tant
+   * que le doigt ne quitte pas puis ne revient pas sur le calendrier.
+   */
   registerDayCells(cells: Map<string, DOMRect>): void {
     this.dayCells = cells;
+    if (this.phase() === 'lifted') {
+      const p = this.pointer();
+      this.updateHoverFromPoint(p.x, p.y);
+    }
   }
 
   beginLift(
@@ -273,14 +248,14 @@ export class ActivityDispatchService {
     if (event.cancelable) event.preventDefault();
 
     this.pointer.set({ x: event.clientX, y: event.clientY });
+    this.updateHoverFromPoint(event.clientX, event.clientY);
+  }
 
+  private updateHoverFromPoint(x: number, y: number): void {
     let hitKey: string | null = null;
     let hitRect: DOMRect | null = null;
     for (const [key, rect] of this.dayCells) {
-      if (
-        event.clientX >= rect.left && event.clientX <= rect.right &&
-        event.clientY >= rect.top && event.clientY <= rect.bottom
-      ) {
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
         hitKey = key;
         hitRect = rect;
         break;

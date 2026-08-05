@@ -32,6 +32,11 @@ export class GooglePlaceService {
     return cached;
   }
 
+  /** Recherche ponctuelle (pas de debounce, un seul appel) — voir `LogisticDetailsComponent.syntheticPlace`, qui résout un placeId réel à partir d'un nom d'aéroport connu seulement par son nom (AeroDataBox ne fournit ni placeId ni coordonnées). */
+  searchOnce$(term: string): Observable<PlaceSummary[]> {
+    return this.searchPlaces$(term);
+  }
+
   /**
    * Flux de recherche scopé à l'appelant (pas d'état global partagé) :
    * chaque instance de composant obtient son propre debounce/switchMap,

@@ -1,0 +1,48 @@
+// Même dimensionnement que title-edit-dialog.component.scss (`.app-wide-dialog-panel`, field-edit-dialogs.scss) : hauteur AUTO plafonnée par dvh, pas de liste ici donc toujours minimal.
+:host {
+  display: block;
+}
+
+.simple-text-entry-dialog__row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--nt-overlay-background);
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.simple-text-entry-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+.simple-text-entry-dialog__input-row {
+  flex-shrink: 0;
+  padding: 0.5rem;
+}
+
+.simple-text-entry-dialog__input {
+  width: 100%;
+  // 16px (pas moins) : en dessous, Safari iOS zoome automatiquement la page au focus du champ.
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-sm);
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+
+  &:focus {
+    outline: none;
+    border-color: var(--nt-primary-color);
+  }
+}
+
+.simple-text-entry-dialog__footer {
+  padding: 0.5rem;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}

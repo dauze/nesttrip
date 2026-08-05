@@ -1,0 +1,175 @@
+// Racine : `position:fixed` bas d'écran, même palier que l'ancien
+// `app-trip-tabs-nav-fixed` (z-5, voir trip-detail.component.html) — englobe
+// la bande de jours/tabs généraux ET la barre Général/Jour, pour que
+// `ActivityDispatchService.registerNavBarElement` mesure une géométrie de
+// repli cohérente couvrant les deux (voir mobile-trip-nav.component.ts).
+//
+// Surface unique (ROADMAP.md "### UI") : fond + ombre + radius portés ICI
+// (pas plus un fond flottant "overlay" séparé sur `.bar` seule) pour que
+// toute la barre paraisse posée au même niveau que la toolbar — `.bar`
+// elle-même n'a donc plus son propre fond/ombre (voir plus bas), seule sa
+// piste interne (`.pill`, teinte `--nt-secondary-bg`) garde un fond, même
+// langage visuel que `SelectButtonComponent` variant 'subtle'.
+.mobile-trip-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  max-width: var(--nt-content-max-width);
+  margin-inline: auto;
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-md);
+}
+
+// ── Bande scrollable : chips de jours OU tabs généraux (ROADMAP.md "### UI")
+// ───────────────────────────────────────────────────────────────────────────
+// Affiche soit les jours (état "Jours"), soit les 4 tabs Résumé/Activités/
+// Logement & Transport/Listes (état "Général") — jamais les deux à la fois,
+// contrairement à l'ancienne barre où les 4 tabs vivaient dans `.subrow` DANS
+// la barre du bas. La barre du bas (`.bar`) ne contient donc plus que 2
+// entrées fixes ("Général"/"Jour N").
+.day-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.125rem;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.day-strip__chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--nt-radius-lg);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  background: var(--nt-content-background);
+  color: var(--nt-text-muted-color);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease,
+    border-color var(--nt-transition-duration) ease, transform 150ms ease, box-shadow var(--nt-transition-duration) ease;
+
+  i {
+    font-size: var(--nt-icon-size-sm);
+  }
+
+  // État pressé (DESIGN.md "chips des jours", Apple Calendar/Flighty) : léger
+  // tassement au tap, jamais sur l'état actif (déjà surélevé, voir plus bas).
+  &:active:not(&--active) {
+    transform: scale(0.96);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(&--active) {
+      background: var(--nt-content-hover-background);
+      border-color: var(--nt-form-field-hover-border-color);
+    }
+  }
+
+  &--active {
+    background: var(--nt-primary-color);
+    border-color: var(--nt-primary-color);
+    color: var(--nt-primary-contrast-color);
+    box-shadow: var(--nt-shadow-xs);
+  }
+
+  // Apparition douce à la bascule "Jours" -> "Général" (les 4 tabs généraux
+  // remplacent les chips de jours dans la même bande, voir le template).
+  &--general {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 200ms ease, transform 200ms ease;
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+  }
+}
+
+// ── Barre Général/Jour N (2 entrées fixes désormais) ────────────────────────
+.bar {
+  position: relative;
+  height: 3rem;
+  border-radius: var(--nt-radius-pill);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem;
+  background: var(--nt-secondary-bg);
+}
+
+// Pastille glissante derrière l'item actif — 2 positions fixes seulement (les
+// 2 entrées ont désormais toujours la même largeur, contrairement à l'ancien
+// "Général" icon-only vs "Jour N" labellisé) : plus besoin de mesure JS ni de
+// largeur spéciale "compacte".
+.pill {
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: 0.3rem;
+  width: calc(50% - 0.45rem);
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-primary-color);
+  transition: left 0.4s cubic-bezier(0.34, 1.15, 0.4, 1);
+  z-index: 0;
+}
+
+.bar[data-state='expanded'] .pill {
+  left: 0.3rem;
+}
+
+.bar[data-state='collapsed'] .pill {
+  left: calc(50% + 0.15rem);
+}
+
+.tab {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border: none;
+  background: transparent;
+  color: var(--nt-text-muted-color);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.3s ease;
+
+  i {
+    font-size: var(--nt-icon-size-md);
+  }
+
+  &.active {
+    color: var(--nt-primary-contrast-color);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .tab,
+  .day-strip__chip {
+    transition-duration: 0.15s;
+    transition-timing-function: ease;
+  }
+}

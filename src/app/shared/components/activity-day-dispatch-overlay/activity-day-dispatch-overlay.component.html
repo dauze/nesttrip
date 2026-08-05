@@ -4,15 +4,9 @@
   [class.dispatch-overlay--expanded]="sheetExpanded()"
   [class.dispatch-overlay--bar-visible]="dispatchService.activeDayDrag() !== null">
 
-  <div #sheet class="dispatch-overlay__sheet nt-bg-content"
+  <div #sheet class="dispatch-overlay__sheet"
     [style.--dispatch-collapsed-h.px]="collapsedHeight()"
     [style.--dispatch-expand-duration.ms]="expandDurationMs()">
-
-    <!-- Réplique de app-trip-tabs-nav : un vrai clone DOM de la barre réelle
-         (voir cloneNavBarInto), pas une re-création Angular parallèle — garantit
-         un rendu identique au pixel près, y compris le décalage de scroll
-         horizontal courant, quel que soit le jour actif. -->
-    <div #replicaNav class="dispatch-overlay__replica"></div>
 
     <div #grid class="dispatch-overlay__scroll" (scroll)="onGridScroll()">
       @for (group of monthGroups(); track group.label) {
@@ -28,8 +22,7 @@
                 [attr.data-day-key]="dayKeyFor(day)"
                 [style.transitionDelay.ms]="sheetExpanded() ? di * 25 : 0"
                 class="dispatch-overlay__day"
-                [class.dispatch-overlay__day--in]="sheetExpanded()"
-                [class.dispatch-overlay__day--flip]="replica.flippedDayIds().has(dayKeyFor(day))">
+                [class.dispatch-overlay__day--in]="sheetExpanded()">
                 <span class="flex flex-column align-items-center gap-0">
                   <span class="text-lg font-bold line-height-1">{{ day.id | date: 'd' }}</span>
                   <span class="text-xs uppercase line-height-1">{{ day.id | date: 'EEE' }}</span>
@@ -59,6 +52,6 @@
        l'en-tête d'activité (photo, titre, style), sans duplication à tenir
        à jour si l'en-tête change. -->
   <div class="dispatch-ball__row flex align-items-center h-full">
-    <div #ballContent class="dispatch-ball__content"></div>
+    <div #ballContent class="dispatch-ball__content w-full h-full overflow-hidden flex align-items-center"></div>
   </div>
 </div>

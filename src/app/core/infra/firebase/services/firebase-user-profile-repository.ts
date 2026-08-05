@@ -11,4 +11,8 @@ export class FirebaseUserProfileRepository extends UserProfileRepository {
   getUserProfile$(uid: string): Observable<UserProfile> {
     return this.dataSource.getUserProfile$(uid);
   }
+
+  setMapCollapsedByDefault(uid: string, value: boolean): Promise<void> {
+    return this.dataSource.setMapCollapsedByDefault(uid, value);
+  }
 }

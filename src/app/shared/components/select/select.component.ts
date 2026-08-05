@@ -1,4 +1,4 @@
-import { Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, TemplateRef, ViewContainerRef, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -33,6 +33,7 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
 @Component({
   selector: 'app-select',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './select.component.html',
   styleUrl: './select.component.scss',
   providers: [
@@ -51,6 +52,8 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
 
   readonly options = input<SelectOption<T>[]>([]);
   readonly placeholder = input('Sélectionner');
+  /** Titre affiché en tête du tiroir mobile (ex. "Devise", "Type", "Résa") — retombe sur `placeholder()` si non fourni. Les listes de ce sélecteur sont volontairement courtes, pas besoin de recherche. */
+  readonly label = input('');
 
   /** Émis à la fermeture du panneau, `selected` distingue un choix (`selectOption`) d'un simple backdrop/Échap — utilisé par le chaînage de saisie guidée (voir ActivityFormComponent.startGuidedEntry). */
   readonly closed = output<{ selected: boolean }>();
@@ -65,6 +68,8 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
     const current = this.value();
     return this.options().find((o) => o.value === current)?.label ?? '';
   });
+
+  protected readonly panelTitle = computed(() => this.label() || this.placeholder());
 
   private overlayRef?: OverlayRef;
   private onChange?: (value: T) => void;

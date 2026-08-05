@@ -1,8 +1,8 @@
-import { Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, TemplateRef, ViewContainerRef, computed, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { addDays, addMonths, addYears, eachDayOfInterval, format, isBefore, isSameDay, isSameMonth, isToday as isTodayDate, startOfMonth, startOfWeek, subMonths, subYears } from 'date-fns';
+import { addDays, addMonths, addYears, eachDayOfInterval, format, isBefore, isSameDay, isSameMonth, isToday as isTodayDate, isValid, parse, startOfDay, startOfMonth, startOfWeek, subMonths, subYears } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ViewportService } from '@core/services/viewport.service';
 
@@ -65,10 +65,34 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
  * sauter la hauteur du panneau — donc claquer visuellement — en changeant
  * de mois) : la grille est toujours calculée comme 42 jours consécutifs
  * depuis `gridStart`, quel que soit le mois affiché.
+ *
+ * Saisie clavier (desktop uniquement, `!viewport.isMobile()` — voir
+ * ROADMAP.md) : un vrai `<input>` texte remplace le bouton déclencheur, avec
+ * une icône calendrier DÉCORATIVE en suffixe (`.app-date-picker__icon`,
+ * `pointer-events:none`) plutôt qu'un bouton séparé — un clic n'importe où
+ * dans le champ (`onFieldClick`) ouvre le panneau, jamais ne le ferme (seule
+ * une sélection de jour/Escape/clic extérieur ferme). Avant ce choix, le
+ * panneau restait volontairement DEUX éléments distincts (input + bouton
+ * icône) pour éviter qu'un focus déclenché par un clic sur un jour du
+ * panneau (portail CDK, hors de cet arbre de vue) ne fasse perdre le focus à
+ * l'input AVANT que ce clic ne soit traité, ce qui aurait déclenché la
+ * validation d'un texte tapé en plein milieu d'une sélection à la souris —
+ * ce risque est marginal (il faudrait cliquer un jour du panneau PENDANT un
+ * drag de sélection de texte dans le champ) et accepté ici pour matcher le
+ * comportement demandé (voir ROADMAP.md "UX / Interactions") ; `onFieldClick`
+ * n'ouvre que si le panneau n'est pas déjà ouvert (`!overlayRef`), jamais de
+ * fermeture via ce même clic.
+ * `draftText` porte le texte en cours d'édition (`null` = pas en édition,
+ * l'input affiche alors `displayText()`) ; à la perte de focus
+ * (`commitDraft`), le texte est parsé (`dd/MM/yyyy`, ou `dd/MM/yyyy -
+ * dd/MM/yyyy` en mode plage) et appliqué s'il est valide, silencieusement
+ * abandonné sinon (l'input retombe sur `displayText()`, dernière valeur
+ * connue) — pas d'état d'erreur séparé à gérer.
  */
 @Component({
   selector: 'app-date-picker',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './date-picker.component.html',
   styleUrl: './date-picker.component.scss',
   providers: [
@@ -88,6 +112,10 @@ export class DatePickerComponent implements ControlValueAccessor {
   readonly range = input(false);
   readonly placeholder = input('Sélectionner une date');
   readonly inputId = input('');
+  /** Titre affiché en tête du panneau (ex. "Check-in"/"Check-out") — utile quand plusieurs `app-date-picker` sont ouverts l'un après l'autre par un chaînage de saisie guidée, pour savoir lequel est ouvert. Vide par défaut (pas affiché). */
+  readonly label = input('');
+  /** Date minimum sélectionnable (inclusive, comparée en date seule — voir ROADMAP.md "UX / Interactions") : les jours strictement avant sont grisés/non cliquables dans le panneau, et une saisie clavier desktop antérieure est silencieusement ignorée. Typiquement la date de début, posée sur le picker de fin. */
+  readonly minDate = input<Date | null>(null);
 
   /** Émis avec la valeur finale (Date en mode simple, [début, fin] en mode plage) quand une sélection se termine. */
   readonly selected = output<Date | [Date, Date]>();
@@ -148,6 +176,18 @@ export class DatePickerComponent implements ControlValueAccessor {
     return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
   });
 
+  /** Texte en cours de saisie clavier (desktop), voir la doc de la classe. */
+  protected readonly draftText = signal<string | null>(null);
+
+  /**
+   * Largeur mini (en `ch`) du champ texte desktop, dimensionnée pour le
+   * format le plus long possible (`dd/MM/yyyy` ou `dd/MM/yyyy - dd/MM/yyyy`)
+   * — sans ça, `flex:1` (flex-basis:0%) ignore la taille du contenu quand le
+   * host est dimensionné en `width:max-content` (ex. trip-header), et le
+   * texte (passé à l'année sur 4 chiffres) se retrouve tronqué.
+   */
+  protected readonly inputMinWidthCh = computed(() => (this.range() ? 23 : 10));
+
   private overlayRef?: OverlayRef;
   private onChange?: (value: Date | Date[] | null) => void;
   private onTouched?: () => void;
@@ -181,6 +221,12 @@ export class DatePickerComponent implements ControlValueAccessor {
       this.close();
       return;
     }
+    this.open();
+  }
+
+  /** Ouverture programmatique du panneau (ex. chaînage de saisie guidée) — même logique que le clic sur le champ, voir `SelectComponent.openPanel`. */
+  openPanel(): void {
+    if (this.isDisabled() || this.overlayRef) return;
     this.open();
   }
 
@@ -252,6 +298,13 @@ export class DatePickerComponent implements ControlValueAccessor {
     return isSameMonth(day, this.viewMonth());
   }
 
+  /** Voir la doc de `minDate` — comparaison en date seule (minuit local des deux côtés), l'heure n'a pas de sens ici. */
+  protected isDayDisabled(day: Date): boolean {
+    const min = this.minDate();
+    if (!min) return false;
+    return isBefore(startOfDay(day), startOfDay(min));
+  }
+
   protected isToday(day: Date): boolean {
     return isTodayDate(day);
   }
@@ -287,6 +340,8 @@ export class DatePickerComponent implements ControlValueAccessor {
   }
 
   protected selectDay(day: Date): void {
+    if (this.isDayDisabled(day)) return;
+
     if (!this.range()) {
       this.singleValue.set(day);
       this.onChange?.(day);
@@ -310,6 +365,58 @@ export class DatePickerComponent implements ControlValueAccessor {
     this.onChange?.([rangeStart, rangeEnd]);
     this.selected.emit([rangeStart, rangeEnd]);
     this.close();
+  }
+
+  protected onInputFocus(target: HTMLInputElement): void {
+    this.draftText.set(this.displayText());
+    target.select();
+  }
+
+  /** Clic n'importe où dans le champ desktop (voir la doc de classe) : ouvre le panneau, ne le ferme jamais via ce même clic. */
+  protected onFieldClick(): void {
+    if (this.isDisabled() || this.overlayRef) return;
+    this.open();
+  }
+
+  protected onInputEnter(target: HTMLInputElement): void {
+    // Déclenche (blur), qui appelle commitDraft — évite de dupliquer la logique.
+    target.blur();
+  }
+
+  protected commitDraft(): void {
+    const raw = this.draftText();
+    this.draftText.set(null);
+    if (raw !== null) this.tryParseAndApply(raw);
+  }
+
+  private tryParseAndApply(raw: string): void {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+
+    if (!this.range()) {
+      const parsed = parse(trimmed, 'dd/MM/yyyy', new Date());
+      if (!isValid(parsed) || this.isDayDisabled(parsed)) return;
+
+      this.singleValue.set(parsed);
+      this.viewMonth.set(startOfMonth(parsed));
+      this.onChange?.(parsed);
+      this.selected.emit(parsed);
+      return;
+    }
+
+    const parts = trimmed.split('-').map((p) => p.trim()).filter(Boolean);
+    if (parts.length !== 2) return;
+
+    const start = parse(parts[0], 'dd/MM/yyyy', new Date());
+    const end = parse(parts[1], 'dd/MM/yyyy', new Date());
+    if (!isValid(start) || !isValid(end)) return;
+
+    const [rangeStart, rangeEnd] = isBefore(end, start) ? [end, start] : [start, end];
+    this.rangeStart.set(rangeStart);
+    this.rangeEnd.set(rangeEnd);
+    this.viewMonth.set(startOfMonth(rangeStart));
+    this.onChange?.([rangeStart, rangeEnd]);
+    this.selected.emit([rangeStart, rangeEnd]);
   }
 
   private open(): void {

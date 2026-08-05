@@ -1,0 +1,40 @@
+:host { display: block; }
+
+// gap-1 (empilé) / gap-2 (layout scindé) entre les cartes réservation, comme
+// tout le reste du layout jour (voir day-panel.component.scss, ROADMAP.md
+// "UI Desktop") — l'utilitaire `.gap-2` (layout-utilities.scss, `!important`)
+// était posé en dur dans le template, donc jamais réduit à gap-1 sur mobile.
+.day-logistic-banner {
+  gap: var(--nt-layout-gap-stacked, 0.25rem);
+}
+
+@media (orientation: landscape) and (min-width: 700px) {
+  .day-logistic-banner {
+    gap: var(--nt-layout-gap-split, 0.5rem);
+  }
+}
+
+// Même bord/radius que app-panel, même largeur de border-left que `.booking`
+// sur ActivityCardComponent — voir day-logistic-entry.component.scss (cohérence
+// demandée entre toutes les cartes logistique, ROADMAP.md "Activités").
+.day-logistic-banner__item {
+  appearance: none;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-left-width: 0.4rem;
+  border-left-style: solid;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--nt-content-border-radius);
+  background: var(--nt-content-background);
+  color: var(--nt-text-color);
+  transition: background-color 0.15s ease;
+
+  &:hover, &:focus-visible {
+    background-color: var(--nt-content-hover-background);
+  }
+}
+
+.day-logistic-banner__role {
+  color: var(--nt-primary-color, inherit);
+}

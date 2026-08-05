@@ -8,7 +8,20 @@
 
         <!-- Ville -->
         <div class="flex flex-column gap-2">
-          <label for="ville" class="font-medium">Ville / Pays</label>
+          <label for="ville" class="font-medium">Destination</label>
+          @if (viewport.isMobile()) {
+            <button
+              type="button"
+              id="ville"
+              class="app-input-text new-trip-field-trigger"
+              (click)="onVilleTriggerClick()">
+              @if (form.value.ville) {
+                <span>{{ form.value.ville }}</span>
+              } @else {
+                <span class="new-trip-field-trigger__placeholder">Ex : Reykjavik</span>
+              }
+            </button>
+          } @else {
             <app-autocomplete
               [suggestions]="placesWithPhotos()"
               formControlName="ville"
@@ -29,6 +42,7 @@
                 </div>
               </ng-template>
             </app-autocomplete>
+          }
           @if (form.controls.ville.touched && form.controls.ville.hasError('required')) {
             <small class="nt-text-danger">La destination est requise.</small>
           }
@@ -37,12 +51,26 @@
         <!-- Nom -->
         <div class="flex flex-column gap-2">
           <label for="title" class="font-medium">Nom du voyage</label>
-          <input
-            appInputText
-            id="title"
-            formControlName="title"
-            placeholder="Ex : Road trip Islande"
-          />
+          @if (viewport.isMobile()) {
+            <button
+              type="button"
+              id="title"
+              class="app-input-text new-trip-field-trigger"
+              (click)="onNomTriggerClick()">
+              @if (form.value.title) {
+                <span>{{ form.value.title }}</span>
+              } @else {
+                <span class="new-trip-field-trigger__placeholder">Ex : Road trip Islande</span>
+              }
+            </button>
+          } @else {
+            <input
+              appInputText
+              id="title"
+              formControlName="title"
+              placeholder="Ex : Road trip Islande"
+            />
+          }
           @if (form.controls.title.touched && form.controls.title.hasError('required')) {
             <small class="nt-text-danger">Le nom est requis.</small>
           }

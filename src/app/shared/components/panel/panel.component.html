@@ -1,21 +1,29 @@
-<div class="app-panel__header">
-  <div class="app-panel__header-content">
-    @if (header()) {
-      <span>{{ header() }}</span>
+@if (!bare() && !footerToggle() && !noHeader()) {
+  <div class="app-panel__header flex align-items-center justify-content-between gap-2">
+    <div
+      class="app-panel__header-content flex align-items-center gap-2"
+      [class.app-panel__header-content--toggleable]="toggleable()"
+      [attr.tabindex]="toggleable() ? 0 : null"
+      (click)="onHeaderContentClick($event)"
+      (keydown.enter)="onHeaderContentClick($event)"
+      (keydown.space)="onHeaderContentClick($event)">
+      @if (header()) {
+        <span>{{ header() }}</span>
+      }
+      <ng-content select="[panelHeader]" />
+    </div>
+    @if (toggleable()) {
+      <button
+        type="button"
+        class="app-panel__toggle inline-flex align-items-center justify-content-center flex-shrink-0"
+        [attr.aria-expanded]="!collapsed()"
+        aria-label="Afficher/masquer"
+        (click)="toggle()">
+        <i class="app-panel__chevron"></i>
+      </button>
     }
-    <ng-content select="[panelHeader]" />
   </div>
-  @if (toggleable()) {
-    <button
-      type="button"
-      class="app-panel__toggle"
-      [attr.aria-expanded]="!collapsed()"
-      aria-label="Afficher/masquer"
-      (click)="toggle()">
-      <i class="app-panel__chevron"></i>
-    </button>
-  }
-</div>
+}
 <div
   #content
   class="app-panel__content"
@@ -25,3 +33,13 @@
     <ng-content />
   </div>
 </div>
+@if (footerToggle()) {
+  <button
+    type="button"
+    class="app-panel__footer-toggle flex flex-column align-items-center justify-content-center w-full"
+    [attr.aria-expanded]="!collapsed()"
+    aria-label="Afficher/masquer"
+    (click)="toggle()">
+    <ng-content select="[panelFooter]" />
+  </button>
+}

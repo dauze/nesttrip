@@ -1,35 +1,59 @@
-// Le host est le flex item direct de `.cdk-overlay-pane.app-title-edit-dialog-panel`
-// (voir src/styles/title-edit-dialog.scss, plein écran) — il doit s'étirer sur
-// toute cette hauteur pour que `__list` (flex:1 1 auto plus bas) puisse
-// occuper l'espace restant sous la ligne saisie/OK.
+// Plus de hauteur imposée ici (voir field-edit-dialogs.scss,
+// `.app-wide-dialog-panel`, partagée avec NotesEditDialogComponent) : le
+// panneau CDK se dimensionne à son contenu — petit avec 1-2 suggestions,
+// plafonné par `dvh` sinon (voir `.title-edit-dialog__list` plus bas, qui
+// gère son propre scroll interne).
+//
+// `:host` en `flex:1 1 auto`/`min-height:0` (voir aussi le `flex column`
+// posé sur `<cdk-dialog-container>` dans dialog.scss, indispensable pour
+// que cette valeur soit un vrai flex item plutôt qu'un enfant de bloc
+// ordinaire) : c'est cette chaîne qui permet à la liste (seule, via son
+// propre `overflow-y:auto`) de se réduire et scroller quand le contenu
+// dépasse le `max-height` du panneau (dialog.scss/field-edit-dialogs.scss),
+// au lieu que ce soit le panneau ENTIER qui scrolle (header/pied resteraient
+// alors scrollés avec le reste — le titre ne serait plus garanti visible en
+// haut). `flex-grow` ne joue que s'il y a de l'espace à distribuer (panneau
+// contraint par son `max-height`) : à peu de suggestions, le tiroir reste
+// petit comme avant.
 :host {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
-  height: 100%;
 }
 
 .title-edit-dialog {
-  display: flex;
-  flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
-  height: 100%;
 }
 
 .title-edit-dialog__row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0;
-  padding: max(0.5rem, env(safe-area-inset-top)) 0.5rem 0.5rem 0.5rem;
+  padding: 0.5rem;
+  background: var(--nt-overlay-background);
   border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
 
+.title-edit-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+.title-edit-dialog__input-row {
+  flex-shrink: 0;
+  padding: 0.5rem;
+}
+
 .title-edit-dialog__input {
-  flex: 1 1 auto;
-  min-width: 0;
+  width: 100%;
   // 16px (pas moins) : en dessous, Safari iOS zoome automatiquement la page au
-  // focus du champ, ce qu'on ne veut surtout pas dans un tiroir déjà plein écran.
+  // focus du champ.
   font-size: 1rem;
   padding: 0.5rem 0.75rem;
   border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
@@ -43,11 +67,15 @@
   }
 }
 
+// Pas de `max-height` calculée ici : `overflow-y:auto` + `min-height:0`
+// suffisent, le flex column parent (voir `:host` plus haut) réduit cet
+// élément à l'espace réellement disponible sous header/saisie et au-dessus
+// du pied Annuler/OK — pas besoin d'estimer leur hauteur en dur (fragile,
+// cf. ROADMAP.md).
 .title-edit-dialog__list {
-  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: 0 0.5rem 0.5rem 0.5rem;
 }
 
 .title-edit-dialog__option {
@@ -84,4 +112,9 @@
   color: var(--nt-text-muted-color);
   font-size: 0.875rem;
   text-align: center;
+}
+
+.title-edit-dialog__footer {
+  padding: 0.5rem;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }

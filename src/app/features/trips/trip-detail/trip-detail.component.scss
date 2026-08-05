@@ -1,21 +1,12 @@
 .invisible-content { visibility: hidden; }
 
-// Instance unique de trip-header, jamais recréée entre jours (voir
-// TripChromeService) : fixed juste sous la toolbar, translateY piloté par le
-// scroll du slide actif dans trip-day-swiper. Le padding vertical reproduit
-// les anciens espacements de flux (pt-2 toolbar->header, gap-2 header->contenu),
-// désormais hors flux document.
 // left/right: 0.5rem — reproduit le ml-2/mr-2 posé sur .app-content
-// (trips.component.html). Avant ce composant devenu position:fixed, il était
-// en flux DANS .app-content et héritait donc de sa marge ; désormais hors
-// flux (relatif au viewport), il doit la reproduire lui-même.
-.app-trip-header-fixed {
-  position: fixed;
+// (trips.component.html) : la barre des jours (layout scindé, voir
+// TripChromeService) touche les bords de l'écran (`left-0 right-0`), et doit
+// donc reproduire elle-même cette marge implicite qu'elle héritait en flux normal.
+.app-trip-tabs-nav-fixed {
   left: 0.5rem;
   right: 0.5rem;
-  z-index: var(--z-app-header);
-  padding: 0 0rem  0.5rem 0rem;
-  background: Canvas;
 }
 
 // Le skeleton doit se superposer au contenu (invisible mais toujours dans

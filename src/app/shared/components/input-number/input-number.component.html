@@ -6,7 +6,7 @@
   inputmode="decimal"
   [id]="inputId()"
   [class]="'app-input-text ' + inputClass()"
-  [value]="value ?? ''"
-  [disabled]="disabled"
+  [value]="value() ?? ''"
+  [disabled]="disabled()"
   (input)="onInput($any($event.target).value)"
   (blur)="onTouched?.()" />

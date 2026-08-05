@@ -85,7 +85,7 @@ cette logique de clonage **dans la même phase**, pas après coup.
 | 8 | `FileUpload` → bouton + `<input type="file" multiple>` natif (mode `basic` actuel, pas de zone de drop à gérer) | Faible | ✅ Fait |
 | 9 | Suppression `primeng`, `@primeuix/themes`, `primelocale` (les ~10 clés de traduction FR portées en dur) | — | ✅ Fait (aucune clé à porter en dur, voir note) |
 | 10 | PrimeIcons → `lucide-angular` | Faible | À faire |
-| 11 | PrimeFlex → fichier CSS utilitaire maison | Faible | À faire |
+| 11 | PrimeFlex → fichier CSS utilitaire maison | Faible | ✅ Fait |
 | 12 | Régression manuelle complète (desktop/mobile, dialogs, drag-and-drop inter-jours) + `ng lint`/`ng test` | — | À faire |
 
 ## Détail des composants PrimeNG à remplacer
@@ -1167,13 +1167,70 @@ lot et corrigés au passage :
   (active et dans le fieldset "terminés", qui n'avait même pas de padding
   droit du tout).
 
+### Phase 11 — PrimeFlex → fichier CSS utilitaire maison
+
+Précédée d'un passage de triage (hors phases numérotées, mais dans le même
+lot) : le SCSS custom qui dupliquait déjà une classe PrimeFlex existante
+(`display:flex`/`gap`/`align-items`... répétés dans les fichiers composants)
+a été basculé vers les classes utilitaires PrimeFlex existantes
+en premier — seulement quand la valeur était strictement identique et
+qu'aucun modificateur du même fichier ne redéfinissait la même propriété
+avec la même spécificité (un `!important` PrimeFlex aurait sinon gagné à
+tort face à une redéfinition normale, ex. `.app-button--link { width: auto
+}`) — pour réduire la surface avant de figer le sous-ensemble réellement
+utilisé.
+
+- `src/styles/layout-utilities.scss` (nouveau, pendant de
+  `color-utilities.scss`) : portage 1:1 des ~100 classes PrimeFlex
+  réellement utilisées dans les templates (audité par script one-off
+  comparant chaque classe utilisée à celles définies par `primeflex.css`,
+  y compris les variantes responsive `md:`/`lg:` et les usages dynamiques
+  via `[ngClass]`), mêmes noms, mêmes valeurs, même `!important`. `grid`/
+  `col-1/3/4/6/8/12`/`md:col-6`/`lg:col-4` (grille 12 colonnes, seul usage :
+  `accueil-trip.component.html`) repris avec les mêmes breakpoints
+  (768px/992px) que PrimeFlex.
+- Couleurs : `surface-border`/`surface-card`/`text-900` reprennent les
+  valeurs hexadécimales FIXES de l'ancien shim `--p-surface-*` telles
+  quelles (pas les tokens `--nt-surface-*`, qui eux changent de palette
+  entre clair/sombre — voir le commentaire déjà présent dans le shim
+  supprimé) : `light-dark()` fait lui-même le choix clair/sombre à partir
+  de deux nombres statiques de la même échelle.
+- **`text-orange-500` volontairement PAS repris** : la variable
+  `--p-orange-500` qu'il référençait (style "échéance proche" dans
+  activity-form/reservation-details) n'a jamais été définie nulle part
+  dans le projet — recherché explicitement, aucune occurrence. La classe
+  n'avait donc déjà aucun effet visuel avant cette migration (la couleur
+  retombe sur l'héritée). Fidélité 1:1 = ne pas lui donner un effet qu'elle
+  n'avait pas ; bug latent préexistant, sans lien avec cette migration, à
+  traiter séparément si ce style doit réellement exister un jour.
+- Shim `--p-*` (`tokens.scss`, ajouté en Phase 9 pour garder PrimeFlex
+  fonctionnel après la suppression de `providePrimeNG`) entièrement
+  supprimé. 3 lectures actives de `var(--p-primary-color)` (hors
+  commentaires) trouvées et corrigées vers `var(--nt-primary-color)` :
+  `ActivityCardComponent.resolveBookingColor` (fallback), et 3 sites dans
+  `ActivityDayDispatchOverlayComponent` (couleur de bordure de la bulle de
+  décrochage) — sans ce correctif, ces 4 lectures auraient silencieusement
+  résolu vers une valeur invalide après suppression du shim.
+- `node_modules/primeflex/primeflex.css` retiré des `styles` d'`angular.json`
+  ; `npm uninstall primeflex`.
+
+Vérifié par `ng lint`/`npx tsc --noEmit`/`ng build`/`ng test` (aucune
+régression). **Pas de test de rendu réel dans un navigateur** — comme
+indiqué en tête de `ROADMAP.md`, Google Fonts est bloqué dans le bac à
+sable d'exécution, donc le rendu visuel réel (notamment les couleurs
+`surface-card`/`surface-border`/`text-900` et la grille `col-*` de la page
+d'accueil) reste à confirmer côté utilisateur avant de considérer cette
+phase définitivement close (voir Phase 12).
+
 ## Après la migration
 
 - ~~Désinstaller `primeng`, `@primeuix/themes`, `primelocale`~~ ✅ fait
-  (Phase 9) ; `primeflex`/`primeicons` restent à désinstaller (Phases 10/11).
-- Retirer les entrées `styles` correspondantes dans `angular.json` pour
-  `primeflex`/`primeicons` une fois les Phases 10/11 faites (rien à faire
-  pour `primeng`, qui n'y était pas référencé — thème appliqué par
-  `providePrimeNG` en code, pas par une feuille de style).
+  (Phase 9). ~~`primeflex`~~ ✅ fait (Phase 11). `primeicons` reste à
+  désinstaller (Phase 10).
+- ~~Retirer les entrées `styles` correspondantes dans `angular.json` pour
+  `primeflex`~~ ✅ fait (Phase 11) ; `primeicons` reste à retirer une fois
+  la Phase 10 faite (rien à faire pour `primeng`, qui n'y était pas
+  référencé — thème appliqué par `providePrimeNG` en code, pas par une
+  feuille de style).
 - ~~Retirer `providePrimeNG` et la config `theme`/`translation` de
   `app.config.ts`~~ ✅ fait (Phase 9).

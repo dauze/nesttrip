@@ -1,40 +1,47 @@
-import { Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { MenuComponent, AppMenuItem } from '@app/shared/components/menu/menu.component';
+import { LOGISTIC_TYPE_META } from './trip-day-swiper/general-panel/logistics/logistic.constants';
+import { LogisticType } from '@core/models/logistic.dto';
+import { DayLogisticQuickAddService } from './day-logistic-quick-add.service';
 import { ActivatedRoute } from '@angular/router';
-import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
-import { Day, Trip } from '../trip.model';
+import { Trip } from '../trip.model';
 import { TripDetailSkeletonComponent } from './trip-detail-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
-import { TripHeaderComponent } from './trip-header/trip-header.component';
-import { TripCollaboratorsComponent } from './trip-collaborators/trip-collaborators.component';
 import { TripTabsNavComponent } from './trip-tabs-nav/trip-tabs-nav.component';
 import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.component';
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
 import { FloatingAddButtonComponent } from '@app/shared/components/floating-add-button/floating-add-button.component';
+import { MobileTripNavComponent } from './mobile-trip-nav/mobile-trip-nav.component';
 import { SelectionActionBarComponent } from '@app/shared/components/selection-action-bar/selection-action-bar.component';
 import { SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { ViewportService } from '@app/core/services/viewport.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
-import { ReservationFocusService } from './reservation-focus.service';
+import { LogisticFocusService } from './logistic-focus.service';
+import { NotesFocusService } from './notes-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
+/** Ids des 4 tabs de premier niveau Résumé/Activités/Logistique/Listes (voir `tabs`) — tout le reste de `activeDay()` est un id de jour (ISO). */
+const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
 
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TripDetailSkeletonComponent,
-    TripHeaderComponent,
-    TripCollaboratorsComponent,
     TripTabsNavComponent,
     TripDaySwiperComponent,
     ActivityDayDispatchOverlayComponent,
     FloatingAddButtonComponent,
+    MobileTripNavComponent,
     SelectionActionBarComponent,
+    MenuComponent,
   ],
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
@@ -45,42 +52,116 @@ const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
   // le mode sélection multiple transverse (voir SelectableDirective) —
   // partagés par le panneau Général (activités/réservations/notes) ET tous
   // les DayPanelComponent du swiper, pour une sélection persistante d'un
-  // onglet à l'autre.
+  // onglet à l'autre. DayLogisticQuickAddService/NotesFocusService : même
+  // topologie, pour le menu "Ajouter" (voir addMenuItems ci-dessous).
   providers: [
-    TripCreationTargetService, DayActivityFocusService, ReservationFocusService,
-    SelectionModeService, TripItemDeletionService,
+    TripCreationTargetService, DayActivityFocusService, LogisticFocusService, NotesFocusService,
+    SelectionModeService, TripItemDeletionService, DayLogisticQuickAddService,
   ],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
-  private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
+  protected readonly viewport = inject(ViewportService);
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);
-  private readonly reservationFocusService = inject(ReservationFocusService);
+  private readonly logisticFocusService = inject(LogisticFocusService);
+  private readonly notesFocusService = inject(NotesFocusService);
   protected readonly selectionService = inject(SelectionModeService);
   private readonly itemDeletionService = inject(TripItemDeletionService);
+  private readonly dayLogisticQuickAdd = inject(DayLogisticQuickAddService);
 
-  private readonly headerRef = viewChild(TripHeaderComponent);
-  private readonly headerWrapperRef = viewChild<ElementRef<HTMLElement>>('headerWrapper');
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
+  private readonly addMenu = viewChild.required<MenuComponent>('addMenu');
+  private readonly logisticsAddMenu = viewChild.required<MenuComponent>('logisticsAddMenu');
+  private readonly fabElementRef = viewChild(FloatingAddButtonComponent, { read: ElementRef });
 
-  readonly activeDay = signal<string>('notes');
+  /**
+   * Options du menu "Ajouter" — n'existe plus que depuis un jour ou depuis
+   * l'onglet Résumé (voir ROADMAP.md "UX / Interactions", précisé le
+   * 2026-08-02) : sur les tabs Activités/Logistique/Listes, le "+" crée
+   * désormais directement l'élément propre à l'écran affiché (voir
+   * `onFabActivate`), sans passer par ce menu. "Autre" est exclu des types
+   * logistiques proposés ici (reste un type valide côté données/formulaire,
+   * juste retiré de ce menu de création rapide).
+   * - Activité : sur un jour, chemin inchangé (`fabTarget.trigger`) ; sur
+   *   Résumé (seul cas restant sans "+" contextuel dédié), bascule d'abord
+   *   vers le tab Activités PUIS pose une demande de création différée
+   *   (`requestCreateOnMount`, consommée par `TripActivitiesComponent` une
+   *   fois monté — même schéma que NotesFocusService/LogisticFocusService).
+   * - Types logistiques : `DayLogisticQuickAddService.create` fonctionne déjà
+   *   indépendamment de l'onglet de départ (il crée l'élément puis délègue
+   *   toute la navigation croisée à `LogisticFocusService`) — la date du jour
+   *   n'est préremplie que si on part effectivement d'un jour.
+   * - Liste : `NotesFocusService.requestCreate` (même schéma de navigation
+   *   croisée que les types logistiques), atteignable depuis n'importe où.
+   */
+  protected readonly addMenuItems = computed<AppMenuItem[]>(() => [
+    {
+      label: 'Activité',
+      icon: 'pi pi-map-marker',
+      command: () => {
+        if (!GENERAL_TAB_IDS.includes(this.activeDay())) {
+          this.fabTarget.trigger(this.activeDay());
+          return;
+        }
+        this.fabTarget.requestCreateOnMount('activities');
+        const index = this.tabs().findIndex(t => t.id === 'activities');
+        this.onTabSelected({ id: 'activities', index });
+      },
+    },
+    ...(Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][])
+      .filter(([type]) => type !== 'other')
+      .map(([type, meta]) => ({
+        label: meta.label,
+        icon: meta.icon,
+        command: () => this.dayLogisticQuickAdd.create(type, GENERAL_TAB_IDS.includes(this.activeDay()) ? undefined : new Date(this.activeDay())),
+      })),
+    { label: 'Liste', icon: 'pi pi-clipboard', command: () => this.notesFocusService.requestCreate() },
+  ]);
+
+  /**
+   * Options du menu "Type" ouvert par le "+" flottant SUR le tab Logistique
+   * lui-même (ROADMAP.md "### UI", retour utilisateur) : contrairement à
+   * `addMenuItems`, les 5 types (dont "Autre", inclus ici) plutôt qu'une
+   * liste de 4 excluant "Autre" — ici il n'y a rien d'autre à choisir
+   * (on est déjà sur l'écran Logistique), donc "Autre" doit être un choix
+   * explicite. Type connu AVANT toute création (`DayLogisticQuickAddService.create`,
+   * `dayDate` absent — pas rattaché à un jour précis) : contrairement à
+   * l'ancien flux (`LogisticsCreationService`, retiré) qui créait toujours
+   * l'élément en type 'other' D'ABORD puis lui faisait changer de type dans
+   * la foulée via la cinématique guidée — un élément fraîchement créé qui
+   * change de type peut changer de section dans le tri "Type" (groupes
+   * réels, `<app-panel>` par type, voir `LogisticsListComponent`), auquel
+   * cas Angular détruit/recrée sa carte et coupe net tout dialog CDK de
+   * cinématique guidée déjà ouvert dessus — reproduit et confirmé via
+   * Playwright. En connaissant le type AVANT la création, l'élément naît
+   * direct dans la bonne section, aucun changement de type après coup.
+   */
+  protected readonly logisticsAddMenuItems = computed<AppMenuItem[]>(() =>
+    (Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][])
+      .map(([type, meta]) => ({
+        label: meta.label,
+        icon: meta.icon,
+        command: () => {
+          this.dayLogisticQuickAdd.create(type, undefined, this.fabTarget.logisticsSearchTerm());
+          this.fabTarget.setLogisticsSearchTerm('');
+        },
+      })),
+  );
+
+  readonly activeDay = signal<string>('activities');
   private initializedTripId: string | null = null;
+  private popStateSub?: { unsubscribe(): void };
   readonly currentDayIndex = signal(0);
 
   readonly contentReady = signal(false);
   private readyFallbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  readonly tripTitle = computed(() => {
-    const id = this.route.snapshot.paramMap.get('id');
-    const fromList = this.facade.trips().find(t => t.id === id);
-    return fromList?.title ?? this.facade.activeTrip()?.title ?? '';
-  });
+  private contentReadyTripId: string | null = null;
 
   readonly sortedDays = computed(() =>
     this.facade.activeTrip()?.days
@@ -88,43 +169,67 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       .sort((a, b) => a.id.getTime() - b.id.getTime()) ?? []
   );
 
+  /**
+   * Résumé/Activités/Logistique/Listes sont 4 tabs/slides de premier niveau
+   * (au lieu d'un unique onglet "Général" avec switch interne, voir
+   * ROADMAP.md "UX / Interactions") — même ordre qu'avant (ce bloc précède
+   * toujours les jours), "Résumé" ajouté en tête le 2026-08-01. `id: 'notes'`
+   * gardé tel quel en interne pour "Listes" (NotesFocusService, fragment
+   * d'URL...) : seul le libellé change.
+   */
   readonly tabs = computed<TripTab[]>(() => [
-    { id: 'notes', label: 'Général' },
+    { id: 'summary', label: 'Résumé' },
+    { id: 'activities', label: 'Activités' },
+    { id: 'logistics', label: 'Logement & Transport' },
+    { id: 'notes', label: 'Listes' },
     ...this.sortedDays().map(d => this.formatDayTab(d.id)),
   ]);
 
   /**
-   * "+" flottant UNIQUE (voir TripCreationTargetService) : sur l'onglet
-   * "Général", son icône/libellé suivent le sous-onglet actif de
-   * `GeneralPanelComponent` (activités vs réservations vs notes) ; sur un
-   * jour, toujours une activité. Le badge "+" reste affiché dans les trois
-   * cas — l'icône seule (map-marker/bookmark/clipboard) ne suffirait pas à
-   * se lire comme "ajouter".
+   * "+" flottant UNIQUE (voir TripCreationTargetService) : icône/libellé
+   * contextuels sur les tabs Activités/Logistique/Listes (création directe,
+   * voir `onFabActivate`), génériques sinon (jour ou Résumé, ouvre le menu
+   * "Ajouter" — voir addMenuItems, ROADMAP.md "UX / Interactions").
    */
   protected readonly fabIcon = computed(() => {
-    if (this.activeDay() !== 'notes') return 'pi pi-map-marker';
-    switch (this.fabTarget.general()?.activeSubTab()) {
+    switch (this.activeDay()) {
+      case 'activities': return 'pi pi-map-marker';
+      case 'logistics': return 'pi pi-bookmark';
       case 'notes': return 'pi pi-clipboard';
-      case 'reservations': return 'pi pi-bookmark';
-      default: return 'pi pi-map-marker';
+      default: return 'pi pi-plus';
     }
   });
 
   protected readonly fabAriaLabel = computed(() => {
-    if (this.activeDay() !== 'notes') return 'Ajouter une activité';
-    switch (this.fabTarget.general()?.activeSubTab()) {
-      case 'notes': return 'Ajouter une note';
-      case 'reservations': return 'Ajouter une réservation';
-      default: return 'Ajouter une activité';
+    switch (this.activeDay()) {
+      case 'activities': return 'Ajouter une activité';
+      case 'logistics': return 'Ajouter un élément logistique';
+      case 'notes': return 'Ajouter une liste';
+      default: return 'Ajouter';
     }
   });
 
+  /**
+   * Sur Activités/Listes : création directe de l'élément propre à l'écran
+   * affiché (`fabTarget.trigger`, cible enregistrée par ces composants). Sur
+   * Logistique : ouvre le menu "Type" (voir `logisticsAddMenuItems`, type
+   * connu AVANT création — pas de `fabTarget.trigger` ici, ce tab n'a plus
+   * de cible enregistrée). Sur un jour ET sur Résumé : ouvre le menu
+   * "Ajouter" (voir addMenuItems) ancré sur le bouton lui-même.
+   */
   protected onFabActivate(): void {
-    if (this.activeDay() === 'notes') {
-      this.fabTarget.general()?.trigger();
-    } else {
-      this.fabTarget.triggerDay(this.activeDay());
+    const day = this.activeDay();
+    if (day === 'activities' || day === 'notes') {
+      this.fabTarget.trigger(day);
+      return;
     }
+    const anchor = this.fabElementRef()?.nativeElement;
+    if (!anchor) return;
+    if (day === 'logistics') {
+      this.logisticsAddMenu().toggleAt(anchor);
+      return;
+    }
+    this.addMenu().toggleAt(anchor);
   }
 
   protected onSelectionCancel(): void {
@@ -137,38 +242,25 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   constructor() {
+    this.bindPopState();
+
     afterNextRender(() => {
       const el = this.dragPortalRef()?.nativeElement;
       if (el) this.dispatchService.registerDragPortal(el);
     });
 
-    // effect() (pas afterNextRender, qui ne s'exécute qu'une seule fois) :
-    // #headerWrapper est dans un @if (facade.activeTrip(); as trip) — au tout
-    // premier rendu, le trip n'a pas encore fini de charger (Firestore async),
-    // donc l'élément n'existe pas encore. Un afterNextRender ici ratait
-    // silencieusement l'attache de l'observer pour de bon (headerHeight
-    // restait à 0 à vie, empêchant le header de jamais se masquer entièrement,
-    // seulement de la hauteur de la toolbar). L'effect se relance quand le
-    // signal du viewChild change, donc capte l'élément dès qu'il apparaît.
-    effect((onCleanup) => {
-      const el = this.headerWrapperRef()?.nativeElement;
-      if (!el) return;
-
-      // getBoundingClientRect (pas entry.contentRect, qui exclut le padding
-      // vertical de .app-trip-header-fixed) pour mesurer le vrai encombrement.
-      const observer = new ResizeObserver(() => {
-        this.chromeService.registerHeight('header', el.getBoundingClientRect().height);
-      });
-      observer.observe(el);
-
-      // Écriture DOM directe du transform (voir TripChromeService) : pas de
-      // binding [style.transform] dans le template.
-      const unregister = this.chromeService.registerChromeElement(el);
-
-      onCleanup(() => {
-        observer.disconnect();
-        unregister();
-      });
+    // Traduit le layout (ViewportService) en mode chrome (voir TripChromeService.ChromeMode) :
+    // `isMobileChrome` (portrait OU appareil tactile même en paysage — voir sa
+    // doc) -> barre de nav morphing bas d'écran, comportement "mobile"
+    // historique ; sinon (vrai desktop, pointeur fin) -> layout scindé, chrome
+    // jamais masqué si assez de hauteur, ou rejoint le groupe qui se masque au
+    // scroll sinon (fenêtre desktop basse).
+    effect(() => {
+      if (this.viewport.isMobileChrome()) {
+        this.chromeService.setMode('mobile');
+      } else {
+        this.chromeService.setMode(this.viewport.isChromePinned() ? 'split-pinned' : 'split-hideable');
+      }
     });
 
     effect(() => {
@@ -189,9 +281,23 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Le skeleton (voir `contentReady`) ne doit réapparaître que lors d'un
+    // VRAI changement de trip (navigation vers un autre id) — pas à chaque
+    // fois que `activeTrip()` change de RÉFÉRENCE, ce qui arrive aussi pour
+    // le MÊME trip dès qu'un jour est ajouté/supprimé (`_tripDays`/`_days`,
+    // voir CLAUDE.md "activeTrip") : `activeTrip()` recompose alors un nouvel
+    // objet `Trip` même quand `id` n'a pas bougé. Sans le garde-fou
+    // `contentReadyTripId` (même principe que `initializedTripId` juste
+    // au-dessus), CE bloc se redéclenchait à CHAQUE édition d'intervalle de
+    // dates (locale OU distante, ROADMAP.md "Bugs / fixes", retour
+    // utilisateur : "la modification des dates entraîne l'affichage du
+    // skeleton") — masquant jusqu'à 4s (filet de sécurité ci-dessous) un
+    // contenu déjà à jour, avec l'impression trompeuse que "les dates n'ont
+    // pas changé" une fois le skeleton reparti.
     effect(() => {
       const id = this.facade.activeTrip()?.id;
-      if (!id) return;
+      if (!id || this.contentReadyTripId === id) return;
+      this.contentReadyTripId = id;
 
       this.contentReady.set(false);
       this.clearReadyFallback();
@@ -205,7 +311,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
 
     // Demande de navigation croisée (voir DayActivityFocusService) : un clic
-    // sur une date depuis l'onglet Général (pool d'activités) bascule ici sur
+    // sur une date depuis le tab Activités (pool d'activités) bascule ici sur
     // le jour ciblé, exactement comme onTabSelected/onSwiperActiveIdChange.
     // Si le jour ciblé est déjà actif, rien à faire ici : c'est
     // DayPanelComponent qui consomme la requête (et scroll) une fois actif.
@@ -219,13 +325,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       this.updateFragment(pending.dayId);
     });
 
-    // Demande de navigation croisée symétrique (voir ReservationFocusService)
+    // Demande de navigation croisée symétrique (voir LogisticFocusService)
     // : tap sur une bannière de réservation depuis un jour bascule ici sur
-    // l'onglet Général — GeneralPanelComponent (sous-onglet) puis
-    // ReservationsListComponent (ouverture du dialog d'édition) consomment
-    // ensuite la même requête, chacun à son échelle.
+    // le tab Logistique — LogisticsListComponent (ouverture du dialog
+    // d'édition) consomme ensuite la même requête.
     effect(() => {
-      const pending = this.reservationFocusService.pending();
+      const pending = this.logisticFocusService.pending();
+      if (!pending || this.activeDay() === 'logistics') return;
+
+      this.activeDay.set('logistics');
+      const index = this.tabs().findIndex(t => t.id === 'logistics');
+      if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
+      this.updateFragment('logistics');
+    });
+
+    // Demande de navigation croisée symétrique (voir NotesFocusService) :
+    // entrée "Liste" du menu "Ajouter" (création) OU chip "liste liée" depuis
+    // une activité (voir `ActivityFormComponent`, ROADMAP.md "UX /
+    // Interactions") basculent ici sur le tab Listes — NotesComponent
+    // consomme ensuite la même requête (crée ou scrolle selon `itemId`).
+    effect(() => {
+      const pending = this.notesFocusService.pending();
       if (!pending || this.activeDay() === 'notes') return;
 
       this.activeDay.set('notes');
@@ -251,8 +371,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.facade.unloadTrip();
     this.clearReadyFallback();
+    this.popStateSub?.unsubscribe();
     document.documentElement.classList.remove(TRIP_DETAIL_ACTIVE_CLASS);
-    this.chromeService.registerHeight('header', 0);
     this.chromeService.reset();
   }
 
@@ -268,12 +388,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected onTitleChange(title: string): void {
-    const trip = this.facade.activeTrip();
-    if (!trip) return;
-    this.facade.updateTripTitle({ ...trip, title });
-  }
-
   protected onTabSelected(event: { id: string; index: number }): void {
     this.activeDay.set(event.id);
     this.tabsNavRef()?.scrollIntoView(event.index);
@@ -285,33 +399,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const index = this.tabs().findIndex(t => t.id === id);
     if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
     this.updateFragment(id);
-  }
-
-  protected onDatesChange(range: [Date, Date]): void {
-    const trip = this.facade.activeTrip();
-    if (!trip) return;
-
-    const [start, end] = range;
-    const newDays = this.buildDays(start, end, trip.days);
-    const toDelete = this.findDaysToDelete(trip.days, newDays);
-    const toAdd = this.findDaysToAdd(trip.days, newDays);
-
-    const applyChanges = () => {
-      for (const day of toDelete) this.facade.removeDay(trip.id, day.id);
-      for (const day of toAdd) this.facade.addDay(trip.id, day);
-      this.activeDay.set('notes');
-      setTimeout(() => this.tabsNavRef()?.scrollIntoView(0), 100);
-    };
-
-    if (toDelete.length > 0) {
-      this.confirmDialogService.confirm({
-        message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
-        accept: applyChanges,
-        reject: () => this.headerRef()?.resetDates(),
-      });
-    } else {
-      applyChanges();
-    }
   }
 
   private formatDayTab(date: Date): TripTab {
@@ -329,38 +416,20 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private getTodayId(trip: Trip): string {
     const today = new Date().toDateString();
     const day = trip.days.find(d => new Date(d.id).toDateString() === today);
-    return day ? day.id.toISOString() : 'notes';
+    return day ? day.id.toISOString() : 'activities';
   }
 
-  private buildDays(start: Date, end: Date, existingDays: Day[]): Day[] {
-    const days: Day[] = [];
-    const existingMap = new Map(existingDays.map(day => [day.id.getTime(), day]));
-
-    const current = new Date(start);
-    current.setHours(0, 0, 0, 0);
-    const endNorm = new Date(end);
-    endNorm.setHours(0, 0, 0, 0);
-
-    while (current <= endNorm) {
-      const key = current.getTime();
-      days.push(existingMap.get(key) ?? { id: new Date(current), activityIds: [] });
-      current.setDate(current.getDate() + 1);
-    }
-    return days;
-  }
-
-  private findDaysToAdd(existingDays: Day[], newDays: Day[]): Day[] {
-    const existingIds = new Set(existingDays.map(d => d.id.getTime()));
-    return newDays.filter(d => !existingIds.has(d.id.getTime()));
-  }
-
-  private findDaysToDelete(existingDays: Day[], newDays: Day[]): Day[] {
-    const newIds = new Set(newDays.map(d => d.id.getTime()));
-    return existingDays.filter(d => !newIds.has(d.id.getTime()));
-  }
-
+  /**
+   * Généralisé pour couvrir aussi les 3 tabs Activités/Logistique/Listes (pas
+   * seulement les jours, `#day-N`) : sans ça, un refresh de page sur
+   * Logistique/Listes retombait toujours sur le tab par défaut — régression
+   * introduite en dissolvant `GeneralPanelComponent` (qui persistait le
+   * sous-onglet via `?tab=`), corrigée en unifiant sur ce même mécanisme de
+   * fragment.
+   */
   private getDayIdFromFragment(fragment: string | null): string | null {
     if (!fragment) return null;
+    if (GENERAL_TAB_IDS.includes(fragment)) return fragment;
 
     const match = fragment.match(/^day-(\d+)$/);
     if (!match) return null;
@@ -370,9 +439,48 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return day ? day.id.toISOString() : null;
   }
 
-  private updateFragment(dayId: string): void {
-    const dayNumber = this.sortedDays().findIndex(d => d.id.toISOString() === dayId) + 1;
+  /**
+   * `location.go` (push), pas `location.replaceState` (voir ROADMAP.md "UX /
+   * Interactions") : chaque changement de tab/jour doit pouvoir être annulé
+   * par le bouton "retour" du navigateur — `replaceState` écrasait
+   * systématiquement l'entrée d'historique courante, rendant le retour
+   * inopérant (il sortait du trip entièrement au lieu de revenir sur le
+   * tab/jour précédent). `location.go` ne déclenche jamais `popstate` de
+   * lui-même (voir doc Angular `Location.go`) : pas de risque de boucle avec
+   * `bindPopState` ci-dessous, qui ne réagit qu'aux VRAIS retours/avances.
+   */
+  private updateFragment(tabId: string): void {
     const basePath = this.location.path(false);
-    this.location.replaceState(dayNumber > 0 ? `${basePath}#day-${dayNumber}` : basePath);
+    const fragment = this.fragmentFor(tabId);
+    const newPath = fragment ? `${basePath}#${fragment}` : basePath;
+    if (newPath === this.location.path(true)) return;
+    this.location.go(newPath);
+  }
+
+  private fragmentFor(tabId: string): string | null {
+    if (GENERAL_TAB_IDS.includes(tabId)) return tabId;
+    const dayNumber = this.sortedDays().findIndex(d => d.id.toISOString() === tabId) + 1;
+    return dayNumber > 0 ? `day-${dayNumber}` : null;
+  }
+
+  /**
+   * Consomme les VRAIS retours/avances navigateur (`Location.subscribe` ne
+   * réagit qu'au `popstate` réel — jamais à nos propres `location.go`
+   * programmatiques, voir la doc de `updateFragment`) : resynchronise
+   * `activeDay`/le swiper/la barre de tabs sur le fragment retrouvé dans
+   * l'URL, sans repousser de nouvelle entrée d'historique (sinon "retour"
+   * avancerait à nouveau au lieu de reculer).
+   */
+  private bindPopState(): void {
+    this.popStateSub = this.location.subscribe((event) => {
+      const hashIndex = (event.url ?? '').indexOf('#');
+      const fragment = hashIndex >= 0 ? decodeURIComponent(event.url!.slice(hashIndex + 1)) : null;
+      const dayId = this.getDayIdFromFragment(fragment);
+      if (!dayId || dayId === this.activeDay()) return;
+
+      this.activeDay.set(dayId);
+      const index = this.tabs().findIndex(t => t.id === dayId);
+      if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
+    });
   }
 }

@@ -1,11 +1,11 @@
-<div class="dialog-frame">
+<div class="dialog-frame flex flex-column">
   @if (header() || showCloseButton()) {
-    <header class="dialog-frame__header">
+    <header class="dialog-frame__header flex align-items-center justify-content-between gap-2">
       <h2 class="dialog-frame__title">{{ header() }}</h2>
       @if (showCloseButton()) {
         <button
           type="button"
-          class="dialog-frame__close"
+          class="dialog-frame__close inline-flex align-items-center justify-content-center"
           aria-label="Fermer"
           (click)="closeRequested.emit()">
           <i class="pi pi-times"></i>

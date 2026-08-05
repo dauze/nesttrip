@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostBinding, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostBinding, afterRenderEffect, computed, input, model, signal, viewChildren } from '@angular/core';
 
 export interface SelectButtonOption<T = unknown> {
   label: string;
@@ -17,10 +17,20 @@ export type SelectButtonVariant = 'solid' | 'subtle';
  *
  * `variant` : `'solid'` (défaut, historique — bascule Activités/Notes de
  * general-panel, pleine largeur, remplissage couleur primaire) ou `'subtle'`
- * (pilule compacte, largeur auto, surbrillance discrète — pour une bascule
- * secondaire qui ne doit pas visuellement rivaliser avec un `'solid'` déjà
- * affiché juste au-dessus, ex. tri Ville/Chronologique dans l'onglet
- * Activités).
+ * (pilule compacte, largeur auto — pour une bascule secondaire qui ne doit
+ * pas visuellement rivaliser avec un `'solid'` déjà affiché juste au-dessus,
+ * ex. tri Ville/Chronologique dans l'onglet Activités, Type/Chronologique en
+ * Logistique). `'subtle'` rend une vraie pastille glissante (`.app-select-button__thumb`,
+ * voir le template/le SCSS) derrière l'option active plutôt qu'un simple
+ * `box-shadow` — matérialise "un switch avec le rond en couleur" (voir
+ * ROADMAP.md "UX / Interactions"). Les items sont `flex: 0 0 auto` (largeur
+ * dictée par leur contenu, icône+libellé, jamais égale entre 2 options —
+ * "Lieu" vs "Chronologie" par ex.) : la pastille est donc positionnée/
+ * dimensionnée par MESURE DOM réelle de l'item actif (`offsetLeft`/
+ * `offsetWidth`, voir `thumbRect`/`afterRenderEffect` ci-dessous), jamais par
+ * un simple `100% / options().length` — un premier jet en pourcentage fixe
+ * ne correspondait pas à la largeur réelle des boutons, pastille visuellement
+ * désalignée.
  */
 @Component({
   selector: 'app-select-button',
@@ -37,6 +47,22 @@ export class SelectButtonComponent<T = unknown> {
   @HostBinding('class')
   protected get hostClass(): string {
     return `app-select-button--${this.variant()}`;
+  }
+
+  /** Index de l'option active — pilote la pastille glissante du variant 'subtle' (voir select-button.component.html/.scss). -1 si aucune option ne correspond à `value()` (état transitoire au premier rendu). */
+  protected readonly activeIndex = computed(() => this.options().findIndex(o => o.value === this.value()));
+
+  private readonly itemEls = viewChildren<ElementRef<HTMLButtonElement>>('itemEl');
+
+  /** Position/taille réelles (px) de l'item actif, mesurées après rendu — voir la doc de classe. `null` tant qu'il n'y a rien à afficher (aucune option active). */
+  protected readonly thumbRect = signal<{ left: number; width: number } | null>(null);
+
+  constructor() {
+    afterRenderEffect(() => {
+      const index = this.activeIndex();
+      const target = this.itemEls()[index]?.nativeElement;
+      this.thumbRect.set(target ? { left: target.offsetLeft, width: target.offsetWidth } : null);
+    });
   }
 
   protected select(option: SelectButtonOption<T>): void {

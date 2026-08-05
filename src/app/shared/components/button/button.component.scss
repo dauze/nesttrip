@@ -19,11 +19,10 @@
   // Épouse la largeur du :host (voir plus bas) — n'a d'effet que si le
   // consommateur pose une classe genre `w-full` sur <app-button> : sans
   // largeur explicite sur le host, ce pourcentage se comporte comme `auto`.
+  // Pas une classe utilitaire `w-full` : `.app-button--link` a besoin de
+  // redéfinir `width: auto` avec la même spécificité (une classe utilitaire
+  // `!important` l'emporterait sur cette redéfinition).
   width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
   border: var(--nt-border-width-hairline) solid transparent;
   border-radius: var(--nt-form-field-border-radius);
@@ -181,7 +180,7 @@
 // --- Forme ---
 
 .app-button--rounded {
-  border-radius: 2rem;
+  border-radius: var(--nt-radius-pill);
 }
 
 .app-button--icon-only {

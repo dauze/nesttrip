@@ -28,6 +28,16 @@
   box-shadow: var(--nt-overlay-modal-shadow);
 }
 
+// Titre optionnel (ex. "Check-in"/"Check-out") — utile quand plusieurs
+// `app-date-picker` s'enchaînent via un chaînage de saisie guidée, pour
+// savoir lequel est ouvert (voir DatePickerComponent.label).
+.app-date-picker-panel__label {
+  margin-bottom: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
 .app-date-picker-panel__header {
   display: flex;
   align-items: center;
@@ -174,6 +184,21 @@
   // rond complet explicite pour ce cas.
   &.app-date-picker-panel__day--range-start.app-date-picker-panel__day--range-end {
     border-radius: 50%;
+  }
+
+  // Jour antérieur à `minDate` (voir ROADMAP.md "UX / Interactions", ex. date
+  // de fin ne pouvant pas précéder la date de début) : non cliquable
+  // (`[disabled]`, voir le template), grisé plutôt que simplement masqué —
+  // reste visible pour garder la grille du mois lisible.
+  &:disabled,
+  &.app-date-picker-panel__day--disabled {
+    color: var(--nt-text-muted-color);
+    opacity: 0.35;
+    cursor: not-allowed;
+
+    &:hover {
+      background: transparent;
+    }
   }
 }
 

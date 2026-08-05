@@ -71,6 +71,17 @@
   padding: 0.5rem;
 }
 
+// Titre du tiroir mobile — remplace la barre de recherche (listes toujours
+// courtes ici), flex-shrink:0 pour ne jamais être écrasé par la liste
+// (flex:1 1 auto juste au-dessus).
+.app-select-panel__title {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.25rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
 .app-select-overlay--mobile .app-select-panel__option {
   justify-content: center;
   text-align: center;

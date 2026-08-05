@@ -1,19 +1,19 @@
 <div class="trip-tabs-nav-root">
   <div #tabsListRef class="app-tabs tabs-pop">
-    <div class="app-tabs__list" role="tablist">
+    <div class="app-tabs__list flex" role="tablist">
       @for (tab of tabs(); track tab.id; let i = $index) {
         <button
           type="button"
           role="tab"
           [attr.aria-selected]="tab.id === activeId()"
           [attr.data-tab-id]="tab.id"
-          class="app-tab"
+          class="app-tab flex flex-column align-items-center justify-content-center flex-1"
           [class.is-active]="tab.id === activeId()"
           [class.app-tab--day]="!!tab.dayNumber"
           [class.app-tab--general]="!tab.dayNumber"
           (click)="onTabClick(tab.id, i)">
           @if (tab.dayNumber) {
-            <span class="day-tab">
+            <span class="day-tab flex flex-column align-items-center">
               <span class="day-tab__weekday nt-text-muted">
                 <span class="day-tab__short">{{ tab.weekday }}</span>
                 <span class="day-tab__full">{{ tab.weekdayFull }}</span>

@@ -1,0 +1,22 @@
+@if (viewport.isMobile()) {
+  <div class="price-field-trigger" role="button" tabindex="0" (click)="openDialog()" (keydown.enter)="openDialog()">
+    @if (displayAmount() !== null) {
+      <span class="price-field-trigger__value">{{ displayAmount() }} {{ currencyLabel() }}</span>
+    } @else {
+      <span class="price-field-trigger__placeholder">Ajouter un prix</span>
+    }
+  </div>
+} @else {
+  <div class="flex align-items-center gap-1 w-full min-w-0">
+    <app-input-number
+      [inputId]="inputId()"
+      [formControl]="amountControl"
+      class="flex-1 min-w-0 transparent-inputtext"
+      inputClass="w-full min-w-0 text-sm" />
+    <app-select
+      label="Devise"
+      [options]="currencyOptions()"
+      [formControl]="currencyControl"
+      class="flex-none w-max transparent-select" />
+  </div>
+}

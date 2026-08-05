@@ -47,7 +47,7 @@
                 [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
               >
                 <div
-                  class="flex justify-content-between align-items-center cursor-pointer"
+                  class="trip-select-row flex justify-content-between align-items-center cursor-pointer"
                   role="button"
                   tabindex="0"
                   (click)="selectTrip(trip.id)"
@@ -61,13 +61,13 @@
                   ></app-checkbox>
 
                   <span
-                    class="font-medium text-lg flex-grow-1 ml-2"
+                    class="trip-select-row__title font-medium text-lg flex-grow-1 ml-2"
                     [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
                   >
                     {{ trip.title }}
                   </span>
 
-                  <i class="pi pi-arrow-right nt-text-muted"></i>
+                  <i class="trip-select-row__arrow pi pi-arrow-right nt-text-muted"></i>
                 </div>
               </app-card>
             </div>
@@ -81,7 +81,7 @@
     <div cardFooter class="flex justify-content-end gap-2">
       <!-- Ajouter -->
       <app-button
-        label="Créer un voyage"
+        label="Nouvelle aventure"
         icon="pi pi-plus"
         size="small"
         routerLink="/trips/new"

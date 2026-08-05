@@ -36,10 +36,14 @@ export class ActivityHeaderComponent {
   readonly dayId = input.required<Date | undefined>();
   readonly isPlacedNowhere = input.required<boolean>();
   readonly assignedPlacements = input.required<{ dayId: Date; instanceId: string }[]>();
+  /** Vue "Ville" (voir ActivityCardComponent.hideBookingMeta) : masque le trombone, qui n'a de sens que rapporté à un jour précis. */
+  readonly hideBookingMeta = input(false);
 
   readonly placeSelected = output<PlaceSummary>();
   readonly titleEdited = output<string>();
   readonly placementClicked = output<{ dayId: Date; instanceId: string }>();
+  /** Clic sur l'heure de début (voir ROADMAP.md "UX / Interactions") : `ActivityCardComponent` déplie la carte et ouvre l'éditeur d'heure du form. */
+  readonly timeClicked = output<void>();
 
   readonly activityTypeMeta = ACTIVITY_TYPE_META;
 
@@ -66,6 +70,8 @@ export class ActivityHeaderComponent {
     const refs = this.activity().photoRefs;
     return refs && refs.length > 0 ? refs[0] : null;
   });
+
+  readonly hasFiles = computed(() => !this.hideBookingMeta() && (this.activity().files?.length ?? 0) > 0);
 
   constructor() {
      runOnceReady(this.activity, (a) => this.titleControl.setValue(a.title, { emitEvent: false }));
@@ -114,8 +120,8 @@ export class ActivityHeaderComponent {
   }
 
   /**
-   * Mobile uniquement (voir template) : ouvre le tiroir plein écran d'édition
-   * du titre à la place de l'autocomplete inline utilisée sur desktop.
+   * Mobile uniquement (voir template) : ouvre le tiroir dédié d'édition du
+   * titre à la place de l'autocomplete inline utilisée sur desktop.
    * `stopPropagation` : le crayon vit dans `.activity-header__meta`, qui ne
    * stoppe plus lui-même la propagation en mode mobile (voir template) pour
    * que le reste du header (y compris le titre) déplie/replie le panneau au
@@ -138,8 +144,15 @@ export class ActivityHeaderComponent {
       TitleEditDialogComponent,
       {
         data: { initialTitle: this.activity().title },
-        panelClass: 'app-title-edit-dialog-panel',
+        panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
+        // `autoFocus: 'first-tabbable'` (défaut de DialogService) focaliserait
+        // le bouton de fermeture (premier élément focusable du template, voir
+        // TitleEditDialogComponent), pas le champ de saisie — l'autofocus CDK
+        // s'exécute après `ngAfterViewInit` du contenu et écrase le
+        // `input.focus()` qui y est déjà posé. Même pattern que
+        // TimePickerDialogComponent (mode durée) pour cibler directement le champ.
+        autoFocus: '.title-edit-dialog__input',
       },
     );
 
@@ -166,6 +179,12 @@ export class ActivityHeaderComponent {
   onPlacementClick(event: Event, placement: { dayId: Date; instanceId: string }): void {
     event.stopPropagation();
     this.placementClicked.emit(placement);
+  }
+
+  /** `stopPropagation` : même besoin que `onPlacementClick` ci-dessus — sans ça, le clic remonterait au header et déplierait/replierait le panneau au lieu d'ouvrir l'éditeur d'heure. */
+  onTimeClick(event: Event): void {
+    event.stopPropagation();
+    this.timeClicked.emit();
   }
 
   getPhotoUrl$(ref: string, maxWidth = 100) {

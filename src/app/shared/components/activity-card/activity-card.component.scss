@@ -1,15 +1,72 @@
 :host { display: block; }
-.booking    { 
-    border-left-width: 0.4rem;
-    border-left-color: var(--booking-status-color); 
+
+// Couleur d'identité du type d'activité (voir ActivityCardComponent.typeColorVar,
+// ROADMAP.md "UX / Interactions") — toujours affichée, plus conditionnée par
+// un statut de réservation (remplace l'ancienne classe `.booking` +
+// `--booking-status-color`, qui pilote toujours le bord des cartes
+// logistique, inchangé). `app-panel` est écrit directement dans CE template
+// (pas du contenu projeté), donc porte le même attribut de scope Angular que
+// `.not-dispatched` — pas besoin de `::ng-deep` ici.
+//
+// Bordure gauche en dégradé (public/bordure_activity_card.png, DESIGN.md) :
+// un pseudo-élément remplace le `border-left` plat d'origine (mis à 0 ici,
+// le pseudo occupe visuellement le même espace, voir `::before` plus bas) —
+// `border-image` aurait aussi affecté le style `dashed` des 3 autres côtés
+// (voir `.not-dispatched` plus bas), un pseudo-élément reste indépendant.
+// Ombre douce au repos + apparition fondu/translation (DESIGN.md "cartes
+// premium"/"animations") — `@starting-style` natif, même mécanisme déjà
+// utilisé par les tiroirs (voir menu.scss), pas de librairie d'animation.
+.trip {
+  position: relative;
+  border-left-width: 0;
+  box-shadow: var(--nt-shadow-xs);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 220ms ease, transform 220ms ease, box-shadow var(--nt-transition-duration) ease;
+
+  // Compense la barre colorée ci-dessous (0.4rem, `::before`) : sans ça, le
+  // contenu ne respire qu'avec le reliquat (0.5rem de padding uniforme -
+  // 0.4rem de barre = 0.1rem) contre 0.5rem pleins sur les 3 autres côtés
+  // (retour utilisateur, ROADMAP.md "### UI", "pas assez de padding à
+  // gauche"). `--nt-panel-content-padding-left`/`--nt-panel-header-padding-left`
+  // (panel.component.scss) : même respiration après la barre (0.5rem) que
+  // les autres côtés, pour le CORPS déplié ET le header (logo du type,
+  // visible même repliée — oubliée par le premier correctif, voir ROADMAP.md
+  // "Bugs / fixes", "plus grand padding entre le border left et le logo").
+  --nt-panel-content-padding-left: 0.9rem;
+  --nt-panel-header-padding-left: 0.9rem;
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
 }
-// `app-panel` est écrit directement dans CE template (pas du contenu
-// projeté), donc porte le même attribut de scope Angular que `.not-dispatched`
-// — contrairement à l'ancien `.p-panel` (une classe posée par PrimeNG sur un
-// élément interne à SA PROPRE vue), pas besoin de `::ng-deep` ici.
+
+.trip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.4rem;
+  border-radius: var(--nt-content-border-radius) 0 0 var(--nt-content-border-radius);
+  background: linear-gradient(
+    180deg,
+    var(--activity-type-color) 0%,
+    color-mix(in srgb, var(--activity-type-color) 55%, transparent) 100%
+  );
+}
+
+// Un `inset` posé par erreur ici rendait ce bord gauche avec l'effet
+// biseauté/assombri du navigateur (border-style: inset), qui masquerait la
+// couleur de type ci-dessus sous un liseré qui paraît noir. Seuls les 3
+// côtés hors bord gauche passent en pointillé : le bord gauche reste plein
+// et coloré par type même pour une carte "à assigner" (retour utilisateur,
+// voir ROADMAP.md).
 .not-dispatched > app-panel {
-  border-style: dashed;
-  border-left-style: inset;
+  border-top-style: dashed;
+  border-right-style: dashed;
+  border-bottom-style: dashed;
 }
 
 // Empêche le scroll tactile natif de concurrencer le drag manuel (pool ou

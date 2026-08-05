@@ -1,0 +1,71 @@
+<div class="logistics-list" [appFabBottomProximity]="true" (nearBottomChange)="onFabNearBottomChange($event)">
+<app-card>
+  <div class="flex flex-column gap-2">
+    @if (hasNoLogisticAtAll()) {
+      <app-message
+        severity="info"
+        icon="pi pi-info-circle"
+        text="Aucun élément logistique pour l'instant, n'hésitez pas à en créer avec le bouton +."
+        class="w-full" />
+    } @else {
+      <div class="logistics-list__toolbar flex align-items-center gap-2 flex-wrap">
+        <span>Classer par : </span>
+        <app-select-button
+          variant="subtle"
+          [options]="sortOptions"
+          [value]="sortMode()"
+          (valueChange)="onSortModeChange($event)"
+        />
+        <div class="logistics-list__search flex-1">
+          <i class="pi pi-search logistics-list__search-icon nt-text-muted"></i>
+          <input
+            appInputText
+            type="text"
+            [value]="searchTerm()"
+            (input)="onSearchInput($event)"
+            placeholder="Rechercher un logement ou transport"
+            class="w-full logistics-list__search-input" />
+          @if (searchTerm()) {
+            <app-button
+              icon="pi pi-times"
+              [rounded]="true"
+              [text]="true"
+              size="small"
+              severity="secondary"
+              class="logistics-list__search-clear"
+              (click)="clearSearch()"
+            />
+          }
+        </div>
+      </div>
+
+      @if (matchCount() === 0) {
+        <app-message severity="info" icon="pi pi-search" text="Aucun résultat pour cette recherche." class="w-full" />
+      } @else if (sortMode() === 'chrono') {
+        <div class="flex flex-column gap-2">
+          @for (logistic of chronoLogistics(); track logistic.id) {
+            <app-logistic-card [tripId]="tripId()" [logisticId]="logistic.id" [initCollapsed]="true" />
+          }
+        </div>
+      } @else {
+        <div class="flex flex-column gap-2">
+          @for (group of typeGroups(); track group.type) {
+            <app-panel [toggleable]="true" [collapsed]="false" [thickBorder]="true">
+              <div panelHeader class="flex align-items-center gap-2" [style.color]="'var(' + group.meta.colorVar + ')'">
+                <i [class]="group.meta.icon"></i>
+                <span class="font-semibold text-sm">{{ group.meta.label }}</span>
+                <span class="nt-text-muted text-xs">({{ group.logistics.length }})</span>
+              </div>
+              <div class="flex flex-column gap-2">
+                @for (logistic of group.logistics; track logistic.id) {
+                  <app-logistic-card [tripId]="tripId()" [logisticId]="logistic.id" [initCollapsed]="true" />
+                }
+              </div>
+            </app-panel>
+          }
+        </div>
+      }
+    }
+  </div>
+</app-card>
+</div>

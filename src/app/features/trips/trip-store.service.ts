@@ -1,35 +1,36 @@
 import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
-import { Trip, Day, TripMember } from './trip.model';
-import { Activity, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { Trip, Day, TripMember, TripSummary } from './trip.model';
+import { Activity, ActivityEcho, DayActivityEntry, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { resolveEndDayOffset } from '@app/shared/components/activity-card/activity-time.util';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
-import { FlightReservation, FlightStatus, Reservation } from '@core/models/reservation.dto';
+import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dto';
 import { ActivityPersistenceService } from '@app/core/infra/firebase/services/persistence/activity-persistence.service';
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
-import { ReservationPersistenceService } from '@app/core/infra/firebase/services/persistence/reservation-persistence.service';
-import { ReservationOrderPersistenceService } from '@app/core/infra/firebase/services/persistence/reservation-order-persistence.service';
+import { LogisticPersistenceService } from '@app/core/infra/firebase/services/persistence/logistic-persistence.service';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
+import { insertChronologically } from './day-activity-order.util';
 import { Observable, tap } from 'rxjs';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
 type PoolActivityEntities = Record<string, PoolActivity>;
 type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
-type ReservationEntities = Record<string, Reservation>;
+type LogisticEntities = Record<string, Logistic>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
 
-/** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché). */
-function defaultInstanceForm(): Omit<DayActivityInstance, 'id' | 'activityId'> {
+/** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
+function defaultInstanceForm(currency = 'EUR'): Omit<DayActivityInstance, 'id' | 'activityId'> {
   return {
     type: ActivityType.ACTIVITE,
     duration: 0,
-    price: { amount: 0, currency: 'EUR' },
+    price: { amount: 0, currency },
     booking: { status: BookingStatus.NOT_NEEDED },
     notes: '',
   };
@@ -40,8 +41,7 @@ export class TripStore {
   private readonly activityPersistenceService = inject(ActivityPersistenceService);
   private readonly dayActivityInstancePersistenceService = inject(DayActivityInstancePersistenceService);
   private readonly dayActivitiesPersistenceService = inject(DayActivitiesPersistenceService);
-  private readonly reservationPersistenceService = inject(ReservationPersistenceService);
-  private readonly reservationOrderPersistenceService = inject(ReservationOrderPersistenceService);
+  private readonly logisticPersistenceService = inject(LogisticPersistenceService);
   private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
@@ -65,11 +65,30 @@ export class TripStore {
     // Même mécanisme anti-flicker que les activités, pour les réservations
     // (un seul writer débouncé ici, contrairement au couple pool/instances).
     effect(() => {
-      if (!this.reservationPersistenceService.syncing()) {
-        this._pendingReservationIds.set(new Set());
+      if (!this.logisticPersistenceService.syncing()) {
+        this._pendingLogisticIds.set(new Set());
       }
     });
   }
+
+  /**
+   * État agrégé de sauvegarde, tous writers débouncés confondus — consommé
+   * par SaveStatusBarComponent (indicateur discret, voir ROADMAP.md/CLAUDE.md
+   * "UX/Interactions"). 'error' prime sur 'saving' : un échec doit rester
+   * visible même si un autre writer termine son flush au même instant.
+   */
+  readonly saveStatus = computed<'idle' | 'saving' | 'error'>(() => {
+    const writers = [
+      this.activityPersistenceService,
+      this.dayActivityInstancePersistenceService,
+      this.dayActivitiesPersistenceService,
+      this.logisticPersistenceService,
+      this.notesPersistenceService,
+    ];
+    if (writers.some((w) => w.hasError())) return 'error';
+    if (writers.some((w) => w.syncing())) return 'saving';
+    return 'idle';
+  });
 
   // ── État normalisé ────────────────────────────────────────────────────────
 
@@ -98,20 +117,79 @@ export class TripStore {
    */
   readonly _pendingActivityIds = signal<Set<string>>(new Set());
   /** @internal — pool plat de TOUTES les réservations (hôtel/vol/location/autre) connues, quel que soit le trip */
-  readonly _reservations = signal<ReservationEntities>({});
-  /** @internal — TOUTES les réservations d'un trip, sans ordre particulier (voir `allReservationsSorted` côté façade pour l'ordre chronologique) */
-  readonly _tripReservations = signal<Record<string, string[]>>({});
+  readonly _logistics = signal<LogisticEntities>({});
+  /** @internal — TOUTES les réservations d'un trip, sans ordre particulier (voir `allLogisticsSorted` côté façade pour l'ordre chronologique) */
+  readonly _tripLogistics = signal<Record<string, string[]>>({});
   /**
    * @internal — même rôle que `_pendingActivityIds`, pour les réservations
-   * (writer débouncé indépendant, voir `ReservationPersistenceService`).
+   * (writer débouncé indépendant, voir `LogisticPersistenceService`).
    */
-  readonly _pendingReservationIds = signal<Set<string>>(new Set());
+  readonly _pendingLogisticIds = signal<Set<string>>(new Set());
   /** @internal */
   readonly _notesItems = signal<Record<string, Item>>({});
   /** @internal */
   readonly _tripNotesItems = signal<Record<string, string[]>>({});
   /** @internal */
- readonly _tripsResult = signal<Pick<Trip, 'id' | 'title' | 'ownerId'>[] | undefined>(undefined);
+ readonly _tripsResult = signal<TripSummary[] | undefined>(undefined);
+  /**
+   * @internal — devise par défaut par trip, séparée de `_trips` : la modifier
+   * ne doit PAS faire recalculer `activeTrip` (lu par énormément de
+   * composants, y compris le skeleton de chargement) juste pour un
+   * changement d'affichage de devise — voir ROADMAP.md "Devise" et
+   * `getTripCurrency`.
+   */
+  readonly _tripCurrency = signal<Record<string, string>>({});
+  /**
+   * @internal — titre par trip, séparé de `_trips` pour la même raison que
+   * `_tripCurrency` ci-dessus (voir `getTripTitle`) : un renommage ne doit
+   * pas faire recalculer `activeTrip()` (et donc reconstruire `trip.days` —
+   * nouvelle référence de tableau à CHAQUE édition — propagé à tout ce qui en
+   * dépend, ex. `TripDaySwiperComponent`) juste pour un changement de titre
+   * (voir ROADMAP.md, "la modification du nom du trip ne doit pas rafraichir
+   * toute la page").
+   */
+  readonly _tripTitle = signal<Record<string, string>>({});
+  /**
+   * @internal — mêmes id de trip que `_tripTitle`/`_tripCurrency` avec une
+   * écriture Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression
+   * confirmée par retour utilisateur : "toute la page se réactualise" à
+   * chaque édition du titre). Tant qu'un tripId est dans ce set,
+   * `TripFacade.mergeFromRemote` ignore ENTIÈREMENT le titre/la devise de ce
+   * trip (même logique que `_pendingActivityIds`) : sans ça, le snapshot de
+   * CONFIRMATION qui suit systématiquement l'écriture voyait `_trips[tripId]`
+   * (jamais mis à jour par `updateTripTitle`, seul `_tripTitle` l'est,
+   * exprès — voir sa doc) comme "différent" du titre fraîchement confirmé,
+   * donc TOUJOURS "changé" à chaque édition, même quand rien n'a réellement
+   * bougé côté distant — ce qui redonnait une nouvelle référence à
+   * `activeTrip()` (et tout ce qui en dépend) à chaque frappe. Une fois
+   * l'écriture confirmée (retirée de ce set), un snapshot qui diffère
+   * réellement de la valeur effective courante (`_tripTitle[tripId] ??
+   * _trips[tripId].title`) met à jour `_trips` ET efface `_tripTitle[tripId]`
+   * (voir `mergeFromRemote`) : c'est ce qui permet à un renommage fait par un
+   * AUTRE collaborateur de s'appliquer en direct plutôt que de rester masqué
+   * indéfiniment par mon propre renommage passé.
+   */
+  readonly _pendingTripFieldIds = signal<Set<string>>(new Set());
+  /**
+   * @internal — tripIds avec au moins un `addDay`/`removeDay` encore en vol
+   * (ROADMAP.md "Bugs / fixes", régression confirmée par retour utilisateur :
+   * "la modification des dates lance toujours le rechargement"). Modifier
+   * l'intervalle de dates déclenche PLUSIEURS `addDay`/`removeDay` d'un coup
+   * (un par jour ajouté/retiré), chacun une écriture Firestore ponctuelle
+   * SÉPARÉE — sans protection, un snapshot de confirmation intermédiaire
+   * (reflétant SEULEMENT une partie des jours déjà écrits côté serveur, les
+   * autres écritures n'ayant pas encore atterri) semblait "différent" de
+   * l'état local optimiste (qui, lui, a déjà TOUS les jours) : `_days`/
+   * `_tripDays` étaient alors réécrits À CHAQUE écriture individuelle
+   * confirmée, retriggant `activeTrip()` plusieurs fois de suite pour UNE
+   * seule action utilisateur. Compteur (pas un simple Set) car plusieurs
+   * `addDay`/`removeDay` peuvent être en vol simultanément pour le MÊME trip
+   * — tant que le compteur n'est pas retombé à 0, `TripFacade.mergeFromRemote`
+   * ignore ENTIÈREMENT le bloc `_days`/`_tripDays` de ce trip (même principe
+   * que `_pendingTripFieldIds` ci-dessus).
+   */
+  readonly _pendingTripDayIds = signal<Set<string>>(new Set());
+  private readonly pendingTripDayCounts = new Map<string, number>();
   // ── UI state ──────────────────────────────────────────────────────────────
   readonly _activeTripId = signal<string | null>(null);
   readonly activeTripLoading = signal<boolean>(false);
@@ -143,8 +221,8 @@ export class TripStore {
       // skeleton de chargement) réactif à CHAQUE édition d'activité.
       activities: [],
       dayActivityInstances: [],
-      // Même raison : les réservations se consomment via `getAllReservations(tripId)`.
-      reservations: [],
+      // Même raison : les réservations se consomment via `getAllLogistics(tripId)`.
+      logistics: [],
     };
   });
 
@@ -162,6 +240,35 @@ export class TripStore {
 
   // ── Sélecteurs memorisés par entité ───────────────────────────────────────
 
+  /**
+   * Égalité structurelle (JSON), utilisée comme `equal` de plusieurs
+   * `computed()` ci-dessous — CRITIQUE pour l'UI optimiste (ROADMAP.md "Bugs
+   * / fixes", régression confirmée par retour utilisateur : "toute la page
+   * se réactualise à chaque édition de champ"). Ces sélecteurs COMPOSENT un
+   * résultat (`composeInstanceView`/`composePoolView`, objets/tableaux
+   * neufs à chaque exécution) à partir de signaux LARGES et PLATS
+   * (`_dayActivityInstances`/`_poolActivities`/..., tous jours/toutes
+   * activités confondus, voir "état normalisé" dans CLAUDE.md) : éditer
+   * N'IMPORTE QUELLE activité fait changer la RÉFÉRENCE de ces signaux
+   * source, donc réexécute TOUS les `computed()` qui en dépendent — y
+   * compris ceux d'un jour/d'une activité totalement étrangers à l'édition
+   * en cours. Sans `equal`, Angular compare le résultat recalculé par
+   * IDENTITÉ (`Object.is`) : un tableau/objet neuf mais structurellement
+   * IDENTIQUE au précédent est quand même vu comme "changé", donc republié à
+   * tous les composants qui le consomment (chaque `ActivityCardComponent`
+   * affiché, pas seulement celui réellement édité). Avec `equal`, le
+   * `computed()` continue de se réexécuter (coût CPU minime, pas de fuite
+   * mémoire), mais ne notifie ses propres consommateurs QUE si le résultat a
+   * RÉELLEMENT changé — la stabilité de référence se propage donc bien
+   * jusqu'au template, contrairement à une simple préservation de référence
+   * en amont (dans `_dayActivityInstances`/`_poolActivities` eux-mêmes, déjà
+   * faite dans `TripFacade.mergeFromRemote`), qui ne suffit pas dès qu'un
+   * `computed()` intermédiaire retransforme la donnée.
+   */
+  private structurallyEqual<T>(a: T, b: T): boolean {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
   /** Compose la vue `Activity` consommée par l'UI à partir d'une instance jour et de l'activité de pool qu'elle référence. */
   private composeInstanceView(instance: DayActivityInstance, pool: PoolActivity | undefined): Activity {
     return {
@@ -178,6 +285,7 @@ export class TripStore {
       duration: instance.duration,
       startTime: instance.startTime,
       endTime: instance.endTime,
+      endDayOffset: instance.endDayOffset,
       price: instance.price,
       booking: instance.booking,
       notes: instance.notes,
@@ -221,6 +329,57 @@ export class TripStore {
   private readonly poolActivityById = new Map<string, Signal<PoolActivity>>();
   private readonly poolActivityViewById = new Map<string, Signal<Activity>>();
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
+  private readonly tripCurrencyByTrip = new Map<string, Signal<string>>();
+  private readonly tripTitleByTrip = new Map<string, Signal<string>>();
+  private readonly tripDateRangeByTrip = new Map<string, Signal<[Date, Date] | undefined>>();
+
+  /**
+   * Plage de dates du trip (1er jour, dernier jour), dérivée de
+   * `_tripDays`/`_days` — même raison que `getTripTitle`/`getTripCurrency` de
+   * ne PAS passer par `activeTrip()` : `TripHeaderComponent` (formulaire
+   * titre + dates) ne doit se réactualiser QUE si le titre ou les jours de
+   * CE trip changent réellement, jamais pour une raison sans rapport ailleurs
+   * dans le trip (voir ROADMAP.md "Bugs / fixes"). `equal` structurel (voir
+   * `structurallyEqual`) : réordonner `_tripDays` sans changer l'ensemble des
+   * jours (rare, mais possible) ne notifie pas non plus les consommateurs si
+   * les bornes min/max restent identiques.
+   */
+  getTripDateRange(tripId: string): Signal<[Date, Date] | undefined> {
+    if (!this.tripDateRangeByTrip.has(tripId)) {
+      this.tripDateRangeByTrip.set(
+        tripId,
+        computed(() => {
+          const dayKeys = this._tripDays()[tripId] ?? [];
+          if (!dayKeys.length) return undefined;
+          const times = dayKeys.map((key) => new Date(key).getTime());
+          return [new Date(Math.min(...times)), new Date(Math.max(...times))] as [Date, Date];
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
+      );
+    }
+    return this.tripDateRangeByTrip.get(tripId)!;
+  }
+
+  /** Devise par défaut du trip — voir `_tripCurrency` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.defaultCurrency` (valeur d'hydratation) puis 'EUR'. */
+  getTripCurrency(tripId: string): Signal<string> {
+    if (!this.tripCurrencyByTrip.has(tripId)) {
+      this.tripCurrencyByTrip.set(
+        tripId,
+        computed(() => this._tripCurrency()[tripId] ?? this._trips()[tripId]?.defaultCurrency ?? 'EUR'),
+      );
+    }
+    return this.tripCurrencyByTrip.get(tripId)!;
+  }
+
+  /** Titre du trip — voir `_tripTitle` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.title` (valeur d'hydratation) tant qu'aucun renommage n'a eu lieu. */
+  getTripTitle(tripId: string): Signal<string> {
+    if (!this.tripTitleByTrip.has(tripId)) {
+      this.tripTitleByTrip.set(
+        tripId,
+        computed(() => this._tripTitle()[tripId] ?? this._trips()[tripId]?.title ?? ''),
+      );
+    }
+    return this.tripTitleByTrip.get(tripId)!;
+  }
 
   /** Les instances (form) rattachées à un jour, composées avec l'identité de leur activité de pool. */
   getDayActivities(dayId: Date): Signal<Activity[]> {
@@ -236,10 +395,60 @@ export class TripStore {
             .map((id) => instances[id])
             .filter((i): i is DayActivityInstance => !!i)
             .map((i) => this.composeInstanceView(i, pools[i.activityId]));
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.dayActivitiesByDay.get(key)!;
+  }
+
+  private readonly dayActivitiesWithEchoesByDay = new Map<string, Signal<DayActivityEntry[]>>();
+
+  /**
+   * Activités du jour + échos (voir `ActivityEcho`) : préfixe, pour ce jour,
+   * les échos des activités des jours précédents dont l'étalement
+   * (`endDayOffset`, voir `resolveEndDayOffset`) atteint ce jour — purement
+   * dérivé (computed), jamais persisté. Chaque jour d'origine est résolu via
+   * `_tripDays[tripId]` (ordre de l'itinéraire), pas par arithmétique
+   * calendaire. Un écho sur le dernier jour couvert (`offset === i`, celui où
+   * l'activité se termine réellement) porte `endTime` ; les échos des jours
+   * intermédiaires n'en portent pas (voir `ActivityEchoCardComponent`, qui
+   * n'affiche "jusqu'à ..." que si `endTime` est renseigné).
+   */
+  getDayActivitiesWithEchoes(tripId: string, dayId: Date): Signal<DayActivityEntry[]> {
+    const key = `${tripId}:${dayId.toISOString()}`;
+    if (!this.dayActivitiesWithEchoesByDay.has(key)) {
+      this.dayActivitiesWithEchoesByDay.set(
+        key,
+        computed(() => {
+          const dayKeys = this._tripDays()[tripId] ?? [];
+          const idx = dayKeys.indexOf(dayId.toISOString());
+
+          const echoes: ActivityEcho[] = [];
+          for (let i = 1; idx - i >= 0; i++) {
+            const originDayId = new Date(dayKeys[idx - i]);
+            for (const a of this.getDayActivities(originDayId)()) {
+              const offset = resolveEndDayOffset(a.startTime, a.endTime, a.endDayOffset);
+              if (offset < i) continue;
+              echoes.push({
+                kind: 'echo',
+                originInstanceId: a.id,
+                originDayId,
+                activityId: a.activityId,
+                title: a.title,
+                type: a.type,
+                startTime: '00:00',
+                endTime: offset === i ? a.endTime : undefined,
+                photoRefs: a.photoRefs,
+              });
+            }
+          }
+
+          const real: DayActivityEntry[] = this.getDayActivities(dayId)().map((activity) => ({ kind: 'activity' as const, activity }));
+          return [...echoes, ...real];
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
+      );
+    }
+    return this.dayActivitiesWithEchoesByDay.get(key)!;
   }
 
   /** Vue composée d'une instance jour donnée, par son instance id. */
@@ -250,10 +459,31 @@ export class TripStore {
         computed(() => {
           const instance = this._dayActivityInstances()[instanceId];
           return this.composeInstanceView(instance, this._poolActivities()[instance?.activityId]);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.dayActivityViewById.get(instanceId)!;
+  }
+
+  /**
+   * Résout une instance vers son jour + sa vue composée, ou `undefined` si
+   * l'instance n'existe plus (voir `Item.linkedActivityInstanceId`,
+   * ROADMAP.md "UX / Interactions" — pas de nettoyage en cascade des liens
+   * de listes vers une activité/instance supprimée, contrairement aux
+   * instances elles-mêmes lors de la suppression d'un jour, voir `removeDay`).
+   * Scanne `_dayActivityIds` (pas d'index inverse dédié, usage rare — ce
+   * chip uniquement).
+   */
+  getDayActivityWithDay(tripId: string, instanceId: string): Signal<{ dayId: Date; activity: Activity } | undefined> {
+    return computed(() => {
+      const instance = this._dayActivityInstances()[instanceId];
+      if (!instance) return undefined;
+      const dayKeys = this._tripDays()[tripId] ?? [];
+      const dayActivityIds = this._dayActivityIds();
+      const dayKey = dayKeys.find((k) => (dayActivityIds[k] ?? []).includes(instanceId));
+      if (!dayKey) return undefined;
+      return { dayId: new Date(dayKey), activity: this.composeInstanceView(instance, this._poolActivities()[instance.activityId]) };
+    }, { equal: (a, b) => this.structurallyEqual(a, b) });
   }
 
   getPoolActivity(poolId: string): Signal<PoolActivity> {
@@ -276,7 +506,7 @@ export class TripStore {
           if (!pool) return undefined as unknown as Activity;
           const instance = Object.values(this._dayActivityInstances()).find((i) => i.activityId === poolId);
           return this.composePoolView(pool, instance);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.poolActivityViewById.get(poolId)!;
@@ -291,7 +521,7 @@ export class TripStore {
           const ids = this._tripActivities()[tripId] ?? [];
           const map = this._poolActivities();
           return ids.map((id) => map[id]).filter((a): a is PoolActivity => !!a);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.allPoolActivitiesByTrip.get(tripId)!;
@@ -332,73 +562,67 @@ export class TripStore {
 
   // ── Sélecteurs mémorisés — Réservations ───────────────────────────────────
 
-  private readonly reservationById = new Map<string, Signal<Reservation>>();
-  private readonly allReservationsByTrip = new Map<string, Signal<Reservation[]>>();
+  private readonly logisticById = new Map<string, Signal<Logistic>>();
+  private readonly allLogisticsByTrip = new Map<string, Signal<Logistic[]>>();
 
-  getReservation(reservationId: string): Signal<Reservation> {
-    if (!this.reservationById.has(reservationId)) {
-      this.reservationById.set(
-        reservationId,
-        computed(() => this._reservations()[reservationId]),
+  getLogistic(logisticId: string): Signal<Logistic> {
+    if (!this.logisticById.has(logisticId)) {
+      this.logisticById.set(
+        logisticId,
+        computed(() => this._logistics()[logisticId]),
       );
     }
-    return this.reservationById.get(reservationId)!;
+    return this.logisticById.get(logisticId)!;
   }
 
-  /** Toutes les réservations d'un trip, sans tri (voir `TripFacade.allReservationsSorted` pour l'ordre chronologique). */
-  getAllReservations(tripId: string): Signal<Reservation[]> {
-    if (!this.allReservationsByTrip.has(tripId)) {
-      this.allReservationsByTrip.set(
+  /** Toutes les réservations d'un trip, sans tri (voir `TripFacade.allLogisticsSorted` pour l'ordre chronologique). */
+  getAllLogistics(tripId: string): Signal<Logistic[]> {
+    if (!this.allLogisticsByTrip.has(tripId)) {
+      this.allLogisticsByTrip.set(
         tripId,
         computed(() => {
-          const ids = this._tripReservations()[tripId] ?? [];
-          const map = this._reservations();
-          return ids.map((id) => map[id]).filter((r): r is Reservation => !!r);
-        }),
+          const ids = this._tripLogistics()[tripId] ?? [];
+          const map = this._logistics();
+          return ids.map((id) => map[id]).filter((r): r is Logistic => !!r);
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
-    return this.allReservationsByTrip.get(tripId)!;
+    return this.allLogisticsByTrip.get(tripId)!;
   }
 
   // ── Commandes — Réservations ───────────────────────────────────────────────
 
-  createReservation(tripId: string, reservation: Reservation): void {
-    this._reservations.update((r) => ({ ...r, [reservation.id]: reservation }));
-    this._tripReservations.update((t) => ({
+  createLogistic(tripId: string, logistic: Logistic): void {
+    this._logistics.update((r) => ({ ...r, [logistic.id]: logistic }));
+    this._tripLogistics.update((t) => ({
       ...t,
-      [tripId]: [...(t[tripId] ?? []), reservation.id],
+      [tripId]: [...(t[tripId] ?? []), logistic.id],
     }));
-    this.markReservationPending(reservation.id);
-    this.reservationPersistenceService.create(tripId, reservation).catch((err) => {
+    this.markLogisticPending(logistic.id);
+    this.logisticPersistenceService.create(tripId, logistic).catch((err) => {
       console.error('[TripStore] Erreur création réservation Firestore :', err);
     });
   }
 
-  updateReservation(tripId: string, reservation: Reservation): void {
-    this._reservations.update((r) => ({ ...r, [reservation.id]: reservation }));
-    this.markReservationPending(reservation.id);
-    this.reservationPersistenceService.queueUpdate(tripId, reservation);
+  updateLogistic(tripId: string, logistic: Logistic): void {
+    this._logistics.update((r) => ({ ...r, [logistic.id]: logistic }));
+    this.markLogisticPending(logistic.id);
+    this.logisticPersistenceService.queueUpdate(tripId, logistic);
   }
 
-  removeReservation(tripId: string, reservationId: string): void {
-    this._reservations.update((r) => {
+  removeLogistic(tripId: string, logisticId: string): void {
+    this._logistics.update((r) => {
       const copy = { ...r };
-      delete copy[reservationId];
+      delete copy[logisticId];
       return copy;
     });
-    this._tripReservations.update((t) => ({
+    this._tripLogistics.update((t) => ({
       ...t,
-      [tripId]: (t[tripId] ?? []).filter((id) => id !== reservationId),
+      [tripId]: (t[tripId] ?? []).filter((id) => id !== logisticId),
     }));
-    this.reservationPersistenceService.remove(tripId, reservationId).catch((err) => {
+    this.logisticPersistenceService.remove(tripId, logisticId).catch((err) => {
       console.error('[TripStore] Erreur suppression réservation Firestore :', err);
     });
-  }
-
-  /** Réordonnancement manuel (drag-and-drop, voir ReservationsListComponent) : persiste l'ordre à part (voir `ReservationOrderPersistenceService`), un `Record` Firestore ne garantissant aucun ordre de clés. */
-  reorderReservations(tripId: string, ids: string[]): void {
-    this._tripReservations.update((t) => ({ ...t, [tripId]: ids }));
-    this.reservationOrderPersistenceService.queueUpdate(tripId, ids);
   }
 
   /**
@@ -406,30 +630,30 @@ export class TripStore {
    * `FlightStatusRefreshService`) : n'affecte aucun autre champ de la
    * réservation. Écriture DIRECTE (pas `queueUpdate`/le writer débouncé) :
    * le pending marqué ici ne peut donc pas compter sur l'`effect()` du
-   * constructeur (qui surveille `reservationPersistenceService.syncing()`,
+   * constructeur (qui surveille `logisticPersistenceService.syncing()`,
    * lequel ne passe jamais à `true` pour cette écriture) — il est retiré
    * explicitement une fois la promesse résolue, pas par ce mécanisme partagé.
    */
-  updateFlightStatus(tripId: string, reservation: FlightReservation, status: FlightStatus, statusFetchedAt: Date): void {
-    this._reservations.update((r) => ({ ...r, [reservation.id]: { ...reservation, status, statusFetchedAt } }));
-    this.markReservationPending(reservation.id);
-    this.reservationPersistenceService.updateFlightStatus(tripId, reservation.id, status, statusFetchedAt)
+  updateFlightStatus(tripId: string, logistic: FlightLogistic, status: FlightStatus, statusFetchedAt: Date): void {
+    this._logistics.update((r) => ({ ...r, [logistic.id]: { ...logistic, status, statusFetchedAt } }));
+    this.markLogisticPending(logistic.id);
+    this.logisticPersistenceService.updateFlightStatus(tripId, logistic.id, status, statusFetchedAt)
       .catch((err) => {
         console.error('[TripStore] Erreur mise à jour statut vol Firestore :', err);
       })
-      .finally(() => this.unmarkReservationPending(reservation.id));
+      .finally(() => this.unmarkLogisticPending(logistic.id));
   }
 
-  private markReservationPending(id: string): void {
-    this._pendingReservationIds.update((s) => {
+  private markLogisticPending(id: string): void {
+    this._pendingLogisticIds.update((s) => {
       const copy = new Set(s);
       copy.add(id);
       return copy;
     });
   }
 
-  private unmarkReservationPending(id: string): void {
-    this._pendingReservationIds.update((s) => {
+  private unmarkLogisticPending(id: string): void {
+    this._pendingLogisticIds.update((s) => {
       if (!s.has(id)) return s;
       const copy = new Set(s);
       copy.delete(id);
@@ -441,10 +665,17 @@ export class TripStore {
 
   saveTrip(trip: Trip): void {
     // 1. Hydratation optimiste des signals locaux
-    // _tripsResult : ajout dans la liste du dashboard
+    // _tripsResult : ajout dans la liste du dashboard — bornes de jours
+    // calculées ici aussi (voir TripSummary), pas seulement côté data source,
+    // pour que la détection du "voyage actif" (ROADMAP.md "UX / Interactions")
+    // soit correcte dès la création, avant même le premier snapshot Firestore.
+    const dayTimes = trip.days.map((d) => d.id.getTime());
     this._tripsResult.update((list) => [
       ...(list ?? []),
-      { id: trip.id, title: trip.title, ownerId: trip.ownerId },
+      {
+        id: trip.id, title: trip.title, ownerId: trip.ownerId,
+        ...(dayTimes.length ? { earliestDay: new Date(Math.min(...dayTimes)), latestDay: new Date(Math.max(...dayTimes)) } : {}),
+      },
     ]);
 
     // _trips : entité complète
@@ -465,7 +696,7 @@ export class TripStore {
     });
     this._tripDays.update((map) => ({ ...map, [trip.id]: dayKeys }));
     this._tripActivities.update((map) => ({ ...map, [trip.id]: [] }));
-    this._tripReservations.update((map) => ({ ...map, [trip.id]: [] }));
+    this._tripLogistics.update((map) => ({ ...map, [trip.id]: [] }));
 
     // _notesItems + _tripNotesItems : items des notes (vides à la création)
     const itemIds = trip.notes.items.map((note) => note.id);
@@ -484,25 +715,77 @@ export class TripStore {
     });
   }
 
-  updateTripTitle(trip: Trip): void {
-    // 1. Hydratation optimiste locale
-    this._trips.update((trips) => ({
-      ...trips,
-      [trip.id]: trip
-    }));
+  private markTripFieldPending(tripId: string): void {
+    this._pendingTripFieldIds.update((set) => new Set(set).add(tripId));
+  }
+
+  /** Voir la doc de `_pendingTripDayIds` — compteur, plusieurs `addDay`/`removeDay` peuvent être en vol en même temps pour le même trip. */
+  private markTripDayPending(tripId: string): void {
+    const count = (this.pendingTripDayCounts.get(tripId) ?? 0) + 1;
+    this.pendingTripDayCounts.set(tripId, count);
+    if (count === 1) this._pendingTripDayIds.update((set) => new Set(set).add(tripId));
+  }
+
+  /** Retiré même en cas d'échec d'écriture (voir `clearTripFieldPending`) — ne décrémente le compteur partagé qu'une fois, jamais sous 0. */
+  private clearTripDayPending(tripId: string): void {
+    const count = (this.pendingTripDayCounts.get(tripId) ?? 0) - 1;
+    if (count > 0) {
+      this.pendingTripDayCounts.set(tripId, count);
+      return;
+    }
+    this.pendingTripDayCounts.delete(tripId);
+    this._pendingTripDayIds.update((set) => {
+      if (!set.has(tripId)) return set;
+      const copy = new Set(set);
+      copy.delete(tripId);
+      return copy;
+    });
+  }
+
+  /** Retiré même en cas d'échec d'écriture : un échec n'a rien écrit côté Firestore, rien à protéger d'un prochain snapshot (voir la doc de `_pendingTripFieldIds`). */
+  private clearTripFieldPending(tripId: string): void {
+    this._pendingTripFieldIds.update((set) => {
+      if (!set.has(tripId)) return set;
+      const copy = new Set(set);
+      copy.delete(tripId);
+      return copy;
+    });
+  }
+
+  updateTripTitle(tripId: string, title: string): void {
+    // 1. Signal dédié (voir `_tripTitle`), pas `_trips`.
+    this._tripTitle.update((map) => ({ ...map, [tripId]: title }));
+    this.markTripFieldPending(tripId);
 
     this._tripsResult.update((list) =>
       list?.map(item =>
-        item.id === trip.id
-          ? { ...item, title: trip.title }
+        item.id === tripId
+          ? { ...item, title }
           : item
       ) ?? []
     );
 
     // 2. Persistance Firestore
-    this.tripPersistenceService.updateTripTitle(trip).catch((err) => {
-      console.error('[TripStore] Erreur update trip Firestore :', err);
-    });
+    this.tripPersistenceService.updateTripTitle(tripId, title)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
+  }
+
+  updateTripCurrency(tripId: string, currency: string): void {
+    if (!this._trips()[tripId]) return;
+
+    // 1. Signal dédié (voir `_tripCurrency`), pas `_trips`.
+    this._tripCurrency.update((map) => ({ ...map, [tripId]: currency }));
+    this.markTripFieldPending(tripId);
+
+    // 2. Persistance Firestore
+    this.tripPersistenceService.updateTripCurrency(tripId, currency)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update devise trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
   }
 
   removeTrip(tripId: string) {
@@ -558,10 +841,10 @@ export class TripStore {
 
   // ── Commandes — Activities ────────────────────────────────────────────────
 
-  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour). */
+  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour) — positionnée en tête de journée (voir ROADMAP.md "Activités"), pas en fin. */
   createActivity(tripId: string, dayId: Date, poolActivity: PoolActivity, instance: DayActivityInstance): void {
     this.addPoolActivity(tripId, poolActivity);
-    this.addDayActivityInstance(tripId, dayId, instance);
+    this.addDayActivityInstance(tripId, dayId, instance, 'start');
   }
 
   /** Crée une activité dans le pool général du trip uniquement (aucun jour) : elle sera affichée avec des contours en tiret tant qu'elle n'est placée sur aucun jour. */
@@ -581,13 +864,14 @@ export class TripStore {
     this.activityPersistenceService.queueUpdate(tripId, poolActivity);
   }
 
-  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance): void {
+  /** `position: 'start'` uniquement pour la création via le bouton "+" (voir `createActivity`) — le drag depuis le pool (`attachPoolActivityToDay`) continue d'ajouter en fin. */
+  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance, position: 'start' | 'end' = 'end'): void {
     const dayKey = dayId.toISOString();
 
     this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
     this._dayActivityIds.update((d) => ({
       ...d,
-      [dayKey]: [...(d[dayKey] ?? []), instance.id],
+      [dayKey]: position === 'start' ? [instance.id, ...(d[dayKey] ?? [])] : [...(d[dayKey] ?? []), instance.id],
     }));
     this.markActivityPending(instance.id);
 
@@ -595,14 +879,15 @@ export class TripStore {
     this.syncDayActivityIds(tripId, dayId);
   }
 
-  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité de pool elle-même. */
-  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): void {
+  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité de pool elle-même. Retourne l'id de l'instance créée. */
+  attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): string {
     const instance: DayActivityInstance = {
       id: crypto.randomUUID(),
       activityId: poolId,
-      ...defaultInstanceForm(),
+      ...defaultInstanceForm(this.getTripCurrency(tripId)()),
     };
     this.addDayActivityInstance(tripId, targetDayId, instance);
+    return instance.id;
   }
 
   /**
@@ -645,13 +930,16 @@ export class TripStore {
    * `origin === 'pool'` crée un nouveau placement (attach), `origin === 'day'`
    * déplace le placement existant — `activityId` vaut respectivement le poolId
    * ou l'instanceId selon l'origine (voir `ActivityCardComponent.buildDraggedInfo`).
+   * Retourne l'id de l'instance déposée sur le jour cible (le nouvel id créé
+   * pour 'pool', `activityId` lui-même pour 'day') — utilisé par l'overlay
+   * pour demander le scroll vers cette instance une fois le jour actif.
    */
-  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): void {
+  dispatchActivity(tripId: string, activityId: string, origin: 'pool' | 'day', targetDayId: Date): string {
     if (origin === 'pool') {
-      this.attachPoolActivityToDay(tripId, activityId, targetDayId);
-    } else {
-      this.moveDayActivityInstance(tripId, activityId, targetDayId);
+      return this.attachPoolActivityToDay(tripId, activityId, targetDayId);
     }
+    this.moveDayActivityInstance(tripId, activityId, targetDayId);
+    return activityId;
   }
 
   /** Met à jour l'identité/les fichiers d'une activité de pool : se répercute sur toutes ses instances (elles ne stockent que le form). */
@@ -666,6 +954,31 @@ export class TripStore {
     this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
     this.markActivityPending(instance.id);
     this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
+
+    if (instance.startTime) {
+      this.repositionChronologically(tripId, instance.id, instance.startTime);
+    }
+  }
+
+  /**
+   * Replace `instanceId` au bon endroit chronologique sur son jour courant
+   * (voir `insertChronologically`) — ne retrie jamais les activités non
+   * datées entre elles, ne fait rien si l'ordre ne change pas (voir
+   * ROADMAP.md "Activités").
+   */
+  private repositionChronologically(tripId: string, instanceId: string, startTime: string): void {
+    const dayKeys = this._tripDays()[tripId] ?? [];
+    const dayActivityIds = this._dayActivityIds();
+    const dayKey = dayKeys.find((k) => (dayActivityIds[k] ?? []).includes(instanceId));
+    if (!dayKey) return;
+
+    const currentIds = dayActivityIds[dayKey] ?? [];
+    const instances = this._dayActivityInstances();
+    const reordered = insertChronologically(currentIds, instanceId, startTime, (id) => instances[id]?.startTime);
+    if (reordered.every((id, i) => id === currentIds[i])) return;
+
+    this._dayActivityIds.update((d) => ({ ...d, [dayKey]: reordered }));
+    this.syncDayActivityIds(tripId, new Date(dayKey));
   }
 
   private markActivityPending(id: string): void {
@@ -777,6 +1090,11 @@ export class TripStore {
     });
   }
 
+  /** Recherche inverse "quelles listes pointent vers cette instance d'activité" (voir `Item.linkedActivityInstanceId`, ROADMAP.md "UX / Interactions") — rien n'est stocké côté activité, ce sélecteur EST le lien côté activité. */
+  getLinkedNoteItems(tripId: string, instanceId: string): Signal<Item[]> {
+    return computed(() => this.getNotesItems(tripId)().filter((item) => item.linkedActivityInstanceId === instanceId));
+  }
+
   createItem(tripId: string, item: Item): void {
     this._notesItems.update((items) => ({ ...items, [item.id]: item }));
     this._tripNotesItems.update((map) => ({
@@ -864,9 +1182,12 @@ export class TripStore {
       [tripId]: (trips[tripId] ?? []).filter(id => id !== dayKey),
     }));
 
-    this.dayPersistenceService.removeDay(tripId, dayId).catch(err => {
-      console.error('[TripStore] Erreur suppression day Firestore :', err);
-    });
+    this.markTripDayPending(tripId);
+    this.dayPersistenceService.removeDay(tripId, dayId)
+      .catch(err => {
+        console.error('[TripStore] Erreur suppression day Firestore :', err);
+      })
+      .finally(() => this.clearTripDayPending(tripId));
   }
 
   addDay(tripId: string, day: Day): void {
@@ -893,9 +1214,11 @@ export class TripStore {
       }));
 
       // Firestore
+      this.markTripDayPending(tripId);
       this.dayPersistenceService.addDay(tripId, day)
         .catch((err) => {
           console.error('[TripStore] Erreur ajout day Firestore :', err);
-        });
+        })
+        .finally(() => this.clearTripDayPending(tripId));
     }
 }

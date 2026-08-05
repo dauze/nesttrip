@@ -1,4 +1,4 @@
-import { Component, effect, input, output, viewChild, ElementRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, linkedSignal, output, viewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-time-fields',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   templateUrl: './time-fields.component.html',
   styleUrl: './time-fields.component.scss',
@@ -29,22 +30,18 @@ export class TimeFieldsComponent {
   private readonly hourInput = viewChild<ElementRef<HTMLInputElement>>('hourInput');
   private readonly minuteInput = viewChild<ElementRef<HTMLInputElement>>('minuteInput');
 
-  hourText = '00';
-  minuteText = '00';
+  /** Ne se resynchronise depuis `hour()` que si le champ n'a pas le focus, pour ne jamais écraser une frappe en cours. */
+  readonly hourText = linkedSignal<string, string>({
+    source: () => this.hour(),
+    computation: (value, previous) => (this.hourFocused && previous ? previous.value : value),
+  });
+  readonly minuteText = linkedSignal<string, string>({
+    source: () => this.minute(),
+    computation: (value, previous) => (this.minuteFocused && previous ? previous.value : value),
+  });
 
   private hourFocused = false;
   private minuteFocused = false;
-
-  constructor() {
-    effect(() => {
-      const value = this.hour();
-      if (!this.hourFocused) this.hourText = value;
-    });
-    effect(() => {
-      const value = this.minute();
-      if (!this.minuteFocused) this.minuteText = value;
-    });
-  }
 
   /** Focalise et sélectionne le champ des heures — utilisé à l'ouverture du mode clavier. */
   focusHour(): void {
@@ -60,7 +57,7 @@ export class TimeFieldsComponent {
 
   onHourInput(raw: string): void {
     const digits = raw.replace(/\D/g, '').slice(0, 2);
-    this.hourText = digits;
+    this.hourText.set(digits);
     this.hourChange.emit(digits);
 
     if (digits.length === 2) {
@@ -72,8 +69,8 @@ export class TimeFieldsComponent {
 
   onHourBlur(): void {
     this.hourFocused = false;
-    const padded = this.finalize(this.hourText, 23);
-    this.hourText = padded;
+    const padded = this.finalize(this.hourText(), 23);
+    this.hourText.set(padded);
     this.hourChange.emit(padded);
   }
 
@@ -84,14 +81,14 @@ export class TimeFieldsComponent {
 
   onMinuteInput(raw: string): void {
     const digits = raw.replace(/\D/g, '').slice(0, 2);
-    this.minuteText = digits;
+    this.minuteText.set(digits);
     this.minuteChange.emit(digits);
   }
 
   onMinuteBlur(): void {
     this.minuteFocused = false;
-    const padded = this.finalize(this.minuteText, 59);
-    this.minuteText = padded;
+    const padded = this.finalize(this.minuteText(), 59);
+    this.minuteText.set(padded);
     this.minuteChange.emit(padded);
   }
 

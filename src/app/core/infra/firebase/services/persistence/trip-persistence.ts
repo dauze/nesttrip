@@ -12,10 +12,12 @@ export class TripPersistenceService {
     return setDoc(doc(this.db, 'trips', trip.id), tripToFb(trip));
   }
   
-  updateTripTitle(trip: Trip): Promise<void> {
-  return updateDoc(doc(this.db, 'trips', trip.id),{
-      title: trip.title
-    });
+  updateTripTitle(tripId: string, title: string): Promise<void> {
+    return updateDoc(doc(this.db, 'trips', tripId), { title });
+  }
+
+  updateTripCurrency(tripId: string, currency: string): Promise<void> {
+    return updateDoc(doc(this.db, 'trips', tripId), { defaultCurrency: currency });
   }
 
   removeTrip(tripId: string): Promise<void> {

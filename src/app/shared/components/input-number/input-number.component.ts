@@ -1,4 +1,4 @@
-import { Component, ElementRef, forwardRef, input, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, forwardRef, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 /**
@@ -11,6 +11,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 @Component({
   selector: 'app-input-number',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './input-number.component.html',
   styleUrl: './input-number.component.scss',
   providers: [
@@ -27,14 +28,14 @@ export class InputNumberComponent implements ControlValueAccessor {
 
   private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('inputEl');
 
-  protected value: number | null = null;
-  protected disabled = false;
+  protected readonly value = signal<number | null>(null);
+  protected readonly disabled = signal(false);
 
   private onChange?: (value: number | null) => void;
   protected onTouched?: () => void;
 
   writeValue(value: number | null): void {
-    this.value = value;
+    this.value.set(value);
   }
 
   registerOnChange(fn: (value: number | null) => void): void {
@@ -46,12 +47,13 @@ export class InputNumberComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected onInput(raw: string): void {
-    this.value = raw === '' ? null : Number(raw);
-    this.onChange?.(this.value);
+    const parsed = raw === '' ? null : Number(raw);
+    this.value.set(parsed);
+    this.onChange?.(parsed);
   }
 
   /** Focus programmatique (ex. dernière étape du chaînage de saisie guidée). */

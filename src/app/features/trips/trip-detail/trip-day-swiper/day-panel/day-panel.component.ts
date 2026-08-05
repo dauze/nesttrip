@@ -1,5 +1,6 @@
 import {
   afterNextRender,
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   computed,
@@ -13,16 +14,19 @@ import {
   ViewContainerRef
 } from '@angular/core';
 import { TimelineComponent } from './timeline/timeline.component';
-import { DayReservationBannerComponent } from './day-reservation-banner/day-reservation-banner.component';
-import { Activity } from '@app/shared/components/activity-card/activity.model';
+import { DayLogisticBannerComponent } from './day-logistic-banner/day-logistic-banner.component';
+import { MergedDayEntry } from './day-logistic-banner/day-timeline-merge';
+import { LogisticDayOccurrence } from './day-logistic-banner/logistic-day-occurrence';
+import { Activity, ActivityEcho } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
+import { ActivityEchoCardComponent } from '@app/shared/components/activity-card/activity-echo-card/activity-echo-card.component';
+import { DayLogisticEntryComponent, logisticRowId } from './day-logistic-entry/day-logistic-entry.component';
+import { DraggableDayRow } from './draggable-day-row';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
-import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
 import { getScrollContainer } from '@app/shared/utils/scroll-container';
 import { DayScrollSyncService } from './day-scroll-sync.service';
@@ -31,13 +35,17 @@ import { DayActivityCreationService } from './day-activity-creation.service';
 import { NewActivityDraftComponent } from './new-activity-draft/new-activity-draft.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
+import { ViewportService } from '@app/core/services/viewport.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 @Component({
   selector: 'app-day-panel',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    TimelineComponent, ActivityCardComponent, PanelComponent, MessageComponent, SkeletonComponent,
-    NewActivityDraftComponent, DayReservationBannerComponent,
+    TimelineComponent, ActivityCardComponent, ActivityEchoCardComponent, DayLogisticEntryComponent, PanelComponent, MessageComponent,
+    NewActivityDraftComponent, DayLogisticBannerComponent, FabBottomProximityDirective,
   ],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
@@ -50,20 +58,20 @@ export class DayPanelComponent {
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly mapHost = inject(TripDayMapHostService);
-  private readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly dispatchService = inject(ActivityDispatchService);
   private readonly fabTarget = inject(TripCreationTargetService);
   private readonly focusService = inject(DayActivityFocusService);
+  private readonly viewport = inject(ViewportService);
+  private readonly chromeService = inject(TripChromeService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
-
-  readonly collapsed = this.googleMapPanelService.isCollapsed;
 
   readonly tripId = input.required<string>();
   readonly dayId = input.required<Date>();
 
   private readonly activityCards = viewChildren(ActivityCardComponent);
+  private readonly logisticEntries = viewChildren(DayLogisticEntryComponent);
   private readonly stickyMap = viewChild<ElementRef<HTMLElement>>('stickyMap');
   /** Conteneur flex de la liste — voir `lockActivityListHeight` : sa hauteur est figée pendant un drag pour ne pas "sauter" quand la carte draguée quitte le flux. */
   private readonly activityList = viewChild<ElementRef<HTMLElement>>('activityList');
@@ -75,9 +83,10 @@ export class DayPanelComponent {
 
   readonly active = input(false);
 
-  activitiesCollapsed = false;
-
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getDayActivities(this.dayId())());
+
+  /** Activités + échos + occurrences logistiques "frontière" (voir day-timeline-merge.ts) : consommé pour l'AFFICHAGE (timeline mini + liste principale) — le drag/la carte/la création restent sur `activities()`, qui ne contient ni écho ni logistique. */
+  readonly timelineEntries: Signal<MergedDayEntry[]> = computed(() => this.tripFacade.getMergedDayTimeline(this.tripId(), this.dayId()));
 
   readonly dayMapPoints = computed<DayMapPoint[]>(() => {
     return this.activities()
@@ -89,16 +98,31 @@ export class DayPanelComponent {
         latitude: a.latitude!,
         longitude: a.longitude!,
         order: i + 1,
+        photoRef: a.photoRefs?.[0],
       }));
   });
 
   constructor() {
-    // 1. Gestionnaire réactif pour mettre à jour les points de la carte
+    // 1. Gestionnaire réactif pour mettre à jour les points de la carte.
+    // `moveTo` est répété ici (idempotent, early-return si déjà le bon
+    // conteneur) juste avant `points.set`, et TOUT le corps de l'effect est
+    // gardé derrière la disponibilité de `container` — même correctif que
+    // `TripActivitiesComponent` (voir sa doc, ROADMAP.md "UX / Interactions") :
+    // `#stickyMap` n'existe dans le DOM que sous `@if (activities().length > 0)`,
+    // donc au tout premier passage où `dayMapPoints()` devient non-vide,
+    // `stickyMap()` pouvait encore valoir `undefined` — l'ancien effect
+    // séparé plus bas (moveTo/attachMap) n'avait alors pas encore eu la
+    // chance de positionner `mapHost.currentOwner()` à `'day'`, laissant
+    // l'effect interne de `TripDayMapComponent` (qui recentre sur le 1er
+    // point à chaque changement de `points`, sauf si `currentOwner` vaut
+    // déjà le bon contexte) lire une valeur périmée — la vue d'ensemble
+    // initiale du jour n'apparaissait plus au premier montage.
     effect(() => {
       const map = this.activeMapComponent();
-      if (map) {
-        map.points.set(this.dayMapPoints());
-      }
+      const container = this.mapContainerEl();
+      if (!map || !container) return;
+      this.mapHost.moveTo(container, 'day');
+      map.points.set(this.dayMapPoints());
     });
 
     // Visibilité du clone de suivi réactive à l'escalade — pas seulement
@@ -136,11 +160,11 @@ export class DayPanelComponent {
     // recréée) et on la déplace physiquement dans notre conteneur sticky.
     effect(() => {
       if (!this.active()) return;
-      const container = this.stickyMap()?.nativeElement;
+      const container = this.mapContainerEl();
       const map = this.mapHost.activeMap();
       if (!container || !map) return;
 
-      this.mapHost.moveTo(container);
+      this.mapHost.moveTo(container, 'day');
       this.scrollSync.attachMap(map);
     });
 
@@ -150,16 +174,18 @@ export class DayPanelComponent {
       getFreshOffsets: () => this.getFreshCardOffsets(),
       getDayMapPoints: () => this.dayMapPoints(),
       getMapComponent: () => this.activeMapComponent(),
-      getStickyMapEl: () => this.stickyMap()?.nativeElement ?? null,
+      getStickyMapEl: () => this.mapContainerEl(),
+      isSplitLayout: () => this.viewport.isSplitLayout(),
+      getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
+      getLogisticOffsets: () => this.getFreshLogisticOffsets(),
     });
 
     this.reorderService.connect({
-      getCards: () => this.activityCards(),
-      getActivities: () => this.activities(),
+      getCards: () => this.getRows(),
       getTripId: () => this.tripId(),
       getDayId: () => this.dayId(),
       getSlideEl: () => this.getSlideEl(),
-      getFreshOffsets: () => this.getFreshCardOffsets(),
+      getFreshOffsets: () => this.getFreshRowOffsets(),
       getActivityListEl: () => this.activityList()?.nativeElement ?? null,
       notifyRenderFlush: () => this.cdr.detectChanges(),
     });
@@ -177,12 +203,12 @@ export class DayPanelComponent {
     // (préchargement des jours voisins, voir TripDaySwiperComponent.preloadAround)
     // — seul le "+" flottant, qui connaît le jour COURANT, appellera jamais ce trigger.
     effect((onCleanup) => {
-      const unregisterFab = this.fabTarget.registerDay(this.dayId().toISOString(), () => this.creationService.startCreation());
+      const unregisterFab = this.fabTarget.register(this.dayId().toISOString(), () => this.creationService.startCreation());
       onCleanup(unregisterFab);
     });
 
     // Consommation d'une demande de navigation croisée (voir
-    // DayActivityFocusService, émise depuis l'onglet Général au clic sur une
+    // DayActivityFocusService, émise depuis le tab Activités au clic sur une
     // date). `pending()` ET `active()` sont lus AVANT le `if` (pas de
     // court-circuit) : sinon Angular perdrait la dépendance sur `pending`
     // quand `active()` ne change pas d'une exécution à l'autre (cas où on
@@ -204,6 +230,17 @@ export class DayPanelComponent {
     afterNextRender(() => {
       this.scrollSync.startListening();
     });
+
+    // Répercute cette instance sur `TripChromeService.dayPanelActive` (voir sa
+    // doc) : jusqu'à 3 instances de DayPanelComponent peuvent coexister
+    // (préchargement des jours voisins), seule celle avec `active()===true`
+    // doit compter — `onCleanup` remet `false` si CETTE instance est détruite
+    // alors qu'elle était l'active courante (sortie de trip-detail).
+    effect((onCleanup) => {
+      const isActive = this.active();
+      this.chromeService.setDayPanelActive(isActive);
+      onCleanup(() => { if (isActive) this.chromeService.setDayPanelActive(false); });
+    });
   }
 
   /** Conteneur de scroll isolé de ce jour : le `swiper-slide` ancêtre (voir shared/utils/scroll-container.ts). */
@@ -211,9 +248,34 @@ export class DayPanelComponent {
     return getScrollContainer(this.elRef.nativeElement);
   }
 
-  onActivitiesPanelToggled() {
-    // Laisse le temps à l'animation PrimeNG de se terminer avant d'ajuster le scroll
-    setTimeout(() => this.scrollSync.wakeLoop(), 300);
+  /**
+   * Conteneur cible pour la carte partagée en contexte 'day' (ROADMAP.md
+   * "### UI") : en layout scindé (desktop, carte en colonne à gauche), le
+   * `.sticky-map` local à CE day-panel — la notion de "sortir du scroll" n'a
+   * pas de sens là-bas (carte déjà en pleine hauteur de sa propre colonne).
+   * En layout empilé (mobile/tablette), le conteneur `position:fixed` partagé
+   * posé par `TripDaySwiperComponent` hors du swiper (voir
+   * `TripDayMapHostService.dayFixedContainer`) — la carte y est réellement
+   * sortie du scroll, plus seulement "sticky" dedans.
+   */
+  private mapContainerEl(): HTMLElement | null {
+    if (this.viewport.isSplitLayout()) return this.stickyMap()?.nativeElement ?? null;
+    return this.mapHost.dayFixedContainer();
+  }
+
+  /** Clic sur un écho dans la timeline mini (voir TimelineComponent) : navigue vers l'instance réelle sur son jour d'origine. */
+  onEchoSelected(echo: ActivityEcho): void {
+    this.focusService.requestFocus(echo.originDayId.toISOString(), echo.originInstanceId);
+  }
+
+  /** Clic sur une occurrence logistique dans la timeline mini : scroll dans CE jour (pas de navigation vers l'onglet Logistique, contrairement au tap sur la carte elle-même). */
+  onLogisticEntrySelected(occurrence: LogisticDayOccurrence): void {
+    this.scrollSync.focusLogisticEntry(occurrence.logistic.id, occurrence.role);
+  }
+
+  /** Voir `FabBottomProximityDirective`/`TripCreationTargetService.avoidEdge` (ROADMAP.md "UX / Interactions") : évitement de bord du "+" flottant. */
+  onFabNearBottomChange(nearBottom: boolean): void {
+    this.fabTarget.setAvoidEdge(nearBottom);
   }
 
   /**
@@ -234,6 +296,70 @@ export class DayPanelComponent {
       const rect = card.element.getBoundingClientRect();
       return {
         card,
+        top: rect.top - slideTop + slideScrollTop,
+        height: rect.height,
+      };
+    });
+  }
+
+  /** Même calcul que `getFreshCardOffsets`, pour les entrées logistique inline de la liste principale — voir `DayScrollSyncService.focusLogisticEntry`. */
+  getFreshLogisticOffsets(): { logisticId: string; role: string; top: number }[] {
+    const entries = this.logisticEntries();
+    const slideEl = this.getSlideEl();
+    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
+    const slideScrollTop = slideEl?.scrollTop ?? 0;
+
+    return entries.map(entry => {
+      const rect = entry.hostElement.getBoundingClientRect();
+      return {
+        logisticId: entry.logisticId,
+        role: entry.role,
+        top: rect.top - slideTop + slideScrollTop,
+      };
+    });
+  }
+
+  /**
+   * Liste UNIFIÉE (activités + occurrences logistiques "frontière", voir
+   * `DraggableDayRow`) consommée par `DayReorderService` — retour utilisateur
+   * explicite, ROADMAP.md "Activités" : "Activité et transport/logement
+   * doivent être dans la même pile pour le drag and drop". Parcourt
+   * `timelineEntries()` (déjà dans le bon ordre visuel) et résout chaque
+   * entrée vers son composant rendu ; les échos sont ignorés (jamais
+   * draguables). SÉPARÉE de `activityCards()`/`getFreshCardOffsets()` (voir
+   * leur doc) : ceux-ci restent activités-seules, consommés par
+   * `DayScrollSyncService` (suivi caméra, `dayMapPoints` ne connaît que les
+   * vraies activités) et `DayActivityCreationService`.
+   */
+  private getRows(): DraggableDayRow[] {
+    const activityById = new Map(this.activityCards().map(c => [c.activityId(), c as DraggableDayRow]));
+    const logisticById = new Map(this.logisticEntries().map(e => [e.rowId, e as DraggableDayRow]));
+
+    const rows: DraggableDayRow[] = [];
+    for (const entry of this.timelineEntries()) {
+      if (entry.kind === 'activity') {
+        const row = activityById.get(entry.activity.id);
+        if (row) rows.push(row);
+      } else if (entry.kind === 'logistic') {
+        const row = logisticById.get(logisticRowId(entry.occurrence));
+        if (row) rows.push(row);
+      }
+      // 'echo' : jamais draguable, volontairement absent de cette liste.
+    }
+    return rows;
+  }
+
+  /** Même principe que `getFreshCardOffsets`, sur la liste unifiée `getRows()` — dédié à `DayReorderService` uniquement. */
+  private getFreshRowOffsets(): { card: DraggableDayRow; top: number; height: number }[] {
+    const rows = this.getRows();
+    const slideEl = this.getSlideEl();
+    const slideTop = slideEl?.getBoundingClientRect().top ?? 0;
+    const slideScrollTop = slideEl?.scrollTop ?? 0;
+
+    return rows.map(row => {
+      const rect = row.hostElement.getBoundingClientRect();
+      return {
+        card: row,
         top: rect.top - slideTop + slideScrollTop,
         height: rect.height,
       };

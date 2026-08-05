@@ -10,17 +10,11 @@
 }
 
 .dialog-frame {
-  display: flex;
-  flex-direction: column;
   min-height: 0;
   min-width: 0;
 }
 
 .dialog-frame__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
   padding: 0.5rem;
   border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
@@ -33,9 +27,6 @@
 }
 
 .dialog-frame__close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 2rem;
   height: 2rem;
   padding: 0;

@@ -1,6 +1,6 @@
 <button
   type="button"
-  class="app-select__trigger"
+  class="app-select__trigger flex align-items-center justify-content-between gap-2 w-full"
   [class.app-select__trigger--open]="isOpen()"
   [disabled]="isDisabled()"
   (click)="toggle()">
@@ -12,6 +12,9 @@
 
 <ng-template #panel>
   <div class="app-select-panel">
+    @if (viewport.isMobile()) {
+      <div class="app-select-panel__title">{{ panelTitle() }}</div>
+    }
     <div class="app-select-panel__list">
       @for (option of options(); track option.label) {
         <button

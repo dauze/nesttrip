@@ -22,10 +22,18 @@
 // cas.
 .compact-form.compact-form {
   .app-select__trigger,
-  .app-input-text {
-    padding: 0.25rem;
+  .app-input-text,
+  .app-date-picker__trigger {
+    padding: var(--nt-layout-gap-stacked);
     min-width: 0;
     width: auto;
+  }
+
+  // Padding réservé pour l'icône calendrier (voir date-picker.component.scss)
+  // repris après le raccourci `padding` ci-dessus, qui l'écraserait sinon.
+  .app-date-picker__input {
+    padding: var(--nt-layout-gap-stacked);
+    padding-right: 2rem;
   }
 
   .app-select__chevron {
@@ -73,6 +81,25 @@
   --nt-form-field-border-color: transparent;
   --nt-form-field-hover-border-color: transparent;
   --nt-form-field-focus-border-color: transparent;
+}
+
+// Capé pour ne pas s'étirer sur toute la largeur de la colonne/carte (jusqu'à
+// 40rem) quand associée à `flex-1` (voir --nt-content-max-width) : sans ça,
+// tout l'espace vide à droite d'un texte court reste dans la zone
+// cliquable/focusable du textarea, gênant pour cliquer "à côté" sans
+// déclencher l'édition (voir ROADMAP.md). Seuls les titres inline (notes,
+// titre du voyage) l'utilisent aujourd'hui.
+.nt-capped-inline-field {
+  max-width: 24rem;
+}
+
+// Taille au contenu, pas à l'espace flex disponible (ROADMAP.md "Bugs /
+// fixes" — titre d'une liste dans l'onglet Listes) : `field-sizing: content`
+// (support natif moderne, pas de mesure JS) fait suivre au champ exactement
+// la largeur de sa valeur au lieu de s'étirer avec `flex-1`/`w-full` — à
+// combiner avec `.nt-capped-inline-field` pour plafonner un titre très long.
+.nt-content-sized-field {
+  field-sizing: content;
 }
 
 .transparent-inputtext {

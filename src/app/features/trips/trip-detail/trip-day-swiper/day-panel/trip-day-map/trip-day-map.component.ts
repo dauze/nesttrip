@@ -1,13 +1,18 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
+import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { ThemeService } from '@app/core/services/theme.service';
+import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
+import { ViewportService } from '@app/core/services/viewport.service';
 import { environment } from '@environments/environment';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
 
 @Component({
   selector: 'app-trip-day-map',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [GoogleMap, MapAdvancedMarker, PanelComponent,],
   templateUrl: 'trip-day-map.component.html',
   styleUrl: 'trip-day-map.component.scss',
@@ -16,32 +21,86 @@ export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
   readonly selectedActivityId = signal<string | null>(null);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
-  // Suit l'état partagé du service (permet à DayPanelComponent de forcer le
-  // collapse pendant un drag), tout en restant localement modifiable via le
-  // toggle du panneau (voir l'effet ci-dessous qui repropage vers le service).
-  readonly collapsed = linkedSignal(() => this.googleMapPanelService.isCollapsed());
+  private readonly photoService = inject(GooglePhotoService);
+  /** URL résolue (blob) par `photoRef` — voir l'effect de chargement dans le constructeur et `markerContent`. Chaîne vide = échec, traité comme "pas de photo". */
+  private readonly photoUrls = signal<Record<string, string>>({});
+  private readonly requestedPhotoRefs = new Set<string>();
+  /** `protected` : lu depuis le template pour basculer `[toggleable]`/`[bare]` selon le contexte (voir trip-day-map.component.html). */
+  protected readonly mapHost = inject(TripDayMapHostService);
+  // Contexte 'general' (pool, uniquement l'onglet Résumé désormais — voir
+  // ROADMAP.md "UX / Interactions", 2026-08-01) : jamais repliable (plus de
+  // panel/chevron dans ce contexte, voir trip-day-map.component.html), donc
+  // toujours `false`. Contexte 'day' : suit GoogleMapPanelService (y compris
+  // une fois la préférence Firestore de l'utilisateur chargée de façon
+  // asynchrone — un `linkedSignal` se recalcule automatiquement dès que
+  // `isCollapsed()`/`currentOwner()` changent), tout en restant localement
+  // modifiable via le toggle du panneau (repropagé vers le service par
+  // `onCollapsedToggled`, voir sa doc — UNIQUEMENT sur un vrai geste
+  // utilisateur, jamais via un `effect()` générique sur ce signal).
+  readonly collapsed = linkedSignal(() =>
+    this.mapHost.currentOwner() === 'general' ? false : this.googleMapPanelService.isCollapsed(),
+  );
   zoom = input(13);
   readonly focusZoom = input(13);
-  
+  protected readonly viewport = inject(ViewportService);
+  /**
+   * Layout scindé (carte à gauche, voir ROADMAP.md "UI Desktop") : le panel
+   * s'étire pleine hauteur (`PanelComponent.fillHeight`) et la carte suit via
+   * `height="100%"` — `32dvh` sinon (empilé mobile, OU contexte 'general' —
+   * onglet Résumé, voir ROADMAP.md "UX / Interactions", 2026-08-01 — qui
+   * n'est JAMAIS un layout scindé carte/liste quelle que soit la largeur de
+   * viewport, contrairement à l'ancien onglet Activités qu'il remplace).
+   * Sans cette exclusion, `:host { height:100% }` (voir
+   * trip-day-map.component.scss) se propageait contre un ancêtre
+   * (`.trip-summary-map-container`) sans hauteur explicite définie — carte
+   * réduite à 0px de haut, invisible, en layout scindé desktop.
+   */
+  protected readonly useSplitHeight = computed(() => this.viewport.isSplitLayout() && this.mapHost.currentOwner() !== 'general');
+
 
   // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
   public readonly elementRef = inject(ElementRef);
 
   readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly themeService = inject(ThemeService);
 
-  // Écoute directe du mode sombre globale du système/navigateur utilisé par le preset Aura
-  isDarkMode = signal(false);
+  // Suit ThemeService (mode clair/sombre/système choisi dans le menu
+  // réglages, voir sa doc) plutôt qu'un matchMedia local : un seul point de
+  // vérité réactif, qui répond aussi bien à un choix explicite qu'à un
+  // changement système, sans recharger la page.
+  isDarkMode = this.themeService.isDark;
 
   // Les options de la carte deviennent un computed réactif
   mapOptions = computed<google.maps.MapOptions>(() => {
     return {
       // Tu laisses l'ID de carte classique (raster ou vectoriel de base)
-      mapId: environment.googleMapsMapId, 
+      mapId: environment.googleMapsMapId,
       colorScheme: this.isDarkMode() ? 'DARK' : 'LIGHT',
       disableDefaultUI: false,
+      // Seul le zoom est retiré (retour utilisateur : "remets tout sauf le
+      // zoom") — fullscreen/street view/plan-satellite/rotation restent les
+      // contrôles par défaut de Google. `cameraControl` (le bouton unifié
+      // "Map camera controls", API récente) est un réglage DISTINCT de
+      // `zoomControl` (l'ancien +/-) : les deux doivent être à `false`,
+      // sinon le bouton unifié reste affiché même `zoomControl` désactivé
+      // (constaté en vérifiant ce lot) — pinch/scroll restent pleinement
+      // utilisables via `gestureHandling: 'greedy'` juste en dessous.
+      zoomControl: false,
+      cameraControl: false,
       gestureHandling: 'greedy',
+      // Sans ce flag, le zoom fractionnaire est désactivé PAR DÉFAUT sur une
+      // carte raster (activé par défaut seulement en vectoriel) — chaque
+      // `zoom` non entier calculé par `followScroll`/`computeCinematicZoom`
+      // (ex. 11.73) est alors silencieusement ARRONDI à l'entier le plus
+      // proche par l'API AVANT rendu, transformant toute courbe de zoom
+      // continue (parabole comprise) en une poignée de sauts discrets entre
+      // niveaux entiers — exactement les "sauts"/"pas une courbe du tout"
+      // remontés par l'utilisateur, quelle que soit la formule JS utilisée
+      // en amont. Cette app bascule déjà en raster dans cet environnement
+      // (voir le warning console "Falling back to Raster" et
+      // ROADMAP.md "Warnings de dépréciation Google Maps").
+      isFractionalZoomEnabled: true,
     };
   });
 
@@ -56,24 +115,13 @@ export class TripDayMapComponent {
   private lastPointsKey: string | null = null;
 
   constructor() {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    this.isDarkMode.set(mediaQuery.matches);
-
-    const listener = (e: MediaQueryListEvent) => this.isDarkMode.set(e.matches);
-    mediaQuery.addEventListener('change', listener);
-    this.destroyRef.onDestroy(() => mediaQuery.removeEventListener('change', listener));
-
-    effect(() => {
-      this.googleMapPanelService.setCollapse(this.collapsed());
-    });
-
     effect(() => {
       const pts = this.points();
-      if (!pts.length) return;
 
       // Clé stable indépendante de l'ordre : identifie le JOUR affiché,
-      // pas le contenu de chaque activité.
-      const key = pts.map(p => p.activityId).sort().join('|');
+      // pas le contenu de chaque activité. Chaîne vide = jour sans aucune
+      // activité géolocalisée (cas distinct traité ci-dessous).
+      const key = pts.length ? pts.map(p => p.activityId).sort().join('|') : '';
       if (key === this.lastPointsKey) {
         // Même jour, juste une mise à jour de données : on ne touche pas
         // au centre pour ne pas couper le focus/scroll de l'utilisateur.
@@ -81,11 +129,64 @@ export class TripDayMapComponent {
       }
 
       this.lastPointsKey = key;
-      const first = pts[0];
-      this.center.set({ lat: first.latitude, lng: first.longitude });
+
+      if (!pts.length) {
+        // Bascule vers un jour/contexte sans AUCUNE activité géolocalisée
+        // (ROADMAP.md "### UI", "il y a toujours l'ancien contenu de la
+        // map") : sans ce reset, la caméra reste bloquée sur la position du
+        // dernier jour affiché — ni DayScrollSyncService ni
+        // GeneralMapCinematicService n'ont de point vers lequel recentrer
+        // dans ce cas (tous deux nécessitent au moins un point), le early
+        // return ci-dessous (cas non-vide) ne s'applique donc pas ici. Retour
+        // à la même vue par défaut qu'au tout premier chargement, avant
+        // toute donnée (voir la valeur initiale de `center`) — imperative
+        // (`moveCameraTo`), jamais `this.center.set()`, voir le commentaire
+        // juste en dessous.
+        this.moveCameraTo({ lat: 48.8566, lng: 2.3522 }, this.zoom());
+        return;
+      }
+
+      // NE JAMAIS écraser `center` ici, ni pour 'general' ni pour 'day'.
+      // `center`/`zoom` sont liés en réactif au template (`[center]="center()"`),
+      // donc un simple `.set()` ici percute la caméra INDÉPENDAMMENT de tout
+      // appel impératif (`moveCameraTo`/`moveCamera`) : ce recentrage sur le
+      // 1er point, pensé à l'origine comme centre par défaut avant tout
+      // scroll/tour, gagnait la course contre la vue d'ensemble posée par le
+      // système dédié à chaque contexte dès que `points` changeait (montage,
+      // tri, filtre...) — `GeneralMapCinematicService.attachMap` pour
+      // 'general', `DayScrollSyncService.updateMapFromScroll` (via `wakeLoop`)
+      // pour 'day' — d'où la caméra qui semblait "sauter" sur un point (voire
+      // rester bloquée dessus, zoom orphelin d'un tour interrompu) au lieu de
+      // rester/partir de la vue d'ensemble — retour utilisateur, voir
+      // ROADMAP.md. Les DEUX contextes ont désormais leur propre système
+      // établissant la caméra correcte à l'activation ; ce recentrage par
+      // défaut n'est plus nécessaire nulle part.
+    });
+
+    // Miniature photo Google sur les markers (voir ROADMAP.md "UX /
+    // Interactions", remplace le numéro partout) : charge paresseusement
+    // l'URL (blob, via GooglePhotoService — mise en cache par ref au niveau
+    // du service, partagée avec le reste de l'app) de toute ref pas encore
+    // demandée dès qu'elle apparaît dans `points()`, sans jamais re-fetcher.
+    effect(() => {
+      for (const point of this.points()) {
+        const ref = point.photoRef;
+        if (!ref || this.requestedPhotoRefs.has(ref)) continue;
+        this.requestedPhotoRefs.add(ref);
+        this.photoService.getPhotoUrl$(ref, 96).subscribe((url) => {
+          this.photoUrls.update((map) => ({ ...map, [ref]: url }));
+        });
+      }
     });
   }
 
+  /**
+   * Vignette photo Google à la place du numéro (voir ROADMAP.md "UX /
+   * Interactions") : si une photo est résolue pour ce point, un cercle avec
+   * la miniature ; sinon (pas de photo Google, ou pas encore chargée, ou
+   * échec) un `PinElement` classique mais SANS `glyphText` — le numéro
+   * disparaît partout, y compris en fallback.
+   */
   markerContent(point: DayMapPoint): HTMLElement {
     // Protection indispensable au cas où Google Maps n'est pas encore totalement instancié dans le DOM
     if (typeof google === 'undefined' || !google.maps || !google.maps.marker) {
@@ -93,19 +194,108 @@ export class TripDayMapComponent {
     }
 
     const isSelected = point.activityId === this.selectedActivityId();
-    const pin = new google.maps.marker.PinElement({
-      glyphText: String(point.order),
-      glyphColor: '#ffffff',
-      background: isSelected ? '#e53935' : '#3f51b5',
-      borderColor: isSelected ? '#b71c1c' : '#283593',
-      scale: isSelected ? 1.2 : 1,
+    const photoUrl = point.photoRef ? this.photoUrls()[point.photoRef] : undefined;
+
+    if (photoUrl) {
+      return this.buildPhotoMarker(photoUrl, isSelected);
+    }
+
+    // PinElement étend HTMLElement : on le retourne directement plutôt que
+    // sa propriété `.element`, dépréciée par l'API Google Maps. Toujours en
+    // couleur primary (pin "classique", pas de rouge) — le halo/l'accent du
+    // marqueur sélectionné (ROADMAP.md "### UI") passe par un bord PLUS
+    // marqué (couleur active, plus épais) en plus de la taille, pas
+    // seulement l'échelle comme avant. `glyphColor` DOIT être posé
+    // explicitement : sans `glyphText`/`glyph`, PinElement affiche quand même
+    // un petit rond central avec sa couleur par défaut (rouge Google), qui
+    // ressortait comme un point rouge résiduel au milieu du pin même une
+    // fois `background`/`borderColor` recolorés.
+    return new google.maps.marker.PinElement({
+      background: 'var(--nt-primary-color)',
+      borderColor: isSelected ? 'var(--nt-primary-active-color)' : 'var(--nt-primary-hover-color)',
+      glyphColor: 'var(--nt-primary-color)',
+      scale: isSelected ? 1.35 : 1,
     });
-    return pin.element;
+  }
+
+  /**
+   * Marker "vignette" custom : construit hors du renderer Angular
+   * (`document.createElement`, styles posés en inline), donc pas de CSS
+   * scopé du composant qui s'y applique — voir `markerContent`.
+   */
+  private buildPhotoMarker(url: string, isSelected: boolean): HTMLElement {
+    const size = isSelected ? 44 : 36;
+    // Halo couleur primary (pas de rouge, ROADMAP.md "### UI") : un anneau
+    // supplémentaire, diffus, en plus du bord — c'est lui qui donne
+    // l'impression de "halo" plutôt qu'un simple bord plus épais.
+    const borderColor = isSelected ? 'var(--nt-primary-active-color)' : 'var(--nt-primary-color)';
+    const haloShadow = isSelected
+      ? ', 0 0 0 0.25rem color-mix(in srgb, var(--nt-primary-color) 40%, transparent)'
+      : '';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      border: ${isSelected ? 3 : 2}px solid ${borderColor};
+      overflow: hidden;
+      box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)${haloShadow};
+      background: #ffffff;
+    `;
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block;';
+    wrapper.appendChild(img);
+
+    return wrapper;
   }
 
   onMarkerClick(point: DayMapPoint): void {
     this.focusOnPoint(point);
     this.activitySelected.emit(point);
+  }
+
+  /**
+   * Repropage vers `GoogleMapPanelService` UNIQUEMENT sur une vraie bascule
+   * utilisateur (`afterToggle`, émis par `PanelComponent.toggle()` — clic sur
+   * le footer/chevron) — jamais via un `effect()` générique sur `collapsed()`
+   * (ancienne approche, retirée) : `collapsed` (linkedSignal) se recalcule
+   * aussi tout seul quand `googleMapPanelService.isCollapsed()` change pour
+   * une raison EXTERNE (ex. la préférence Firestore de l'utilisateur qui
+   * arrive de façon asynchrone, après le tout premier rendu) — un `effect()`
+   * réagissant à CE changement le repropageait alors vers `setCollapse()`,
+   * marquant `GoogleMapPanelService.seeded` à tort et empêchant ensuite la
+   * vraie préférence de jamais s'appliquer une fois chargée (ROADMAP.md
+   * "Bugs / fixes", "la récupération du flag... ne fonctionne pas" — la
+   * carte repartait toujours dépliée après un rechargement). En ne
+   * repropageant que sur `afterToggle` (un vrai geste), ce risque de course
+   * est éliminé structurellement plutôt que contourné par un flag "premier
+   * passage ignoré".
+   */
+  protected onCollapsedToggled(event: PanelToggleEvent): void {
+    // Contexte 'general' : rien à repropager, `collapsed` y est une
+    // constante (voir sa doc) — jamais modifiable par l'utilisateur, ce
+    // bouton n'existe même pas dans ce contexte (voir le template).
+    if (this.mapHost.currentOwner() === 'general') return;
+    this.googleMapPanelService.setCollapse(event.collapsed);
+  }
+
+  // `(mapClick)` de @angular/google-maps s'appuie sur `advancedMarker.addListener('click', ...)`,
+  // dépréciée par l'API Google Maps au profit de `addEventListener('gmp-click', ...)` — on pose
+  // donc l'écouteur nous-mêmes sur le marker natif exposé par `markerInitialized`.
+  onMarkerInitialized(marker: google.maps.marker.AdvancedMarkerElement, point: DayMapPoint): void {
+    // `gmpClickable` n'est pas activé automatiquement par un simple
+    // `addEventListener('gmp-click', ...)` posé à la main (contrairement au
+    // helper `addListener` historique) : sans ce flag, le marker reste
+    // visuellement affiché mais ne reçoit AUCUN clic réel (les clics
+    // traversent jusqu'à la carte en dessous) — seul un événement `gmp-click`
+    // déclenché programmatiquement passait encore, d'où le clic qui ne
+    // recentrait/scrollait plus rien en usage normal.
+    marker.gmpClickable = true;
+    marker.addEventListener('gmp-click', () => this.onMarkerClick(point));
   }
 
   private focusOnPoint(point: DayMapPoint): void {
@@ -117,22 +307,42 @@ export class TripDayMapComponent {
     });
   }
 
+  /** Lecture directe de l'état caméra courant — utilisé par `GeneralMapCinematicService` pour tweener depuis un état arbitraire (pas forcément un point/l'overview connus à l'avance), voir sa doc. */
+  getCameraState(): { center: google.maps.LatLngLiteral; zoom: number } | null {
+    const map = this.mapRef()?.googleMap;
+    const center = map?.getCenter();
+    const zoom = map?.getZoom();
+    if (!center || zoom === undefined) return null;
+    return { center: center.toJSON(), zoom };
+  }
+
+  /** Déplacement caméra direct (sans easing propre) — le tween éventuel est piloté par l'appelant, voir `GeneralMapCinematicService`. */
+  moveCameraTo(center: google.maps.LatLngLiteral, zoom: number): void {
+    const map = this.mapRef()?.googleMap;
+    if (!map) return;
+    map.moveCamera({ center, zoom });
+  }
+
   followScroll(from: DayMapPoint, to: DayMapPoint, t: number): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
+    const clampedT = Math.min(1, Math.max(0, t));
+
     // Trajectoire non-linéaire : accélère entre 2 activités, ralentit à
     // l'approche de chacune, plutôt qu'une vitesse de caméra constante
     // calquée telle quelle sur la vitesse de scroll (voir ROADMAP.md).
-    const eased = this.easeInOutQuad(Math.min(1, Math.max(0, t)));
+    const eased = this.easeInOutCubic(clampedT);
 
     const targetCenter = {
       lat: this.lerp(from.latitude, to.latitude, eased),
       lng: this.lerp(from.longitude, to.longitude, eased),
     };
 
-    // Calcul du recul
-    const targetZoom = this.computeCinematicZoom(from, to, eased);
+    // Calcul du recul — piloté par `clampedT` (BRUT), pas `eased` : voir la
+    // doc de `zoomEnvelope`, le zoom a volontairement son propre rythme,
+    // découplé de celui du déplacement.
+    const targetZoom = this.computeCinematicZoom(from, to, clampedT);
 
     // MOVE CAMERA : La magie vectorielle opère ici en une seule passe ultra-rapide
     map.moveCamera({
@@ -147,12 +357,27 @@ export class TripDayMapComponent {
    * sur `point` au fur et à mesure du scroll — voir `DayPanelComponent.updateMapFromScroll`
    * pour le calcul de `t` (0 en haut du jour, 1 quand la 1re activité est
    * "atteinte", où `followScroll` prend ensuite le relai).
+   *
+   * Ni easing arbitraire ni tente/parabole retentée à l'aveugle cette fois
+   * (retours utilisateur précédents, voir ROADMAP.md) : demande explicite —
+   * réutiliser EXACTEMENT la 2e moitié de la courbe d'un segment point-à-point
+   * (`followScroll`/`computeCinematicZoom`, confirmée "parfaite"), le point
+   * milieu (t=0.5 du segment, où le dézoom est maximal) faisant office de vue
+   * d'ensemble. Dérivation :
+   * - position (`easeInOutCubic`, 2e branche pour t≥0.5) : en substituant
+   *   t=0.5+0.5s et en ramenant sur [0,1], `2·easeInOutCubic(0.5+0.5s)-1`
+   *   se simplifie en `1-(1-s)³` — un ease-OUT cubique standard.
+   * - zoom (`4t(1-t)`, même substitution) : se simplifie en `1-s²` comme
+   *   fraction de dézoom restant, donc `s²` comme fraction de zoom déjà
+   *   "regagné" — un ease-IN quadratique.
+   * Mêmes formules (sens inverse) dans `GeneralMapCinematicService.returnToOverview`.
    */
   followFromOverview(points: DayMapPoint[], point: DayMapPoint, t: number): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
-    const eased = this.easeInOutQuad(Math.min(1, Math.max(0, t)));
+    const s = Math.min(1, Math.max(0, t));
+    const easedPosition = 1 - Math.pow(1 - s, 3);
 
     const overview = this.computeOverviewCamera(points) ?? {
       center: { lat: point.latitude, lng: point.longitude },
@@ -160,10 +385,10 @@ export class TripDayMapComponent {
     };
 
     const targetCenter = {
-      lat: this.lerp(overview.center.lat, point.latitude, eased),
-      lng: this.lerp(overview.center.lng, point.longitude, eased),
+      lat: this.lerp(overview.center.lat, point.latitude, easedPosition),
+      lng: this.lerp(overview.center.lng, point.longitude, easedPosition),
     };
-    const targetZoom = this.lerp(overview.zoom, this.focusZoom(), eased);
+    const targetZoom = this.lerp(overview.zoom, this.focusZoom(), s * s);
 
     map.moveCamera({ center: targetCenter, zoom: targetZoom });
   }
@@ -174,9 +399,10 @@ export class TripDayMapComponent {
    * (asynchrone, nécessite un cycle "idle" avant de pouvoir relire le zoom) —
    * formule standard de calcul de zoom à partir d'une bbox lat/lng et d'une
    * taille de viewport en pixels, ce qui la rend utilisable en synchrone dans
-   * la boucle de scroll.
+   * la boucle de scroll. Public : réutilisé par `GeneralMapCinematicService`
+   * pour la vue d'ensemble du pool (même calcul, mêmes points).
    */
-  private computeOverviewCamera(points: DayMapPoint[]): { center: google.maps.LatLngLiteral; zoom: number } | null {
+  computeOverviewCamera(points: DayMapPoint[]): { center: google.maps.LatLngLiteral; zoom: number } | null {
     if (!points.length) return null;
     if (points.length === 1) {
       return { center: { lat: points[0].latitude, lng: points[0].longitude }, zoom: this.focusZoom() };
@@ -251,47 +477,77 @@ export class TripDayMapComponent {
     return Math.max(1, Math.min(latZoom, lngZoom, ZOOM_MAX));
   }
 
-  private easeInOutQuad(t: number): number {
-    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  /**
+   * Ease-in-out CUBIC (pas quad) : ralentit plus franchement à l'approche de
+   * chaque point (et au départ) qu'une simple parabole quad — voir
+   * ROADMAP.md "UX / Interactions", retour utilisateur "il faut vraiment que
+   * ce soit ralenti entre l'approche des points".
+   */
+  private easeInOutCubic(t: number): number {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
-  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
+  /**
+   * Amplitude du dézoom cinématique entre 2 points : zoom RÉEL nécessaire
+   * pour que les 2 points tiennent dans le cadre (même formule bbox->zoom
+   * que `computeOverviewCamera`/`getBoundsZoomLevel`, même marge), plafonnée
+   * à `MAX_ZOOM_DROP` — un premier retrait total du plafond (l'ancien
+   * `MAX_ZOOM_DROP = 1.8` était ridiculement insuffisant sur de longues
+   * distances) s'est révélé légèrement trop généreux à son tour sur de très
+   * longues distances (retour utilisateur, Bruxelles -> Paris) : replafonné
+   * à une valeur bien plus généreuse que l'origine, mais pas illimitée.
+   * Public : réutilisé par `GeneralMapCinematicService` pour faire durer un
+   * segment proportionnellement à son amplitude de dézoom (voir sa doc —
+   * une transition à durée FIXE quelle que soit la distance ne laissait pas
+   * aux tuiles Google Maps le temps de charger sur un gros dézoom, d'où un
+   * rendu qui semblait "sauter" au lieu de transitionner).
+   */
+  estimateZoomDrop(from: DayMapPoint, to: DayMapPoint): number {
     const baseZoom = this.focusZoom();
-    
-    // 1. Calcul de la distance réelle
+
     const distanceMeters = this.haversineDistance(
       from.latitude, from.longitude,
       to.latitude, to.longitude
     );
+    if (distanceMeters < 50) return 0;
 
-    // 2. Configuration fine de l'effet selon la distance
-    // Si les points sont à moins de 50 mètres, aucun dézoom nécessaire (valeur 0)
-    if (distanceMeters < 50) {
-      return baseZoom;
-    }
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    const PADDING_PX = 64;
+    const width = Math.max(1, rect.width - PADDING_PX * 2);
+    const height = Math.max(1, rect.height - PADDING_PX * 2);
+    const OVERVIEW_ZOOM_BUFFER = 0.4;
+    const MAX_ZOOM_DROP = 6;
 
-    // Le dézoom croît avec la distance réelle, sur une échelle logarithmique
-    // (comme le zoom Google Maps lui-même : chaque niveau double/divise par 2
-    // l'étendue visible) plutôt qu'un barème par paliers — sans quoi 4km et
-    // 50km finissent avec exactement le même dézoom max, ce qui n'a pas de
-    // sens. REF_DISTANCE_METERS est la distance en dessous de laquelle aucun
-    // dézoom notable n'est nécessaire ; MAX_ZOOM_DROP plafonne l'effet pour
-    // rester un dip cinématique ponctuel, pas un vrai fit-bounds — sur de
-    // très longues distances (ex. 50km) on ne veut pas dézoomer massivement,
-    // juste suggérer le trajet.
-    const REF_DISTANCE_METERS = 300;
-    const ZOOM_DROP_PER_DOUBLING = 0.28;
-    const MAX_ZOOM_DROP = 1.8;
+    const minLat = Math.min(from.latitude, to.latitude);
+    const maxLat = Math.max(from.latitude, to.latitude);
+    const minLng = Math.min(from.longitude, to.longitude);
+    const maxLng = Math.max(from.longitude, to.longitude);
 
-    const zoomDrop = Math.min(
-      MAX_ZOOM_DROP,
-      Math.max(0, ZOOM_DROP_PER_DOUBLING * Math.log2(distanceMeters / REF_DISTANCE_METERS)),
-    );
+    const idealZoom = this.getBoundsZoomLevel(minLat, maxLat, minLng, maxLng, width, height) - OVERVIEW_ZOOM_BUFFER;
+    return Math.min(MAX_ZOOM_DROP, Math.max(0, baseZoom - idealZoom));
+  }
 
-    // 3. Application de la parabole (0 au début, max à t=0.5, 0 à la fin)
-    const arc = 4 * t * (1 - t);
+  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
+    const baseZoom = this.focusZoom();
+    const zoomDrop = this.estimateZoomDrop(from, to);
+    return baseZoom - (zoomDrop * this.zoomEnvelope(t));
+  }
 
-    return baseZoom - (zoomDrop * arc);
+  /**
+   * Enveloppe de dézoom, pilotée par `t` BRUT (pas `eased`, voir
+   * `followScroll`) — parabole `4t(1-t)` : lisse (dérivée nulle SEULEMENT au
+   * sommet, pas de palier plat), pente la plus raide pile au départ/à
+   * l'arrivée. Historique : une tente linéaire (pic anguleux, retirée) puis
+   * une rampe+palier (retour utilisateur : "un dézoom-rezoom en carré", le
+   * palier donnait une impression figée/carrée plutôt qu'une vraie courbe,
+   * voir ROADMAP.md) ont chacune été essayées et retirées. Piloter cette
+   * parabole par `t` BRUT (pas `eased`, contrairement aux tout premiers
+   * essais) reste le vrai correctif : sans ça, la parabole d'une valeur déjà
+   * elle-même "ease-in-out" créait une double distorsion, perçue comme un
+   * dézoom décorrélé du déplacement.
+   */
+  private zoomEnvelope(t: number): number {
+    return 4 * t * (1 - t);
   }
 
   private haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {

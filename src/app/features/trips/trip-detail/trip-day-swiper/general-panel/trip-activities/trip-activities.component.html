@@ -1,3 +1,5 @@
+<div class="trip-activities-body" [appFabBottomProximity]="true" (nearBottomChange)="onFabNearBottomChange($event)">
+  <div class="trip-activities-activities-group">
 <app-card>
 <div class="flex flex-column gap-2">
 
@@ -34,7 +36,7 @@
 
   @if (sortMode() === 'city') {
     @for (group of cityGroups(); track group.city) {
-      <app-panel [toggleable]="true" [collapsed]="false">
+      <app-panel [toggleable]="true" [collapsed]="false" [thickBorder]="true">
         <div panelHeader class="flex align-items-center gap-2">
           <i class="pi pi-map-marker"></i>
           <span>{{ group.city }}</span>
@@ -48,6 +50,7 @@
               [tripId]="tripId()"
               [initCollapsed]="true"
               [assignedPlacementsOverride]="row.mergedIds.length > 1 ? mergedPlacementsFor(row) : undefined"
+              [hideBookingMeta]="true"
             />
           }
         </div>
@@ -55,7 +58,7 @@
     }
   } @else {
     @if (unassignedActivities().length > 0) {
-      <app-panel [toggleable]="true" [collapsed]="false">
+      <app-panel [toggleable]="true" [collapsed]="false" [thickBorder]="true">
         <div panelHeader class="flex align-items-center gap-2">
           <i class="pi pi-exclamation-circle"></i>
           <span>À assigner</span>
@@ -75,13 +78,17 @@
     }
 
     @for (group of chronoDayGroups(); track group.day.id) {
-      <app-panel [toggleable]="true" [collapsed]="false">
+      <!-- Jour sans aucune activité (gardé pour la vue d'ensemble, voir
+           chronoDayGroups) : replié par défaut (retour utilisateur,
+           ROADMAP.md "### UI") — rien à montrer, pas de raison de l'ouvrir
+           d'office comme les jours qui ont du contenu. -->
+      <app-panel [toggleable]="true" [collapsed]="group.activities.length === 0" [thickBorder]="true">
         <div
           panelHeader
           class="trip-activities__day-header flex align-items-center gap-2"
           role="button"
           tabindex="0"
-          (click)="onDayHeaderClick(group.day)"
+          (click)="$event.stopPropagation(); onDayHeaderClick(group.day)"
           (keydown.enter)="onDayHeaderClick(group.day)">
           <i class="pi pi-calendar"></i>
           <span class="trip-activities__day-label">{{ group.day.id | date:'EEEE d MMMM' }}</span>
@@ -102,7 +109,7 @@
     }
   }
 
-  @if (hasNoActivityAtAll() && !creationService.draftActive()) {
+  @if (hasNoActivityAtAll() && sortMode() !== 'chrono' && !creationService.draftActive()) {
     <app-message
       severity="info"
       icon="pi pi-info-circle"
@@ -120,8 +127,11 @@
 
   @if (creationService.draftActive()) {
     <app-new-activity-draft
+      [initialTitle]="searchTerm()"
       (confirmed)="creationService.confirmDraft($event)"
       (cancelled)="creationService.cancelDraft()" />
   }
 </div>
 </app-card>
+  </div>
+</div>

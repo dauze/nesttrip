@@ -1,4 +1,4 @@
-import { Component, forwardRef, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 /**
@@ -11,6 +11,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 @Component({
   selector: 'app-password',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './password.component.html',
   styleUrl: './password.component.scss',
   providers: [
@@ -26,15 +27,15 @@ export class PasswordComponent implements ControlValueAccessor {
   readonly placeholder = input<string>('');
   readonly autocomplete = input<string>('current-password');
 
-  protected value = '';
-  protected disabled = false;
+  protected readonly value = signal('');
+  protected readonly disabled = signal(false);
   protected readonly masked = signal(true);
 
   private onChange?: (value: string) => void;
   protected onTouched?: () => void;
 
   writeValue(value: string): void {
-    this.value = value ?? '';
+    this.value.set(value ?? '');
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -46,12 +47,12 @@ export class PasswordComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabled.set(isDisabled);
   }
 
   protected onInput(raw: string): void {
-    this.value = raw;
-    this.onChange?.(this.value);
+    this.value.set(raw);
+    this.onChange?.(raw);
   }
 
   protected toggleMask(): void {

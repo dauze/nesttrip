@@ -6,7 +6,8 @@
     <app-panel
         [appSelectable]="selectableRef()" #sel="appSelectable"
         appLongPress (longPress)="sel.onLongPress()"
-        [ngClass]="'trip booking ' + bookingMeta().className"
+        class="trip"
+        [style.--activity-type-color]="'var(' + typeColorVar() + ')'"
         [toggleable]="true"
         [instant]="panelInstant()"
         [(collapsed)]="collapsed">
@@ -23,17 +24,19 @@
           [dayId] = "dayId()"
           [assignedPlacements] = "assignedPlacements()"
           [isPlacedNowhere]="isPlacedNowhere()"
+          [hideBookingMeta]="hideBookingMeta()"
           (placeSelected)="onPlaceSelected($event)"
           (titleEdited)="onTitleChanged($event)"
-          (placementClicked)="onPlacementClicked($event)" />
+          (placementClicked)="onPlacementClicked($event)"
+          (timeClicked)="openStartTime()" />
       </div>
 
-      @if (dayId(); as day) {
+      @if (inDayList() && dayId(); as day) {
         <app-activity-form [tripId]="tripId()" [dayId]="day" [activity]="activity" />
         <app-divider class="m-1"/>
       }
 
-      <app-activity-files [tripId]="tripId()" [activity]="activity" />
+      <app-files-field [files]="activity.files" [storagePathPrefix]="filesStoragePathPrefix()" (filesChange)="onFilesChange($event)" />
 
       <!-- L'appel a été simplifié ici -->
       <app-activity-google-info

@@ -32,7 +32,7 @@
         </span>
         <button
           type="button"
-          class="activity-header__pencil flex-shrink-0"
+          class="activity-header__pencil inline-flex align-items-center justify-content-center flex-shrink-0"
           aria-label="Modifier le titre"
           (click)="openTitleEditDialog($event)">
           <i class="pi pi-pencil"></i>
@@ -65,9 +65,14 @@
     <div class="flex align-items-center gap-2 flex-wrap">
       @if (dayId()) {
         @if (activity().startTime ) {
-        <span class="nt-text-muted text-xs flex align-items-center gap-1">
+        <span
+          class="nt-text-muted text-xs flex align-items-center gap-1 cursor-pointer"
+          role="button"
+          tabindex="0"
+          (click)="onTimeClick($event)"
+          (keydown.enter)="onTimeClick($event)">
           <i class="pi pi-clock activity-header__meta-icon"></i>
-          {{ activity().startTime | date:'HH:mm' }}
+          {{ activity().startTime }}
         </span>
         }
         @if (activity().price.amount) {
@@ -93,6 +98,9 @@
             />
           }
         }
+      }
+      @if (hasFiles()) {
+        <i class="pi pi-paperclip activity-header__meta-icon" aria-label="Fichiers associés" title="Fichiers associés"></i>
       }
     </div>
   </div>

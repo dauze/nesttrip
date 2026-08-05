@@ -1,8 +1,9 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild, effect, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, effect, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TimeFieldsComponent } from '@app/shared/components/time-picker-dialog/time-fields/time-fields.component';
 
 interface ClockItem {
@@ -21,6 +22,21 @@ export interface TimePickerClockData {
     mode: TimePickerMode;
     /** Titre du dialog — si vide, retombe sur un libellé générique selon `mode` (voir `TimePickerClockComponent.header`). */
     label: string;
+    /**
+     * Heure de référence (début) servant à détecter un franchissement de
+     * minuit — n'active le sélecteur "J+N" (voir ROADMAP.md "UX /
+     * Interactions") que si fourni ; `undefined`/`null` pour tous les autres
+     * pickers de l'app (début, durée, logistique...), qui ne connaissent pas
+     * cette notion.
+     */
+    dayOffsetReference?: Date | null;
+    /**
+     * Boîte mutable partagée avec `TimePickerDialogComponent` : les flèches
+     * "J+N" écrivent directement dedans (`.value`), lue par l'appelant après
+     * fermeture — évite de changer le type de retour du dialog (toujours
+     * `Date | undefined`, voir `TimePickerDialogComponent.openDialog`).
+     */
+    dayOffset?: { value: number };
 }
 
 /**
@@ -37,18 +53,18 @@ export interface TimePickerClockData {
 @Component({
     selector: 'app-time-picker-clock',
     standalone: true,
-    imports: [CommonModule, ButtonComponent, DialogFrameComponent, TimeFieldsComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, ButtonComponent, DialogFrameComponent, TimeFieldsComponent, MessageComponent],
     templateUrl: './time-picker-clock.component.html',
     styleUrl: './time-picker-clock.component.scss',
 })
-export class TimePickerClockComponent implements AfterViewInit {
+export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
 
     private readonly dialogRef = inject(DialogRef<Date | undefined>);
     private readonly data = inject<TimePickerClockData>(DIALOG_DATA);
     private readonly cdr = inject(ChangeDetectorRef);
 
-    @ViewChild('clockFace')
-    clockFace!: ElementRef<HTMLDivElement>;
+    private readonly clockFaceRef = viewChild<ElementRef<HTMLDivElement>>('clockFace');
 
     private readonly timeFields = viewChild<TimeFieldsComponent>('timeFields');
 
@@ -56,7 +72,7 @@ export class TimePickerClockComponent implements AfterViewInit {
     readonly isDurationMode = this.data.mode === 'duration';
 
     /** Libellé fourni par l'appelant (`TimePickerDialogComponent.label`), sinon générique selon le mode. */
-    readonly header = this.data.label || (this.isDurationMode ? 'Sélectionner une durée' : 'Sélectionner une heure');
+    readonly header = this.data.label || (this.isDurationMode ? 'Durée' : 'Heure');
 
     /** Durée : toujours clavier. Heure : cadran par défaut, bascule possible via le bouton clavier. */
     viewMode = signal<'clock' | 'keyboard'>(this.isDurationMode ? 'keyboard' : 'clock');
@@ -84,10 +100,20 @@ export class TimePickerClockComponent implements AfterViewInit {
 
     selectionMode: 'hour' | 'minute' = 'hour';
 
+    /** Voir la doc de `TimePickerClockData.dayOffsetReference` — colonne "J+N" du header rendue (toujours, dès "J+0") uniquement pour ce picker. */
+    readonly hasDayOffsetFeature = !!this.data.dayOffsetReference;
+    private readonly dayOffsetReference = this.data.dayOffsetReference ?? null;
+    private readonly dayOffsetBox = this.data.dayOffset;
+
+    dayOffset = this.dayOffsetBox?.value ?? 0;
+
+    dayOffsetShaking = signal(false);
+    private shakeTimer?: ReturnType<typeof setTimeout>;
+
     // Taille réelle du cadran (`.clock-face`, 16.5rem en CSS) : lue une seule
     // fois dans `ngAfterViewInit` (pas dans les getters positionnels
     // ci-dessous). Avant ce correctif, `getClockSize()` retombait sur un
-    // FALLBACK figé (280) tant que `@ViewChild` n'était pas encore résolu —
+    // FALLBACK figé (280) tant que `clockFaceRef()` n'était pas encore résolu —
     // donc pour TOUT le premier rendu (chiffres du cadran, aiguille,
     // sélecteur), puisque ces getters sont évalués dans le template avant
     // `ngAfterViewInit`. 280px ne correspond pas à 16.5rem (264px à 16px
@@ -104,9 +130,12 @@ export class TimePickerClockComponent implements AfterViewInit {
             this.tempHour = String(initial.getHours()).padStart(2, '0');
             this.tempMinute = String(initial.getMinutes()).padStart(2, '0');
         } else {
-            const now = new Date();
-            this.tempHour = String(now.getHours()).padStart(2, '0');
-            this.tempMinute = String(now.getMinutes()).padStart(2, '0');
+            // Jamais l'heure actuelle par défaut (voir ROADMAP.md) : une
+            // heure non renseignée doit rester neutre (00:00) tant que
+            // l'utilisateur ne l'a pas vraiment choisie, même principe que
+            // le reste des heures d'activité/réservation.
+            this.tempHour = '00';
+            this.tempMinute = '00';
         }
 
         effect(() => {
@@ -129,14 +158,87 @@ export class TimePickerClockComponent implements AfterViewInit {
         // En mode durée (`isDurationMode`), le cadran n'est jamais monté au
         // démarrage (`viewMode` vaut 'keyboard' d'entrée) : `clockFace` reste
         // alors `undefined`.
-        if (this.clockFace) {
-            this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+        const clockFace = this.clockFaceRef();
+        if (clockFace) {
+            this.clockSize.set(clockFace.nativeElement.clientWidth);
             this.cdr.detectChanges();
         }
     }
 
+    ngOnDestroy(): void {
+        if (this.shakeTimer) clearTimeout(this.shakeTimer);
+    }
+
     close(): void {
         this.dialogRef.close(undefined);
+    }
+
+    /**
+     * Vrai dès que l'heure en cours de sélection (pas encore validée) tombe
+     * avant l'heure de référence (début) — sert UNIQUEMENT au calcul de
+     * `endBeforeStartAtDayZero` ci-dessous, plus à conditionner l'affichage
+     * du sélecteur "J+N" (toujours visible désormais, voir ROADMAP.md "Bugs
+     * / fixes").
+     */
+    private get isEndBeforeStart(): boolean {
+        if (!this.dayOffsetReference) return false;
+        const selectedMinutes = Number(this.tempHour) * 60 + Number(this.tempMinute);
+        const refMinutes = this.dayOffsetReference.getHours() * 60 + this.dayOffsetReference.getMinutes();
+        return selectedMinutes < refMinutes;
+    }
+
+    /**
+     * Le contrôle "heure de fin < heure de début" ne s'applique qu'à J+0
+     * (ROADMAP.md "Bugs / fixes", retour utilisateur) : au-delà (J+1, J+2...),
+     * n'importe quelle heure est valide puisqu'il s'agit explicitement d'un
+     * autre jour. Plus jamais d'auto-bascule silencieuse vers J+1 : une heure
+     * de fin antérieure à J+0 est désormais une erreur bloquante tant que
+     * l'utilisateur n'a pas lui-même avancé le sélecteur.
+     */
+    get endBeforeStartAtDayZero(): boolean {
+        return this.dayOffset === 0 && this.isEndBeforeStart;
+    }
+
+    /**
+     * Valeur affichée/utilisée par le sélecteur "J+N" — toujours visible dès
+     * "J+0" (ROADMAP.md "Bugs / fixes") : reste à 0 tant que l'utilisateur n'a
+     * pas explicitement cliqué la flèche droite, même si l'heure choisie est
+     * antérieure à l'heure de début (voir `endBeforeStartAtDayZero`, qui
+     * bloque alors la validation plutôt que de déduire silencieusement J+1).
+     */
+    get effectiveDayOffset(): number {
+        return this.dayOffset;
+    }
+
+    /** Flèche droite du sélecteur "J+N" — aucune limite haute (voir ROADMAP.md "UX / Interactions"). */
+    incrementDayOffset(): void {
+        this.dayOffset = this.effectiveDayOffset + 1;
+        this.writeDayOffset();
+    }
+
+    /** Flèche gauche : bloquée à 0 (jamais négatif) — un tremblement signale la borne plutôt que de l'ignorer silencieusement. */
+    decrementDayOffset(): void {
+        const current = this.effectiveDayOffset;
+        if (current <= 0) {
+            this.triggerDayOffsetShake();
+            return;
+        }
+        this.dayOffset = current - 1;
+        this.writeDayOffset();
+    }
+
+    /**
+     * Répercute dans la boîte partagée (voir `TimePickerClockData.dayOffset`) —
+     * appelé à chaque tap sur une flèche ET depuis `validate()` (OK).
+     */
+    private writeDayOffset(): void {
+        if (this.dayOffsetBox) this.dayOffsetBox.value = this.effectiveDayOffset;
+    }
+
+    private triggerDayOffsetShake(): void {
+        this.dayOffsetShaking.set(true);
+        if (this.shakeTimer) clearTimeout(this.shakeTimer);
+        this.shakeTimer = setTimeout(() => this.dayOffsetShaking.set(false), 300);
     }
 
     validate(): void {
@@ -150,6 +252,7 @@ export class TimePickerClockComponent implements AfterViewInit {
             return;
         }
         this.hasValidated = true;
+        this.writeDayOffset();
 
         const updatedDate =
             this.data.initialDate
@@ -178,8 +281,9 @@ export class TimePickerClockComponent implements AfterViewInit {
         // `clockSize`) : `clockFace` ne se résout qu'après ce `detectChanges`
         // puisque le cadran vient tout juste de réapparaître dans le DOM.
         this.cdr.detectChanges();
-        if (this.clockFace) {
-            this.clockSize.set(this.clockFace.nativeElement.clientWidth);
+        const clockFace = this.clockFaceRef();
+        if (clockFace) {
+            this.clockSize.set(clockFace.nativeElement.clientWidth);
         }
     }
 
@@ -223,7 +327,10 @@ export class TimePickerClockComponent implements AfterViewInit {
 
             if (!this.isDragging) {
                 this.gestureHandled = true;
-                this.validate();
+                // Pas de validation/fermeture automatique si le résultat est
+                // invalide à J+0 (ROADMAP.md "Bugs / fixes") : l'utilisateur
+                // reste sur le cadran, bouton OK grisé + message sous le cadran.
+                if (!this.endBeforeStartAtDayZero) this.validate();
             }
         }
     }
@@ -288,7 +395,10 @@ export class TimePickerClockComponent implements AfterViewInit {
 
         if (this.selectionMode === 'hour') {
             this.selectionMode = 'minute';
-        } else {
+        } else if (!this.endBeforeStartAtDayZero) {
+            // Pas de validation/fermeture automatique si le résultat est
+            // invalide à J+0 (ROADMAP.md "Bugs / fixes") : l'utilisateur
+            // reste sur le cadran, bouton OK grisé + message sous le cadran.
             this.validate();
         }
     }
@@ -297,12 +407,13 @@ export class TimePickerClockComponent implements AfterViewInit {
         event: PointerEvent
     ): void {
 
-        if (!this.clockFace) {
+        const clockFace = this.clockFaceRef();
+        if (!clockFace) {
             return;
         }
 
         const rect =
-            this.clockFace.nativeElement.getBoundingClientRect();
+            clockFace.nativeElement.getBoundingClientRect();
 
         const centerX =
             rect.left + rect.width / 2;
@@ -516,55 +627,6 @@ export class TimePickerClockComponent implements AfterViewInit {
             top: `${center - radius}px`,
             height: `${radius}px`,
             transform: `rotate(${angle}deg)`
-        };
-    }
-
-    get selectorPosition() {
-
-        let angle: number;
-        let radius: number;
-
-        if (this.selectionMode === 'hour') {
-
-            const hour =
-                Number(this.tempHour);
-
-            angle =
-                (hour % 12) * 30;
-
-            radius =
-                hour >= 1 && hour <= 12
-                    ? this.getInnerRadius()
-                    : this.getOuterRadius();
-
-        } else {
-
-            angle =
-                Number(this.tempMinute) * 6;
-
-            radius = this.getOuterRadius();
-        }
-
-        const center =
-            this.getClockCenter();
-
-        const radians =
-            (angle - 90) *
-            Math.PI / 180;
-
-        const x =
-            center +
-            radius *
-            Math.cos(radians);
-
-        const y =
-            center +
-            radius *
-            Math.sin(radians);
-
-        return {
-            left: `${x}px`,
-            top: `${y}px`
         };
     }
 

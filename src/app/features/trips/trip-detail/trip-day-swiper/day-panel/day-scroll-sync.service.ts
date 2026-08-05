@@ -1,4 +1,4 @@
-import { Injectable, NgZone, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { TripDayMapComponent } from './trip-day-map/trip-day-map.component';
@@ -12,6 +12,38 @@ export interface DayScrollSyncConfig {
   getDayMapPoints: () => DayMapPoint[];
   getMapComponent: () => TripDayMapComponent | null;
   getStickyMapEl: () => HTMLElement | null;
+  /**
+   * Layout scindé (carte à gauche, activités à droite — voir ViewportService)
+   * : la carte n'est plus empilée AU-DESSUS de la liste, donc elle ne
+   * "bloque" plus rien en haut du scroll — voir son usage dans
+   * `updateMapFromScroll`/`focusActivity`/`trySnapActivity`.
+   */
+  isSplitLayout: () => boolean;
+  /**
+   * Optionnel, `true` par défaut si absent (vue jour, comportement historique
+   * inchangé) : quand `false`, `tick()` détecte toujours le scroll (idle
+   * threshold/garde-fou anti-emballement inchangés) mais n'appelle plus
+   * `updateMapFromScroll` — utilisé par le pool d'activités de l'onglet
+   * Général (`TripActivitiesComponent`), dont la caméra est désormais pilotée
+   * par un service dédié (`GeneralMapCinematicService`, voir ROADMAP.md "UX /
+   * Interactions") totalement décorrélé du scroll, plutôt que par ce suivi en
+   * direct.
+   */
+  cameraFollowEnabled?: () => boolean;
+  /**
+   * `TripChromeService.stickyContentTop()` — 0 partout SAUF en `'split-pinned'`
+   * (desktop) où toolbar+header+barre des jours ne se masquent JAMAIS au
+   * scroll (contrairement à `'mobile'`/`'split-hideable'`, où le scroll
+   * programmatique ci-dessous déclenche aussi `TripChromeService.setScrollTop`,
+   * qui les fait glisser hors champ). En layout scindé, ce chrome fixe joue
+   * exactement le même rôle de "bouclier" que la carte empilée en mode
+   * empilé (voir `isSplitLayout` ci-dessus) : sans le compter, une cible
+   * calculée pour arriver en haut du scrollport (y=0) arrive en fait
+   * DERRIÈRE ce chrome toujours visible, jamais réellement dans le champ.
+   */
+  getPinnedChromeOffset: () => number;
+  /** Offsets des entrées logistique fusionnées dans la liste principale (voir `DayLogisticEntryComponent`) — alimente `focusLogisticEntry`, cible mesurée par `logisticId + role` (une réservation peut jouer plusieurs rôles le même jour, ex. Check-in ET Check-out d'un aller-retour). */
+  getLogisticOffsets: () => { logisticId: string; role: string; top: number }[];
 }
 
 /**
@@ -31,8 +63,6 @@ export interface DayScrollSyncConfig {
  */
 @Injectable()
 export class DayScrollSyncService implements OnDestroy {
-  private readonly zone = inject(NgZone);
-
   private config!: DayScrollSyncConfig;
 
   readonly stickyHeight = signal(0);
@@ -41,6 +71,19 @@ export class DayScrollSyncService implements OnDestroy {
   private lastScrollY = -1;
   private idleFrames = 0;
   private readonly IDLE_THRESHOLD = 30;
+  /**
+   * Garde-fou anti-emballement : nombre de frames consécutives depuis le
+   * dernier `wakeLoop()` sans jamais atteindre `IDLE_THRESHOLD` (30 frames de
+   * scroll inchangé, ~0.5s) — signale une boucle de rétroaction (le scroll ou
+   * la géométrie mesurée changent à CHAQUE frame sans jamais se stabiliser),
+   * jamais un usage normal (même un long scroll continu finit par ralentir).
+   * Remonté suite à un signalement utilisateur de gel total (CPU à fond,
+   * onglet/PC bloqué) en cliquant sur un jour en mode mobile — cause exacte
+   * pas encore identifiée : ce garde-fou arrête la boucle et journalise un
+   * diagnostic au lieu de tourner indéfiniment, le temps de la retrouver.
+   */
+  private frameBudget = 0;
+  private static readonly MAX_FRAMES_WITHOUT_IDLE = 600;
   private readonly ACTIVITY_SCROLL_GAP = 8;
   private readonly SNAP_DELAY = 500;
   private readonly SNAP_DISTANCE = 60;
@@ -92,6 +135,27 @@ export class DayScrollSyncService implements OnDestroy {
 
   /** Branche les listeners propres à l'instance partagée de la carte, une fois qu'elle vient d'être déplacée dans ce jour — ex-`wireActiveMap`. */
   attachMap(map: TripDayMapComponent): void {
+    // Nouveau jour = nouveau budget pour le garde-fou anti-emballement (voir tick()).
+    this.frameBudget = 0;
+
+    // Force le PROCHAIN tick() à recalculer la caméra même si le scrollY de
+    // CE jour est déjà à la même valeur qu'avant (typiquement 0) : `tick()`
+    // n'appelle `updateMapFromScroll` que quand `scrollY !== lastScrollY`,
+    // hérité du dernier passage de la boucle rAF sur CETTE instance — jour
+    // préchargé (`TripDaySwiperComponent.preloadAround`) et déjà retombé idle
+    // à `lastScrollY = 0` PENDANT qu'il était encore inactif (`tick()` lit le
+    // scroll indépendamment de `isActive()`, seul `updateMapFromScroll` le
+    // vérifie) — en passant d'un jour à l'autre, ce jour redevient actif avec
+    // un scrollY toujours à 0, donc `tick()` ne voit AUCUN changement et ne
+    // rappelle jamais `updateMapFromScroll` : la carte partagée garde alors la
+    // caméra laissée par le contexte précédent au lieu de se recentrer sur ses
+    // propres points — retour utilisateur ("positionnée en mode random" en
+    // arrivant sur un jour). `-1` (valeur impossible pour un vrai scrollTop)
+    // garantit que la comparaison échoue au prochain tick, quel que soit le
+    // scrollY réel.
+    this.lastScrollY = -1;
+    this.wakeLoop();
+
     // Reconnexion de l'événement de clic sur un marqueur
     this.mapSubscription?.unsubscribe();
     this.mapSubscription = map.activitySelected.subscribe((point) => {
@@ -105,39 +169,79 @@ export class DayScrollSyncService implements OnDestroy {
         window.requestAnimationFrame(() => {
           this.stickyHeight.set(entries[0].contentRect.height);
           this.wakeLoop();
+          // Google Maps ne réagit PAS tout seul à un changement de taille CSS
+          // de son conteneur (contrairement à un simple redimensionnement de
+          // fenêtre) : sans ce trigger, l'instance continue de peindre à son
+          // ANCIENNE taille interne (juste étirée en CSS) — d'où un rendu
+          // flou et des tuiles qui ne se rechargent plus au pan une fois le
+          // conteneur agrandi (ex. layout scindé, voir ROADMAP.md "UI Desktop").
+          // Le trigger ponctuel déjà fait plus bas (juste après le déplacement
+          // DOM) ne couvre que CE moment précis, pas les redimensionnements
+          // ultérieurs du même conteneur (resize fenêtre, rotation...).
+          const nativeMap = map.googleMap;
+          if (nativeMap) google.maps.event.trigger(nativeMap, 'resize');
         });
       }
     });
     this.mapObserver.observe(map.elementRef.nativeElement);
 
-    // Correction d'affichage de l'API Google Maps après transfert du DOM
+    // Correction d'affichage de l'API Google Maps après transfert du DOM :
+    // un simple `setCenter` sur SA PROPRE position actuelle (`getCenter()`,
+    // pas `map.center()` — ce signal Angular n'est plus jamais réécrit par
+    // personne depuis que le recentrage "1er point" par défaut a été retiré,
+    // voir `TripDayMapComponent`, il resterait figé sur sa valeur initiale
+    // et écraserait la vraie caméra déjà posée par `updateMapFromScroll`)
+    // suffit à forcer le repaint, sans repositionner la caméra.
     setTimeout(() => {
       const nativeMap = map.googleMap;
       if (nativeMap) {
         google.maps.event.trigger(nativeMap, 'resize');
-        if (map.center()) {
-          nativeMap.setCenter(map.center());
-        }
+        const center = nativeMap.getCenter();
+        if (center) nativeMap.setCenter(center);
       }
     }, 50);
   }
 
   readonly wakeLoop = (): void => {
     this.idleFrames = 0;
+    // `frameBudget` n'est volontairement PAS remis à 0 ici : si quelque chose
+    // rappelle `wakeLoop()` en continu (ex. un ResizeObserver qui se
+    // redéclenche à cause d'un effet de bord de `updateMapFromScroll`), ça
+    // viderait le compteur avant qu'il n'atteigne jamais le seuil — le
+    // garde-fou doit mesurer la durée totale sans repos, pas juste depuis le
+    // dernier réveil. Remis à 0 uniquement quand la boucle atteint vraiment
+    // l'idle (voir tick()) ou qu'un nouveau jour est branché (attachMap).
     if (!this.rafLoop) {
-      this.zone.runOutsideAngular(() => {
-        this.rafLoop = requestAnimationFrame(this.tick);
-      });
+      this.rafLoop = requestAnimationFrame(this.tick);
     }
   };
 
   private readonly tick = (): void => {
+    this.frameBudget++;
+    if (this.frameBudget > DayScrollSyncService.MAX_FRAMES_WITHOUT_IDLE) {
+      console.error(
+        '[DayScrollSyncService] Boucle rAF arrêtée après', this.frameBudget,
+        'frames sans repos (probable boucle de rétroaction scroll/carte) — diagnostic :',
+        {
+          lastScrollY: this.lastScrollY,
+          currentScrollY: this.config.getSlideEl()?.scrollTop,
+          isActive: this.config.isActive(),
+          offsetsCount: this.config.getFreshOffsets().length,
+          mapPointsCount: this.config.getDayMapPoints().length,
+          isAutoScrolling: this.isAutoScrolling,
+          isTouching: this.isTouching,
+        },
+      );
+      this.rafLoop = undefined;
+      return;
+    }
+
     const currentScrollY = this.config.getSlideEl()?.scrollTop ?? 0;
 
     if (currentScrollY !== this.lastScrollY) {
       this.lastScrollY = currentScrollY;
       this.idleFrames = 0;
-      this.updateMapFromScroll(currentScrollY);
+      if (this.config.cameraFollowEnabled?.() ?? true) this.updateMapFromScroll(currentScrollY);
     } else {
       this.idleFrames++;
     }
@@ -146,6 +250,7 @@ export class DayScrollSyncService implements OnDestroy {
       this.rafLoop = requestAnimationFrame(this.tick);
     } else {
       this.rafLoop = undefined;
+      this.frameBudget = 0;
     }
   };
 
@@ -171,7 +276,16 @@ export class DayScrollSyncService implements OnDestroy {
     // C'est le scroll actuel + l'espace total occupé par tes éléments fixes à l'écran.
     // Si la map et la timeline sont l'une sur l'autre dans le bloc sticky, stickyContainerHeight englobe déjà le tout.
     // Par sécurité, on s'assure de prendre au moins la hauteur de la map.
-    const totalStickyShield = Math.max(stickyContainerHeight, mapHeight);
+    // En layout scindé (carte à gauche, PAS au-dessus de la liste), la carte
+    // elle-même ne bloque plus rien en haut du scroll : un bouclier de sa
+    // hauteur décalerait le déclenchement de toute sa hauteur (~70dvh), très
+    // en retard. Le chrome fixe (toolbar+header+jours), lui, reste un vrai
+    // bouclier en `'split-pinned'` (desktop, jamais masqué au scroll) — voir
+    // `getPinnedChromeOffset` — d'où son ajout ici en plus de la petite marge
+    // ACTIVITY_SCROLL_GAP.
+    const totalStickyShield = this.config.isSplitLayout()
+      ? this.config.getPinnedChromeOffset() + this.ACTIVITY_SCROLL_GAP
+      : Math.max(stickyContainerHeight, mapHeight);
     const triggerLine = scrollY + totalStickyShield;
 
     // 4. Trouver l'index de la carte par rapport à cette ligne
@@ -189,7 +303,13 @@ export class DayScrollSyncService implements OnDestroy {
       if (!firstPoint) return;
 
       const scrollAtFirst = Math.max(0, firstOffset.top - totalStickyShield);
-      const t = scrollAtFirst > 0 ? Math.min(1, Math.max(0, scrollY / scrollAtFirst)) : 1;
+      // Cas dégénéré (bouclier — carte sticky + chrome — aussi haut ou plus
+      // que la position de la 1re carte, ex. jour très court avec peu
+      // d'activités) : `scrollAtFirst <= 0` forçait `t=1` (zoom complet sur
+      // le 1er point) même à `scrollY=0`, empêchant la vue d'ensemble de
+      // jamais s'afficher à l'arrivée sur un tel jour — l'utilisateur n'a
+      // pourtant pas scrollé, `scrollY<=0` doit rester la vue d'ensemble.
+      const t = scrollAtFirst > 0 ? Math.min(1, Math.max(0, scrollY / scrollAtFirst)) : (scrollY <= 0 ? 0 : 1);
 
       this.config.getMapComponent()?.followFromOverview(this.config.getDayMapPoints(), firstPoint, t);
       return;
@@ -259,9 +379,7 @@ export class DayScrollSyncService implements OnDestroy {
   }
 
   focusActivity(activityId: string, onComplete?: () => void): void {
-    const freshOffsets = this.config.getFreshOffsets();
-
-    const target = freshOffsets.find(
+    const target = this.config.getFreshOffsets().find(
       item => item.card.activity()?.id === activityId
     );
 
@@ -270,13 +388,38 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
+    this.scrollToOffsetTop(target.top, onComplete);
+  }
+
+  /** Scroll vers une entrée logistique fusionnée dans la liste (voir `TimelineComponent.logisticSelected`) — miroir de `focusActivity`, cible mesurée par `logisticId + role`. */
+  focusLogisticEntry(logisticId: string, role: string, onComplete?: () => void): void {
+    const target = this.config.getLogisticOffsets().find(
+      (o) => o.logisticId === logisticId && o.role === role
+    );
+
+    if (!target) {
+      onComplete?.();
+      return;
+    }
+
+    this.scrollToOffsetTop(target.top, onComplete);
+  }
+
+  /** Voir `focusActivity`/`focusLogisticEntry` : même calcul de bouclier sticky (carte + chrome fixe), factoriser évite de le dupliquer par cible. */
+  private scrollToOffsetTop(top: number, onComplete?: () => void): void {
     const stickyElement = this.config.getStickyMapEl();
 
-    const stickyHeight = stickyElement
-      ? stickyElement.getBoundingClientRect().height
-      : this.stickyHeight();
+    // En layout scindé, la carte est à côté (pas au-dessus) de la liste :
+    // aucune hauteur à soustraire pour "sortir de dessous" la carte — mais le
+    // chrome fixe (toolbar+header+jours) reste à soustraire en `'split-pinned'`
+    // (voir `getPinnedChromeOffset`), lui ne se masquant jamais au scroll.
+    const stickyHeight = this.config.isSplitLayout()
+      ? this.config.getPinnedChromeOffset()
+      : stickyElement
+        ? stickyElement.getBoundingClientRect().height
+        : this.stickyHeight();
 
-    const targetScroll = target.top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
+    const targetScroll = top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
 
     this.smoothScrollTo(targetScroll, 700, onComplete);
   }
@@ -319,6 +462,14 @@ export class DayScrollSyncService implements OnDestroy {
   }
 
   private readonly onSlideScroll = (): void => {
+    // Réveille aussi la boucle rAF (comme wheel/touch) : un drag de la
+    // scrollbar desktop déclenche un `scroll` natif SANS `wheel`/`touch`, donc
+    // sans cet appel la boucle — si déjà retombée idle — ne redémarre jamais
+    // et le suivi caméra en direct (tick()/updateMapFromScroll) ne voit pas
+    // le scroll. Même correctif déjà en place côté chrome, voir
+    // TripDaySwiperComponent.onSlideScroll.
+    this.wakeLoop();
+
     if (!this.config.isActive() || this.isTouching || this.isAutoScrolling) {
       return;
     }
@@ -355,7 +506,10 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
-    const stickyHeight = stickyElement.getBoundingClientRect().height;
+    // Même raisonnement que focusActivity ci-dessus.
+    const stickyHeight = this.config.isSplitLayout()
+      ? this.config.getPinnedChromeOffset()
+      : stickyElement.getBoundingClientRect().height;
 
     const anchor = slideEl.scrollTop + stickyHeight;
 

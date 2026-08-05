@@ -10,7 +10,7 @@
 /node_modules
 npm-debug.log
 yarn-error.log
-package.lock.json
+package-lock.json
 
 # IDEs and editors
 .idea/
@@ -45,3 +45,9 @@ __screenshots__/
 Thumbs.db
 
 src/environments/environment.ts
+
+# e2e (Playwright)
+.env.e2e
+/test-results
+/playwright-report
+/playwright/.cache

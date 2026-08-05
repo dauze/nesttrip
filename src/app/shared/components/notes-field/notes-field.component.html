@@ -1,0 +1,18 @@
+@if (viewport.isMobile()) {
+  <div class="notes-field-trigger" role="button" tabindex="0" (click)="openDialog()" (keydown.enter)="openDialog()">
+    @if (value()) {
+      <span class="notes-field-trigger__text">{{ value() }}</span>
+    } @else {
+      <span class="notes-field-trigger__placeholder">{{ placeholder() }}</span>
+    }
+  </div>
+} @else {
+  <textarea
+    appTextarea
+    [id]="inputId()"
+    [value]="value()"
+    [placeholder]="placeholder()"
+    rows="2"
+    class="w-full"
+    (input)="onInput($any($event.target).value)"></textarea>
+}

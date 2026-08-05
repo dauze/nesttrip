@@ -1,0 +1,23 @@
+// Icônes maison, pour les cas où PrimeIcons (seule librairie d'icônes du
+// projet, voir CLAUDE.md) n'a pas de glyphe adapté — voir ROADMAP.md "UX /
+// Interactions" (logo du train dans un item logistique). Rendu en `mask`
+// (pas `<img>`/`background-image`) pour respecter `currentColor` exactement
+// comme un glyphe de police PrimeIcons : posée en plus de `pi` sur le même
+// `<i>` (classe factice côté PrimeIcons, sans effet), taille `1em` pour
+// suivre les mêmes classes `text-*`/`font-size` que les autres icônes.
+.nt-icon-train {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  $nt-icon-train-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c-4 0-7 1-7 5v8c0 2 1.5 3.5 3.5 3.5l-1.7 1.8c-.3.3-.1.7.3.7h1.1l2-2.5h3.6l2 2.5h1.1c.4 0 .6-.4.3-.7l-1.7-1.8c2 0 3.5-1.5 3.5-3.5V7c0-4-3-5-7-5zM7 8h4v4H7V8zm6 0h4v4h-4V8zM8.5 16a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z'/%3E%3C/svg%3E");
+  mask-image: $nt-icon-train-svg;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: $nt-icon-train-svg;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}

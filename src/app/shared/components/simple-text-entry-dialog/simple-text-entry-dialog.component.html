@@ -1,0 +1,29 @@
+<div class="simple-text-entry-dialog flex flex-column">
+  <div class="simple-text-entry-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="simple-text-entry-dialog__title">{{ headerTitle }}</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <div class="simple-text-entry-dialog__input-row flex-shrink-0">
+    <input
+      #inputEl
+      type="text"
+      class="simple-text-entry-dialog__input"
+      [value]="inputValue()"
+      [placeholder]="placeholder"
+      (input)="onInput($any($event.target).value)"
+      (keydown.enter)="validate()" />
+  </div>
+
+  <div class="simple-text-entry-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
+    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
+    <app-button label="OK" [disabled]="!optional && inputValue().trim().length === 0" (click)="validate()" />
+  </div>
+</div>

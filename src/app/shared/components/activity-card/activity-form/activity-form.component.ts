@@ -1,29 +1,37 @@
-import { Component, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, effect, viewChild, DestroyRef, OutputEmitterRef } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
 
 import { SelectComponent } from '@app/shared/components/select/select.component';
-import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { TextareaDirective } from '@app/shared/directives/textarea.directive';
+import { NotesFieldComponent } from '@app/shared/components/notes-field/notes-field.component';
+import { PriceFieldComponent } from '@app/shared/components/price-field/price-field.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ChipComponent } from '@app/shared/components/chip/chip.component';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
-import { ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_META, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
+import { ACTIVITY_TYPE_META, ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
+import { resolveEndDayOffset } from '../activity-time.util';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
+import { DialogService } from '@app/shared/services/dialog.service';
+import { ViewportService } from '@app/core/services/viewport.service';
+import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
+import { LinkListDialogComponent, LinkListDialogData, LinkListDialogResult } from './link-list-dialog/link-list-dialog.component';
 
 @Component({
   selector: 'app-activity-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, ReactiveFormsModule, NgClass,
-    SelectComponent, InputNumberComponent, DatePickerComponent, DividerComponent, TextareaDirective,
-    TimePickerDialogComponent
+    SelectComponent, DatePickerComponent, DividerComponent, NotesFieldComponent, PriceFieldComponent,
+    TimePickerDialogComponent, ButtonComponent, ChipComponent,
   ],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.scss',
@@ -32,6 +40,10 @@ export class ActivityFormComponent {
   private readonly tripFacade = inject(TripFacade);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly notesFocusService = inject(NotesFocusService);
+  private readonly viewport = inject(ViewportService);
 
   readonly tripId = input.required<string>();
   /** Toujours renseigné : ce composant n'est monté qu'en contexte jour (jamais dans le pool général). */
@@ -48,14 +60,13 @@ export class ActivityFormComponent {
     notes: this.fb.nonNullable.control<string>(''),
     startTime: this.fb.control<Date | null>(null),
     endTime: this.fb.control<Date | null>(null),
+    /** Voir DayActivityInstance.endDayOffset — 0 = même jour, synchronisé avec startTime/endTime (voir syncEndDayOffsetFromTimes) et modifiable via le sélecteur "J+N" (voir incrementEndDayOffset/decrementEndDayOffset). */
+    endDayOffset: this.fb.nonNullable.control<number>(0),
     booking: this.fb.group({
       status: this.fb.nonNullable.control<BookingStatus>(BookingStatus.NOT_NEEDED),
       deadline: this.fb.control<Date | null>(null),
     }),
-    price: this.fb.group({
-      amount: this.fb.nonNullable.control<number>(0),
-      currency: this.fb.nonNullable.control<string>('EUR'),
-    }),
+    price: this.fb.nonNullable.control<{ amount: number; currency: string }>({ amount: 0, currency: 'EUR' }),
   });
 
   // Refs template pour le chaînage de saisie guidée mobile (Type → Résa → Début → Fin → Prix), voir startGuidedEntry().
@@ -63,7 +74,7 @@ export class ActivityFormComponent {
   private readonly bookingSelect = viewChild.required<SelectComponent<BookingStatus>>('bookingSelect');
   private readonly startTimePickerRef = viewChild.required<TimePickerDialogComponent>('startTimePicker');
   private readonly endTimePickerRef = viewChild.required<TimePickerDialogComponent>('endTimePicker');
-  private readonly priceInput = viewChild.required<InputNumberComponent>('priceInput');
+  private readonly priceField = viewChild.required<PriceFieldComponent>('priceField');
 
   private readonly formChanges = toSignal(this.form.valueChanges, { initialValue: null });
 
@@ -73,11 +84,10 @@ export class ActivityFormComponent {
     return this.form.getRawValue();
   });
 
-  readonly bookingMeta = computed(() => {
-    const status = this.formValue().booking?.status ?? BookingStatus.NOT_NEEDED;
-    return BOOKING_STATUS_META[status];
-  });
-  
+  /** Couleur d'identité du type (voir ACTIVITY_TYPE_META.colorVar) — pilote le champ "Type" (remplace l'ancienne couleur par statut sur le champ "Etat résa", voir ROADMAP.md "UX / Interactions"). */
+  readonly typeColorVar = computed(() => ACTIVITY_TYPE_META[this.formValue().type].colorVar);
+
+
   // Contrôle Date dédié pour app-time-picker-dialog (durée), converti en minutes vers form.controls.duration.
   readonly durationTimeControl = this.fb.control<Date | null>(null);
 
@@ -125,11 +135,15 @@ export class ActivityFormComponent {
     if (this.hasUnflushedLocalEdit && a.id === this.lastSyncedActivityId) return;
     this.lastSyncedActivityId = a.id;
 
-    // On force la date de dayId sur le startTime et endTime reçus si présents
+    // "HH:mm" stocké → Date sur le jour courant (le form garde un contrôle Date, voir TimePickerDialogComponent)
     const patchedActivity = {
       ...a,
-      startTime: this.applyDayIdDate(a.startTime ? new Date(a.startTime) : null),
-      endTime: this.applyDayIdDate(a.endTime ? new Date(a.endTime) : null),
+      startTime: this.timeStringToDate(a.startTime),
+      endTime: this.timeStringToDate(a.endTime),
+      // Rétro-compatible (voir resolveEndDayOffset) : une instance jamais
+      // retouchée depuis l'introduction du champ retombe sur l'ancienne règle
+      // implicite (fin < début ⇒ +1 jour).
+      endDayOffset: resolveEndDayOffset(a.startTime, a.endTime, a.endDayOffset),
     };
 
     // CRUCIAL : { emitEvent: false } évite la boucle infinie avec le debounceTime plus bas
@@ -150,8 +164,8 @@ export class ActivityFormComponent {
       id: activity.id,
       activityId: activity.activityId,
       ...value,
-      startTime: value.startTime ?? undefined,
-      endTime: value.endTime ?? undefined,
+      startTime: this.dateToTimeString(value.startTime),
+      endTime: this.dateToTimeString(value.endTime),
       booking: { ...activity.booking, ...value.booking, deadline: value.booking?.deadline ?? undefined },
       price: { ...activity.price, ...value.price },
     });
@@ -173,6 +187,18 @@ export class ActivityFormComponent {
       this.isProgrammaticUpdate = false;
 
       this.recalculateFrom('duration');
+
+      // Contrairement à une édition directe de startTime/endTime (dont le
+      // TOUT PREMIER setValue, lui, émet normalement puis remonte au parent
+      // une fois les recalculs internes terminés), chaque mutation ci-dessus
+      // (duration, startTime/endTime recalculés) est faite avec
+      // emitEvent:false dès le départ pour ne pas boucler avec les handlers
+      // de setupTimeDurationSync — donc rien n'émet jamais sur
+      // `form.valueChanges` ici. Sans ce déclenchement explicite, éditer
+      // UNIQUEMENT la durée (sans toucher Début/Fin) n'était jamais
+      // sauvegardé côté store (bug remonté par l'utilisateur, ROADMAP.md
+      // "Activités").
+      this.form.updateValueAndValidity();
     });
 
     this.form.controls.startTime.valueChanges.pipe(takeUntilDestroyed()).subscribe((start) => {
@@ -213,6 +239,7 @@ export class ActivityFormComponent {
       if (start) this.setEndFromStartAndDuration(start, duration);
       else if (end) this.setStartFromEndAndDuration(end, duration);
       this.syncDurationTimeControlFromForm();
+      this.syncEndDayOffsetFromTimes();
       this.isProgrammaticUpdate = false;
       return;
     }
@@ -222,6 +249,7 @@ export class ActivityFormComponent {
       const shouldKeepEnd = !!end && this.lastEdited.endTime >= this.lastEdited.duration;
       if (shouldKeepEnd) this.setDurationFromStartAndEnd(start, end);
       else this.setEndFromStartAndDuration(start, duration);
+      this.syncEndDayOffsetFromTimes();
       this.isProgrammaticUpdate = false;
       return;
     }
@@ -231,7 +259,47 @@ export class ActivityFormComponent {
     const shouldKeepStart = !!start && this.lastEdited.startTime >= this.lastEdited.duration;
     if (shouldKeepStart) this.setDurationFromStartAndEnd(start, end);
     else this.setStartFromEndAndDuration(end, duration);
+    this.syncEndDayOffsetFromTimes();
     this.isProgrammaticUpdate = false;
+  }
+
+  /**
+   * Remet `endDayOffset` en cohérence avec les heures actuelles : repasse à 0
+   * dès que la fin n'est plus avant le début (l'utilisateur a corrigé
+   * l'heure), ou le fait démarrer à 1 dès qu'une fin avant le début apparaît
+   * sans qu'un offset ne soit déjà positionné. Ne touche jamais un offset
+   * `>= 1` déjà en place (positionné manuellement via les flèches "J+N",
+   * voir incrementEndDayOffset/decrementEndDayOffset) tant que la plage
+   * horaire continue de franchir minuit.
+   */
+  private syncEndDayOffsetFromTimes(): void {
+    const start = this.form.controls.startTime.value;
+    const end = this.form.controls.endTime.value;
+    if (!start || !end) return;
+
+    const current = this.form.controls.endDayOffset.value;
+    const crossesMidnight = this.toMinutes(end) < this.toMinutes(start);
+
+    if (!crossesMidnight) {
+      if (current !== 0) this.form.controls.endDayOffset.setValue(0, { emitEvent: false });
+      return;
+    }
+    if (current < 1) this.form.controls.endDayOffset.setValue(1, { emitEvent: false });
+  }
+
+  /**
+   * Voir le sélecteur "J+N" du dialog `endTimePicker` (`TimePickerClockComponent`,
+   * ROADMAP.md "UX / Interactions") : les flèches ← → vivent désormais DANS
+   * ce dialog (mobile), pas dans ce form — ici, on ne fait que répercuter la
+   * valeur choisie une fois le dialog fermé sur OK.
+   */
+  protected onEndDayOffsetChange(newOffset: number): void {
+    this.form.controls.endDayOffset.setValue(newOffset);
+  }
+
+  /** Voir openStartTimeEditor — même contrat pour la fin (clic sur l'indicateur "J+N" en lecture seule du form, voir le template). No-op sur desktop (champs déjà inline, pas de dialog à ouvrir). */
+  protected openEndTimeEditor(): void {
+    if (this.viewport.isMobile()) this.endTimePickerRef().openDialog();
   }
 
   private setDurationFromStartAndEnd(start: Date, end: Date): void {
@@ -283,6 +351,21 @@ export class ActivityFormComponent {
     return base;
   }
 
+  /** "HH:mm" stocké → Date sur le jour courant (voir applyDayIdDate, même rôle). */
+  private timeStringToDate(hhmm: string | undefined): Date | null {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    const d = new Date(this.dayId());
+    d.setHours(h, m, 0, 0);
+    return d;
+  }
+
+  /** Date du form → "HH:mm" pour le stockage (voir timeStringToDate, sens inverse). */
+  private dateToTimeString(d: Date | null | undefined): string | undefined {
+    if (!d) return undefined;
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
   private initDurationFromForm(): void {
     const start = this.form.controls.startTime.value;
     const end = this.form.controls.endTime.value;
@@ -295,7 +378,22 @@ export class ActivityFormComponent {
       this.isProgrammaticUpdate = false;
       return;
     }
-    this.syncDurationTimeControlFromForm();
+    // Durée nulle ET pas de début/fin pour la calculer : reste non renseignée
+    // (voir ROADMAP.md "UX / Interactions") — `syncDurationTimeControlFromForm`
+    // construirait ici un `Date` à 00:00 bien réel, affiché "00:00" au lieu
+    // du placeholder "--:--" de `TimePickerDialogComponent`.
+    this.durationTimeControl.setValue(null, { emitEvent: false });
+  }
+
+  /**
+   * Depuis le clic sur l'heure du header (voir ActivityHeaderComponent/
+   * ActivityCardComponent, ROADMAP.md "UX / Interactions") : ouvre le
+   * tiroir mobile dédié. Sur desktop, le champ Début est déjà visible en
+   * ligne une fois la carte dépliée (voir ActivityCardComponent.openStartTime) —
+   * rien de plus à faire, même garde que `LogisticDetailsComponent.guidedTime`.
+   */
+  openStartTimeEditor(): void {
+    if (this.viewport.isMobile()) this.startTimePickerRef().openDialog();
   }
 
   /**
@@ -322,7 +420,7 @@ export class ActivityFormComponent {
           this.endTimePickerRef().openDialog();
           this.subscribeOnce(this.endTimePickerRef().closed, (end) => {
             if (!end) return;
-            this.priceInput().focus();
+            this.priceField().openDialog();
           });
         });
       });
@@ -336,5 +434,34 @@ export class ActivityFormComponent {
       callback(value);
     });
     this.destroyRef.onDestroy(() => subscription.unsubscribe());
+  }
+
+  // ─── Liste(s) liée(s) (voir ROADMAP.md "UX / Interactions") ────────────────
+  // Rien n'est stocké côté activité : recherche inverse des `Item` (Listes)
+  // dont `linkedActivityInstanceId` pointe vers CETTE instance (voir
+  // TripStore.getLinkedNoteItems) — plusieurs listes peuvent en théorie
+  // pointer vers la même activité, d'où un chip par item plutôt qu'un seul.
+
+  readonly linkedListItems = computed(() => this.tripFacade.getLinkedNoteItems(this.tripId(), this.activity().id)());
+
+  /** Tiroir "Lier une liste" — voir LinkListDialogComponent. */
+  openLinkListDialog(): void {
+    const dialogRef = this.dialogService.open<LinkListDialogResult | undefined, LinkListDialogData>(
+      LinkListDialogComponent,
+      { data: { tripId: this.tripId() }, panelClass: 'app-wide-dialog-panel', viewContainerRef: this.viewContainerRef },
+    );
+    dialogRef.closed.subscribe((result) => {
+      if (!result) return;
+      this.tripFacade.updateItem(this.tripId(), result.itemId, { linkedActivityInstanceId: this.activity().id });
+    });
+  }
+
+  unlinkList(itemId: string): void {
+    this.tripFacade.updateItem(this.tripId(), itemId, { linkedActivityInstanceId: undefined });
+  }
+
+  /** Clic sur un chip "liste liée" : navigue vers le tab Listes et scrolle jusqu'à cet item (voir NotesFocusService/NotesComponent). */
+  navigateToLinkedList(itemId: string): void {
+    this.notesFocusService.requestFocus(itemId);
   }
 }
