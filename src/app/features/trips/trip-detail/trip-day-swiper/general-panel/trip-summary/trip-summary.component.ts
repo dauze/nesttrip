@@ -21,10 +21,8 @@ import { computeExpenseBreakdown, ExpenseItem } from './trip-summary.util';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { LOGISTIC_TYPE_META } from '../logistics/logistic.constants';
 
-/** Top 4 plus grosses dépenses affichées dans les anneaux, le 5e anneau (s'il y a un reliquat) étant réservé à "Autre" — voir `TripSummaryComponent.expenseBreakdown`. */
-const MAX_EXPENSE_ENTRIES = 4;
-/** Icône de l'anneau "Autre" (agrégat) — un glyphe "plus/reste" plutôt qu'un des icônes de type déjà utilisés par un vrai élément, pour ne pas laisser croire qu'il s'agit d'un type à part entière. */
-const OTHER_EXPENSE_ICON = 'pi pi-ellipsis-h';
+/** Top 5 types de dépense max affichés dans les anneaux (au-delà, les types restants sont simplement ignorés, pas de segment "autres") — voir `TripSummaryComponent.expenseBreakdown`. */
+const MAX_EXPENSE_ENTRIES = 5;
 
 /**
  * Onglet "Résumé" (voir ROADMAP.md "UX / Interactions", 2026-08-01) : header
@@ -35,9 +33,9 @@ const OTHER_EXPENSE_ICON = 'pi pi-ellipsis-h';
  * `TripDayMapHostService`/`GeneralMapCinematicService`, voir leur doc — plus
  * jamais repliable dans ce contexte, `app-panel` en mode `bare`) + tuile
  * Dépenses (devise + somme des prix de toutes les activités/réservations du
- * trip, TOUTES devises confondues sans conversion — décision actée — + les 4
- * plus grosses dépenses individuelles en anneaux, ROADMAP.md "UX /
- * Interactions" 2026-08-05) + tuile Fichiers (fichiers joints aux
+ * trip, TOUTES devises confondues sans conversion — décision actée — + les 5
+ * types de dépense les plus élevés en anneaux, ROADMAP.md "UX / Interactions"
+ * 2026-08-05) + tuile Fichiers (fichiers joints aux
  * activités/réservations du trip, groupés par élément d'origine — remplace
  * l'ancienne tuile "Résumé", nombre d'activités/transports/jours, retirée le
  * même jour).
@@ -189,22 +187,18 @@ export class TripSummaryComponent {
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
 
   /**
-   * Top 4 plus grosses dépenses individuelles (activités posées sur un jour
-   * + réservations logistiques, même périmètre que `totalExpense` ci-dessus)
-   * pour les anneaux de la tuile "Dépenses" (ROADMAP.md "UX / Interactions",
-   * 2026-08-05 — remplace l'ancien `typeBreakdown`, qui alimentait la tuile
-   * "Résumé" avant sa transformation en tuile "Fichiers"). Un 5e anneau
-   * "Autre" agrège la somme de tout ce qui dépasse le top 4, seulement s'il y
-   * a effectivement un reliquat (jamais un anneau vide à 0). `share` de
-   * chaque anneau (top 4 ET "Autre") est calculée sur le total GLOBAL des
-   * dépenses, pas seulement la somme des anneaux affichés — même principe
-   * que l'ancien `typeBreakdown`. Une activité posée sur 2 jours compte 2
-   * fois (même convention que `totalExpense`/ROADMAP.md 2026-08-01) ; les
-   * éléments à 0€ (ou sans prix) sont ignorés, ils n'apporteraient rien à un
-   * classement par montant. Montant affiché avec le symbole de la devise du
-   * TRIP (`currencySymbol`), pas celle propre à chaque élément — même
-   * convention que `totalExpense`, qui additionne déjà toutes les devises
-   * sans conversion ni distinction.
+   * Dépenses regroupées par TYPE (vol, logement, activités, visites...) —
+   * un anneau par type, les `MAX_EXPENSE_ENTRIES` dont la somme est la plus
+   * élevée (ROADMAP.md "UX / Interactions", 2026-08-05, retour utilisateur :
+   * "je voudrais que tu regroupes les 5 plus chères en fonction du type" —
+   * remplace un essai précédent par élément individuel + anneau "Autre").
+   * Même périmètre que `totalExpense` ci-dessus (activités posées sur un
+   * jour, un placement sur 2 jours comptant 2 fois — ROADMAP.md 2026-08-01 —
+   * + réservations logistiques) ; les éléments à 0€/sans prix sont ignorés,
+   * ils n'apporteraient rien à un classement par montant. Montant affiché
+   * avec le symbole de la devise du TRIP (`currencySymbol`), pas celle
+   * propre à chaque élément — même convention que `totalExpense`, qui
+   * additionne déjà toutes les devises sans conversion ni distinction.
    */
   readonly expenseBreakdown = computed<RingChartEntry[]>(() => {
     const items: ExpenseItem[] = [];
@@ -213,20 +207,17 @@ export class TripSummaryComponent {
       const amount = activity.price?.amount || 0;
       if (amount <= 0) continue;
       const meta = ACTIVITY_TYPE_META[activity.type];
-      items.push({ label: activity.title || meta.label, icon: meta.icon, colorVar: meta.colorVar, amount });
+      items.push({ typeKey: `activity:${activity.type}`, label: meta.label, icon: meta.icon, colorVar: meta.colorVar, amount });
     }
 
     for (const logistic of this.tripFacade.getAllLogistics(this.tripId())()) {
       const amount = logistic.price?.amount || 0;
       if (amount <= 0) continue;
       const meta = LOGISTIC_TYPE_META[logistic.type];
-      items.push({ label: logistic.title || meta.label, icon: meta.icon, colorVar: meta.colorVar, amount });
+      items.push({ typeKey: `logistic:${logistic.type}`, label: meta.label, icon: meta.icon, colorVar: meta.colorVar, amount });
     }
 
-    return computeExpenseBreakdown(items, this.currencySymbol(), MAX_EXPENSE_ENTRIES, {
-      icon: OTHER_EXPENSE_ICON,
-      colorVar: LOGISTIC_TYPE_META.other.colorVar,
-    });
+    return computeExpenseBreakdown(items, this.currencySymbol(), MAX_EXPENSE_ENTRIES);
   });
 
   private mapClickSub?: { unsubscribe: () => void };

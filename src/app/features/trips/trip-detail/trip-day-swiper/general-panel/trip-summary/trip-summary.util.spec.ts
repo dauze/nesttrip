@@ -1,62 +1,54 @@
 import { computeExpenseBreakdown, ExpenseItem } from './trip-summary.util';
 
 describe('computeExpenseBreakdown', () => {
-  const other = { icon: 'pi pi-ellipsis-h', colorVar: '--nt-logistic-other' };
-
   function item(overrides: Partial<ExpenseItem> = {}): ExpenseItem {
-    return { label: 'Item', icon: 'pi pi-star', colorVar: '--nt-activity-visite', amount: 10, ...overrides };
+    return { typeKey: 'activity:visite', label: 'Visite', icon: 'pi pi-star', colorVar: '--nt-activity-visite', amount: 10, ...overrides };
   }
 
   it('retourne un tableau vide si aucune dépense (total à 0)', () => {
-    expect(computeExpenseBreakdown([], '€', 4, other)).toEqual([]);
+    expect(computeExpenseBreakdown([], '€', 5)).toEqual([]);
   });
 
-  it("n'ajoute pas d'anneau \"Autre\" quand il y a 4 dépenses ou moins", () => {
-    const items = [item({ label: 'A', amount: 40 }), item({ label: 'B', amount: 30 }), item({ label: 'C', amount: 20 })];
-    const result = computeExpenseBreakdown(items, '€', 4, other);
+  it('additionne les dépenses de même type dans un seul anneau', () => {
+    const items = [
+      item({ typeKey: 'activity:visite', label: 'Visite', amount: 40 }),
+      item({ typeKey: 'activity:visite', label: 'Visite', amount: 10 }),
+      item({ typeKey: 'logistic:flight', label: 'Vol', icon: 'pi pi-send', colorVar: '--nt-logistic-flight', amount: 100 }),
+    ];
+    const result = computeExpenseBreakdown(items, '€', 5);
 
-    expect(result.map((e) => e.label)).toEqual(['A', 'B', 'C']);
+    expect(result).toEqual([
+      { label: 'Vol', icon: 'pi pi-send', colorVar: '--nt-logistic-flight', count: 100, valueLabel: '100.00 €', share: 100 / 150 },
+      { label: 'Visite', icon: 'pi pi-star', colorVar: '--nt-activity-visite', count: 50, valueLabel: '50.00 €', share: 50 / 150 },
+    ]);
+  });
+
+  it('trie les types par montant décroissant et plafonne à maxEntries, sans anneau "Autre"', () => {
+    const items = [
+      item({ typeKey: 'a', label: 'A', amount: 10 }),
+      item({ typeKey: 'b', label: 'B', amount: 50 }),
+      item({ typeKey: 'c', label: 'C', amount: 30 }),
+      item({ typeKey: 'd', label: 'D', amount: 20 }),
+    ];
+    const result = computeExpenseBreakdown(items, '€', 2);
+
+    expect(result.map((e) => e.label)).toEqual(['B', 'C']);
     expect(result.every((e) => e.label !== 'Autre')).toBe(true);
   });
 
-  it('garde les 4 plus grosses dépenses triées par montant décroissant, et agrège le reste dans "Autre"', () => {
+  it('calcule share proportionnellement au total GLOBAL (tous types confondus, pas seulement le top affiché)', () => {
     const items = [
-      item({ label: 'petit', amount: 5 }),
-      item({ label: 'gros', amount: 100 }),
-      item({ label: 'moyen1', amount: 40 }),
-      item({ label: 'moyen2', amount: 35 }),
-      item({ label: 'moyen3', amount: 30 }),
-      item({ label: 'minuscule', amount: 2 }),
+      item({ typeKey: 'a', label: 'A', amount: 10 }),
+      item({ typeKey: 'b', label: 'B', amount: 90 }),
     ];
-    const result = computeExpenseBreakdown(items, '€', 4, other);
+    // Total = 100, mais maxEntries=1 ne garde que B : sa share reste calculée sur 100, pas sur lui-même seul.
+    const result = computeExpenseBreakdown(items, '€', 1);
 
-    expect(result.map((e) => e.label)).toEqual(['gros', 'moyen1', 'moyen2', 'moyen3', 'Autre']);
-    const autre = result.at(-1)!;
-    expect(autre.count).toBeCloseTo(5 + 2);
-    expect(autre.icon).toBe(other.icon);
-    expect(autre.colorVar).toBe(other.colorVar);
-  });
-
-  it('calcule share proportionnellement au total GLOBAL (somme de tous les éléments, top affiché + "Autre")', () => {
-    const items = [
-      item({ label: 'A', amount: 10 }),
-      item({ label: 'B', amount: 10 }),
-      item({ label: 'C', amount: 10 }),
-      item({ label: 'D', amount: 10 }),
-      // La plus petite : termine forcément dans "Autre" (tri décroissant, top 4 = A/B/C/D).
-      item({ label: 'E', amount: 5 }),
-    ];
-    // Total = 45. Top4 = A,B,C,D (10 chacun) + Autre = E (5).
-    const result = computeExpenseBreakdown(items, '€', 4, other);
-
-    expect(result.find((e) => e.label === 'A')!.share).toBeCloseTo(10 / 45);
-    expect(result.find((e) => e.label === 'Autre')!.share).toBeCloseTo(5 / 45);
-    // Les parts de tous les anneaux (top affiché + "Autre") couvrent 100% du total.
-    expect(result.reduce((sum, e) => sum + e.share, 0)).toBeCloseTo(1);
+    expect(result).toEqual([{ label: 'B', icon: 'pi pi-star', colorVar: '--nt-activity-visite', count: 90, valueLabel: '90.00 €', share: 0.9 }]);
   });
 
   it('formate valueLabel avec le symbole de devise fourni, 2 décimales', () => {
-    const result = computeExpenseBreakdown([item({ amount: 12.5 })], '$', 4, other);
+    const result = computeExpenseBreakdown([item({ amount: 12.5 })], '$', 5);
     expect(result[0].valueLabel).toBe('12.50 $');
   });
 });
