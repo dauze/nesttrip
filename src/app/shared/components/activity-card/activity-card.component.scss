@@ -28,9 +28,13 @@
   // contenu ne respire qu'avec le reliquat (0.5rem de padding uniforme -
   // 0.4rem de barre = 0.1rem) contre 0.5rem pleins sur les 3 autres côtés
   // (retour utilisateur, ROADMAP.md "### UI", "pas assez de padding à
-  // gauche"). `--nt-panel-content-padding-left` (panel.component.scss) :
-  // même respiration après la barre (0.5rem) que les autres côtés.
+  // gauche"). `--nt-panel-content-padding-left`/`--nt-panel-header-padding-left`
+  // (panel.component.scss) : même respiration après la barre (0.5rem) que
+  // les autres côtés, pour le CORPS déplié ET le header (logo du type,
+  // visible même repliée — oubliée par le premier correctif, voir ROADMAP.md
+  // "Bugs / fixes", "plus grand padding entre le border left et le logo").
   --nt-panel-content-padding-left: 0.9rem;
+  --nt-panel-header-padding-left: 0.9rem;
 
   @starting-style {
     opacity: 0;

@@ -17,8 +17,13 @@
   // Même correctif que `.trip` (ActivityCardComponent, ROADMAP.md "### UI",
   // "pas de padding entre le border-left et le logo") : compense la barre
   // colorée ci-dessous (0.4rem, `::before`) pour retrouver 0.5rem de
-  // respiration après elle, comme sur les 3 autres côtés.
+  // respiration après elle, comme sur les 3 autres côtés. Le CORPS déplié
+  // (`content-padding-left`) ET le header (`header-padding-left`, logo du
+  // type — visible même repliée, oublié par le premier correctif, voir
+  // ROADMAP.md "Bugs / fixes", "plus grand padding entre le border left et
+  // le logo").
   --nt-panel-content-padding-left: 0.9rem;
+  --nt-panel-header-padding-left: 0.9rem;
 
   @starting-style {
     opacity: 0;

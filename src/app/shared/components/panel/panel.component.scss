@@ -22,8 +22,18 @@
   padding: 0;
 }
 
+// `padding-left` séparé (custom property, même principe que
+// `--nt-panel-content-padding-left` du corps ci-dessous) : `ActivityCardComponent`/
+// `LogisticCardComponent` (`.trip`/`.reservation`) ont une bordure gauche en
+// dégradé (`::before`, 0.4rem) qui mordait sur ce padding uniforme sans
+// aucune compensation ici (contrairement au CORPS, déjà corrigé) — le logo
+// du header (repliée ou dépliée, c'est LUI qui reste visible replié) ne
+// gardait donc que 0.1rem de respiration après la barre au lieu de 0.5rem
+// plein sur les 3 autres côtés (retour utilisateur, ROADMAP.md "Bugs /
+// fixes" : "plus grand padding entre le border left et le logo du type").
 .app-panel__header {
   padding: 0.5rem;
+  padding-left: var(--nt-panel-header-padding-left, 0.5rem);
   font-weight: 600;
   border-radius: var(--nt-content-border-radius) var(--nt-content-border-radius) 0 0;
 }
