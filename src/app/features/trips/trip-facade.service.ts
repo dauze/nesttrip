@@ -9,6 +9,28 @@ import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.mo
 import { getLogisticDayOccurrences, LogisticDayOccurrence } from './trip-detail/trip-day-swiper/day-panel/day-logistic-banner/logistic-day-occurrence';
 import { mergeDayTimeline, pinnedLogisticOccurrences, MergedDayEntry } from './trip-detail/trip-day-swiper/day-panel/day-logistic-banner/day-timeline-merge';
 
+/**
+ * `true` si deux `Record<string, T>` ont exactement les mêmes clés, chacune
+ * pointant vers la MÊME référence de valeur (`===`, pas une comparaison
+ * profonde) — utilisé dans `TripFacade.mergeFromRemote` pour décider si un
+ * signal a réellement besoin d'une nouvelle référence. Volontairement pas
+ * une comparaison de contenu : les valeurs elles-mêmes sont déjà comparées/
+ * préservées individuellement en amont (voir les boucles qui construisent
+ * chaque `newXxx` ci-dessous) — ici on vérifie seulement qu'aucune de ces
+ * références n'a effectivement bougé avant d'écrire dans le signal.
+ */
+function recordsShallowEqual<T>(a: Record<string, T>, b: Record<string, T>): boolean {
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  return aKeys.every((key) => a[key] === b[key]);
+}
+
+/** Même principe que `recordsShallowEqual`, pour un tableau ordonné (ex. `_tripActivities[tripId]`, `_dayActivityIds[dayKey]`) — comparaison par valeur (des ids, des primitives), position par position. */
+function arraysEqual(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, i) => value === b[i]);
+}
+
 @Injectable()
 export class TripFacade {
   private readonly store = inject(TripStore);
@@ -403,7 +425,15 @@ export class TripFacade {
       }
     }
 
-    // 3. Références jour -> instances
+    // 3. Ensemble des clés de jour du trip côté distant, calculé UNE fois et
+    // réutilisé ci-dessous par `_dayActivityIds` ET `_days`/`_tripDays`.
+    const previousTripDayKeys = this.store._tripDays()[trip.id] ?? [];
+    const previousTripDayKeySet = new Set(previousTripDayKeys);
+    const remoteDayKeysList = trip.days.map((d) => d.id.toISOString());
+    const remoteDayKeySet = new Set(remoteDayKeysList);
+
+    // 3bis. Références jour -> instances (`_dayActivityIds`, flat, TOUS les
+    // trips confondus — voir CLAUDE.md "état normalisé").
     // Même logique anti-flicker que le pool/les instances ci-dessus, mais
     // absente jusqu'ici : `DayActivitiesPersistenceService` (écriture
     // debouncée, ~300ms) n'a pas forcément encore confirmé l'ajout local
@@ -420,38 +450,61 @@ export class TripFacade {
     // possible (un id déjà dans `day.activityIds` n'est jamais réinjecté), et
     // l'ajout ponctuel disparaît de lui-même dès que le snapshot suivant
     // confirme l'écriture (l'id devient alors partie de `day.activityIds`).
-    const newDayActivityIds: Record<string, string[]> = {};
+    //
+    // CRITIQUE pour la stabilité de référence (voir la doc de
+    // `recordsShallowEqual`) : deux pièges corrigés ici, tous deux réels dans
+    // le code avant ce correctif (ROADMAP.md "Bugs / fixes", régression
+    // confirmée par retour utilisateur — "tout se réactualise à chaque
+    // édition de champ"). 1) `newDayActivityIds` était reconstruit à partir
+    // des SEULS jours de `trip.days`, perdant les entrées des jours des
+    // AUTRES trips déjà chargés dans cette session (`_dayActivityIds` est un
+    // pool plat, pas scopé par trip) — corrigé en partant d'une copie
+    // complète de la map existante. 2) chaque `newDayActivityIds[dayKey]`
+    // était systématiquement une NOUVELLE référence de tableau (spread), même
+    // quand son contenu était strictement identique à celui déjà en place —
+    // `getDayActivities(dayId)` (TripStore) lit `_dayActivityIds()` dans son
+    // `computed()` et reconstruit un NOUVEAU tableau d'`Activity` à chaque
+    // exécution (jamais stable par identité même à contenu égal) : la moindre
+    // nouvelle référence ici faisait donc réexécuter ET republier ce
+    // `computed()` pour TOUS LES JOURS du trip (pas seulement celui
+    // réellement modifié) à chaque confirmation Firestore d'une frappe
+    // débattue sur N'IMPORTE QUELLE activité — d'où "toute la page" qui se
+    // réactualisait. Corrigé en réutilisant la référence existante quand le
+    // contenu calculé lui est identique (`arraysEqual`).
     const localDayActivityIdsBefore = this.store._dayActivityIds();
+    const newDayActivityIds: Record<string, string[]> = { ...localDayActivityIdsBefore };
     for (const day of trip.days) {
       const dayKey = day.id.toISOString();
       const remoteIds = day.activityIds;
-      const localIds = localDayActivityIdsBefore[dayKey] ?? [];
+      const existing = localDayActivityIdsBefore[dayKey];
+      const localIds = existing ?? [];
       const pendingLocalOnly = localIds.filter((id) => pendingIds.has(id) && !remoteIds.includes(id));
-      newDayActivityIds[dayKey] = pendingLocalOnly.length ? [...remoteIds, ...pendingLocalOnly] : [...remoteIds];
+      const computed = pendingLocalOnly.length ? [...remoteIds, ...pendingLocalOnly] : remoteIds;
+      newDayActivityIds[dayKey] = existing && arraysEqual(existing, computed) ? existing : computed;
+    }
+    // Jour retiré CÔTÉ DE CE TRIP (toujours connu avant, plus dans le
+    // snapshot distant) : ses instances n'ont plus de jour, l'entrée n'a plus
+    // de sens — jamais touché pour les jours des AUTRES trips (hors
+    // `previousTripDayKeySet`, qui ne scope que CE trip).
+    for (const dayKey of previousTripDayKeys) {
+      if (!remoteDayKeySet.has(dayKey)) delete newDayActivityIds[dayKey];
     }
 
-    // 3bis. `_days`/`_tripDays` : jamais mis à jour ici jusqu'ici (seul
+    // 3ter. `_days`/`_tripDays` : jamais mis à jour ici jusqu'ici (seul
     // `hydrate()`, au tout premier chargement, les écrivait) — un jour
     // ajouté/supprimé par un autre collaborateur pendant que ce trip est déjà
     // ouvert ne se répercutait donc jamais localement (ROADMAP.md "Bugs /
     // fixes", "les dates de début et de fin... ne sont pas rafraîchies en
-    // dynamique"). CONDITIONNEL, comparé à l'ensemble des clés déjà connues
-    // (pas juste "toujours réécrire comme `_dayActivityIds`") : `activeTrip`
-    // recompose `Trip` depuis `_trips`+`_tripDays`+`_days` (voir CLAUDE.md) —
-    // écrire une NOUVELLE référence à CHAQUE snapshot distant (donc à chaque
-    // frappe débattue sur N'IMPORTE QUELLE activité du trip, puisque tout vit
-    // dans le même document Firestore) casserait la stabilité de référence
-    // que `activeTrip`/l'UI optimiste reposent dessus — régression confirmée
-    // par retour utilisateur (tout se réactualisait à chaque édition de champ).
+    // dynamique"). CONDITIONNEL, comparé à l'ensemble des clés déjà connues :
+    // `activeTrip` recompose `Trip` depuis `_trips`+`_tripDays`+`_days` (voir
+    // CLAUDE.md) — écrire une NOUVELLE référence à CHAQUE snapshot distant
+    // casserait la même stabilité de référence que ci-dessus.
     // `addDay`/`removeDay` sont des écritures ponctuelles non debouncées (pas
     // de `DebounceWriter`), donc pas besoin du même mécanisme anti-flicker à
     // base de `pendingIds` que les entités qui, elles, passent par un writer
     // débouncé — seulement de ne toucher le signal QUE si l'ensemble des
-    // jours a réellement changé.
-    const previousTripDayKeys = this.store._tripDays()[trip.id] ?? [];
-    const previousTripDayKeySet = new Set(previousTripDayKeys);
-    const remoteDayKeysList = trip.days.map((d) => d.id.toISOString());
-    const remoteDayKeySet = new Set(remoteDayKeysList);
+    // jours a réellement changé (`previousTripDayKeySet`/`remoteDayKeySet`,
+    // calculés en 3bis ci-dessus).
     const daysChanged =
       previousTripDayKeySet.size !== remoteDayKeySet.size ||
       remoteDayKeysList.some((key) => !previousTripDayKeySet.has(key));
@@ -474,7 +527,7 @@ export class TripFacade {
       this.store._tripDays.update((map) => ({ ...map, [trip.id]: remoteDayKeysList }));
     }
 
-    // 3ter. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire) :
+    // 3quater. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire) :
     // même bug que ci-dessus, `_trips[trip.id]` n'était jamais réécrit après
     // l'hydratation initiale — et même piège de stabilité de référence : ne
     // réécrire QUE si l'une de ces valeurs a réellement changé (comparaison
@@ -492,9 +545,34 @@ export class TripFacade {
         currentTrip.defaultCurrency !== trip.defaultCurrency ||
         currentTrip.placeId !== trip.placeId);
 
-    this.store._poolActivities.set(newPoolActivities);
-    this.store._dayActivityInstances.set(newInstances);
-    this.store._dayActivityIds.set(newDayActivityIds);
+    // À PARTIR D'ICI : chaque écriture de signal est CONDITIONNELLE, comparée
+    // à l'état actuel (`recordsShallowEqual`/`arraysEqual`, voir leur doc en
+    // tête de fichier) — pas seulement pour `_trips`/`_days`/`_tripDays` (voir
+    // 3bis/3ter ci-dessus) mais pour TOUS les signaux touchés par cette
+    // méthode (`_poolActivities`, `_dayActivityInstances`, `_dayActivityIds`,
+    // `_tripActivities`, `_logistics`, `_tripLogistics`) : chacun était
+    // jusqu'ici réécrit avec une NOUVELLE référence à CHAQUE snapshot distant,
+    // MÊME quand toutes ses valeurs internes étaient déjà préservées par
+    // référence (les boucles ci-dessus le font déjà bien) — le problème est
+    // uniquement l'objet/tableau CONTENEUR, toujours neuf. Des sélecteurs
+    // dérivés comme `TripStore.getDayActivities(dayId)` reconstruisent un
+    // NOUVEAU tableau d'`Activity` à chaque exécution de leur `computed()`
+    // (jamais stables par identité même à contenu strictement égal), et ce
+    // `computed()` dépend de la RÉFÉRENCE de `_dayActivityIds()` (entre
+    // autres) : la moindre nouvelle référence container, même vide de tout
+    // changement réel, le faisait donc réexécuter ET republier pour TOUS LES
+    // JOURS du trip à la moindre confirmation Firestore d'UNE SEULE activité
+    // éditée — d'où "toute la page" qui se réactualisait à chaque champ
+    // modifié (régression confirmée par retour utilisateur).
+    if (!recordsShallowEqual(currentPoolActivities, newPoolActivities)) {
+      this.store._poolActivities.set(newPoolActivities);
+    }
+    if (!recordsShallowEqual(currentInstances, newInstances)) {
+      this.store._dayActivityInstances.set(newInstances);
+    }
+    if (!recordsShallowEqual(localDayActivityIdsBefore, newDayActivityIds)) {
+      this.store._dayActivityIds.set(newDayActivityIds);
+    }
     if (primitivesChanged) {
       this.store._trips.update((map) => ({
         ...map,
@@ -518,7 +596,8 @@ export class TripFacade {
       const remoteIds = new Set(trip.activities.map((a) => a.id));
       const preserved = previousOrder.filter((id) => remoteIds.has(id) || pendingIds.has(id));
       const newIds = trip.activities.map((a) => a.id).filter((id) => !previousOrder.includes(id));
-      return { ...map, [trip.id]: [...preserved, ...newIds] };
+      const nextOrder = [...preserved, ...newIds];
+      return arraysEqual(previousOrder, nextOrder) ? map : { ...map, [trip.id]: nextOrder };
     });
 
     this.store._tripMembers.update((map) => {
@@ -546,12 +625,15 @@ export class TripFacade {
       if (!remoteLogisticIds.has(id) && !pendingLogisticIds.has(id)) delete newLogistics[id];
     }
 
-    this.store._logistics.set(newLogistics);
+    if (!recordsShallowEqual(currentLogistics, newLogistics)) {
+      this.store._logistics.set(newLogistics);
+    }
     this.store._tripLogistics.update((map) => {
       const previousOrder = map[trip.id] ?? [];
       const preserved = previousOrder.filter((id) => remoteLogisticIds.has(id) || pendingLogisticIds.has(id));
       const newIds = trip.logistics.map((r) => r.id).filter((id) => !previousOrder.includes(id));
-      return { ...map, [trip.id]: [...preserved, ...newIds] };
+      const nextOrder = [...preserved, ...newIds];
+      return arraysEqual(previousOrder, nextOrder) ? map : { ...map, [trip.id]: nextOrder };
     });
   }
 }

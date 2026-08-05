@@ -13,7 +13,14 @@
 // puisque ce n'est pas un `<textarea>`).
 .notes-field-trigger {
   display: -webkit-box;
-  width: 100%;
+  // Largeur au contenu, pas la pleine largeur de la colonne (ROADMAP.md
+  // "Bugs / fixes", retour utilisateur) : ne touche QUE le déclencheur
+  // mobile (`display:-webkit-box`, cette classe n'existe pas côté desktop,
+  // voir la branche `@else` du template — son `<textarea class="w-full">`
+  // reste volontairement pleine largeur, un textarea multi-lignes a besoin
+  // de place pour taper confortablement).
+  width: max-content;
+  max-width: 100%;
   padding: var(--nt-layout-gap-stacked);
   overflow: hidden;
   -webkit-line-clamp: 2;

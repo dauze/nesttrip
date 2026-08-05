@@ -13,6 +13,9 @@ import { TripPersistenceService } from '@app/core/infra/firebase/services/persis
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
+import { ActivityType } from '@core/enums/activites-type.enum';
+import { BookingStatus } from '@core/enums/booking.status';
+import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 
 /** Writer débouncé factice : reproduit l'API publique de `DebounceWriter` (voir shared/debounced-writer.ts) sans jamais toucher Firestore — même gabarit que trip-store.service.spec.ts. */
 function fakeWriter() {
@@ -44,6 +47,23 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
       dayActivityInstances: [],
       logistics: [],
       notes: { id: 'notes-1', items: [] },
+      ...overrides,
+    };
+  }
+
+  function poolActivity(overrides: Partial<PoolActivity> = {}): PoolActivity {
+    return { id: 'pool-1', title: 'Tour Eiffel', files: [], photoRefs: [], ...overrides };
+  }
+
+  function instance(overrides: Partial<DayActivityInstance> = {}): DayActivityInstance {
+    return {
+      id: 'instance-1',
+      activityId: 'pool-1',
+      type: ActivityType.VISITE,
+      duration: 60,
+      price: { amount: 0, currency: 'EUR' },
+      booking: { status: BookingStatus.NOT_NEEDED },
+      notes: '',
       ...overrides,
     };
   }
@@ -119,6 +139,92 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
     expect(store._tripDays()).toBe(tripDaysRefBefore);
     expect(store._days()).toBe(daysRefBefore);
     expect(facade.activeTrip()!.title).toBe(activeTripBefore!.title);
+  });
+
+  it('garde la même référence de getDayActivities(jour) quand un snapshot distant ne change rien pour ce jour (régression "toute la page se réactualise")', () => {
+    tripSubject.next(
+      baseTrip({
+        activities: [poolActivity()],
+        dayActivityInstances: [instance()],
+        days: [{ id: day1, activityIds: ['instance-1'] }],
+      }),
+    );
+
+    const day1ActivitiesBefore = store.getDayActivities(day1)();
+    expect(day1ActivitiesBefore.length).toBe(1);
+
+    // Confirmation Firestore strictement identique (round-trip qui suit
+    // n'importe quelle autre écriture du même document trip) — avant le
+    // correctif, `_dayActivityIds`/`_poolActivities`/`_dayActivityInstances`
+    // recevaient chacun une NOUVELLE référence container à chaque snapshot,
+    // même sans aucun changement réel, faisant réexécuter (et republier) le
+    // `computed()` de `getDayActivities` pour TOUS les jours du trip.
+    tripSubject.next(
+      baseTrip({
+        activities: [poolActivity()],
+        dayActivityInstances: [instance()],
+        days: [{ id: day1, activityIds: ['instance-1'] }],
+      }),
+    );
+
+    expect(store.getDayActivities(day1)()).toBe(day1ActivitiesBefore);
+  });
+
+  it('ne réactualise pas les activités du jour 1 quand une activité du jour 2 est éditée à distance', () => {
+    tripSubject.next(
+      baseTrip({
+        activities: [poolActivity(), poolActivity({ id: 'pool-2', title: 'Louvre' })],
+        dayActivityInstances: [instance(), instance({ id: 'instance-2', activityId: 'pool-2' })],
+        days: [
+          { id: day1, activityIds: ['instance-1'] },
+          { id: day2, activityIds: ['instance-2'] },
+        ],
+      }),
+    );
+
+    const day1ActivitiesBefore = store.getDayActivities(day1)();
+
+    // Édition du prix de l'activité du JOUR 2 uniquement.
+    tripSubject.next(
+      baseTrip({
+        activities: [poolActivity(), poolActivity({ id: 'pool-2', title: 'Louvre' })],
+        dayActivityInstances: [
+          instance(),
+          instance({ id: 'instance-2', activityId: 'pool-2', price: { amount: 15, currency: 'EUR' } }),
+        ],
+        days: [
+          { id: day1, activityIds: ['instance-1'] },
+          { id: day2, activityIds: ['instance-2'] },
+        ],
+      }),
+    );
+
+    expect(store.getDayActivities(day1)()).toBe(day1ActivitiesBefore);
+    expect(store.getDayActivities(day2)()[0].price?.amount).toBe(15);
+  });
+
+  it('réactualise bien les activités du jour quand son activité change réellement', () => {
+    tripSubject.next(
+      baseTrip({
+        activities: [poolActivity()],
+        dayActivityInstances: [instance()],
+        days: [{ id: day1, activityIds: ['instance-1'] }],
+      }),
+    );
+
+    const day1ActivitiesBefore = store.getDayActivities(day1)();
+
+    tripSubject.next(
+      baseTrip({
+        activities: [poolActivity()],
+        dayActivityInstances: [instance({ notes: 'Réserver à l’avance' })],
+        days: [{ id: day1, activityIds: ['instance-1'] }],
+      }),
+    );
+
+    const day1ActivitiesAfter = store.getDayActivities(day1)();
+    expect(day1ActivitiesAfter).not.toBe(day1ActivitiesBefore);
+    expect(day1ActivitiesAfter[0].notes).toBe('Réserver à l’avance');
   });
 
   it('met à jour le titre et les jours quand ils changent réellement à distance', () => {

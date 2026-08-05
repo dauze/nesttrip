@@ -199,6 +199,35 @@ export class TripStore {
 
   // ── Sélecteurs memorisés par entité ───────────────────────────────────────
 
+  /**
+   * Égalité structurelle (JSON), utilisée comme `equal` de plusieurs
+   * `computed()` ci-dessous — CRITIQUE pour l'UI optimiste (ROADMAP.md "Bugs
+   * / fixes", régression confirmée par retour utilisateur : "toute la page
+   * se réactualise à chaque édition de champ"). Ces sélecteurs COMPOSENT un
+   * résultat (`composeInstanceView`/`composePoolView`, objets/tableaux
+   * neufs à chaque exécution) à partir de signaux LARGES et PLATS
+   * (`_dayActivityInstances`/`_poolActivities`/..., tous jours/toutes
+   * activités confondus, voir "état normalisé" dans CLAUDE.md) : éditer
+   * N'IMPORTE QUELLE activité fait changer la RÉFÉRENCE de ces signaux
+   * source, donc réexécute TOUS les `computed()` qui en dépendent — y
+   * compris ceux d'un jour/d'une activité totalement étrangers à l'édition
+   * en cours. Sans `equal`, Angular compare le résultat recalculé par
+   * IDENTITÉ (`Object.is`) : un tableau/objet neuf mais structurellement
+   * IDENTIQUE au précédent est quand même vu comme "changé", donc republié à
+   * tous les composants qui le consomment (chaque `ActivityCardComponent`
+   * affiché, pas seulement celui réellement édité). Avec `equal`, le
+   * `computed()` continue de se réexécuter (coût CPU minime, pas de fuite
+   * mémoire), mais ne notifie ses propres consommateurs QUE si le résultat a
+   * RÉELLEMENT changé — la stabilité de référence se propage donc bien
+   * jusqu'au template, contrairement à une simple préservation de référence
+   * en amont (dans `_dayActivityInstances`/`_poolActivities` eux-mêmes, déjà
+   * faite dans `TripFacade.mergeFromRemote`), qui ne suffit pas dès qu'un
+   * `computed()` intermédiaire retransforme la donnée.
+   */
+  private structurallyEqual<T>(a: T, b: T): boolean {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
   /** Compose la vue `Activity` consommée par l'UI à partir d'une instance jour et de l'activité de pool qu'elle référence. */
   private composeInstanceView(instance: DayActivityInstance, pool: PoolActivity | undefined): Activity {
     return {
@@ -298,7 +327,7 @@ export class TripStore {
             .map((id) => instances[id])
             .filter((i): i is DayActivityInstance => !!i)
             .map((i) => this.composeInstanceView(i, pools[i.activityId]));
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.dayActivitiesByDay.get(key)!;
@@ -348,7 +377,7 @@ export class TripStore {
 
           const real: DayActivityEntry[] = this.getDayActivities(dayId)().map((activity) => ({ kind: 'activity' as const, activity }));
           return [...echoes, ...real];
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.dayActivitiesWithEchoesByDay.get(key)!;
@@ -362,7 +391,7 @@ export class TripStore {
         computed(() => {
           const instance = this._dayActivityInstances()[instanceId];
           return this.composeInstanceView(instance, this._poolActivities()[instance?.activityId]);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.dayActivityViewById.get(instanceId)!;
@@ -386,7 +415,7 @@ export class TripStore {
       const dayKey = dayKeys.find((k) => (dayActivityIds[k] ?? []).includes(instanceId));
       if (!dayKey) return undefined;
       return { dayId: new Date(dayKey), activity: this.composeInstanceView(instance, this._poolActivities()[instance.activityId]) };
-    });
+    }, { equal: (a, b) => this.structurallyEqual(a, b) });
   }
 
   getPoolActivity(poolId: string): Signal<PoolActivity> {
@@ -409,7 +438,7 @@ export class TripStore {
           if (!pool) return undefined as unknown as Activity;
           const instance = Object.values(this._dayActivityInstances()).find((i) => i.activityId === poolId);
           return this.composePoolView(pool, instance);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.poolActivityViewById.get(poolId)!;
@@ -424,7 +453,7 @@ export class TripStore {
           const ids = this._tripActivities()[tripId] ?? [];
           const map = this._poolActivities();
           return ids.map((id) => map[id]).filter((a): a is PoolActivity => !!a);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.allPoolActivitiesByTrip.get(tripId)!;
@@ -487,7 +516,7 @@ export class TripStore {
           const ids = this._tripLogistics()[tripId] ?? [];
           const map = this._logistics();
           return ids.map((id) => map[id]).filter((r): r is Logistic => !!r);
-        }),
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
       );
     }
     return this.allLogisticsByTrip.get(tripId)!;

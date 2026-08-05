@@ -7,7 +7,7 @@ import { ThemeService } from '@app/core/services/theme.service';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { environment } from '@environments/environment';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
 
 @Component({
   selector: 'app-trip-day-map',
@@ -30,10 +30,13 @@ export class TripDayMapComponent {
   // Contexte 'general' (pool, uniquement l'onglet Résumé désormais — voir
   // ROADMAP.md "UX / Interactions", 2026-08-01) : jamais repliable (plus de
   // panel/chevron dans ce contexte, voir trip-day-map.component.html), donc
-  // toujours `false`. Contexte 'day' : suit GoogleMapPanelService, tout en
-  // restant localement modifiable via le toggle du panneau (voir l'effet
-  // ci-dessous qui repropage vers ce service). Se réaligne sur le service
-  // courant dès que `currentOwner()` change de valeur.
+  // toujours `false`. Contexte 'day' : suit GoogleMapPanelService (y compris
+  // une fois la préférence Firestore de l'utilisateur chargée de façon
+  // asynchrone — un `linkedSignal` se recalcule automatiquement dès que
+  // `isCollapsed()`/`currentOwner()` changent), tout en restant localement
+  // modifiable via le toggle du panneau (repropagé vers le service par
+  // `onCollapsedToggled`, voir sa doc — UNIQUEMENT sur un vrai geste
+  // utilisateur, jamais via un `effect()` générique sur ce signal).
   readonly collapsed = linkedSignal(() =>
     this.mapHost.currentOwner() === 'general' ? false : this.googleMapPanelService.isCollapsed(),
   );
@@ -112,29 +115,6 @@ export class TripDayMapComponent {
   private lastPointsKey: string | null = null;
 
   constructor() {
-    // `collapsed` (linkedSignal) résout sa valeur INITIALE contre le défaut
-    // synchrone de `GoogleMapPanelService.isCollapsed()` (`false`), bien avant
-    // que la vraie préférence Firestore de l'utilisateur (asynchrone) n'ait
-    // eu le temps d'arriver — repropager cette toute première valeur marquait
-    // `GoogleMapPanelService.seeded` à tort (voir `setCollapse`), empêchant
-    // ENSUITE la vraie préférence de jamais s'appliquer une fois chargée
-    // (ROADMAP.md "Bugs / fixes", "la récupération du flag... ne fonctionne
-    // pas" — la carte repartait toujours dépliée par défaut). Ce flag ignore
-    // donc ce tout premier passage, quel que soit le contexte ; les passages
-    // suivants (vrai toggle utilisateur du footer, ou changement de contexte)
-    // continuent de repropager normalement.
-    let hasRepropagatedCollapsed = false;
-    effect(() => {
-      const collapsed = this.collapsed();
-      const owner = this.mapHost.currentOwner();
-      const isInitialRun = !hasRepropagatedCollapsed;
-      hasRepropagatedCollapsed = true;
-      // Contexte 'general' : rien à repropager, `collapsed` y est une
-      // constante (voir sa doc) — jamais modifiable par l'utilisateur.
-      if (isInitialRun || owner === 'general') return;
-      this.googleMapPanelService.setCollapse(collapsed);
-    });
-
     effect(() => {
       const pts = this.points();
 
@@ -276,6 +256,31 @@ export class TripDayMapComponent {
   onMarkerClick(point: DayMapPoint): void {
     this.focusOnPoint(point);
     this.activitySelected.emit(point);
+  }
+
+  /**
+   * Repropage vers `GoogleMapPanelService` UNIQUEMENT sur une vraie bascule
+   * utilisateur (`afterToggle`, émis par `PanelComponent.toggle()` — clic sur
+   * le footer/chevron) — jamais via un `effect()` générique sur `collapsed()`
+   * (ancienne approche, retirée) : `collapsed` (linkedSignal) se recalcule
+   * aussi tout seul quand `googleMapPanelService.isCollapsed()` change pour
+   * une raison EXTERNE (ex. la préférence Firestore de l'utilisateur qui
+   * arrive de façon asynchrone, après le tout premier rendu) — un `effect()`
+   * réagissant à CE changement le repropageait alors vers `setCollapse()`,
+   * marquant `GoogleMapPanelService.seeded` à tort et empêchant ensuite la
+   * vraie préférence de jamais s'appliquer une fois chargée (ROADMAP.md
+   * "Bugs / fixes", "la récupération du flag... ne fonctionne pas" — la
+   * carte repartait toujours dépliée après un rechargement). En ne
+   * repropageant que sur `afterToggle` (un vrai geste), ce risque de course
+   * est éliminé structurellement plutôt que contourné par un flag "premier
+   * passage ignoré".
+   */
+  protected onCollapsedToggled(event: PanelToggleEvent): void {
+    // Contexte 'general' : rien à repropager, `collapsed` y est une
+    // constante (voir sa doc) — jamais modifiable par l'utilisateur, ce
+    // bouton n'existe même pas dans ce contexte (voir le template).
+    if (this.mapHost.currentOwner() === 'general') return;
+    this.googleMapPanelService.setCollapse(event.collapsed);
   }
 
   // `(mapClick)` de @angular/google-maps s'appuie sur `advancedMarker.addListener('click', ...)`,

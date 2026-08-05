@@ -4,6 +4,7 @@
     [footerToggle]="mapHost.currentOwner() !== 'general'"
     [bare]="mapHost.currentOwner() === 'general'"
     [(collapsed)]="collapsed"
+    (afterToggle)="onCollapsedToggled($event)"
     [fillHeight]="useSplitHeight()">
     <div class="flex flex-column gap-2 swiper-no-swiping map-container"
       [class.map-container--fill]="useSplitHeight()">

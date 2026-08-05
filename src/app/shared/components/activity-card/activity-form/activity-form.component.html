@@ -30,7 +30,7 @@
           <label for="start-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-calendar text-sm"></i>Début
           </label>
-          <app-time-picker-dialog #startTimePicker id="start-time" label="Heure de début" formControlName="startTime" />
+          <app-time-picker-dialog #startTimePicker id="start-time" label="Heure de début" formControlName="startTime" class="w-max" />
         </div>
       </div>
       
@@ -68,7 +68,7 @@
           <label for="duration-time" class="nt-text-muted text-sm flex align-items-center gap-1">
             <i class="pi pi-clock text-sm"></i>Durée
           </label>
-          <app-time-picker-dialog id="duration-time" mode="duration" label="Durée" [formControl]="durationTimeControl" />
+          <app-time-picker-dialog id="duration-time" mode="duration" label="Durée" [formControl]="durationTimeControl" class="w-max" />
         </div>
       </div>
       
