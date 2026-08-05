@@ -301,6 +301,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Note en début de page
 - Nouveau style carte "activité" (2 lignes, photo Google Photos)
 - Drag and drop des activités
+- Manifest PWA + vrai jeu d'icônes (192/512, maskable, apple-touch-icon) pour une icône nette à l'installation mobile
 - Popup de suppression réservée (accès restreint)
 - Header modifiable et stylé (infos voyage)
 - Menu de sélection/création de voyages
