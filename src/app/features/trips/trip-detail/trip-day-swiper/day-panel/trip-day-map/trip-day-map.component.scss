@@ -19,20 +19,32 @@
 // bordure visible sur les CÔTÉS (voir retour utilisateur "on voit les
 // bordures sur les côtés, il ne faut pas, elle doit faire la taille de
 // l'écran") : `.day-fixed-map` (trip-day-swiper) est déjà pleine largeur,
-// une bordure latérale ici casserait cet effet. Le hairline du HAUT, lui, est
-// gardé (retour utilisateur, ROADMAP.md "### UI" : "je veux un petit border
-// sur le dessus de la map... mais discrete") — une légère séparation
-// volontaire avec la toolbar, dans le même hairline discret que la bordure
-// basse déjà présente (héritée du `:host` par défaut d'`app-panel`, jamais
-// retirée). `.map-panel` cible directement l'élément `<app-panel>` déclaré
-// dans CE template (pas du contenu projeté) : porte le même attribut de
-// scope Angular, pas besoin de `::ng-deep` (voir le même raisonnement dans
+// une bordure latérale ici casserait cet effet. Le hairline du HAUT, réintroduit
+// une première fois le 2026-08-04 (retour utilisateur d'alors), est retiré À
+// NOUVEAU (retour utilisateur, 2026-08-06) : en mode application installée
+// (pas de barre d'adresse pour amortir la coupure), ce hairline se lisait
+// comme un séparateur entre la barre de statut/toolbar et la carte — tout ce
+// bloc doit former un seul élément visuel continu, repliée ou dépliée. La
+// SEULE bordure qui subsiste est en bas (`:not(.app-panel--collapsed)`
+// ci-dessous) : elle ne marque la fin du bloc "carte" que quand il y a
+// vraiment un contenu déplié à refermer visuellement ; repliée, le footer se
+// fond directement dans la suite de la page, sans aucune ligne. Coins bas
+// plus arrondis que le reste de l'appli (`--nt-radius-lg`, retour
+// utilisateur) puisque ce sont désormais les seuls coins visibles de ce
+// cadre. `.map-panel` cible directement l'élément `<app-panel>` déclaré dans
+// CE template (pas du contenu projeté) : porte le même attribut de scope
+// Angular, pas besoin de `::ng-deep` (voir le même raisonnement dans
 // activity-card.component.scss).
 .map-panel {
+  border: none;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
-  border-left: none;
-  border-right: none;
+  border-bottom-left-radius: var(--nt-radius-lg);
+  border-bottom-right-radius: var(--nt-radius-lg);
+
+  &:not(.app-panel--collapsed) {
+    border-bottom: var(--nt-content-border-width) solid var(--nt-content-border-color);
+  }
 }
 
 // La map elle-même GARDE un vrai cadre arrondi sur les 4 coins (y compris en

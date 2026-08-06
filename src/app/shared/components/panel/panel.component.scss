@@ -170,23 +170,24 @@
 // `TripDayMapComponent` en contexte 'day' — un seul bouton pleine largeur,
 // contenu (icônes) entièrement projeté par l'appelant (`[panelFooter]`).
 // Le PLUS FIN possible (retour utilisateur) : padding minimal.
+// Ni bordure propre ni fond au survol/tap (retiré 2026-08-06, retour
+// utilisateur) : la SEULE séparation du bloc "carte" vit désormais sur le
+// host (`.map-panel`, trip-day-map.component.scss — bordure basse
+// conditionnelle au dépli), sans quoi ce hairline restait visible même carte
+// repliée, collée juste sous la toolbar sans aucun contenu à séparer. Le fond
+// `:hover` posait un problème distinct sur mobile : au tactile, `:hover` se
+// déclenche au tap et reste "collé" jusqu'au tap suivant ailleurs — lu à tort
+// comme "le bouton change de couleur au clic".
 .app-panel__footer-toggle {
   gap: 0.125rem;
   padding: 0.1875rem;
   border: none;
-  border-top: var(--nt-content-border-width) solid var(--nt-content-border-color);
   background: transparent;
   color: var(--nt-text-muted-color);
   font: inherit;
   cursor: pointer;
-  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
 
   i {
     font-size: var(--nt-icon-size-md);
-  }
-
-  &:hover {
-    background: var(--nt-content-hover-background);
-    color: var(--nt-text-hover-color);
   }
 }
