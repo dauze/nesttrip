@@ -76,6 +76,12 @@ swiper-slide {
 // scindé où `DayPanelComponent` cible son propre `.sticky-map` à la place) —
 // z-index entre la toolbar et le contenu normal.
 //
+// Coins bas arrondis (`--nt-radius-lg`, même valeur que `.map-panel`,
+// trip-day-map.component.scss) : `overflow:hidden` fait de CE conteneur, pas
+// de `.map-panel` à l'intérieur, le vrai masque de clip visible à l'écran —
+// sans son propre radius ici, ses coins carrés écrasaient l'arrondi du
+// panel enfant, invisible carte repliée (retour utilisateur, 2026-08-06),
+// coïncidence de taille qui ne le laissait apparaître que carte dépliée.
 .day-fixed-map {
   position: fixed;
   top: var(--chrome-toolbar-height, 0px);
@@ -83,6 +89,8 @@ swiper-slide {
   right: 0;
   z-index: var(--z-fixed-map);
   overflow: hidden;
+  border-bottom-left-radius: var(--nt-radius-lg);
+  border-bottom-right-radius: var(--nt-radius-lg);
 }
 
 // `background`/`box-shadow` UNIQUEMENT quand une carte y est effectivement

@@ -113,7 +113,16 @@
   // cette marge) dans le `@media` scindé plus bas.
   top: calc(var(--sticky-top-offset, 0px) + var(--nt-sticky-map-top-gap, 0px));
   z-index: 10;
-  background: var(--nt-page-background);
+  // `--nt-content-background` (pas `--nt-page-background`, retour utilisateur
+  // 2026-08-06) : même token que la toolbar (`toolbar.component.scss`) et que
+  // `.day-fixed-map--active` (trip-day-swiper.component.scss) — les deux
+  // fonds sont volontairement différents ailleurs dans l'appli (page vs
+  // cartes/panels, voir tokens.scss), mais la carte doit paraître en
+  // continuité DIRECTE de couleur avec la toolbar juste au-dessus, pas avec
+  // le fond de page. En mode clair, `--nt-page-background` (léger gris-bleu)
+  // contre `--nt-content-background` (blanc pur) créait un liseré visible une
+  // fois la bordure haute retirée.
+  background: var(--nt-content-background);
   // PAS de padding-top ici (relicat retiré — voir ROADMAP.md) : il s'ajoutait
   // par-dessus le `gap` de `.day-panel-body` entre la timeline et la carte,
   // gonflant spécifiquement CET écart au-delà de gap-1/gap-2. L'espacement
