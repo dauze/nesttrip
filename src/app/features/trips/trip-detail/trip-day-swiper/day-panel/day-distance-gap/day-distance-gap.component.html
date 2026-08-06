@@ -1,0 +1,27 @@
+@if (loading()) {
+  <div class="day-distance-gap">
+    <app-skeleton width="11rem" height="1.75rem" borderRadius="var(--nt-radius-pill)" />
+    <app-skeleton width="6rem" height="1.75rem" borderRadius="var(--nt-radius-pill)" />
+  </div>
+} @else if (hasRoute()) {
+  <a class="day-distance-gap" [href]="mapsUrl()" target="_blank" rel="noopener" [attr.aria-label]="ariaLabel()">
+    <span class="day-distance-gap__pill">
+      <i class="pi pi-directions" aria-hidden="true"></i>
+      distance entre activités {{ distanceLabel() }}
+    </span>
+    <span class="day-distance-gap__divider" aria-hidden="true"></span>
+    <span class="day-distance-gap__pill">
+      <svg class="day-distance-gap__walk-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="4.5" r="2" fill="currentColor" />
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 8v5" />
+          <path d="M12 13l-3 7" />
+          <path d="M12 13l3.5 3.5-1 4" />
+          <path d="M12 9.5l-3.5 2.5" />
+          <path d="M12 9.5l3 1.5" />
+        </g>
+      </svg>
+      {{ durationMinutes() | duration }}
+    </span>
+  </a>
+}

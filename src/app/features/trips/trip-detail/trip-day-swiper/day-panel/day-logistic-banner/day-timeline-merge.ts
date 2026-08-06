@@ -7,6 +7,13 @@ const CONTINUATION_ONLY_ROLES = new Set(['Nuit sur place', 'En cours']);
 
 export type MergedDayEntry = DayActivityEntry | { kind: 'logistic'; occurrence: LogisticDayOccurrence };
 
+/** Clé stable d'une entrée fusionnée — utilisée pour le tracking `@for` (day-panel.component.html) et pour bâtir les clés des segments de distance (voir day-timeline-distance.ts). */
+export function mergedEntryKey(entry: MergedDayEntry): string {
+  if (entry.kind === 'echo') return `${entry.originInstanceId}:echo`;
+  if (entry.kind === 'logistic') return `${entry.occurrence.logistic.id}:${entry.occurrence.role}`;
+  return entry.activity.id;
+}
+
 /** Occurrences "Nuit sur place"/"En cours" — alimentent le bandeau épinglé en haut du jour (`DayLogisticBannerComponent`, inchangé pour elles). */
 export function pinnedLogisticOccurrences(occurrences: LogisticDayOccurrence[]): LogisticDayOccurrence[] {
   return occurrences.filter((o) => CONTINUATION_ONLY_ROLES.has(o.role));

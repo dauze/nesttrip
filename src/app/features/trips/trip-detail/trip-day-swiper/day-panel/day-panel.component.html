@@ -27,8 +27,10 @@
       <app-panel [noHeader]="true" class="activities-column">
         <div class="flex flex-column gap-2">
           <div #activityList class="flex flex-column gap-2">
-            @for (entry of timelineEntries(); track entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id) {
-              @if (entry.kind === 'logistic') {
+            @for (entry of timelineEntriesWithGaps(); track entry.kind === 'gap' ? entry.key : entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id) {
+              @if (entry.kind === 'gap') {
+                <app-day-distance-gap [origin]="entry.origin" [destination]="entry.destination" />
+              } @else if (entry.kind === 'logistic') {
                 <app-day-logistic-entry [occurrence]="entry.occurrence" [tripId]="tripId()" (dragHandleDown)="reorderService.onDragHandleDown($event)" />
               } @else if (entry.kind === 'activity') {
                 <app-activity-card [inDayList]="true" (dragHandleDown)="reorderService.onDragHandleDown($event)" [initCollapsed]="false"

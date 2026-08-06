@@ -16,6 +16,8 @@ import {
 import { TimelineComponent } from './timeline/timeline.component';
 import { DayLogisticBannerComponent } from './day-logistic-banner/day-logistic-banner.component';
 import { MergedDayEntry } from './day-logistic-banner/day-timeline-merge';
+import { insertDistanceGaps, TimelineEntryWithGap } from './day-logistic-banner/day-timeline-distance';
+import { DayDistanceGapComponent } from './day-distance-gap/day-distance-gap.component';
 import { LogisticDayOccurrence } from './day-logistic-banner/logistic-day-occurrence';
 import { Activity, ActivityEcho } from '@app/shared/components/activity-card/activity.model';
 import { PanelComponent } from '@app/shared/components/panel/panel.component';
@@ -45,7 +47,7 @@ import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-p
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TimelineComponent, ActivityCardComponent, ActivityEchoCardComponent, DayLogisticEntryComponent, PanelComponent, MessageComponent,
-    NewActivityDraftComponent, DayLogisticBannerComponent, FabBottomProximityDirective,
+    NewActivityDraftComponent, DayLogisticBannerComponent, FabBottomProximityDirective, DayDistanceGapComponent,
   ],
   styleUrl: 'day-panel.component.scss',
   templateUrl: 'day-panel.component.html',
@@ -87,6 +89,9 @@ export class DayPanelComponent {
 
   /** Activités + échos + occurrences logistiques "frontière" (voir day-timeline-merge.ts) : consommé pour l'AFFICHAGE (timeline mini + liste principale) — le drag/la carte/la création restent sur `activities()`, qui ne contient ni écho ni logistique. */
   readonly timelineEntries: Signal<MergedDayEntry[]> = computed(() => this.tripFacade.getMergedDayTimeline(this.tripId(), this.dayId()));
+
+  /** `timelineEntries()` + segments "distance à pied" insérés entre les paires consécutives ayant chacune un placeId résolvable (voir insertDistanceGaps) — consommé UNIQUEMENT par la liste principale (`#activityList`, day-panel.component.html) ; `DayReorderService`/`DayScrollSyncService`/timeline mini continuent d'utiliser `timelineEntries()` sans les segments. */
+  readonly timelineEntriesWithGaps: Signal<TimelineEntryWithGap[]> = computed(() => insertDistanceGaps(this.timelineEntries()));
 
   readonly dayMapPoints = computed<DayMapPoint[]>(() => {
     return this.activities()
