@@ -5,6 +5,9 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 const STORAGE_KEY = 'nt-theme-mode';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
+/** Miroir de `--nt-content-background` (tokens.scss, valeurs claires/sombres) — couleur de la toolbar. */
+const THEME_COLOR_LIGHT = '#ffffff';
+const THEME_COLOR_DARK = '#18181b';
 
 /**
  * Choix de thème clair/sombre/système, accessible depuis le menu réglages
@@ -45,6 +48,16 @@ export class ThemeService {
         root.setAttribute('data-theme', mode);
       }
       localStorage.setItem(STORAGE_KEY, mode);
+    });
+
+    // Barre de statut mobile / chrome PWA alignée sur la couleur réelle de la
+    // toolbar (`--nt-content-background`) : le manifest.webmanifest n'expose
+    // qu'une valeur statique (pas de media query possible dessus), donc c'est
+    // ce `<meta name="theme-color">`, tenu à jour ici en fonction du même
+    // `isDark()` que le reste de l'appli, qui porte la couleur effective.
+    effect(() => {
+      const meta = this.document.querySelector('meta[name="theme-color"]');
+      meta?.setAttribute('content', this.isDark() ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
     });
   }
 
