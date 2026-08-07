@@ -18,6 +18,7 @@
       class="title-edit-dialog__input"
       [value]="inputValue()"
       [placeholder]="placeholder"
+      [attr.maxlength]="maxLength"
       (input)="onInput($any($event.target).value)"
       (keydown.enter)="validate()" />
   </div>

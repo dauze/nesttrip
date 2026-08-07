@@ -2,6 +2,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, inject, 
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
+import { MAX_NOTES_LENGTH } from '@app/shared/utils/input-limits';
 
 export interface NotesEditDialogData {
   initialValue: string;
@@ -46,6 +47,7 @@ export class NotesEditDialogComponent implements AfterViewInit {
   private readonly textareaRef = viewChild.required<ElementRef<HTMLTextAreaElement>>('textareaEl');
 
   protected readonly value = signal(this.data.initialValue ?? '');
+  protected readonly maxLength = MAX_NOTES_LENGTH;
 
   ngAfterViewInit(): void {
     const textarea = this.textareaRef().nativeElement;

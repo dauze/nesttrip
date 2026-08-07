@@ -12,6 +12,7 @@
     [id]="inputId()"
     [value]="value()"
     [placeholder]="placeholder()"
+    [attr.maxlength]="maxLength"
     rows="2"
     class="w-full"
     (input)="onInput($any($event.target).value)"></textarea>

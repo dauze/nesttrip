@@ -23,7 +23,7 @@ interface TaskItem {
 }
 
 /**
- * Tuile "Tâches" (onglet Résumé, voir ROADMAP.md "UX / Interactions") : agrège
+ * Tuile "Pense bête" (onglet Résumé, voir ROADMAP.md "UX / Interactions") : agrège
  * activités à réserver/en liste d'attente + réservations logistiques à
  * réserver, dans un ordre décidé avec l'utilisateur le 2026-08-01 (voir
  * ROADMAP.md) — tout item avec deadline remonte en premier (le plus proche

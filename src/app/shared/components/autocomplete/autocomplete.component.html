@@ -5,6 +5,7 @@
   [value]="value()"
   [placeholder]="placeholder()"
   [disabled]="isDisabled()"
+  [attr.maxlength]="maxLength()"
   (input)="onInput($any($event.target).value)"
   (blur)="onBlurInput()"
   (keydown)="onKeydown($event)" />

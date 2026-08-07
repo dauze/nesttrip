@@ -990,10 +990,10 @@ export class TripStore {
 
   // ── Commandes — Activities ────────────────────────────────────────────────
 
-  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour) — positionnée en tête de journée (voir ROADMAP.md "Activités"), pas en fin. */
+  /** Crée une activité de pool ET une instance pour ce jour en une fois (bouton "+" d'un jour) — positionnée en fin de journée tant qu'aucune heure n'est saisie (ROADMAP.md "### UI"), `repositionChronologically` la replace ensuite dès qu'une heure de début est renseignée. */
   createActivity(tripId: string, dayId: Date, poolActivity: PoolActivity, instance: DayActivityInstance): void {
     this.addPoolActivity(tripId, poolActivity);
-    this.addDayActivityInstance(tripId, dayId, instance, 'start');
+    this.addDayActivityInstance(tripId, dayId, instance);
   }
 
   /** Crée une activité dans le pool général du trip uniquement (aucun jour) : elle sera affichée avec des contours en tiret tant qu'elle n'est placée sur aucun jour. */
@@ -1013,14 +1013,13 @@ export class TripStore {
     this.activityPersistenceService.queueUpdate(tripId, poolActivity);
   }
 
-  /** `position: 'start'` uniquement pour la création via le bouton "+" (voir `createActivity`) — le drag depuis le pool (`attachPoolActivityToDay`) continue d'ajouter en fin. */
-  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance, position: 'start' | 'end' = 'end'): void {
+  private addDayActivityInstance(tripId: string, dayId: Date, instance: DayActivityInstance): void {
     const dayKey = dayId.toISOString();
 
     this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
     this._dayActivityIds.update((d) => ({
       ...d,
-      [dayKey]: position === 'start' ? [instance.id, ...(d[dayKey] ?? [])] : [...(d[dayKey] ?? []), instance.id],
+      [dayKey]: [...(d[dayKey] ?? []), instance.id],
     }));
     this.markActivityPending(instance.id);
 

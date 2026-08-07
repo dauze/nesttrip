@@ -17,18 +17,15 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - refondre toute la partie générale
 
 ### UI 
-- Renommer tâche en "Pense bête" dans l'ongelt de résumé
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- Dans google form des activité et logement et transport, changer le logo "Adresse" de google en logo de lien de débranchement pour que l'utilisateur comprenne qu'il faut cliquer dessus sur l'adresse
-- Quand on créé une nouvelle activité dans un day activity et qu'on met pas les date, le mettre tout en bas en fait, c'est plus logique que tout en haut
-- Le schéma des dépenses dans l'onglet résumé est à corriger, il faut que les 4 premier soient les plus grand, et que le 5ime sois un libellé fixe "Autre" qui regroupe touts les autres dépenses 
-- l'information de distance entre les activité ne va pas, il faudrait que la chip soit centrée et que le chemin en pointillé soit décalé pour être à gauche du chip. Ensuite, le logo voiture n'est pas centré verticalement à tord, les autre logos sont bien centrés pourtant
 - Retravailler les dialog sur mobile car elle ressemble trop à des dialogue d'ordi, on peut faire beaucoup plus design en terme d'UI  (A affiner)
 - Renommer les titres des popup pour les trajet depuis résumé, ça fait pas uniforme les "premier", "deuxième" et "troisième".  (A affiner)
 - Retravailler le trip header en terme d'ui, le libellé du trajet peut être plus jolie et mettre des crayon partout on peut mieux faire ! (A affiner)
 - specs/Parcours-new-user.md
-- Rertravailler la tuile Dépense de l'ongelt résumé, il faut que les données associés au graphique donut soientt à droite du donnut, pas en dessous. Le donut sera donc sur un demie ecran ,et la légende sur l'autre demie.
-    
+- Tuile Dépenses : légende à droite du donut sur la même ligne 
+- remettre les pointillés affiché dasn le calculc de distance 
+- La pop-up informative de fichier trop gros a 2 bouton of, il faut en mettre qu'un seul !
+- Renommer pense bête en "Réservations"
 
 ### Carte
 
@@ -68,14 +65,11 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi
-- Depuis le pool d'activité, lorsque je lance l'annimation du drag and drop d'une activité, la couleur est celle du primary et pas celle du border, à corriger 
-- La devise par defaut de la tuile de résumé doit completement disparaitre, idem pour la BDD, elle ne doit plus être utilisé 
 
 ### Qualité / process
 
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
-- Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là
-- La selection de fichier : le composant est duppliqué entre le pool d'activité et les activités à tord 
+- Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là (reporté le 2026-08-07, 73 fichiers d'imports impactés — pas prioritaire pour l'instant)
 - Profiter de anfgular 22 et éviter les async function ! 
 - Définir des spec pour tout le code pour les parcours utilisateurs (et donc mettre des tests e2e qui couvrirait les différentes spec)
 - Faire une code review de fond avec Fable pour voir si il y a pas de simplification, audit de sécurité, tests, etc : 
@@ -83,7 +77,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
   - html : pas de redondance ? 
   - typescript uniforme ? Signal bien géré, observable aussi ?
   - Problème d'incohérence : il y a 2 composants pour la liste sur mobile, un avec le check et un avec la ligne en surbrillance, il faudrait les fusionner pour en avoir qu'une seule
-- Rajouter des limites sur les zones pour des tailles de fichiers, des contrôles de cohérence interdonnées, des limites de tailles pour les terxtes, etc
 
 ### Industrialisation (non prioritaire)
 

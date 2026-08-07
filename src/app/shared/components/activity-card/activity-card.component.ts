@@ -434,10 +434,10 @@ export class ActivityCardComponent {
 
   /** Construit l'info de drag pour cette carte, à l'usage de DayPanelComponent au démarrage d'un réordonnancement intra-jour (voir `registerActiveDayDrag`). */
   buildDayDragInfo(): DraggedActivityInfo | null {
-    return this.buildDraggedInfo(this.element);
+    return this.buildDraggedInfo();
   }
 
-  private buildDraggedInfo(el: HTMLElement): DraggedActivityInfo | null {
+  private buildDraggedInfo(): DraggedActivityInfo | null {
     const activity = this.activity();
     if (!activity) return null;
     return {
@@ -446,7 +446,7 @@ export class ActivityCardComponent {
       sourceDayId: this.dayId(),
       title: activity.title || 'Sans titre',
       icon: ACTIVITY_TYPE_META[activity.type]?.icon ?? 'pi pi-bolt',
-      color: this.resolveRingColor(el),
+      color: `var(${this.typeColorVar()})`,
       photoRef: activity.photoRefs?.[0],
       origin: this.inDayList() ? 'day' : 'pool',
     };
@@ -476,7 +476,7 @@ export class ActivityCardComponent {
 
     this.wasExpandedBeforeLift = !this.collapsed();
 
-    const info = this.buildDraggedInfo(el);
+    const info = this.buildDraggedInfo();
     if (!info) return;
 
     if (!this.wasExpandedBeforeLift) {
@@ -509,19 +509,6 @@ export class ActivityCardComponent {
 
       this.dispatchService.beginLift(info, el.getBoundingClientRect(), el, x, y);
     }, PANEL_COLLAPSE_DELAY_MS);
-  }
-
-  private resolveRingColor(el: HTMLElement): string {
-    // `.booking` (+ la classe de statut) est posée sur `<app-panel>` lui-même
-    // (voir le template) : `--booking-status-color` est une variable CSS,
-    // elle n'est visible qu'en descendant du DOM depuis cet élément, jamais
-    // en remontant depuis `el` (le conteneur ANCÊTRE). L'ancien sélecteur
-    // `.p-panel` datait de PrimeNG (avant le remplacement par PanelComponent,
-    // voir PRIMENG_MIGRATION.md) et ne matche plus rien depuis : on retombait
-    // donc toujours sur la couleur primaire au lieu de la couleur de statut.
-    const panelEl = el.querySelector('.booking') as HTMLElement | null;
-    const value = getComputedStyle(panelEl ?? el).getPropertyValue('--booking-status-color').trim();
-    return value || 'var(--nt-primary-color)';
   }
 
   get element(): HTMLElement {

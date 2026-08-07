@@ -5,7 +5,7 @@
     <span class="font-semibold text-sm nt-text-muted">Google</span>
     @if (mapsUrl(); as url) {
       <a [href]="url" target="_blank" class="flex align-items-center gap-2 no-underline nt-text-color line-height-3 hover:nt-text-primary transition-colors text-sm font-medium">
-        <i class="pi pi-map-marker nt-text-primary text-base"></i>
+        <i class="pi pi-external-link nt-text-primary text-base"></i>
         <span>{{ activity().address || 'Voir sur Google Maps' }}</span>
       </a>
     }

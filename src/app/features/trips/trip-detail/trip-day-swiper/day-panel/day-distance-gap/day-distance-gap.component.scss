@@ -12,36 +12,35 @@
   margin-block: calc(-1 * var(--nt-layout-gap-split, 0.5rem));
 }
 
-// Rail réel en flux du DOM — remplace l'ancien chemin décoratif en SVG
-// positionné en `absolute` sur toute la rangée : un tracé décoratif ne
-// connaît jamais la vraie hauteur des cartes voisines, donc dès qu'une carte
-// changeait de taille (titre sur 2 lignes...) l'ancrage ne correspondait
-// plus. Ici la pastille ET le bouton "Enregistrer un transport ?" sont des
-// enfants en flux normal du MÊME conteneur que le trait (`column`, pas de
-// `position: absolute` sur la pastille/le bouton) : `.line` (ci-dessous,
-// absolute top:0/bottom:0) suit donc automatiquement la hauteur totale du
-// rail, bouton conditionnel inclus. Bug à ne pas reproduire : un bouton
-// sibling EN DEHORS de ce conteneur ferait s'arrêter le trait avant la carte
-// du bas.
+// Grille 2 colonnes (trait / contenu) plutôt qu'un `flex column` + trait en
+// `absolute` à gauche fixe (ancienne version, ROADMAP.md "### UI" : "il
+// faudrait que la chip soit centrée et que le chemin en pointillé soit
+// décalé pour être à gauche du chip") — la pastille et le bouton "Enregistrer
+// un transport ?" partagent tous deux la colonne 2, alignés l'un sous
+// l'autre ; `justify-content: center` centre le bloc [trait|contenu] dans
+// toute la largeur du rail (pas juste la pastille seule, qui resterait alors
+// collée au trait) tout en gardant le trait immédiatement à sa gauche, quelle
+// que soit la largeur réelle de la pastille (distance/durée de longueur
+// variable) — pas de valeur magique à recalculer si le contenu change.
 .day-distance-gap-rail {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.6rem 0 0.6rem 3.5rem;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: start;
+  column-gap: 0.5rem;
+  row-gap: 0.5rem;
+  padding: 0.6rem 0;
 }
 
 // Trait pointillé fin en dégradé répété (PAS `border-style: dashed`, qui
-// rend mal en vertical) — épaisseur constante quelle que soit la hauteur du
-// rail puisque positionné `absolute` À L'INTÉRIEUR du rail, pas de l'écran.
-// Toujours À GAUCHE de la pastille (pas centré derrière) : `left` fixe, la
-// pastille est décalée via le `padding-left` du rail ci-dessus.
+// rend mal en vertical). `grid-row: 1 / -1` (pas `position: absolute` +
+// `top/bottom`) : s'étire sur TOUTES les lignes de la grille (pastille +
+// bouton "Enregistrer un transport ?" si présent) sans avoir besoin de
+// connaître la hauteur totale du rail à l'avance.
 .day-distance-gap-rail__line {
-  position: absolute;
-  left: 1.5rem;
-  top: 0;
-  bottom: 0;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  justify-self: center;
   width: 0.125rem;
   background-image: linear-gradient(var(--nt-content-border-color) 60%, transparent 0%);
   background-size: 0.125rem 0.5rem;
@@ -52,6 +51,8 @@
 // (séparateur = bordure interne sur `__chevron`), pas 2 pastilles sœurs :
 // zone principale = 1 clic = Maps direct ; chevron = ouvre le menu de mode.
 .day-distance-gap-chip {
+  grid-column: 2;
+  grid-row: 1;
   position: relative;
   z-index: 1;
   display: flex;
@@ -79,11 +80,23 @@
   }
 }
 
+// `display: inline-flex` + centrage : nécessaire pour le glyphe PrimeIcons
+// (`pi-car`, seul mode NON svg ici) — en simple `<i>` inline, sa hauteur de
+// ligne (héritée de `.day-distance-gap-chip__main`) dépasse son `font-size`
+// réduit (0.85em) et le glyphe reste calé sur la ligne de base du texte, pas
+// centré dans sa boîte de 0.9rem comme les `<svg>` walk/bike (ROADMAP.md
+// "### UI" : "le logo voiture n'est pas centré verticalement à tord").
 .day-distance-gap-chip__mode-icon {
   width: 0.9rem;
   height: 0.9rem;
   flex: none;
   font-size: 0.85em;
+
+  &.pi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .day-distance-gap-chip__nav-hint {
@@ -121,6 +134,8 @@
 // `color-mix`, pas un fond neutre) pour bien se distinguer de la pastille
 // (contrôle principal, fond plein) tout en restant dans le thème.
 .day-distance-gap-rail__transport-cta {
+  grid-column: 2;
+  grid-row: 2;
   position: relative;
   z-index: 1;
   display: flex;

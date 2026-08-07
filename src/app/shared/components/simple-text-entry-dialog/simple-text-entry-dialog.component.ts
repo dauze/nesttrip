@@ -1,6 +1,7 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
 
 export interface SimpleTextEntryDialogData {
   initialValue?: string;
@@ -35,6 +36,7 @@ export class SimpleTextEntryDialogComponent implements AfterViewInit {
   protected readonly placeholder = this.data.placeholder ?? '';
   protected readonly optional = this.data.optional ?? false;
   protected readonly inputValue = signal(this.data.initialValue ?? '');
+  protected readonly maxLength = MAX_TITLE_LENGTH;
 
   ngAfterViewInit(): void {
     const input = this.inputRef().nativeElement;

@@ -329,12 +329,12 @@ describe('TripStore', () => {
       });
     });
 
-    it('insère les nouvelles activités en tête de journée, pas en fin (voir ROADMAP.md "Activités")', () => {
+    it('insère les nouvelles activités sans date en fin de journée, pas en tête (voir ROADMAP.md "### UI")', () => {
       store.createActivity(tripId, dayId, poolActivity({ id: 'pool-1' }), instance({ id: 'instance-1', activityId: 'pool-1' }));
       store.createActivity(tripId, dayId, poolActivity({ id: 'pool-2' }), instance({ id: 'instance-2', activityId: 'pool-2' }));
 
       const ids = store.getDayActivities(dayId)().map((a) => a.id);
-      expect(ids).toEqual(['instance-2', 'instance-1']);
+      expect(ids).toEqual(['instance-1', 'instance-2']);
     });
   });
 

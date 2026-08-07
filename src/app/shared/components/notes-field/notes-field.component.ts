@@ -4,6 +4,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ViewportService } from '@core/services/viewport.service';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
+import { MAX_NOTES_LENGTH } from '@app/shared/utils/input-limits';
 import { NotesEditDialogComponent, NotesEditDialogData } from './notes-edit-dialog/notes-edit-dialog.component';
 
 /**
@@ -45,6 +46,8 @@ export class NotesFieldComponent implements ControlValueAccessor {
   readonly title = input('Notes');
   /** Id posé sur le `<textarea>` interne (desktop), pas sur le host — même convention que `InputNumberComponent.inputId` (nécessaire pour un `<label for="...">` externe). */
   readonly inputId = input<string>('');
+
+  protected readonly maxLength = MAX_NOTES_LENGTH;
 
   protected readonly value = signal('');
   protected readonly disabled = signal(false);

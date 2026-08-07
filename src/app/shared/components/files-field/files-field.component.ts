@@ -5,6 +5,8 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
 import { FileService } from '@core/services/file.service';
 import { fileIcon as fileIconFor, openFile as openFileUrl } from '@app/shared/utils/file-icon';
+import { MAX_FILE_SIZE_BYTES } from '@app/shared/utils/input-limits';
+import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 
 export interface FileRef {
   url: string;
@@ -32,6 +34,7 @@ export interface FileRef {
 })
 export class FilesFieldComponent {
   private readonly fileService = inject(FileService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
 
   readonly files = input.required<FileRef[]>();
   /** Préfixe de chemin Storage SANS le nom de fichier final (ex. `trips/{tripId}/{activityId}`, `trips/{tripId}/logistics/{logisticId}`) — voir chaque appelant. */
@@ -49,6 +52,17 @@ export class FilesFieldComponent {
     input.value = '';
 
     for (const file of selected) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        this.confirmDialogService.confirm({
+          header: 'Fichier trop volumineux',
+          message: `"${file.name}" dépasse la taille maximale autorisée (10 Mo).`,
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'OK',
+          rejectLabel: 'OK',
+        });
+        continue;
+      }
+
       const path = `${this.storagePathPrefix()}/${file.name}`;
       this.uploadingFiles.update((s) => new Set(s).add(file.name));
 

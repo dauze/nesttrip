@@ -17,6 +17,7 @@
     class="notes-edit-dialog__textarea"
     [value]="value()"
     [placeholder]="data.placeholder"
+    [attr.maxlength]="maxLength"
     (input)="onInput($any($event.target).value)"></textarea>
 
   <div class="notes-edit-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">

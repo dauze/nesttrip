@@ -4,6 +4,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
+import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
 
 export interface TitleEditDialogData {
   initialTitle: string;
@@ -58,6 +59,7 @@ export class TitleEditDialogComponent implements AfterViewInit {
   protected readonly headerTitle = this.data.title ?? 'Titre';
   protected readonly inputValue = signal(this.data.initialTitle ?? '');
   protected readonly placeholder = this.data.placeholder ?? "Nom de l'activité";
+  protected readonly maxLength = MAX_TITLE_LENGTH;
 
   private readonly searchTerm = signal(this.data.initialTitle ?? '');
   private readonly searchState = toSignal(

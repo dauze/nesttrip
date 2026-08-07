@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
 
 /** Sous le champ, aligné sur son bord gauche ; bascule au-dessus si la place manque en bas. */
 const POSITIONS: ConnectedPosition[] = [
@@ -58,6 +59,8 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
   readonly emptyMessage = input('Aucun résultat trouvé');
   /** Classes additionnelles posées sur le `<input>` interne (même pattern que `InputNumberComponent.inputClass`). */
   readonly inputClass = input('');
+  /** Longueur max du texte libre saisi (ROADMAP.md "Qualité / process") — tous les usages actuels sont des champs "titre"/lieu, jamais un texte long. */
+  readonly maxLength = input(MAX_TITLE_LENGTH);
 
   /** Émis à chaque frappe (texte brut) — le débounce/la recherche restent à la charge de l'appelant (voir GooglePlaceService.search$, déjà débouncé). Nommé `searched` (pas `search`, événement DOM natif) — voir la note sur `blurred`. */
   readonly searched = output<string>();

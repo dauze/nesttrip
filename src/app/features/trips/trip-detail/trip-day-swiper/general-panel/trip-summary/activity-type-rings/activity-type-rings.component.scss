@@ -7,6 +7,17 @@
   gap: 0.75rem;
 }
 
+// Mode interactif (dépenses, ROADMAP.md "### UI" : "les données associées au
+// graphique donut [doivent être] à droite du donut, pas en dessous") : anneau
+// et légende côte à côte plutôt qu'empilés — `flex-wrap` repasse en colonne
+// dès que la légende n'a plus la place (~12rem), pour rester lisible sur
+// mobile étroit sans dupliquer la mise en page en media query.
+.rings-chart--interactive {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 // Tuile 1/2 largeur, à côté de "Dépenses" (ROADMAP.md "### UI") : réduit par
 // rapport à la 1re version (pleine largeur) pour rester à l'aise dans cet
 // espace plus étroit.

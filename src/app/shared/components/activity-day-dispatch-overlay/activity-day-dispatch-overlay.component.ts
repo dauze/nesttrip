@@ -532,7 +532,7 @@ export class ActivityDayDispatchOverlayComponent {
    * Déclenche, une seule fois à l'entrée de la phase 2, le passage du fin
    * liseré gris (haut/droite/bas) vers la couleur de l'activité — via une
    * transition CSS plutôt qu'un lerp RGB manuel : `color` est une valeur déjà
-   * résolue (voir `resolveRingColor`), donc le navigateur sait l'interpoler
+   * résolue (voir `ActivityCardComponent.buildDraggedInfo`), donc le navigateur sait l'interpoler
    * seul. L'épaisseur, elle, continue d'être pilotée image par image dans
    * `playTravelFollow` (cohérent avec le reste de la bulle), la transition
    * CSS posée ici ne portant donc que sur `border-color`.
