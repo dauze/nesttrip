@@ -60,9 +60,6 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Renommer tâche car c'est trop contraignant
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? 
 - Changer le logo "Adresse" de google en logo de lien de débranchement
-- Améliorer le bouton du clider, il ne faut pas que la position de la progresse bar varie en fonction du bouton, elle doit toujout être en sent milieu. et le bouton doit être pleins, de la taille un tout petit peu plus grand que la progress bar, avec un boxshadow, un effet de brillance sur le dessus une ui quali quoi
-- Si je bouge l bouton 1, le bouton 2 ne doit JAMAIS bouger, juste la valeur bouge UNIQUEMENT si il est collé sur le bord gauche ou qu'il fait moi que la valeur du bouton 1
-- refaire le tracer, ça va pas du tout il passe devant et il est pas jolie du tout je te filerai une image à mettre en background ce sera plus simple
 - Quand on créé une nouvelle activité et qu'on met pas les date, le mettre tout en bas en fait, c'est plus logique que tout en haut
 
 ### Carte

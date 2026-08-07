@@ -7,30 +7,36 @@
 // Conteneur SCOPÉ à la seule rangée de pills (PAS tout le `:host`, qui
 // grandit aussi pour contenir le bouton "Enregistrer un transport ?" en
 // dessous, voir plus bas) : le chemin décoratif ne doit jamais s'étendre
-// jusqu'à ce bouton (retour utilisateur — avec son fond transparent, le
-// pointillé se voyait "au travers"). `padding` vertical ici (pas sur
-// `:host`) : espacement normal avec les cartes voisines (plus de
-// chevauchement volontaire, contrairement à la 1re version), et un peu
-// généreux pour laisser au chemin la place d'onduler ("plus long", retour
-// utilisateur).
+// jusqu'à ce bouton. `min-height` (PAS `padding`) : la place gagnée est
+// entièrement occupée par le tracé décoratif lui-même, pas de l'espace mort
+// — sans cette hauteur dédiée, le chemin restait confiné à la hauteur des
+// pills (~1.75rem) et ne se lisait plus du tout comme "reliant" les cartes
+// voisines, juste au-dessus/en-dessous (retour utilisateur : "ça marche
+// absolument pas"). Toujours pas de zone vide supplémentaire entre le
+// chemin et les cartes elles-mêmes, séparées par le `gap-2` du parent
+// (day-panel.component.html) — cf. "relie les activités sans padding".
 .day-distance-gap-row {
   position: relative;
-  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4.5rem;
+  isolation: isolate;
 }
 
-// Chemin décoratif fin en pointillé, DERRIÈRE les pills (repassé derrière
-// après un essai par-dessus jugé pas assez propre, retour utilisateur) :
-// pour rester visible malgré les pills à fond plein, ses extrémités sont
-// volontairement DÉCALÉES du centre (25%/75%, pas 50/50 comme un 1er essai
-// centré, quasi entièrement masqué) — l'essentiel du trait chemine donc
-// dans les marges de part et d'autre des pills, seule sa portion centrale
-// disparaît sous elles (lecture "passe par le chip" conservée). Relie la
-// carte du dessus à celle du dessous, pas forcément droit —
-// `preserveAspectRatio="none"` étire un viewBox carré aux proportions
-// réelles (large et bas) de `.day-distance-gap-row`. `vector-effect:
-// non-scaling-stroke` : sans ça, cet étirement NON uniforme (largeur ≫
-// hauteur) déformerait aussi l'épaisseur du trait au lieu de la garder fine
-// et constante.
+// Chemin décoratif fin en pointillé, DERRIÈRE les pills. Contrairement à un
+// essai précédent (un seul tracé centré, comptant sur le z-index pour
+// disparaître sous les pills — jugé pas fiable/pas joli, retour
+// utilisateur), le `<path>` est ici composé de DEUX sous-tracés disjoints
+// (2 `M`, un par moitié — voir le template) qui s'ARRÊTENT avant d'atteindre
+// la zone des pills et REPRENNENT juste après : le chemin ne passe donc
+// JAMAIS visuellement par-dessus le contenu, sans dépendre d'un empilement
+// z-index. Inspiré du repère utilisateur (2 pins reliés par un tracé noir
+// sinueux à plusieurs courbes) — `preserveAspectRatio="none"` étire un
+// viewBox carré aux proportions réelles (large et bas) de
+// `.day-distance-gap-row`. `vector-effect: non-scaling-stroke` : sans ça,
+// cet étirement NON uniforme (largeur ≫ hauteur) déformerait aussi
+// l'épaisseur du trait au lieu de la garder fine et constante.
 .day-distance-gap__path {
   position: absolute;
   inset: 0;
@@ -41,10 +47,11 @@
 
   path {
     fill: none;
-    stroke: var(--nt-secondary-color);
-    opacity: 0.55;
-    stroke-width: 1;
-    stroke-dasharray: 3 4;
+    stroke: var(--nt-text-color);
+    opacity: 0.4;
+    stroke-width: 1.3;
+    stroke-linecap: round;
+    stroke-dasharray: 4 3.5;
     vector-effect: non-scaling-stroke;
   }
 }

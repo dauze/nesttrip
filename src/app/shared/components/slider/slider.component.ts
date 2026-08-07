@@ -35,11 +35,23 @@ export class SliderComponent implements ControlValueAccessor {
   protected readonly value = signal(0);
   protected readonly disabled = signal(false);
 
-  /** Position du remplissage coloré (0-100%) — voir `.app-slider__track` (slider.component.scss). */
-  protected readonly fillPercent = computed(() => {
+  /**
+   * Fraction du remplissage coloré (0-1, PAS un pourcentage — voir
+   * `slider.component.scss`) : le pouce natif d'un `<input type="range">`
+   * n'occupe jamais tout à fait 0%/100% de la largeur totale, son CENTRE
+   * reste inset d'un demi-pouce de chaque bord (sinon il dépasserait de la
+   * piste) — un dégradé calé sur un pourcentage BRUT (bord à bord) ne
+   * correspond donc pas à la position réelle du pouce, l'écart étant
+   * maximal aux extrémités (retour utilisateur : "la barre est d'abord à
+   * gauche du bouton, puis passe à droite"). Exprimée en fraction pour
+   * pouvoir être multipliée par une longueur dans un `calc()` CSS
+   * (`calc(fraction * (100% - largeur-pouce))`), qui reproduit exactement
+   * cet inset.
+   */
+  protected readonly fillFraction = computed(() => {
     const range = this.max() - this.min();
     if (range <= 0) return 0;
-    return ((this.value() - this.min()) / range) * 100;
+    return (this.value() - this.min()) / range;
   });
 
   private onChange?: (value: number) => void;

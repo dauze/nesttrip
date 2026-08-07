@@ -18,7 +18,17 @@
 // reconstruit la piste en dégradé, le thumb reste natif (accessibilité
 // clavier/tactile gratuite, pas besoin de la réimplémenter).
 .app-slider__input {
-  --app-slider-fill: 0%;
+  // Fraction 0-1 (PAS un %, voir `SliderComponent.fillFraction`) + taille du
+  // pouce en variable PARTAGÉE (thumb ET dégradé lisent la MÊME valeur,
+  // jamais 2 nombres à resynchroniser à la main) : le dégradé de fond
+  // reproduit l'inset natif du pouce via `calc(fraction * (100% - taille))`
+  // décalé d'un demi-pouce — sans ça le point de transition du dégradé
+  // (bord à bord) ne correspond pas à la position réelle, EXACTE, du centre
+  // du pouce natif (inset d'un demi-pouce de chaque bord, sinon il
+  // dépasserait de la piste) : écart maximal aux 2 extrémités, nul au
+  // milieu — retour utilisateur confirmant précisément ce symptôme.
+  --app-slider-fill: 0;
+  --app-slider-thumb-size: 1.7rem;
 
   flex: 1 1 auto;
   appearance: none;
@@ -37,30 +47,43 @@
   border-radius: var(--nt-radius-pill);
   background: linear-gradient(
     to right,
-    var(--nt-primary-color) var(--app-slider-fill),
-    var(--nt-secondary-bg) var(--app-slider-fill)
+    var(--nt-primary-color) calc(var(--app-slider-fill) * (100% - var(--app-slider-thumb-size)) + var(--app-slider-thumb-size) / 2),
+    var(--nt-secondary-bg) calc(var(--app-slider-fill) * (100% - var(--app-slider-thumb-size)) + var(--app-slider-thumb-size) / 2)
   );
   outline: none;
   cursor: pointer;
 
+  // Pouce PLEIN d'un aplat SOLIDE (pas de dégradé mêlé au primary — retour
+  // utilisateur : le précédent `radial-gradient` clair-au-centre/primary-au-
+  // bord donnait un effet "anneau creux", et le halo clair pouvait se
+  // confondre avec un reliquat de remplissage même à la valeur min) : la
+  // couleur de fond est `--nt-content-background` (PAS `--nt-primary-color`,
+  // volontairement distincte — retour utilisateur), donc blanc en thème
+  // clair / surface sombre en thème sombre, sans avoir à dupliquer une regle
+  // dark-mode ici. Le lien visuel avec la piste remplie reste assuré par la
+  // bordure colorée (`--nt-primary-color`) plutôt que par le fond.
   &::-webkit-slider-thumb {
     appearance: none;
     -webkit-appearance: none;
-    width: 1.6rem;
-    height: 1.6rem;
+    width: var(--app-slider-thumb-size);
+    height: var(--app-slider-thumb-size);
     border-radius: 50%;
-    background: var(--nt-primary-color);
-    border: 3px solid var(--nt-content-background);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    background: var(--nt-content-background);
+    border: 3px solid var(--nt-primary-color);
+    box-shadow:
+      0 3px 8px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(0, 0, 0, 0.06);
   }
 
   &::-moz-range-thumb {
-    width: 1.6rem;
-    height: 1.6rem;
+    width: var(--app-slider-thumb-size);
+    height: var(--app-slider-thumb-size);
     border-radius: 50%;
-    background: var(--nt-primary-color);
-    border: 3px solid var(--nt-content-background);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    background: var(--nt-content-background);
+    border: 3px solid var(--nt-primary-color);
+    box-shadow:
+      0 3px 8px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(0, 0, 0, 0.06);
   }
 
   &::-moz-range-track {

@@ -3,7 +3,7 @@
     #inputEl
     type="range"
     class="app-slider__input"
-    [style.--app-slider-fill.%]="fillPercent()"
+    [style.--app-slider-fill]="fillFraction()"
     [min]="min()"
     [max]="max()"
     [step]="step()"
