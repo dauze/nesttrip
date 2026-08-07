@@ -1,0 +1,53 @@
+<div class="pts">
+  <div class="pts__labels-above">
+    <span class="pts__label pts__label--walk pts__label--chip" [style.left.%]="tier1Fraction() * 100">{{ tier1Display() }} km</span>
+  </div>
+
+  <div
+    #track
+    class="pts__track"
+    (pointerdown)="onTrackPointerDown($event)"
+    (pointermove)="onTrackPointerMove($event)"
+    (pointerup)="onTrackPointerUp($event)"
+    (pointercancel)="onTrackPointerUp($event)">
+    <div class="pts__bar">
+      <div class="pts__segment pts__segment--walk" [style.width.%]="segment1WidthPct()"></div>
+      <div class="pts__segment pts__segment--bike" [style.left.%]="segment2LeftPct()" [style.width.%]="segment2WidthPct()"></div>
+      <div class="pts__segment pts__segment--car" [style.left.%]="segment3LeftPct()" [style.width.%]="segment3WidthPct()"></div>
+    </div>
+
+    <div
+      class="pts__handle pts__handle--walk"
+      [style.left.%]="tier1Fraction() * 100"
+      role="slider"
+      tabindex="0"
+      [attr.aria-valuemin]="min()"
+      [attr.aria-valuemax]="tier2Value()"
+      [attr.aria-valuenow]="tier1Value()"
+      aria-label="Limite marche"
+      (pointerdown)="onHandlePointerDown('tier1', $event)"
+      (keydown)="onHandleKeydown('tier1', $event)"></div>
+
+    <div
+      class="pts__handle pts__handle--bike"
+      [style.left.%]="tier2Fraction() * 100"
+      role="slider"
+      tabindex="0"
+      [attr.aria-valuemin]="tier1Value()"
+      [attr.aria-valuemax]="max()"
+      [attr.aria-valuenow]="tier2Value()"
+      aria-label="Limite vélo"
+      (pointerdown)="onHandlePointerDown('tier2', $event)"
+      (keydown)="onHandleKeydown('tier2', $event)"></div>
+  </div>
+
+  <div class="pts__labels-below">
+    <span class="pts__label pts__label--bike pts__label--chip" [style.left.%]="tier2Fraction() * 100">{{ tier2Display() }} km</span>
+  </div>
+
+  <div class="pts__modes">
+    <div class="pts__modes-zone pts__modes-zone--walk"><ng-content select="[tier1-mode]" /></div>
+    <div class="pts__modes-zone pts__modes-zone--bike"><ng-content select="[tier2-mode]" /></div>
+    <div class="pts__modes-zone pts__modes-zone--car"><ng-content select="[tier3-mode]" /></div>
+  </div>
+</div>

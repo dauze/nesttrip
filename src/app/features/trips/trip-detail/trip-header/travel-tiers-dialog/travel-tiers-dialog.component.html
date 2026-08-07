@@ -11,22 +11,19 @@
       (click)="cancel()" />
   </div>
 
-  <div class="travel-tiers-dialog__tiers">
-    <app-select class="w-max min-w-0 transparent-select" formControlName="tier1Mode" [options]="modeOptions" label="Transport premier palier" />
-    <span class="travel-tiers-dialog__qualifier nt-text-muted">jusqu'à</span>
-    <app-slider formControlName="tier1MaxKm" [min]="0" [max]="tier1Max" [step]="0.5" unit="km" />
-
-    <div class="travel-tiers-dialog__divider"></div>
-
-    <app-select class="w-max min-w-0 transparent-select" formControlName="tier2Mode" [options]="modeOptions" label="Transport deuxième palier" />
-    <span class="travel-tiers-dialog__qualifier nt-text-muted">jusqu'à</span>
-    <app-slider formControlName="tier2MaxKm" [min]="0" [max]="tier2Max" [step]="1" unit="km" />
-
-    <div class="travel-tiers-dialog__divider"></div>
-
-    <app-select class="w-max min-w-0 transparent-select" formControlName="tier3Mode" [options]="modeOptions" label="Transport troisième palier" />
-    <span class="travel-tiers-dialog__qualifier nt-text-muted">sinon</span>
-    <span></span>
+  <div class="travel-tiers-dialog__body">
+    <app-paliers-trajet-slider
+      [min]="0"
+      [max]="maxKm"
+      [step]="1"
+      [tier1Value]="tier1Km()"
+      [tier2Value]="tier2Km()"
+      (tier1ValueChange)="form.patchValue({ tier1MaxKm: $event })"
+      (tier2ValueChange)="form.patchValue({ tier2MaxKm: $event })">
+      <app-select tier1-mode class="tier-select" formControlName="tier1Mode" [options]="modeOptions" label="Transport premier palier" />
+      <app-select tier2-mode class="tier-select" formControlName="tier2Mode" [options]="modeOptions" label="Transport deuxième palier" />
+      <app-select tier3-mode class="tier-select" formControlName="tier3Mode" [options]="modeOptions" label="Transport troisième palier" />
+    </app-paliers-trajet-slider>
   </div>
 
   <div class="travel-tiers-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">

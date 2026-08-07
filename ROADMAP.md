@@ -61,6 +61,8 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? 
 - Changer le logo "Adresse" de google en logo de lien de débranchement
 - Quand on créé une nouvelle activité et qu'on met pas les date, le mettre tout en bas en fait, c'est plus logique que tout en haut
+- Le schéma des dépenses est à corriger, il faut que les 4 premier soitent les plus grand, et que le 5ime sous un libellé fixe "Autre" qui regroupe touts les autres dépenses 
+- Problème d'incohérence : il y a 2 éléments de liste, un avec le check et un avec la ligne en surbrillance, il faudrait les fusionner pour en avoir qu'une seule
 
 ### Carte
 

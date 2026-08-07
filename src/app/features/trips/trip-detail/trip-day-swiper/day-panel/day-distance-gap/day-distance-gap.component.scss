@@ -1,149 +1,131 @@
+// `margin-block` négatif = exactement l'opposé du `gap-2` du parent (voir
+// `--nt-layout-gap-split`, day-panel.component.html) : ce composant est
+// TOUJOURS placé entre 2 entrées de la timeline (jamais en tête/queue de
+// liste, voir `insertDistanceGaps`), donc annuler le gap au-dessus ET
+// en-dessous est sûr — sans ça, le trait pointillé (qui occupe toute la
+// hauteur DE CE COMPOSANT) s'arrêtait avant d'atteindre les cartes, le
+// `gap-2` du parent restant un blanc que rien ne comblait.
 :host {
   display: block;
   position: relative;
   z-index: 1;
+  margin-block: calc(-1 * var(--nt-layout-gap-split, 0.5rem));
 }
 
-// Conteneur SCOPÉ à la seule rangée de pills (PAS tout le `:host`, qui
-// grandit aussi pour contenir le bouton "Enregistrer un transport ?" en
-// dessous, voir plus bas) : le chemin décoratif ne doit jamais s'étendre
-// jusqu'à ce bouton. `min-height` (PAS `padding`) : la place gagnée est
-// entièrement occupée par le tracé décoratif lui-même, pas de l'espace mort
-// — sans cette hauteur dédiée, le chemin restait confiné à la hauteur des
-// pills (~1.75rem) et ne se lisait plus du tout comme "reliant" les cartes
-// voisines, juste au-dessus/en-dessous (retour utilisateur : "ça marche
-// absolument pas"). Toujours pas de zone vide supplémentaire entre le
-// chemin et les cartes elles-mêmes, séparées par le `gap-2` du parent
-// (day-panel.component.html) — cf. "relie les activités sans padding".
-.day-distance-gap-row {
+// Rail réel en flux du DOM — remplace l'ancien chemin décoratif en SVG
+// positionné en `absolute` sur toute la rangée : un tracé décoratif ne
+// connaît jamais la vraie hauteur des cartes voisines, donc dès qu'une carte
+// changeait de taille (titre sur 2 lignes...) l'ancrage ne correspondait
+// plus. Ici la pastille ET le bouton "Enregistrer un transport ?" sont des
+// enfants en flux normal du MÊME conteneur que le trait (`column`, pas de
+// `position: absolute` sur la pastille/le bouton) : `.line` (ci-dessous,
+// absolute top:0/bottom:0) suit donc automatiquement la hauteur totale du
+// rail, bouton conditionnel inclus. Bug à ne pas reproduire : un bouton
+// sibling EN DEHORS de ce conteneur ferait s'arrêter le trait avant la carte
+// du bas.
+.day-distance-gap-rail {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 4.5rem;
-  isolation: isolate;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0 0.6rem 3.5rem;
 }
 
-// Chemin décoratif fin en pointillé, DERRIÈRE les pills. Contrairement à un
-// essai précédent (un seul tracé centré, comptant sur le z-index pour
-// disparaître sous les pills — jugé pas fiable/pas joli, retour
-// utilisateur), le `<path>` est ici composé de DEUX sous-tracés disjoints
-// (2 `M`, un par moitié — voir le template) qui s'ARRÊTENT avant d'atteindre
-// la zone des pills et REPRENNENT juste après : le chemin ne passe donc
-// JAMAIS visuellement par-dessus le contenu, sans dépendre d'un empilement
-// z-index. Inspiré du repère utilisateur (2 pins reliés par un tracé noir
-// sinueux à plusieurs courbes) — `preserveAspectRatio="none"` étire un
-// viewBox carré aux proportions réelles (large et bas) de
-// `.day-distance-gap-row`. `vector-effect: non-scaling-stroke` : sans ça,
-// cet étirement NON uniforme (largeur ≫ hauteur) déformerait aussi
-// l'épaisseur du trait au lieu de la garder fine et constante.
-.day-distance-gap__path {
+// Trait pointillé fin en dégradé répété (PAS `border-style: dashed`, qui
+// rend mal en vertical) — épaisseur constante quelle que soit la hauteur du
+// rail puisque positionné `absolute` À L'INTÉRIEUR du rail, pas de l'écran.
+// Toujours À GAUCHE de la pastille (pas centré derrière) : `left` fixe, la
+// pastille est décalée via le `padding-left` du rail ci-dessus.
+.day-distance-gap-rail__line {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-
-  path {
-    fill: none;
-    stroke: var(--nt-text-color);
-    opacity: 0.4;
-    stroke-width: 1.3;
-    stroke-linecap: round;
-    stroke-dasharray: 4 3.5;
-    vector-effect: non-scaling-stroke;
-  }
+  left: 1.5rem;
+  top: 0;
+  bottom: 0;
+  width: 0.125rem;
+  background-image: linear-gradient(var(--nt-content-border-color) 60%, transparent 0%);
+  background-size: 0.125rem 0.5rem;
+  background-repeat: repeat-y;
 }
 
-.day-distance-gap {
+// Pastille pleine (fond + bordure), 2 zones de tap DANS LA MÊME pilule
+// (séparateur = bordure interne sur `__chevron`), pas 2 pastilles sœurs :
+// zone principale = 1 clic = Maps direct ; chevron = ouvre le menu de mode.
+.day-distance-gap-chip {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.day-distance-gap__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--nt-radius-pill);
-  background: var(--nt-secondary-bg);
-  color: var(--nt-secondary-color);
-  font-size: 0.75rem;
-  line-height: 1.3;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  border: none;
-  cursor: pointer;
-
-  i {
-    font-size: 0.85em;
-  }
-}
-
-.day-distance-gap__pill--link {
-  text-decoration: none;
-  color: var(--nt-secondary-color);
-
-  &:hover,
-  &:focus-visible {
-    background: var(--nt-secondary-hover-bg);
-  }
-}
-
-.day-distance-gap__dot {
-  opacity: 0.6;
-}
-
-.day-distance-gap__nav-hint {
-  opacity: 0.6;
-  font-size: 0.7em !important;
-}
-
-// Bordure visible + surbrillance couleur au survol/focus : distingue
-// délibérément cette pill de la pill "trajet" (fond plein, pas de bordure)
-// pour signaler que son clic ouvre autre chose (la liste de choix du mode)
-// plutôt que la navigation Google Maps — voir `onPictogramClick`.
-.day-distance-gap__pill--mode {
+  align-items: stretch;
   background: var(--nt-content-background);
   border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-pill);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.day-distance-gap-chip__main {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--nt-text-color);
+  text-decoration: none;
+  white-space: nowrap;
 
   &:hover,
   &:focus-visible {
-    outline: none;
-    border-color: var(--nt-primary-color);
     color: var(--nt-primary-color);
   }
 }
 
-.day-distance-gap__mode-chevron {
-  font-size: 0.6em !important;
-  opacity: 0.6;
-}
-
-.day-distance-gap__walk-icon {
+.day-distance-gap-chip__mode-icon {
   width: 0.9rem;
   height: 0.9rem;
   flex: none;
+  font-size: 0.85em;
 }
 
-// Fond OPAQUE (pas transparent comme un 1er essai) : posé juste sous la
-// rangée de pills, un fond transparent laissait deviner le chemin
-// décoratif "au travers" (retour utilisateur) — la teinte reste dérivée de
-// la couleur primary (`color-mix`) plutôt qu'un fond neutre, pour ne pas
-// perdre l'identité visuelle "action" du bouton.
-.day-distance-gap__transport-cta {
+.day-distance-gap-chip__nav-hint {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.day-distance-gap-chip__chevron {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  border-left: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  background: transparent;
+  color: var(--nt-text-color);
+  cursor: pointer;
+
+  i {
+    font-size: 0.65rem;
+    opacity: 0.6;
+  }
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    color: var(--nt-primary-color);
+
+    i {
+      opacity: 1;
+    }
+  }
+}
+
+// Contour pointillé + teinte dérivée de `--nt-primary-color` (via
+// `color-mix`, pas un fond neutre) pour bien se distinguer de la pastille
+// (contrôle principal, fond plein) tout en restant dans le thème.
+.day-distance-gap-rail__transport-cta {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.35rem;
-  margin: 0.4rem auto 0;
   padding: 0.3rem 0.75rem;
   border-radius: var(--nt-radius-pill);
   border: var(--nt-border-width-hairline) dashed var(--nt-primary-color);

@@ -1,0 +1,181 @@
+:host {
+  display: block;
+  width: 100%;
+
+  --pts-walk-color: var(--nt-green-500);
+  --pts-bike-color: var(--nt-blue-500);
+  // Pas de token "beige"/voiture existant dans tokens.scss — un neutre de la
+  // palette surface reste thème-aware gratuitement (clair/sombre) sans en
+  // introduire un nouveau pour ce seul usage.
+  --pts-car-color: var(--nt-surface-400);
+  --pts-thumb-size: 1.7rem;
+}
+
+.pts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  // Marge horizontale = rayon du pouce : sans elle, un seuil à 0 ou au max
+  // centre son pouce EXACTEMENT sur le bord du conteneur, qui déborderait
+  // pour moitié hors de la zone cliquable/visible du dialog.
+  padding-inline: calc(var(--pts-thumb-size) / 2);
+}
+
+// Conteneur de coordonnées PARTAGÉ par la barre colorée, les 2 pouces et les
+// labels km (tous positionnés en `%` de CETTE largeur) — `overflow: visible`
+// volontaire : contrairement à `.pts__bar` (clippée, pilule), les pouces ne
+// doivent jamais être rognés par le bord arrondi de la piste.
+.pts__track {
+  position: relative;
+  height: var(--pts-thumb-size);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.pts__bar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 0.55rem;
+  transform: translateY(-50%);
+  border-radius: var(--nt-radius-pill);
+  overflow: hidden;
+  background: var(--pts-car-color);
+}
+
+.pts__segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  &--walk {
+    background: var(--pts-walk-color);
+  }
+
+  &--bike {
+    background: var(--pts-bike-color);
+  }
+
+  &--car {
+    background: var(--pts-car-color);
+  }
+}
+
+.pts__handle {
+  position: absolute;
+  top: 50%;
+  width: var(--pts-thumb-size);
+  height: var(--pts-thumb-size);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--nt-content-background);
+  border: 3px solid var(--pts-walk-color);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+  touch-action: none;
+  cursor: grab;
+
+  &--bike {
+    border-color: var(--pts-bike-color);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--nt-primary-color);
+    outline-offset: 2px;
+  }
+}
+
+// PAS de `padding-inline` ici (contrairement à `.pts__track`, qui n'en a pas
+// non plus) : les 2 rangées de labels doivent partager EXACTEMENT le même
+// repère de coordonnées que la piste (défini une seule fois par le
+// `padding-inline` du `.pts` parent) pour que leur `left: %` reste aligné
+// pile avec le pouce correspondant.
+//
+// Une rangée dédiée AU-DESSUS de la piste (marche) et une AU-DESSOUS (vélo) —
+// PAS les 2 en dessous comme un 1er essai : avec les valeurs par défaut
+// (marche 1.5km, vélo 8km sur un axe 0-100km) les 2 poignées sont très
+// proches l'une de l'autre, donc 2 labels centrés SOUS la piste se
+// chevauchaient systématiquement (corrigé une 1re fois en les décalant vers
+// l'extérieur l'un de l'autre, mais ce décalage cassait l'alignement exact
+// avec le pouce sur les valeurs proches des bords — retour utilisateur). En
+// les séparant verticalement (une rangée dédiée au-dessus, une en dessous),
+// chaque label peut redevenir centré PILE sur son pouce (`translateX(-50%)`)
+// sans jamais pouvoir chevaucher l'autre, quelle que soit la proximité des 2
+// poignées.
+// Même hauteur pour les 2 rangées : les 2 labels sont des chips (padding +
+// bordure, voir `.pts__label--chip`), pas juste du texte nu.
+.pts__labels-above,
+.pts__labels-below {
+  position: relative;
+  height: 1.6rem;
+}
+
+.pts__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+
+  &--walk {
+    color: var(--pts-walk-color);
+  }
+
+  &--bike {
+    color: var(--pts-bike-color);
+  }
+}
+
+// Chip (pas juste du texte nu), pour les 2 labels — retour utilisateur.
+// Mêmes jetons que les autres pills de l'app (voir `day-distance-gap__pill`) :
+// fond de contenu + bordure de la couleur du segment. `border-color:
+// currentColor` (PAS une couleur en dur) : reprend le `color` déjà posé par
+// `--walk`/`--bike` sur CE même élément (`.pts__label--walk`/`--bike` sont
+// toujours combinées à `--chip` dans le template), un seul endroit à changer
+// si une 3e variante de label apparaît un jour.
+.pts__label--chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-content-background);
+  border: var(--nt-border-width-hairline) solid currentColor;
+  box-shadow: var(--nt-shadow-xs);
+}
+
+.pts__modes {
+  display: flex;
+  gap: 0.5rem;
+}
+
+// `--select-label-color` cascade en CSS normal jusqu'au libellé du
+// `app-select` projeté (`SelectComponent`, classe `.tier-select` — voir
+// `select.component.scss`) : la couleur vit ICI (le composant qui connaît
+// déjà `--pts-*-color`), pas codée en dur dans le template du dialog, la
+// projection de contenu ne changeant rien à l'héritage CSS normal.
+.pts__modes-zone {
+  flex: 1 1 0;
+  min-width: 0;
+
+  &--walk {
+    --select-label-color: var(--pts-walk-color);
+  }
+
+  &--bike {
+    --select-label-color: var(--pts-bike-color);
+  }
+
+  &--car {
+    --select-label-color: var(--pts-car-color);
+  }
+}

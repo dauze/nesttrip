@@ -34,6 +34,15 @@
   color: var(--booking-status-color);
 }
 
+// Même mécanisme "host-as-box" que `.booking` ci-dessus, généralisé : le
+// libellé prend `--select-label-color`, posée par l'appelant (style inline
+// OU héritée en cascade CSS normale depuis un ancêtre — voir les 3 listes de
+// mode du slider paliers de trajet, `PaliersTrajetSliderComponent`, qui
+// posent cette variable sur leur conteneur de zone plutôt qu'en dur ici).
+:host(.tier-select) .app-select__label {
+  color: var(--select-label-color);
+}
+
 .app-select__trigger {
   padding: var(--nt-form-field-padding-y) var(--nt-form-field-padding-x);
   border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
