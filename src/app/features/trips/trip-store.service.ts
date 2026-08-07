@@ -11,19 +11,24 @@ import { ActivityPersistenceService } from '@app/core/infra/firebase/services/pe
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
 import { LogisticPersistenceService } from '@app/core/infra/firebase/services/persistence/logistic-persistence.service';
+import { ExpensePersistenceService } from '@app/core/infra/firebase/services/persistence/expense-persistence.service';
+import { Expense } from '@core/models/expense.dto';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
 import { insertChronologically } from './day-activity-order.util';
-import { Observable, tap } from 'rxjs';
+import { suggestedCurrencyForCountry } from '@app/core/utils/country-currency.util';
+import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
+import { Observable, filter, map, of, take, tap } from 'rxjs';
 
 type TripEntities = Record<string, Trip>;
 type DayEntities = Record<string, Day>;
 type PoolActivityEntities = Record<string, PoolActivity>;
 type DayActivityInstanceEntities = Record<string, DayActivityInstance>;
 type LogisticEntities = Record<string, Logistic>;
+type ExpenseEntities = Record<string, Expense>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
 
 /** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
@@ -43,6 +48,8 @@ export class TripStore {
   private readonly dayActivityInstancePersistenceService = inject(DayActivityInstancePersistenceService);
   private readonly dayActivitiesPersistenceService = inject(DayActivitiesPersistenceService);
   private readonly logisticPersistenceService = inject(LogisticPersistenceService);
+  private readonly expensePersistenceService = inject(ExpensePersistenceService);
+  private readonly currencyConversionService = inject(CurrencyConversionService);
   private readonly notesPersistenceService = inject(NotesPersistenceService);
   private readonly tripPersistenceService = inject(TripPersistenceService);
   private readonly dayPersistenceService = inject(DayPersistenceService);
@@ -70,6 +77,13 @@ export class TripStore {
         this._pendingLogisticIds.set(new Set());
       }
     });
+
+    // Même mécanisme anti-flicker, pour les dépenses libres (writer débouncé indépendant).
+    effect(() => {
+      if (!this.expensePersistenceService.syncing()) {
+        this._pendingExpenseIds.set(new Set());
+      }
+    });
   }
 
   /**
@@ -84,6 +98,7 @@ export class TripStore {
       this.dayActivityInstancePersistenceService,
       this.dayActivitiesPersistenceService,
       this.logisticPersistenceService,
+      this.expensePersistenceService,
       this.notesPersistenceService,
     ];
     if (writers.some((w) => w.hasError())) return 'error';
@@ -126,6 +141,12 @@ export class TripStore {
    * (writer débouncé indépendant, voir `LogisticPersistenceService`).
    */
   readonly _pendingLogisticIds = signal<Set<string>>(new Set());
+  /** @internal — pool plat de TOUTES les dépenses libres (non rattachées à une activité/logement/transport, voir src/specs/devise.md 3.4) connues, quel que soit le trip */
+  readonly _expenses = signal<ExpenseEntities>({});
+  /** @internal — TOUTES les dépenses libres d'un trip, sans ordre particulier */
+  readonly _tripExpenses = signal<Record<string, string[]>>({});
+  /** @internal — même rôle que `_pendingLogisticIds`, pour les dépenses libres (writer débouncé indépendant, voir `ExpensePersistenceService`). */
+  readonly _pendingExpenseIds = signal<Set<string>>(new Set());
   /** @internal */
   readonly _notesItems = signal<Record<string, Item>>({});
   /** @internal */
@@ -133,16 +154,16 @@ export class TripStore {
   /** @internal */
  readonly _tripsResult = signal<TripSummary[] | undefined>(undefined);
   /**
-   * @internal — devise par défaut par trip, séparée de `_trips` : la modifier
-   * ne doit PAS faire recalculer `activeTrip` (lu par énormément de
-   * composants, y compris le skeleton de chargement) juste pour un
-   * changement d'affichage de devise — voir ROADMAP.md "Devise" et
-   * `getTripCurrency`.
+   * @internal — titre par trip, séparé de `_trips` : la modifier ne doit PAS
+   * faire recalculer `activeTrip` (lu par énormément de composants, y compris
+   * le skeleton de chargement) juste pour un changement de titre — voir
+   * ROADMAP.md, "la modification du nom du trip ne doit pas rafraichir toute
+   * la page", et `getTripTitle`.
    */
-  readonly _tripCurrency = signal<Record<string, string>>({});
+  readonly _tripTitle = signal<Record<string, string>>({});
   /**
    * @internal — paliers de mode de trajet (distance + mode par palier) par
-   * trip, séparés de `_trips` pour la même raison que `_tripCurrency`
+   * trip, séparés de `_trips` pour la même raison que `_tripTitle`
    * ci-dessus : la modifier ne doit pas faire recalculer `activeTrip()` —
    * voir `getTripTravelTiers`.
    */
@@ -150,26 +171,16 @@ export class TripStore {
   /**
    * @internal — overrides manuels de mode de trajet par trip (clé = paire de
    * lieux, voir `buildPlacePairKey`), séparés de `_trips` pour la même raison
-   * que `_tripCurrency` ci-dessus — voir `getTravelModeOverrides`.
+   * que `_tripTitle` ci-dessus — voir `getTravelModeOverrides`.
    */
   readonly _tripTravelModeOverrides = signal<Record<string, Record<string, TravelMode>>>({});
   /**
-   * @internal — titre par trip, séparé de `_trips` pour la même raison que
-   * `_tripCurrency` ci-dessus (voir `getTripTitle`) : un renommage ne doit
-   * pas faire recalculer `activeTrip()` (et donc reconstruire `trip.days` —
-   * nouvelle référence de tableau à CHAQUE édition — propagé à tout ce qui en
-   * dépend, ex. `TripDaySwiperComponent`) juste pour un changement de titre
-   * (voir ROADMAP.md, "la modification du nom du trip ne doit pas rafraichir
-   * toute la page").
-   */
-  readonly _tripTitle = signal<Record<string, string>>({});
-  /**
-   * @internal — mêmes id de trip que `_tripTitle`/`_tripCurrency` avec une
-   * écriture Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression
-   * confirmée par retour utilisateur : "toute la page se réactualise" à
-   * chaque édition du titre). Tant qu'un tripId est dans ce set,
-   * `TripFacade.mergeFromRemote` ignore ENTIÈREMENT le titre/la devise/les
-   * seuils de trajet de ce trip (même logique que `_pendingActivityIds`) :
+   * @internal — mêmes id de trip que `_tripTitle` avec une écriture
+   * Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression confirmée
+   * par retour utilisateur : "toute la page se réactualise" à chaque édition
+   * du titre). Tant qu'un tripId est dans ce set,
+   * `TripFacade.mergeFromRemote` ignore ENTIÈREMENT le titre/les seuils de
+   * trajet de ce trip (même logique que `_pendingActivityIds`) :
    * sans ça, le snapshot de
    * CONFIRMATION qui suit systématiquement l'écriture voyait `_trips[tripId]`
    * (jamais mis à jour par `updateTripTitle`, seul `_tripTitle` l'est,
@@ -238,6 +249,8 @@ export class TripStore {
       dayActivityInstances: [],
       // Même raison : les réservations se consomment via `getAllLogistics(tripId)`.
       logistics: [],
+      // Même raison : les dépenses libres se consomment via `getAllExpenses(tripId)`.
+      expenses: [],
     };
   });
 
@@ -344,7 +357,6 @@ export class TripStore {
   private readonly poolActivityById = new Map<string, Signal<PoolActivity>>();
   private readonly poolActivityViewById = new Map<string, Signal<Activity>>();
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
-  private readonly tripCurrencyByTrip = new Map<string, Signal<string>>();
   private readonly tripTravelTiersByTrip = new Map<string, Signal<TravelTiers>>();
   private readonly tripTravelModeOverridesByTrip = new Map<string, Signal<Record<string, TravelMode>>>();
   private readonly tripTitleByTrip = new Map<string, Signal<string>>();
@@ -352,7 +364,7 @@ export class TripStore {
 
   /**
    * Plage de dates du trip (1er jour, dernier jour), dérivée de
-   * `_tripDays`/`_days` — même raison que `getTripTitle`/`getTripCurrency` de
+   * `_tripDays`/`_days` — même raison que `getTripTitle` de
    * ne PAS passer par `activeTrip()` : `TripHeaderComponent` (formulaire
    * titre + dates) ne doit se réactualiser QUE si le titre ou les jours de
    * CE trip changent réellement, jamais pour une raison sans rapport ailleurs
@@ -374,17 +386,6 @@ export class TripStore {
       );
     }
     return this.tripDateRangeByTrip.get(tripId)!;
-  }
-
-  /** Devise par défaut du trip — voir `_tripCurrency` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.defaultCurrency` (valeur d'hydratation) puis 'EUR'. */
-  getTripCurrency(tripId: string): Signal<string> {
-    if (!this.tripCurrencyByTrip.has(tripId)) {
-      this.tripCurrencyByTrip.set(
-        tripId,
-        computed(() => this._tripCurrency()[tripId] ?? this._trips()[tripId]?.defaultCurrency ?? 'EUR'),
-      );
-    }
-    return this.tripCurrencyByTrip.get(tripId)!;
   }
 
   /** Paliers de mode de trajet du trip — voir `_tripTravelTiers` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.travelTiers` (valeur d'hydratation) puis `DEFAULT_TRAVEL_TIERS`. */
@@ -650,9 +651,18 @@ export class TripStore {
   }
 
   updateLogistic(tripId: string, logistic: Logistic): void {
+    const previousStatus = this._logistics()[logistic.id]?.booking.status;
+
     this._logistics.update((r) => ({ ...r, [logistic.id]: logistic }));
     this.markLogisticPending(logistic.id);
     this.logisticPersistenceService.queueUpdate(tripId, logistic);
+
+    this.freezeRateOnBooked(previousStatus, logistic.booking.status, logistic.price, (frozen) => {
+      const frozenLogistic = { ...logistic, price: { ...logistic.price!, ...frozen } };
+      this._logistics.update((r) => (r[logistic.id] ? { ...r, [logistic.id]: frozenLogistic } : r));
+      this.markLogisticPending(logistic.id);
+      this.logisticPersistenceService.queueUpdate(tripId, frozenLogistic);
+    });
   }
 
   removeLogistic(tripId: string, logisticId: string): void {
@@ -702,6 +712,79 @@ export class TripStore {
       if (!s.has(id)) return s;
       const copy = new Set(s);
       copy.delete(id);
+      return copy;
+    });
+  }
+
+  // ── Sélecteurs mémorisés — Dépenses libres ────────────────────────────────
+
+  private readonly expenseById = new Map<string, Signal<Expense>>();
+  private readonly allExpensesByTrip = new Map<string, Signal<Expense[]>>();
+
+  getExpense(expenseId: string): Signal<Expense> {
+    if (!this.expenseById.has(expenseId)) {
+      this.expenseById.set(
+        expenseId,
+        computed(() => this._expenses()[expenseId]),
+      );
+    }
+    return this.expenseById.get(expenseId)!;
+  }
+
+  /** Toutes les dépenses libres d'un trip, sans tri (voir src/specs/devise.md 3.4). */
+  getAllExpenses(tripId: string): Signal<Expense[]> {
+    if (!this.allExpensesByTrip.has(tripId)) {
+      this.allExpensesByTrip.set(
+        tripId,
+        computed(() => {
+          const ids = this._tripExpenses()[tripId] ?? [];
+          const map = this._expenses();
+          return ids.map((id) => map[id]).filter((e): e is Expense => !!e);
+        }, { equal: (a, b) => this.structurallyEqual(a, b) }),
+      );
+    }
+    return this.allExpensesByTrip.get(tripId)!;
+  }
+
+  // ── Commandes — Dépenses libres ────────────────────────────────────────────
+
+  createExpense(tripId: string, expense: Expense): void {
+    this._expenses.update((e) => ({ ...e, [expense.id]: expense }));
+    this._tripExpenses.update((t) => ({
+      ...t,
+      [tripId]: [...(t[tripId] ?? []), expense.id],
+    }));
+    this.markExpensePending(expense.id);
+    this.expensePersistenceService.create(tripId, expense).catch((err) => {
+      console.error('[TripStore] Erreur création dépense libre Firestore :', err);
+    });
+  }
+
+  updateExpense(tripId: string, expense: Expense): void {
+    this._expenses.update((e) => ({ ...e, [expense.id]: expense }));
+    this.markExpensePending(expense.id);
+    this.expensePersistenceService.queueUpdate(tripId, expense);
+  }
+
+  removeExpense(tripId: string, expenseId: string): void {
+    this._expenses.update((e) => {
+      const copy = { ...e };
+      delete copy[expenseId];
+      return copy;
+    });
+    this._tripExpenses.update((t) => ({
+      ...t,
+      [tripId]: (t[tripId] ?? []).filter((id) => id !== expenseId),
+    }));
+    this.expensePersistenceService.remove(tripId, expenseId).catch((err) => {
+      console.error('[TripStore] Erreur suppression dépense libre Firestore :', err);
+    });
+  }
+
+  private markExpensePending(id: string): void {
+    this._pendingExpenseIds.update((s) => {
+      const copy = new Set(s);
+      copy.add(id);
       return copy;
     });
   }
@@ -814,21 +897,6 @@ export class TripStore {
     this.tripPersistenceService.updateTripTitle(tripId, title)
       .catch((err) => {
         console.error('[TripStore] Erreur update trip Firestore :', err);
-      })
-      .finally(() => this.clearTripFieldPending(tripId));
-  }
-
-  updateTripCurrency(tripId: string, currency: string): void {
-    if (!this._trips()[tripId]) return;
-
-    // 1. Signal dédié (voir `_tripCurrency`), pas `_trips`.
-    this._tripCurrency.update((map) => ({ ...map, [tripId]: currency }));
-    this.markTripFieldPending(tripId);
-
-    // 2. Persistance Firestore
-    this.tripPersistenceService.updateTripCurrency(tripId, currency)
-      .catch((err) => {
-        console.error('[TripStore] Erreur update devise trip Firestore :', err);
       })
       .finally(() => this.clearTripFieldPending(tripId));
   }
@@ -960,12 +1028,21 @@ export class TripStore {
     this.syncDayActivityIds(tripId, dayId);
   }
 
-  /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité de pool elle-même. Retourne l'id de l'instance créée. */
+  /**
+   * Crée une nouvelle instance référençant une activité de pool existante et
+   * l'attache à ce jour (drop depuis le pool) : ne modifie jamais l'activité
+   * de pool elle-même. Devise du form préremplie depuis le pays du lieu
+   * Google de CETTE activité si connu (`suggestedCurrencyForCountry`, voir
+   * src/specs/devise.md 3.1 — friction de saisie uniquement, jamais un pivot
+   * de calcul), sinon 'EUR'. Retourne l'id de l'instance créée.
+   */
   attachPoolActivityToDay(tripId: string, poolId: string, targetDayId: Date): string {
+    const poolActivity = this._poolActivities()[poolId];
+    const currency = suggestedCurrencyForCountry(poolActivity?.countryCode) ?? 'EUR';
     const instance: DayActivityInstance = {
       id: crypto.randomUUID(),
       activityId: poolId,
-      ...defaultInstanceForm(this.getTripCurrency(tripId)()),
+      ...defaultInstanceForm(currency),
     };
     this.addDayActivityInstance(tripId, targetDayId, instance);
     return instance.id;
@@ -1032,6 +1109,8 @@ export class TripStore {
 
   /** Met à jour le form d'une instance jour donnée : n'affecte ni le pool, ni les autres instances de la même activité. */
   updateDayActivityInstance(tripId: string, instance: DayActivityInstance): void {
+    const previousStatus = this._dayActivityInstances()[instance.id]?.booking.status;
+
     this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
     this.markActivityPending(instance.id);
     this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
@@ -1039,6 +1118,13 @@ export class TripStore {
     if (instance.startTime) {
       this.repositionChronologically(tripId, instance.id, instance.startTime);
     }
+
+    this.freezeRateOnBooked(previousStatus, instance.booking.status, instance.price, (frozen) => {
+      const frozenInstance = { ...instance, price: { ...instance.price, ...frozen } };
+      this._dayActivityInstances.update((i) => (i[instance.id] ? { ...i, [instance.id]: frozenInstance } : i));
+      this.markActivityPending(instance.id);
+      this.dayActivityInstancePersistenceService.queueUpdate(tripId, frozenInstance);
+    });
   }
 
   /**
@@ -1068,6 +1154,47 @@ export class TripStore {
       copy.add(id);
       return copy;
     });
+  }
+
+  /**
+   * Si le statut de réservation vient de basculer sur `BOOKED` (transition
+   * stricte — `previousStatus` différent de `BOOKED`, sinon pas de
+   * re-figeage à chaque édition ultérieure du form une fois déjà réservé),
+   * fige le taux `price.currency` -> EUR au moment présent et appelle
+   * `apply` une fois résolu (voir src/specs/devise.md 3.3). `TO_BOOK`/
+   * `NOT_NEEDED`/`WAITLIST` restent en conversion dynamique — seul `BOOKED`
+   * correspond à l'analogie "reçu réel" de la spec. Pivot technique EUR
+   * (décision actée, voir currency-conversion.service.ts) : le taux figé et
+   * le montant figé sont exprimés en EUR, jamais dans la devise d'un membre
+   * en particulier (aucune devise pivot n'est stockée au niveau du voyage).
+   * No-op si le prix est absent/nul. `apply` peut être appelé de façon
+   * asynchrone (résolution réseau/cache du taux) — les appelants doivent
+   * réappliquer `markXxxPending`/`queueUpdate` dans leur callback, comme un
+   * 2e passage d'écriture optimiste indépendant.
+   */
+  private freezeRateOnBooked(
+    previousStatus: BookingStatus | undefined,
+    nextStatus: BookingStatus,
+    price: { amount: number; currency: string } | undefined,
+    apply: (frozen: { frozenRateToEur: number; frozenAmountEur: number; frozenAt: Date }) => void,
+  ): void {
+    if (nextStatus !== BookingStatus.BOOKED || previousStatus === BookingStatus.BOOKED) return;
+    if (!price || price.amount <= 0) return;
+
+    const resolve$: Observable<{ frozenRateToEur: number; frozenAmountEur: number }> =
+      price.currency === 'EUR'
+        ? of({ frozenRateToEur: 1, frozenAmountEur: price.amount })
+        : this.currencyConversionService.convert$(price.amount, price.currency, 'EUR').pipe(
+            filter((state) => state.status !== 'loading'),
+            take(1),
+            map((state) =>
+              state.status === 'success'
+                ? { frozenRateToEur: state.data.amount / price.amount, frozenAmountEur: state.data.amount }
+                : { frozenRateToEur: 1, frozenAmountEur: price.amount },
+            ),
+          );
+
+    resolve$.subscribe((rate) => apply({ ...rate, frozenAt: new Date() }));
   }
 
   /**

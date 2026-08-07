@@ -18,4 +18,14 @@ describe('user-profile.mapper', () => {
       expect(userProfileFromFb(baseFb).mapCollapsedByDefault).toBeUndefined();
     });
   });
+
+  describe('defaultCurrency', () => {
+    it('lit defaultCurrency tel quel', () => {
+      expect(userProfileFromFb({ ...baseFb, defaultCurrency: 'THB' }).defaultCurrency).toBe('THB');
+    });
+
+    it("renvoie undefined si l'utilisateur n'a jamais rien choisi explicitement", () => {
+      expect(userProfileFromFb(baseFb).defaultCurrency).toBeUndefined();
+    });
+  });
 });

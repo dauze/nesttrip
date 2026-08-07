@@ -13,5 +13,6 @@ export function userProfileFromFb(data: UserProfileFirebase): UserProfile {
       ]),
     ),
     mapCollapsedByDefault: data.mapCollapsedByDefault,
+    defaultCurrency: data.defaultCurrency,
   };
 }

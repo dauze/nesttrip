@@ -1,40 +1,92 @@
-<div class="rings-chart">
-  <svg
-    [attr.viewBox]="'0 0 ' + viewBoxSize + ' ' + viewBoxSize"
-    class="rings-chart__svg"
-    role="img"
-    [attr.aria-label]="'Répartition par type — ' + entries().map(e => e.label + ' ' + e.count).join(', ')">
-    <g [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'">
-      @for (ring of rings(); track ring.label) {
-        <circle
-          class="rings-chart__track"
-          [attr.cx]="center"
-          [attr.cy]="center"
-          [attr.r]="ring.radius"
-          [attr.stroke-width]="strokeWidth"
-          fill="none" />
-        <circle
-          class="rings-chart__arc"
-          [attr.cx]="center"
-          [attr.cy]="center"
-          [attr.r]="ring.radius"
-          [attr.stroke-width]="strokeWidth"
-          [attr.stroke-dasharray]="ring.dashArray"
-          [style.--ring-color]="'var(' + ring.colorVar + ')'"
-          fill="none"
-          stroke-linecap="round" />
-      }
-    </g>
-  </svg>
+<div class="rings-chart" [class.rings-chart--interactive]="interactive()">
+  <div class="rings-chart__svg-wrap">
+    <svg
+      [attr.viewBox]="'0 0 ' + viewBoxSize() + ' ' + viewBoxSize()"
+      class="rings-chart__svg"
+      role="img"
+      [attr.aria-label]="'Répartition — ' + entries().map(e => e.label + ' ' + (e.valueLabel ?? e.count)).join(', ')">
+      <g [attr.transform]="'rotate(-90 ' + center() + ' ' + center() + ')'">
+        @for (ring of rings(); track ring.label) {
+          <circle
+            class="rings-chart__track"
+            [attr.cx]="center()"
+            [attr.cy]="center()"
+            [attr.r]="ring.radius"
+            [attr.stroke-width]="strokeWidth()"
+            fill="none" />
+          <circle
+            class="rings-chart__arc"
+            [attr.cx]="center()"
+            [attr.cy]="center()"
+            [attr.r]="ring.radius"
+            [attr.stroke-width]="strokeWidth()"
+            [attr.stroke-dasharray]="ring.dashArray"
+            [style.--ring-color]="'var(' + ring.colorVar + ')'"
+            fill="none"
+            stroke-linecap="round" />
+        }
+      </g>
 
-  <ul class="rings-chart__legend">
-    @for (entry of entries(); track entry.label) {
-      <li class="rings-chart__legend-item">
-        <span class="rings-chart__legend-dot" [style.--ring-color]="'var(' + entry.colorVar + ')'"></span>
-        <i [class]="entry.icon"></i>
-        <span class="rings-chart__legend-label">{{ entry.label }}</span>
-        <span class="rings-chart__legend-count">{{ entry.valueLabel ?? entry.count }}</span>
-      </li>
+      @if (interactive()) {
+        @for (ring of rings(); track ring.label; let i = $index) {
+          <g
+            class="rings-chart__slice-hit"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="ring.label + ' ' + (ring.valueLabel ?? ring.count)"
+            (click)="toggleSlice(i, $event)"
+            (keydown.enter)="toggleSlice(i, $event)">
+            <circle [attr.cx]="ring.bubbleX" [attr.cy]="ring.bubbleY" r="12" class="rings-chart__slice-hit-area" />
+          </g>
+        }
+
+        @let selected = selectedIndex() !== null ? rings()[selectedIndex()!] : null;
+        @if (selected) {
+          <foreignObject [attr.x]="selected.bubbleX - 44" [attr.y]="selected.bubbleY - 34" width="88" height="52" class="rings-chart__bubble-slot">
+            <div class="rings-chart__bubble">
+              <span class="rings-chart__bubble-label">{{ selected.label }}</span>
+              <span class="rings-chart__bubble-value">{{ selected.valueLabel ?? selected.count }}</span>
+            </div>
+          </foreignObject>
+        }
+      }
+    </svg>
+
+    @if (interactive()) {
+      <div class="rings-chart__center">
+        <ng-content select="[ringsCenter]" />
+      </div>
     }
-  </ul>
+  </div>
+
+  @if (!interactive()) {
+    <ul class="rings-chart__legend">
+      @for (entry of entries(); track entry.label) {
+        <li class="rings-chart__legend-item">
+          <span class="rings-chart__legend-dot" [style.--ring-color]="'var(' + entry.colorVar + ')'"></span>
+          <i [class]="entry.icon"></i>
+          <span class="rings-chart__legend-label">{{ entry.label }}</span>
+          <span class="rings-chart__legend-count">{{ entry.valueLabel ?? entry.count }}</span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <!-- Toutes les valeurs visibles sans interaction (retour utilisateur : montant caché tant qu'on ne tape pas l'anneau) — le tap reste possible pour rouvrir la même bulle que sur l'anneau (toggleSlice), mais n'est plus nécessaire pour lire montant/pourcentage. -->
+    <ul class="rings-chart__interactive-legend">
+      @for (ring of rings(); track ring.label; let i = $index) {
+        <li
+          class="rings-chart__interactive-legend-item"
+          role="button"
+          tabindex="0"
+          (click)="toggleSlice(i, $event)"
+          (keydown.enter)="toggleSlice(i, $event)">
+          <span class="rings-chart__legend-dot" [style.--ring-color]="'var(' + ring.colorVar + ')'"></span>
+          <i [class]="ring.icon" [style.color]="'var(' + ring.colorVar + ')'"></i>
+          <span class="rings-chart__interactive-legend-label">{{ ring.label }}</span>
+          <span class="rings-chart__interactive-legend-value">{{ ring.valueLabel ?? ring.count }}</span>
+          <span class="rings-chart__interactive-legend-percent">{{ ring.sharePercentLabel }}</span>
+        </li>
+      }
+    </ul>
+  }
 </div>

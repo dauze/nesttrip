@@ -3,6 +3,7 @@ import { TripFirebase } from '../models/trip.dto';
 import { activityFromFb, activityToFb } from './activity.mapper';
 import { dayActivityInstanceFromFb, dayActivityInstanceToFb } from './day-activity-instance.mapper';
 import { logisticFromFb, logisticToFb } from './logistic.mapper';
+import { expenseFromFb, expenseToFb } from './expense.mapper';
 
 export function tripFromFb(data: TripFirebase): Trip {
   return {
@@ -25,16 +26,16 @@ export function tripFromFb(data: TripFirebase): Trip {
     activities: Object.values(data.activities ?? {}).map((a) => activityFromFb(a)),
     dayActivityInstances: Object.values(data.dayActivityInstances ?? {}).map((a) => dayActivityInstanceFromFb(a)),
     logistics: Object.values(data.logistics ?? {}).map((r) => logisticFromFb(r)),
+    expenses: Object.values(data.expenses ?? {}).map((e) => expenseFromFb(e)),
   };
 }
 
-/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`defaultCurrency`/`travelTiers`/`travelModeOverrides` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/logisticToFb. */
+/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`travelTiers`/`travelModeOverrides` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/logisticToFb. */
 export function tripToFb(data: Trip): TripFirebase {
-  const { placeId, defaultCurrency, travelTiers, travelModeOverrides, ...rest } = data;
+  const { placeId, travelTiers, travelModeOverrides, ...rest } = data;
   return {
     ...rest,
     ...(placeId ? { placeId } : {}),
-    ...(defaultCurrency ? { defaultCurrency } : {}),
     ...(travelTiers ? { travelTiers } : {}),
     ...(travelModeOverrides ? { travelModeOverrides } : {}),
     days: Object.fromEntries(
@@ -51,6 +52,9 @@ export function tripToFb(data: Trip): TripFirebase {
     ),
     logistics: Object.fromEntries(
       data.logistics.map((r) => [r.id, logisticToFb(r)]),
+    ),
+    expenses: Object.fromEntries(
+      data.expenses.map((e) => [e.id, expenseToFb(e)]),
     ),
   };
 }

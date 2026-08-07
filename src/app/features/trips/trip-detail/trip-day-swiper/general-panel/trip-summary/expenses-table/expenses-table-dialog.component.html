@@ -1,0 +1,83 @@
+<app-dialog-frame header="Dépenses" (closeRequested)="close()">
+  <div class="expenses-table flex flex-column gap-1">
+    @if (blockedMessage(); as msg) {
+      <div class="flex align-items-center gap-1">
+        <app-message severity="info" [text]="msg" class="w-full" />
+        <app-button icon="pi pi-times" [text]="true" [rounded]="true" size="small" severity="secondary" aria-label="Fermer le message" (click)="dismissBlockedMessage()" />
+      </div>
+    }
+
+    @for (row of rows(); track row.key) {
+      <div
+        class="expenses-table__row flex align-items-center gap-2"
+        [class.expenses-table__row--readonly]="!row.expense"
+        [appSelectable]="row.selectableRef"
+        #sel="appSelectable"
+        appLongPress (longPress)="sel.onLongPress()">
+        <app-checkbox class="nt-select-checkbox flex-shrink-0" [checked]="sel.isSelected()" (click)="sel.onCheckboxClick($event)" />
+
+        <button
+          type="button"
+          class="expenses-table__amount expenses-table__field flex-shrink-0"
+          [disabled]="!row.expense"
+          (click)="row.expense && openAmountDialog(row.expense)">
+          @let converted = convertedAmount$(row) | async;
+          @if (converted?.status === 'success') {
+            {{ converted!.data.amount | number: '1.2-2' }} {{ targetCurrencySymbol() }}
+            @if (converted!.data.approximate) {
+              <i class="pi pi-exclamation-circle expenses-table__approx" aria-label="Taux approximatif"></i>
+            }
+          } @else if (converted?.status === 'error') {
+            @if (row.frozenAmountEur !== undefined) {
+              {{ row.frozenAmountEur | number: '1.2-2' }} €
+            } @else {
+              {{ row.amount }} {{ row.currency }}
+            }
+          } @else {
+            …
+          }
+        </button>
+
+        <button
+          type="button"
+          class="expenses-table__label expenses-table__field flex-1 min-w-0 overflow-hidden text-overflow-ellipsis white-space-nowrap"
+          [disabled]="!row.expense"
+          (click)="row.expense && openLabelDialog(row.expense)">
+          {{ row.label }}
+        </button>
+
+        <button
+          type="button"
+          class="expenses-table__date expenses-table__field flex-shrink-0 text-sm nt-text-muted"
+          [disabled]="!row.expense"
+          (click)="row.expense && openDatePanel(row.expense)">
+          {{ row.date ? (row.date | date: 'dd/MM/yyyy') : '—' }}
+        </button>
+
+        @if (row.expense; as expense) {
+          <app-button icon="pi pi-trash" [rounded]="true" [text]="true" size="small" severity="danger" class="flex-shrink-0" aria-label="Supprimer la dépense" (click)="deleteExpense(expense)" />
+        }
+      </div>
+    }
+
+    @if (rows().length === 0) {
+      <app-message severity="info" text="Aucune dépense pour l'instant." class="w-full flex justify-content-center" />
+    }
+  </div>
+
+  <div dialogFooter class="expenses-table__footer flex align-items-center justify-content-between gap-2">
+    @if (selectionService.active()) {
+      <span class="text-sm">{{ selectionService.selectedCount() }} sélectionnée(s)</span>
+      <div class="flex gap-2">
+        <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="selectionService.cancel()" />
+        <app-button label="Supprimer" severity="danger" (click)="deleteSelected()" />
+      </div>
+    } @else {
+      <app-button label="Ajouter une dépense" icon="pi pi-plus" [text]="true" (click)="openCreate()" />
+    }
+  </div>
+
+  <!-- Ancres hors-flux (jamais affichées comme champ, voir .scss) : #createDatePicker = dernière étape du chaînage de création (openCreate/onCreateDateSelected) ; #editDatePicker = clic sur la date d'une ligne existante (openDatePanel/onEditDateSelected). -->
+  <app-date-picker #createDatePicker class="expenses-table__hidden-date-picker" inputId="expenses-table-create-date" [formControl]="createDateControl" (selected)="onCreateDateSelected($event)" />
+  <app-date-picker #editDatePicker class="expenses-table__hidden-date-picker" inputId="expenses-table-edit-date" [formControl]="editDateControl" (selected)="onEditDateSelected($event)" />
+</app-dialog-frame>

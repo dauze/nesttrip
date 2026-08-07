@@ -1,6 +1,7 @@
-import { activityFromFb, activityToFb, bookingFromFb, bookingToFb } from './activity.mapper';
-import { ActivityFirebase, BookingFirebase } from '../models/activity.dto';
+import { activityFromFb, activityToFb, bookingFromFb, bookingToFb, priceFromFb, priceToFb } from './activity.mapper';
+import { ActivityFirebase, BookingFirebase, PriceFirebase } from '../models/activity.dto';
 import { BookingStatus } from '@core/enums/booking.status';
+import { Price } from '@app/shared/components/activity-card/activity.model';
 
 describe('activity.mapper', () => {
   describe('activityFromFb', () => {
@@ -83,6 +84,42 @@ describe('activity.mapper', () => {
       const fb = bookingToFb({ status: BookingStatus.BOOKED, deadline });
 
       expect(bookingFromFb(fb).deadline).toEqual(deadline);
+    });
+  });
+
+  describe('priceFromFb / priceToFb', () => {
+    it("n'écrit aucun champ frozen* tant que le taux n'a jamais été figé", () => {
+      const result = priceToFb({ amount: 42, currency: 'THB' });
+
+      expect('frozenRateToEur' in result).toBe(false);
+      expect('frozenAmountEur' in result).toBe(false);
+      expect('frozenAt' in result).toBe(false);
+    });
+
+    it('lit un prix sans champs frozen* côté Firestore sans planter (statut jamais passé à BOOKED)', () => {
+      const fb: PriceFirebase = { amount: 42, currency: 'THB' };
+
+      const result = priceFromFb(fb);
+
+      expect(result).toEqual({ amount: 42, currency: 'THB' });
+    });
+
+    it('sérialise frozenAt (Date) en epoch ms (string) quand le taux est figé', () => {
+      const frozenAt = new Date('2026-08-01T10:00:00Z');
+      const price: Price = { amount: 42, currency: 'THB', frozenRateToEur: 39.4, frozenAmountEur: 1.07, frozenAt };
+
+      const result = priceToFb(price);
+
+      expect(result.frozenRateToEur).toBe(39.4);
+      expect(result.frozenAmountEur).toBe(1.07);
+      expect(result.frozenAt).toBe(String(frozenAt.getTime()));
+    });
+
+    it('est symétrique (fromFb ∘ toFb) sur un prix figé', () => {
+      const frozenAt = new Date('2026-08-01T10:00:00Z');
+      const price: Price = { amount: 42, currency: 'THB', frozenRateToEur: 39.4, frozenAmountEur: 1.07, frozenAt };
+
+      expect(priceFromFb(priceToFb(price))).toEqual(price);
     });
   });
 });

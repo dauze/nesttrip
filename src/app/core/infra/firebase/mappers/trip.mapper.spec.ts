@@ -12,6 +12,7 @@ function baseTripFb(days: TripFirebase['days']): TripFirebase {
     activities: {},
     dayActivityInstances: {},
     logistics: {},
+    expenses: {},
     notes: { id: 'n1', items: [] },
   };
 }

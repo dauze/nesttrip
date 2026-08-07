@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  min-width: min(26rem, 100%);
+}
+
+.expenses-table__row {
+  padding: 0.5rem;
+  border-radius: var(--nt-border-radius-sm, 0.25rem);
+}
+
+// Ligne issue d'une activité/logement/transport (voir src/specs/devise.md 3.5) :
+// pas cliquable pour éditer (seulement sélectionnable, la checkbox garde son
+// opacité normale), texte en gris atténué plutôt que blanc — distinction au
+// premier coup d'œil demandée par l'utilisateur (une opacité globale sur
+// toute la ligne était moins lisible que ce contraste texte ciblé).
+.expenses-table__row--readonly {
+  .expenses-table__field {
+    color: var(--nt-text-muted-color);
+  }
+}
+
+// Montant/libellé/date d'une dépense libre : chacun un `<button>` cliquable
+// indépendamment (retour utilisateur : clic sur le montant ouvre SON dialog,
+// clic sur le libellé/la date ouvre le sien, pas de vue détail intermédiaire),
+// reset des styles natifs de bouton — `disabled` pour une ligne
+// activité/logistique (`row.expense` alors `undefined`, voir template),
+// jamais cliquable.
+.expenses-table__field {
+  border: none;
+  background: transparent;
+  color: var(--nt-text-color);
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--nt-border-radius-sm, 0.25rem);
+
+  &:hover:not(:disabled) {
+    background: var(--nt-bg-subtle);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.expenses-table__amount {
+  min-width: 5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.expenses-table__approx {
+  margin-left: 0.25rem;
+  color: var(--nt-text-muted-color, currentColor);
+  font-size: 0.8em;
+}
+
+.expenses-table__label {
+  text-align: left;
+}
+
+.expenses-table__date {
+  min-width: 4.5rem;
+  text-align: right;
+  font-size: inherit;
+}
+
+.expenses-table__footer {
+  width: 100%;
+}
+
+// Hébergé uniquement pour son panneau (`.openPanel()`) — jamais affiché comme
+// champ, voir openCreate/onCreateDateSelected (création) et
+// openDatePanel/onEditDateSelected (édition d'une ligne existante).
+.expenses-table__hidden-date-picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}

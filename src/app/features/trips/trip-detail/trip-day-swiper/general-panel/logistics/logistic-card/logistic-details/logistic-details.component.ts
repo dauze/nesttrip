@@ -214,7 +214,7 @@ export class LogisticDetailsComponent {
         endDate: r.endDateTime ?? null,
         endTime: r.endDateTime ?? null,
         notes: r.notes ?? '',
-        price: r.price ?? { amount: 0, currency: this.tripFacade.getTripCurrency(this.tripId())() },
+        price: r.price ?? { amount: 0, currency: 'EUR' },
         booking: r.booking,
         airline: r.type === 'flight' ? (r.airline ?? '') : '',
         flightNumber: r.type === 'flight' ? (r.flightNumber ?? '') : '',

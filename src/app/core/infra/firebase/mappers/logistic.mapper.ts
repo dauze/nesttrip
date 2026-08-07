@@ -1,7 +1,7 @@
 import { BookingStatus } from '@core/enums/booking.status';
 import { FlightStatus, Logistic } from '@core/models/logistic.dto';
 import { FlightStatusFirebase, LogisticFirebase } from '../models/logistic.dto';
-import { bookingFromFb, bookingToFb } from './activity.mapper';
+import { bookingFromFb, bookingToFb, priceFromFb, priceToFb } from './activity.mapper';
 
 function flightStatusFromFb(s: FlightStatusFirebase): FlightStatus {
   return {
@@ -29,7 +29,7 @@ export function logisticFromFb(r: LogisticFirebase): Logistic {
     notes: r.notes ?? '',
     files: r.files ?? [],
     links: r.links ?? [],
-    price: r.price,
+    price: r.price ? priceFromFb(r.price) : undefined,
     booking: r.booking ? bookingFromFb(r.booking) : { status: BookingStatus.NOT_NEEDED },
   };
 
@@ -74,7 +74,7 @@ export function logisticToFb(r: Logistic): LogisticFirebase {
     ...(r.startDateTime ? { startDateTime: String(r.startDateTime.getTime()) } : {}),
     ...(r.endDateTime ? { endDateTime: String(r.endDateTime.getTime()) } : {}),
     ...(r.referenceNumber ? { referenceNumber: r.referenceNumber } : {}),
-    ...(r.price ? { price: r.price } : {}),
+    ...(r.price ? { price: priceToFb(r.price) } : {}),
   };
 
   switch (r.type) {

@@ -12,6 +12,8 @@ export interface PoolActivity {
   latitude?: number;
   longitude?: number;
   photoRefs: string[];
+  /** Code pays ISO 3166-1 alpha-2 du lieu Google sélectionné — voir `suggestedCurrencyForCountry` (src/specs/devise.md 3.1). */
+  countryCode?: string;
 }
 
 /** Instance réelle d'une activité rattachée à un jour : son propre form, indépendant des autres instances. */
@@ -89,6 +91,12 @@ export type DayActivityEntry = { kind: 'activity'; activity: Activity } | Activi
 export interface Price {
   amount: number;
   currency: string;
+  /** Taux `currency` -> EUR figé au passage du statut de réservation à `BOOKED` (pivot technique interne, voir currency-conversion.service.ts). Absent tant que non figé (recalcul dynamique). */
+  frozenRateToEur?: number;
+  /** Montant converti en EUR au moment du figeage (voir frozenRateToEur). */
+  frozenAmountEur?: number;
+  /** Instant du figeage. */
+  frozenAt?: Date;
 }
 export interface Booking {
   status: BookingStatus;

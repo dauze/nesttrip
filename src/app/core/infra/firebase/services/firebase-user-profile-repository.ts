@@ -15,4 +15,8 @@ export class FirebaseUserProfileRepository extends UserProfileRepository {
   setMapCollapsedByDefault(uid: string, value: boolean): Promise<void> {
     return this.dataSource.setMapCollapsedByDefault(uid, value);
   }
+
+  setDefaultCurrency(uid: string, value: string): Promise<void> {
+    return this.dataSource.setDefaultCurrency(uid, value);
+  }
 }

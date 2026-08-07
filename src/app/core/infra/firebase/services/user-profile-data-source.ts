@@ -15,6 +15,11 @@ export class UserProfileDataSource {
     return updateDoc(doc(this.db, 'users', uid), { mapCollapsedByDefault: value });
   }
 
+  /** Écriture ponctuelle (même moule que `setMapCollapsedByDefault`) — simple picker dans les paramètres, pas de frappe continue. */
+  setDefaultCurrency(uid: string, value: string): Promise<void> {
+    return updateDoc(doc(this.db, 'users', uid), { defaultCurrency: value });
+  }
+
   getUserProfile$(uid: string): Observable<UserProfile> {
     return new Observable((observer) => {
       const unsub = onSnapshot(

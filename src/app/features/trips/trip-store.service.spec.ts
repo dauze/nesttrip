@@ -6,13 +6,17 @@ import { ActivityPersistenceService } from '@app/core/infra/firebase/services/pe
 import { DayActivityInstancePersistenceService } from '@app/core/infra/firebase/services/persistence/day-activity-instance-persistence.service';
 import { DayActivitiesPersistenceService } from '@app/core/infra/firebase/services/persistence/day-activities-persistence.service';
 import { LogisticPersistenceService } from '@app/core/infra/firebase/services/persistence/logistic-persistence.service';
+import { ExpensePersistenceService } from '@app/core/infra/firebase/services/persistence/expense-persistence.service';
+import { Expense } from '@core/models/expense.dto';
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
+import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { Logistic } from '@core/models/logistic.dto';
 
 /** Writer débouncé factice : reproduit l'API publique de `DebounceWriter` (voir shared/debounced-writer.ts) sans jamais toucher Firestore. */
 function fakeWriter() {
@@ -23,16 +27,39 @@ function fakeWriter() {
   };
 }
 
+/** Même chose que `fakeWriter`, avec `create`/`remove` (écritures directes non débouncées, voir ExpensePersistenceService/LogisticPersistenceService). */
+function fakeCrudWriter() {
+  return {
+    ...fakeWriter(),
+    create: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 describe('TripStore', () => {
   const tripId = 't1';
   const dayId = new Date('2026-08-01T00:00:00.000Z');
 
   let activityWriter: ReturnType<typeof fakeWriter>;
   let instanceWriter: ReturnType<typeof fakeWriter>;
+  let expenseWriter: ReturnType<typeof fakeCrudWriter>;
   let store: TripStore;
 
   function poolActivity(overrides: Partial<PoolActivity> = {}): PoolActivity {
     return { id: 'pool-1', title: 'Tour Eiffel', files: [], photoRefs: [], ...overrides };
+  }
+
+  function expense(overrides: Partial<Expense> = {}): Expense {
+    return {
+      id: 'exp-1',
+      amount: 5,
+      currency: 'THB',
+      label: 'Smoothie',
+      date: new Date('2026-08-10T12:00:00Z'),
+      frozenRateToEur: 39.4,
+      frozenAmountEur: 0.13,
+      ...overrides,
+    };
   }
 
   function instance(overrides: Partial<DayActivityInstance> = {}): DayActivityInstance {
@@ -48,23 +75,43 @@ describe('TripStore', () => {
     };
   }
 
+  function logistic(overrides: Partial<Logistic> = {}): Logistic {
+    return {
+      id: 'log-1',
+      type: 'other',
+      title: 'Excursion',
+      files: [],
+      links: [],
+      price: { amount: 100, currency: 'USD' },
+      booking: { status: BookingStatus.NOT_NEEDED },
+      ...overrides,
+    } as Logistic;
+  }
+
+  let logisticWriter: ReturnType<typeof fakeWriter>;
+  let currencyConversionService: { convert$: ReturnType<typeof vi.fn> };
+
   beforeEach(() => {
     activityWriter = fakeWriter();
     instanceWriter = fakeWriter();
+    expenseWriter = fakeCrudWriter();
+    logisticWriter = fakeWriter();
+    currencyConversionService = { convert$: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: ActivityPersistenceService, useValue: activityWriter },
         { provide: DayActivityInstancePersistenceService, useValue: instanceWriter },
         { provide: DayActivitiesPersistenceService, useValue: fakeWriter() },
-        { provide: LogisticPersistenceService, useValue: fakeWriter() },
+        { provide: LogisticPersistenceService, useValue: logisticWriter },
+        { provide: ExpensePersistenceService, useValue: expenseWriter },
+        { provide: CurrencyConversionService, useValue: currencyConversionService },
         { provide: NotesPersistenceService, useValue: fakeWriter() },
         {
           provide: TripPersistenceService,
           useValue: {
             createTrip: vi.fn().mockResolvedValue(undefined),
             updateTripTitle: vi.fn().mockResolvedValue(undefined),
-            updateTripCurrency: vi.fn().mockResolvedValue(undefined),
             updateTripTravelTiers: vi.fn().mockResolvedValue(undefined),
             updateTripTravelModeOverrides: vi.fn().mockResolvedValue(undefined),
             removeTrip: vi.fn().mockResolvedValue(undefined),
@@ -137,46 +184,6 @@ describe('TripStore', () => {
     });
   });
 
-  describe('updateTripCurrency — signal dédié, indépendant de _trips/activeTrip', () => {
-    function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
-      store._trips.set({
-        [tripId]: {
-          id: tripId,
-          ville: 'Paris',
-          title: 'Voyage',
-          ownerId: 'u1',
-          members: {},
-          days: [],
-          activities: [],
-          dayActivityInstances: [],
-          logistics: [],
-          notes: { id: 'n1', items: [] },
-          defaultCurrency: 'EUR',
-          ...overrides,
-        },
-      });
-      store._activeTripId.set(tripId);
-    }
-
-    it("met à jour getTripCurrency() sans changer la référence de _trips ni de activeTrip()", () => {
-      seedTrip();
-      const tripsBefore = store._trips();
-      const activeTripBefore = store.activeTrip();
-
-      store.updateTripCurrency(tripId, 'USD');
-
-      expect(store.getTripCurrency(tripId)()).toBe('USD');
-      expect(store._trips()).toBe(tripsBefore);
-      expect(store.activeTrip()).toBe(activeTripBefore);
-    });
-
-    it("retombe sur trip.defaultCurrency tant qu'aucun changement n'a été fait, puis 'EUR' à défaut", () => {
-      seedTrip({ defaultCurrency: 'JPY' });
-      expect(store.getTripCurrency(tripId)()).toBe('JPY');
-      expect(store.getTripCurrency('trip-inconnu')()).toBe('EUR');
-    });
-  });
-
   describe('updateTripTravelTiers — signal dédié, indépendant de _trips/activeTrip', () => {
     function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
       store._trips.set({
@@ -190,6 +197,7 @@ describe('TripStore', () => {
           activities: [],
           dayActivityInstances: [],
           logistics: [],
+          expenses: [],
           notes: { id: 'n1', items: [] },
           ...overrides,
         },
@@ -230,6 +238,7 @@ describe('TripStore', () => {
           activities: [],
           dayActivityInstances: [],
           logistics: [],
+          expenses: [],
           notes: { id: 'n1', items: [] },
           ...overrides,
         },
@@ -278,8 +287,8 @@ describe('TripStore', () => {
           activities: [],
           dayActivityInstances: [],
           logistics: [],
+          expenses: [],
           notes: { id: 'n1', items: [] },
-          defaultCurrency: 'EUR',
           ...overrides,
         },
       });
@@ -448,6 +457,147 @@ describe('TripStore', () => {
       const day3Entries = store.getDayActivitiesWithEchoes(tripId, day3)();
 
       expect(day3Entries).toEqual([]);
+    });
+  });
+
+  describe('figeage du taux au passage à BOOKED (src/specs/devise.md 3.3)', () => {
+    it('fige le taux et le montant EUR au passage TO_BOOK -> BOOKED pour une instance jour', () => {
+      currencyConversionService.convert$.mockReturnValue(of({ status: 'success', data: { amount: 92.5, approximate: false } }));
+
+      store.createActivity(
+        tripId, dayId,
+        poolActivity(),
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.TO_BOOK } }),
+      );
+      store.updateDayActivityInstance(
+        tripId,
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.BOOKED } }),
+      );
+
+      expect(currencyConversionService.convert$).toHaveBeenCalledWith(100, 'USD', 'EUR');
+      const price = store.getDayActivity('instance-1')().price;
+      expect(price.frozenRateToEur).toBeCloseTo(0.925, 5);
+      expect(price.frozenAmountEur).toBe(92.5);
+      expect(price.frozenAt).toBeInstanceOf(Date);
+    });
+
+    it('ne fige rien si le statut était déjà BOOKED avant (pas de re-figeage à chaque édition ultérieure)', () => {
+      store.createActivity(
+        tripId, dayId,
+        poolActivity(),
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.BOOKED } }),
+      );
+      currencyConversionService.convert$.mockClear();
+
+      store.updateDayActivityInstance(
+        tripId,
+        instance({ price: { amount: 150, currency: 'USD' }, booking: { status: BookingStatus.BOOKED } }),
+      );
+
+      expect(currencyConversionService.convert$).not.toHaveBeenCalled();
+      expect(store.getDayActivity('instance-1')().price.frozenAmountEur).toBeUndefined();
+    });
+
+    it('ne fige rien pour une transition vers WAITLIST/NOT_NEEDED/TO_BOOK (seul BOOKED fige)', () => {
+      store.createActivity(
+        tripId, dayId,
+        poolActivity(),
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.TO_BOOK } }),
+      );
+      currencyConversionService.convert$.mockClear();
+
+      store.updateDayActivityInstance(
+        tripId,
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.WAITLIST } }),
+      );
+
+      expect(currencyConversionService.convert$).not.toHaveBeenCalled();
+    });
+
+    it('fige un taux de 1 sans appel réseau quand la devise est déjà EUR', () => {
+      store.createActivity(
+        tripId, dayId,
+        poolActivity(),
+        instance({ price: { amount: 100, currency: 'EUR' }, booking: { status: BookingStatus.TO_BOOK } }),
+      );
+
+      store.updateDayActivityInstance(
+        tripId,
+        instance({ price: { amount: 100, currency: 'EUR' }, booking: { status: BookingStatus.BOOKED } }),
+      );
+
+      expect(currencyConversionService.convert$).not.toHaveBeenCalled();
+      const price = store.getDayActivity('instance-1')().price;
+      expect(price.frozenRateToEur).toBe(1);
+      expect(price.frozenAmountEur).toBe(100);
+    });
+
+    it('fige le taux au passage à BOOKED pour une réservation logistique', () => {
+      currencyConversionService.convert$.mockReturnValue(of({ status: 'success', data: { amount: 92.5, approximate: false } }));
+      store._logistics.set({ [logistic().id]: logistic({ booking: { status: BookingStatus.TO_BOOK } }) });
+
+      store.updateLogistic(tripId, logistic({ booking: { status: BookingStatus.BOOKED } }));
+
+      expect(currencyConversionService.convert$).toHaveBeenCalledWith(100, 'USD', 'EUR');
+      const price = store.getLogistic('log-1')().price;
+      expect(price?.frozenRateToEur).toBeCloseTo(0.925, 5);
+      expect(price?.frozenAmountEur).toBe(92.5);
+    });
+
+    it('retombe sur un taux 1 si la conversion échoue (offline) plutôt que de bloquer le figeage', () => {
+      currencyConversionService.convert$.mockReturnValue(of({ status: 'error' }));
+      store.createActivity(
+        tripId, dayId,
+        poolActivity(),
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.TO_BOOK } }),
+      );
+
+      store.updateDayActivityInstance(
+        tripId,
+        instance({ price: { amount: 100, currency: 'USD' }, booking: { status: BookingStatus.BOOKED } }),
+      );
+
+      const price = store.getDayActivity('instance-1')().price;
+      expect(price.frozenRateToEur).toBe(1);
+      expect(price.frozenAmountEur).toBe(100);
+    });
+  });
+
+  describe('createExpense/updateExpense/removeExpense — dépenses libres (src/specs/devise.md 3.4)', () => {
+    it('createExpense met à jour le signal immédiatement et écrit en direct (non débouncé)', () => {
+      store.createExpense(tripId, expense());
+
+      expect(store.getExpense('exp-1')()).toEqual(expense());
+      expect(store.getAllExpenses(tripId)()).toEqual([expense()]);
+      expect(expenseWriter.create).toHaveBeenCalledWith(tripId, expense());
+    });
+
+    it("marque la dépense pending dès la commande, jusqu'à ce que le writer redevienne idle", () => {
+      store.createExpense(tripId, expense());
+      expect(store._pendingExpenseIds().has('exp-1')).toBe(true);
+
+      expenseWriter.syncing.set(false);
+      TestBed.tick();
+      expect(store._pendingExpenseIds().has('exp-1')).toBe(false);
+    });
+
+    it('updateExpense met à jour le signal immédiatement et passe par le writer débouncé', () => {
+      store.createExpense(tripId, expense());
+
+      store.updateExpense(tripId, expense({ label: 'Pourboire' }));
+
+      expect(store.getExpense('exp-1')().label).toBe('Pourboire');
+      expect(expenseWriter.queueUpdate).toHaveBeenCalledWith(tripId, expect.objectContaining({ label: 'Pourboire' }));
+    });
+
+    it('removeExpense retire la dépense du signal et de la liste du trip, et écrit en direct', () => {
+      store.createExpense(tripId, expense());
+
+      store.removeExpense(tripId, 'exp-1');
+
+      expect(store.getExpense('exp-1')()).toBeUndefined();
+      expect(store.getAllExpenses(tripId)()).toEqual([]);
+      expect(expenseWriter.remove).toHaveBeenCalledWith(tripId, 'exp-1');
     });
   });
 });

@@ -1,5 +1,5 @@
-import { ActivityFirebase, BookingFirebase } from '../models/activity.dto';
-import { PoolActivity, Booking } from '@app/shared/components/activity-card/activity.model';
+import { ActivityFirebase, BookingFirebase, PriceFirebase } from '../models/activity.dto';
+import { PoolActivity, Booking, Price } from '@app/shared/components/activity-card/activity.model';
 
 export function activityFromFb(a: ActivityFirebase): PoolActivity {
   return {
@@ -20,6 +20,28 @@ export function activityToFb(a: PoolActivity): ActivityFirebase {
     ...(a.address ? { address: a.address } : {}),
     ...(a.latitude !== undefined ? { latitude: a.latitude } : {}),
     ...(a.longitude !== undefined ? { longitude: a.longitude } : {}),
+    ...(a.countryCode ? { countryCode: a.countryCode } : {}),
+  };
+}
+
+export function priceFromFb(p: PriceFirebase): Price {
+  return {
+    amount: p.amount,
+    currency: p.currency,
+    ...(p.frozenRateToEur !== undefined ? { frozenRateToEur: p.frozenRateToEur } : {}),
+    ...(p.frozenAmountEur !== undefined ? { frozenAmountEur: p.frozenAmountEur } : {}),
+    ...(p.frozenAt ? { frozenAt: new Date(Number(p.frozenAt)) } : {}),
+  };
+}
+
+/** Firestore n'accepte aucune valeur `undefined` (même imbriquée) : `frozenRateToEur`/`frozenAmountEur`/`frozenAt` (absents tant que le statut n'est jamais passé à `BOOKED`) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/logisticToFb. */
+export function priceToFb(p: Price): PriceFirebase {
+  return {
+    amount: p.amount,
+    currency: p.currency,
+    ...(p.frozenRateToEur !== undefined ? { frozenRateToEur: p.frozenRateToEur } : {}),
+    ...(p.frozenAmountEur !== undefined ? { frozenAmountEur: p.frozenAmountEur } : {}),
+    ...(p.frozenAt ? { frozenAt: String(p.frozenAt.getTime()) } : {}),
   };
 }
 

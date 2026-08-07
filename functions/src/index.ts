@@ -12,6 +12,7 @@ import { getPlacePhotoHandler } from './places/photo.handler';
 import { getFlightStatusHandler } from './flights/get-flight-status.handler';
 import { getFlightLookupHandler } from './flights/get-flight-lookup.handler';
 import { getTrajetHandler } from './trajets/get-trajet.handler';
+import { getExchangeRatesHandler } from './taux-change/get-exchange-rates.handler';
 
 admin.initializeApp();
 
@@ -41,6 +42,7 @@ app.get('/api/photos/:photoRef', (req, res) =>  getPlacePhotoHandler(req, res, g
 app.get('/api/vols/:flightNumber/status', (req, res) => getFlightStatusHandler(req, res, aeroDataBoxApiKey.value()));
 app.get('/api/vols/:flightNumber/lookup', (req, res) => getFlightLookupHandler(req, res, aeroDataBoxApiKey.value()));
 app.get('/api/trajets', (req, res) => getTrajetHandler(req, res, googleApiKey.value()));
+app.get('/api/taux-change', (req, res) => getExchangeRatesHandler(req, res));
 
 export const api = onRequest(
   { secrets: [googleApiKey, aeroDataBoxApiKey], region: 'europe-west1' },

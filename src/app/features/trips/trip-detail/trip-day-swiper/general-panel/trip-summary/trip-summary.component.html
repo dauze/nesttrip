@@ -20,32 +20,27 @@
     </app-card>
   }
 
-  <div class="trip-summary-tiles flex gap-1">
-    <app-card class="trip-summary-tile" [fillHeight]="true">
-      <div cardTitle>Dépenses</div>
-      <div class="flex flex-column gap-2 flex-1">
-        <div class="flex align-items-center gap-1">
-          <span class="text-sm flex-shrink-0">Devise :</span>
-          <app-select
-            #currencySelect
-            label="Devise"
-            [options]="currencyOptions"
-            [formControl]="currencyControl"
-            class="w-max transparent-select no-chevron"
-          />
-          <button type="button" class="trip-summary__pencil flex-shrink-0" aria-label="Modifier la devise" (click)="openCurrencyPanel()">
-            <i class="pi pi-pencil"></i>
-          </button>
-        </div>
-        <div class="trip-summary-total">{{ totalExpense().toFixed(2) }} {{ currencySymbol() }}</div>
-        @if (expenseBreakdown().length > 0) {
-          <app-activity-type-rings [entries]="expenseBreakdown()" />
-        }
-      </div>
-    </app-card>
+  <app-card class="trip-summary-expenses-card" [fillHeight]="true">
+    <div cardTitle>Dépenses</div>
+    <div class="flex flex-column gap-2 flex-1">
+      @if (expenseBreakdown().length > 0) {
+        <app-activity-type-rings [entries]="expenseBreakdown()" [interactive]="true">
+          <div ringsCenter>
+            <span class="trip-summary-total">{{ totalExpense() !== null ? totalExpense()!.toFixed(2) : '…' }} {{ currencySymbol() }}</span>
+            @if (destinationTotal(); as dest) {
+              <span class="trip-summary-total-sub">(~{{ dest.amount | number: '1.0-0' }} {{ dest.symbol }})</span>
+            }
+          </div>
+        </app-activity-type-rings>
+      } @else {
+        <div class="trip-summary-total">{{ totalExpense() !== null ? totalExpense()!.toFixed(2) : '0.00' }} {{ currencySymbol() }}</div>
+      }
 
-    <app-trip-files-tile class="trip-summary-tile" [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
-  </div>
+      <app-button label="Voir toutes les dépenses" [text]="true" size="small" class="w-max" (click)="openExpensesTable()" />
+    </div>
+  </app-card>
+
+  <app-trip-files-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
 
   <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
 </div>

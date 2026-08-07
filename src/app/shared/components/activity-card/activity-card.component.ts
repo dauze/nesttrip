@@ -292,6 +292,7 @@ export class ActivityCardComponent {
           address: place.address,
           latitude: place.latitude,
           longitude: place.longitude,
+          countryCode: place.countryCode,
           photoRefs,
         });
       });

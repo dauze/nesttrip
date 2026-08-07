@@ -22,6 +22,8 @@ import { UserProfileRepository } from './core/infra/firebase/services/user-profi
 import { FirebaseUserProfileRepository } from './core/infra/firebase/services/firebase-user-profile-repository';
 import { TravelRouteRepository } from './core/infra/firebase/services/travel-route-repository';
 import { FirebaseTravelRouteRepository } from './core/infra/firebase/services/firebase-travel-route-repository';
+import { ExchangeRateRepository } from './core/infra/firebase/services/exchange-rate-repository';
+import { FirebaseExchangeRateRepository } from './core/infra/firebase/services/firebase-exchange-rate-repository';
 
 registerLocaleData(localeFr);
 
@@ -59,5 +61,7 @@ export const appConfig: ApplicationConfig = {
     { provide: UserProfileRepository, useExisting: FirebaseUserProfileRepository },
     FirebaseTravelRouteRepository,
     { provide: TravelRouteRepository, useExisting: FirebaseTravelRouteRepository },
+    FirebaseExchangeRateRepository,
+    { provide: ExchangeRateRepository, useExisting: FirebaseExchangeRateRepository },
   ],
 };

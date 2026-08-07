@@ -17,10 +17,6 @@ export class TripPersistenceService {
     return updateDoc(doc(this.db, 'trips', tripId), { title });
   }
 
-  updateTripCurrency(tripId: string, currency: string): Promise<void> {
-    return updateDoc(doc(this.db, 'trips', tripId), { defaultCurrency: currency });
-  }
-
   updateTripTravelTiers(tripId: string, tiers: TravelTiers): Promise<void> {
     return updateDoc(doc(this.db, 'trips', tripId), { travelTiers: tiers });
   }

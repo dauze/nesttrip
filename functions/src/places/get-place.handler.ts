@@ -7,7 +7,8 @@ const FIELD_MASKS = {
     'id',
     'regularOpeningHours', 'internationalPhoneNumber', 'nationalPhoneNumber', 'websiteUri', // Ex-Contact
     'rating', 'userRatingCount', 'priceLevel', // Ex-Atmosphere
-    'reviews' // Ex-Reviews
+    'reviews', // Ex-Reviews
+    'addressComponents', // Basic Data, pour le pays — voir mapPlaceDetails, src/specs/devise.md 3.5
   ].join(','),
   photos: ['id', 'photos'].join(','),
 } as const;

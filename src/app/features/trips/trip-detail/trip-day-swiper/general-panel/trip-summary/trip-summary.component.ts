@@ -1,19 +1,29 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, input, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewContainerRef, afterNextRender, computed, effect, inject, input, viewChild } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { of, switchMap } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
-import { SelectComponent } from '@app/shared/components/select/select.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
+import { DialogService } from '@app/shared/services/dialog.service';
+import { ExpensesTableDialogComponent, ExpensesTableDialogData } from './expenses-table/expenses-table-dialog.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { Day, TravelTiers } from '@app/features/trips/trip.model';
 import { TripHeaderComponent } from '../../../trip-header/trip-header.component';
 import { TripCollaboratorsComponent } from '../../../trip-collaborators/trip-collaborators.component';
 import { DayMapPoint } from '@app/core/models/day-map-point';
+import { LoadingState, PlaceDetails } from '@app/core/models/place.dto';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { GeneralMapCinematicService } from '../trip-activities/general-map-cinematic.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
+import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { UserProfileService } from '@app/core/services/user-profile.service';
+import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
+import { convertWithRates } from '@app/core/services/currency-conversion.util';
+import { suggestedCurrencyForCountry } from '@app/core/utils/country-currency.util';
 import { TripTasksTileComponent } from './trip-tasks-tile/trip-tasks-tile.component';
 import { TripFilesTileComponent } from './trip-files-tile/trip-files-tile.component';
 import { ActivityTypeRingsComponent, RingChartEntry } from './activity-type-rings/activity-type-rings.component';
@@ -21,7 +31,10 @@ import { computeExpenseBreakdown, ExpenseItem } from './trip-summary.util';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { LOGISTIC_TYPE_META } from '../logistics/logistic.constants';
 
-/** Top 5 types de dépense max affichés dans les anneaux (au-delà, les types restants sont simplement ignorés, pas de segment "autres") — voir `TripSummaryComponent.expenseBreakdown`. */
+/** Type-key/libellé/icône des dépenses libres dans les anneaux — pas de "type" propre (contrairement à activité/logistique), regroupées sous une seule catégorie. `--nt-activity-activite` (pas `--nt-logistic-other`, qui colore désormais la 5ᵉ entrée "Autre" de `computeExpenseBreakdown` — retour utilisateur : les deux ne doivent pas partager la même couleur, sans quoi une "Dépense libre" repliée dans "Autre" se confond visuellement avec le reste des dépenses libres non repliées). */
+const FREE_EXPENSE_META = { label: 'Dépense libre', icon: 'pi pi-wallet', colorVar: '--nt-activity-activite' };
+
+/** Nombre max d'entrées affichées dans les anneaux : 4 types individuels + 1 entrée fixe "Autre" agrégeant le reliquat (voir `computeExpenseBreakdown`) — voir `TripSummaryComponent.expenseBreakdown`. */
 const MAX_EXPENSE_ENTRIES = 5;
 
 /**
@@ -43,7 +56,7 @@ const MAX_EXPENSE_ENTRIES = 5;
 @Component({
   selector: 'app-trip-summary',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, SkeletonComponent, SelectComponent, TripHeaderComponent, TripCollaboratorsComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
+  imports: [DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, TripHeaderComponent, TripCollaboratorsComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
   templateUrl: './trip-summary.component.html',
   styleUrl: './trip-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,7 +66,6 @@ const MAX_EXPENSE_ENTRIES = 5;
   providers: [GeneralMapCinematicService],
 })
 export class TripSummaryComponent {
-  private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly confirmDialogService = inject(ConfirmDialogService);
   protected readonly tripFacade = inject(TripFacade);
@@ -61,10 +73,14 @@ export class TripSummaryComponent {
   private readonly mapCinematic = inject(GeneralMapCinematicService);
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogService = inject(DialogService);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly googlePlaceService = inject(GooglePlaceService);
+  private readonly userProfileService = inject(UserProfileService);
+  private readonly currencyConversionService = inject(CurrencyConversionService);
 
   private readonly mapContainerRef = viewChild<ElementRef<HTMLElement>>('mapContainer');
   private readonly headerRef = viewChild(TripHeaderComponent);
-  private readonly currencySelectRef = viewChild<SelectComponent<string>>('currencySelect');
 
   readonly tripId = input.required<string>();
   /** Slide "Résumé" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
@@ -133,7 +149,6 @@ export class TripSummaryComponent {
   readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
 
   readonly currencyOptions = CURRENCY_OPTIONS;
-  readonly currencyControl = this.fb.nonNullable.control<string>('EUR');
 
   /**
    * Toutes les instances placées sur un jour du trip (une activité posée sur 2 jours
@@ -150,21 +165,105 @@ export class TripSummaryComponent {
       .flatMap(day => this.tripFacade.getDayActivities(day.id)().map(activity => ({ dayId: day.id, activity })));
   });
 
+  /** Devise "d'agrégation" (voir src/specs/devise.md 3.1) : celle de l'utilisateur qui CONSULTE, la seule devise "par défaut" encore utilisée dans le trip (le concept de devise par défaut PROPRE au trip a été retiré — préremplissage des nouvelles cartes en 'EUR' partout, voir day-activity-creation.service.ts/logistic-details.component.ts). */
+  protected readonly userCurrency = computed(() => this.userProfileService.defaultCurrency());
+
   /**
-   * Somme de tous les montants (activités ET réservations logistiques,
-   * ROADMAP.md "Bugs / fixes", retour utilisateur 2026-08-05 — élargi depuis
-   * la version d'origine, activités seules), devise de chaque élément
-   * ignorée (décision actée le 2026-08-01) — affichée avec le symbole de la
-   * devise du trip.
+   * Tous les éléments contribuant aux dépenses du trip (activités +
+   * réservations + dépenses libres), montants CONVERTIS dans `userCurrency`
+   * (corrige le bug de la somme brute multi-devises, spec section 2.2) —
+   * `null` tant que les taux du jour ne sont pas encore résolus. Source
+   * unique pour `totalExpense` ET `expenseBreakdown` : les deux doivent
+   * rester cohérents entre eux (la somme des anneaux doit retomber sur le
+   * total centré). Statut `BOOKED`/dépense libre (`frozenAmountEur` déjà
+   * renseigné, voir src/specs/devise.md 3.3/3.4) : reconverti depuis le
+   * montant EUR FIGÉ (pivot technique, voir currency-conversion.service.ts),
+   * jamais depuis le montant/devise d'origine — c'est exactement ce qui rend
+   * ce montant stable dans le temps malgré la dérive du taux de marché.
    */
-  readonly totalExpense = computed(() =>
-    this.allPlacedActivities().reduce((sum, { activity }) => sum + (activity.price?.amount || 0), 0)
-    + this.tripFacade.getAllLogistics(this.tripId())().reduce((sum, l) => sum + (l.price?.amount || 0), 0),
-  );
+  private readonly convertedExpenseItems = computed<ExpenseItem[] | null>(() => {
+    const ratesState = this.currencyConversionService.ratesState();
+    if (ratesState.status !== 'success') return null;
+    const target = this.userCurrency();
+    const rates = ratesState.data.rates;
+
+    const items: ExpenseItem[] = [];
+    const pushItem = (
+      typeKey: string, label: string, icon: string, colorVar: string,
+      price: { amount: number; currency: string; frozenAmountEur?: number } | undefined,
+    ) => {
+      if (!price || price.amount <= 0) return;
+      const [sourceAmount, sourceCurrency] =
+        price.frozenAmountEur !== undefined ? [price.frozenAmountEur, 'EUR'] : [price.amount, price.currency];
+      const converted = convertWithRates(sourceAmount, sourceCurrency, target, rates);
+      // Devise non résolue (absente des taux du jour) : ignorée du total
+      // plutôt que fausser silencieusement la somme avec un montant brut
+      // dans la mauvaise devise.
+      if (converted !== null) items.push({ typeKey, label, icon, colorVar, amount: converted });
+    };
+
+    for (const { activity } of this.allPlacedActivities()) {
+      const meta = ACTIVITY_TYPE_META[activity.type];
+      pushItem(`activity:${activity.type}`, meta.label, meta.icon, meta.colorVar, activity.price);
+    }
+    for (const logistic of this.tripFacade.getAllLogistics(this.tripId())()) {
+      const meta = LOGISTIC_TYPE_META[logistic.type];
+      pushItem(`logistic:${logistic.type}`, meta.label, meta.icon, meta.colorVar, logistic.price);
+    }
+    for (const expense of this.tripFacade.getAllExpenses(this.tripId())()) {
+      pushItem('expense:free', FREE_EXPENSE_META.label, FREE_EXPENSE_META.icon, FREE_EXPENSE_META.colorVar, expense);
+    }
+
+    return items;
+  });
+
+  /** Total réellement converti dans `userCurrency` (remplace l'ancienne somme brute multi-devises) — `null` tant que les taux du jour ne sont pas résolus. */
+  readonly totalExpense = computed<number | null>(() => {
+    const items = this.convertedExpenseItems();
+    return items ? items.reduce((sum, item) => sum + item.amount, 0) : null;
+  });
 
   readonly currencySymbol = computed(() => {
-    const currency = this.tripFacade.getTripCurrency(this.tripId())();
-    return this.currencyOptions.find(o => o.value === currency)?.label.split(' ')[0] ?? '';
+    const currency = this.userCurrency();
+    return this.currencyOptions.find(o => o.value === currency)?.label.split(' ')[0] ?? currency;
+  });
+
+  /** `placeId` du voyage (destination) — lu depuis `activeTrip()` (champ primitif, pas exclu contrairement à activities/logistics/expenses, voir CLAUDE.md). */
+  private readonly tripPlaceId = computed(() => {
+    const trip = this.tripFacade.activeTrip();
+    return trip && trip.id === this.tripId() ? trip.placeId : undefined;
+  });
+
+  private readonly destinationDetailsState = toSignal(
+    toObservable(this.tripPlaceId).pipe(
+      switchMap((placeId) =>
+        placeId ? this.googlePlaceService.getPlaceDetails$(placeId) : of({ status: 'idle' } as LoadingState<PlaceDetails>),
+      ),
+    ),
+    { initialValue: { status: 'idle' } as LoadingState<PlaceDetails> },
+  );
+
+  /** Devise locale de la destination du voyage, déduite du `placeId` du TRIP (pas d'une carte précise) — purement informative, jamais un pivot de calcul (voir src/specs/devise.md 3.1/3.5). */
+  private readonly destinationCurrency = computed(() => {
+    const state = this.destinationDetailsState();
+    return state.status === 'success' ? suggestedCurrencyForCountry(state.data.countryCode) : undefined;
+  });
+
+  /** Sous-texte "(~46 200 ฿)" sous le total (voir src/specs/devise.md 3.5) — `null` si le pays est inconnu, non résolu, ou déjà la même devise que `userCurrency` (rien d'utile à ajouter). */
+  readonly destinationTotal = computed(() => {
+    const total = this.totalExpense();
+    const destination = this.destinationCurrency();
+    const source = this.userCurrency();
+    if (total === null || !destination || destination === source) return null;
+
+    const ratesState = this.currencyConversionService.ratesState();
+    if (ratesState.status !== 'success') return null;
+
+    const converted = convertWithRates(total, source, destination, ratesState.data.rates);
+    if (converted === null) return null;
+
+    const symbol = this.currencyOptions.find(o => o.value === destination)?.label.split(' ')[0] ?? destination;
+    return { amount: converted, symbol };
   });
 
 
@@ -187,53 +286,28 @@ export class TripSummaryComponent {
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
 
   /**
-   * Dépenses regroupées par TYPE (vol, logement, activités, visites...) —
-   * un anneau par type, les `MAX_EXPENSE_ENTRIES` dont la somme est la plus
-   * élevée (ROADMAP.md "UX / Interactions", 2026-08-05, retour utilisateur :
-   * "je voudrais que tu regroupes les 5 plus chères en fonction du type" —
-   * remplace un essai précédent par élément individuel + anneau "Autre").
-   * Même périmètre que `totalExpense` ci-dessus (activités posées sur un
-   * jour, un placement sur 2 jours comptant 2 fois — ROADMAP.md 2026-08-01 —
-   * + réservations logistiques) ; les éléments à 0€/sans prix sont ignorés,
-   * ils n'apporteraient rien à un classement par montant. Montant affiché
-   * avec le symbole de la devise du TRIP (`currencySymbol`), pas celle
-   * propre à chaque élément — même convention que `totalExpense`, qui
-   * additionne déjà toutes les devises sans conversion ni distinction.
+   * Dépenses regroupées par TYPE (vol, logement, activités, visites,
+   * dépenses libres...) — un anneau par type, les 4 dont la somme est la
+   * plus élevée individuellement + un anneau fixe "Autre" agrégeant le
+   * reliquat (ROADMAP.md "### UI" : "il faut que les 4 premier soient les
+   * plus grand, et que le 5ime sois un libellé fixe 'Autre'", voir
+   * `computeExpenseBreakdown`). Même périmètre que
+   * `totalExpense` ci-dessus (activités posées sur un jour, un placement sur
+   * 2 jours comptant 2 fois — ROADMAP.md 2026-08-01 — + réservations
+   * logistiques + dépenses libres) ; les éléments à 0/sans prix sont
+   * ignorés. Montants déjà CONVERTIS dans `userCurrency` par
+   * `convertedExpenseItems` (spec section 2.2 : ce n'est plus une somme
+   * brute multi-devises comme avant cette refonte).
    */
   readonly expenseBreakdown = computed<RingChartEntry[]>(() => {
-    const items: ExpenseItem[] = [];
-
-    for (const { activity } of this.allPlacedActivities()) {
-      const amount = activity.price?.amount || 0;
-      if (amount <= 0) continue;
-      const meta = ACTIVITY_TYPE_META[activity.type];
-      items.push({ typeKey: `activity:${activity.type}`, label: meta.label, icon: meta.icon, colorVar: meta.colorVar, amount });
-    }
-
-    for (const logistic of this.tripFacade.getAllLogistics(this.tripId())()) {
-      const amount = logistic.price?.amount || 0;
-      if (amount <= 0) continue;
-      const meta = LOGISTIC_TYPE_META[logistic.type];
-      items.push({ typeKey: `logistic:${logistic.type}`, label: meta.label, icon: meta.icon, colorVar: meta.colorVar, amount });
-    }
-
-    return computeExpenseBreakdown(items, this.currencySymbol(), MAX_EXPENSE_ENTRIES);
+    const items = this.convertedExpenseItems();
+    return items ? computeExpenseBreakdown(items, this.currencySymbol(), MAX_EXPENSE_ENTRIES) : [];
   });
 
   private mapClickSub?: { unsubscribe: () => void };
 
   constructor() {
     this.destroyRef.onDestroy(() => this.mapClickSub?.unsubscribe());
-
-    effect(() => {
-      this.currencyControl.setValue(this.tripFacade.getTripCurrency(this.tripId())(), { emitEvent: false });
-    });
-
-    this.currencyControl.valueChanges.subscribe((currency) => {
-      if (currency !== this.tripFacade.getTripCurrency(this.tripId())()) {
-        this.tripFacade.updateTripCurrency(this.tripId(), currency);
-      }
-    });
 
     // Quand ce contexte devient actif (slide Résumé), on récupère l'instance
     // UNIQUE de la carte et on la déplace physiquement dans notre conteneur —
@@ -296,9 +370,12 @@ export class TripSummaryComponent {
     this.tripFacade.updateTripTravelTiers(this.tripId(), tiers);
   }
 
-  /** Crayon dédié à côté de "Devise :" (ROADMAP.md "Bugs / fixes") : le select lui-même perd son chevron (`no-chevron`, pour rester discret à côté du montant), le crayon redevient donc le seul indice visuel qu'il est éditable. */
-  protected openCurrencyPanel(): void {
-    this.currencySelectRef()?.openPanel();
+  /** Tableau détaillé de toutes les dépenses du voyage (voir src/specs/devise.md 3.5) — position/style provisoires, deviendra le lien discret sous l'anneau une fois la refonte visuelle faite. */
+  protected openExpensesTable(): void {
+    this.dialogService.open<void, ExpensesTableDialogData>(ExpensesTableDialogComponent, {
+      viewContainerRef: this.viewContainerRef,
+      data: { tripId: this.tripId() },
+    });
   }
 
   /**

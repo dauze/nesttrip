@@ -13,6 +13,7 @@ import { TripPersistenceService } from '@app/core/infra/firebase/services/persis
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
 import { CollaborationService } from '@app/core/services/collaboration.service';
+import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
@@ -48,6 +49,7 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
       activities: [],
       dayActivityInstances: [],
       logistics: [],
+      expenses: [],
       notes: { id: 'notes-1', items: [] },
       ...overrides,
     };
@@ -83,12 +85,12 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
         { provide: DayActivitiesPersistenceService, useValue: fakeWriter() },
         { provide: LogisticPersistenceService, useValue: fakeWriter() },
         { provide: NotesPersistenceService, useValue: fakeWriter() },
+        { provide: CurrencyConversionService, useValue: { convert$: vi.fn() } },
         {
           provide: TripPersistenceService,
           useValue: {
             createTrip: vi.fn().mockResolvedValue(undefined),
             updateTripTitle: vi.fn().mockResolvedValue(undefined),
-            updateTripCurrency: vi.fn().mockResolvedValue(undefined),
             updateTripTravelTiers: vi.fn().mockResolvedValue(undefined),
             updateTripTravelModeOverrides: vi.fn().mockResolvedValue(undefined),
             removeTrip: vi.fn().mockResolvedValue(undefined),

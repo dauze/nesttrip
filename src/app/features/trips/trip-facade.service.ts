@@ -3,6 +3,7 @@ import { Observable, Subscription } from 'rxjs';
 import { Day, Trip, TravelTiers } from './trip.model';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dto';
+import { Expense } from '@core/models/expense.dto';
 import { TripStore } from './trip-store.service';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -98,10 +99,6 @@ export class TripFacade {
 
   updateTripTitle(tripId: string, title: string): void {
     this.store.updateTripTitle(tripId, title);
-  }
-
-  updateTripCurrency(tripId: string, currency: string): void {
-    this.store.updateTripCurrency(tripId, currency);
   }
 
   updateTripTravelTiers(tripId: string, tiers: TravelTiers): void {
@@ -201,6 +198,18 @@ export class TripFacade {
     this.store.updateFlightStatus(tripId, logistic, status, statusFetchedAt);
   }
 
+  createExpense(tripId: string, expense: Expense): void {
+    this.store.createExpense(tripId, expense);
+  }
+
+  updateExpense(tripId: string, expense: Expense): void {
+    this.store.updateExpense(tripId, expense);
+  }
+
+  removeExpense(tripId: string, expenseId: string): void {
+    this.store.removeExpense(tripId, expenseId);
+  }
+
   createItem(tripId: string, item: Item): void {
     this.store.createItem(tripId, item);
   }
@@ -229,8 +238,6 @@ export class TripFacade {
   getActivityPlacements = this.store.getActivityPlacements.bind(this.store);
   getNotesItems = this.store.getNotesItems.bind(this.store);
   getLinkedNoteItems = this.store.getLinkedNoteItems.bind(this.store);
-  /** Devise par défaut du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripCurrency). */
-  getTripCurrency = this.store.getTripCurrency.bind(this.store);
   /** Paliers de mode de trajet du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTravelTiers). */
   getTripTravelTiers = this.store.getTripTravelTiers.bind(this.store);
   /** Overrides manuels de mode de trajet du trip (clé = paire de lieux) — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTravelModeOverrides). */
@@ -244,6 +251,9 @@ export class TripFacade {
   getLogistic = this.store.getLogistic.bind(this.store);
   /** Toutes les réservations d'un trip, sans tri (voir `allLogisticsSorted`/`logisticsForDay` pour des vues dérivées). */
   getAllLogistics = this.store.getAllLogistics.bind(this.store);
+  getExpense = this.store.getExpense.bind(this.store);
+  /** Toutes les dépenses libres d'un trip (voir src/specs/devise.md 3.4). */
+  getAllExpenses = this.store.getAllExpenses.bind(this.store);
 
   /**
    * Réservations triées automatiquement pour la liste du sous-menu
@@ -314,6 +324,8 @@ export class TripFacade {
     const newTripActivities = { ...this.store._tripActivities() };
     const newLogistics = { ...this.store._logistics() };
     const newTripLogistics = { ...this.store._tripLogistics() };
+    const newExpenses = { ...this.store._expenses() };
+    const newTripExpenses = { ...this.store._tripExpenses() };
     const notesItems = { ...this.store._notesItems() };
     const tripNotesItems = { ...this.store._tripNotesItems() };
     const tripMembers = { ...this.store._tripMembers() };
@@ -337,6 +349,11 @@ export class TripFacade {
       delete newLogistics[logisticId];
     }
 
+    const previousExpenseIds = newTripExpenses[trip.id] ?? [];
+    for (const expenseId of previousExpenseIds) {
+      delete newExpenses[expenseId];
+    }
+
     const previousItemIds = tripNotesItems[trip.id] ?? [];
     for (const itemId of previousItemIds) {
       delete notesItems[itemId];
@@ -346,12 +363,14 @@ export class TripFacade {
     delete newTripDays[trip.id];
     delete newTripActivities[trip.id];
     delete newTripLogistics[trip.id];
+    delete newTripExpenses[trip.id];
     delete tripMembers[trip.id];
 
-    newTrips[trip.id] = { ...trip, days: [], activities: [], dayActivityInstances: [], logistics: [] };
+    newTrips[trip.id] = { ...trip, days: [], activities: [], dayActivityInstances: [], logistics: [], expenses: [] };
     newTripDays[trip.id] = [];
     newTripActivities[trip.id] = [];
     newTripLogistics[trip.id] = [];
+    newTripExpenses[trip.id] = [];
     tripNotesItems[trip.id] = [];
 
     for (const item of trip.notes.items) {
@@ -372,6 +391,11 @@ export class TripFacade {
     for (const logistic of trip.logistics) {
       newLogistics[logistic.id] = logistic;
       newTripLogistics[trip.id].push(logistic.id);
+    }
+
+    for (const expense of trip.expenses) {
+      newExpenses[expense.id] = expense;
+      newTripExpenses[trip.id].push(expense.id);
     }
 
     // 2. Les instances (form) du trip.
@@ -397,6 +421,8 @@ export class TripFacade {
     this.store._tripActivities.set(newTripActivities);
     this.store._logistics.set(newLogistics);
     this.store._tripLogistics.set(newTripLogistics);
+    this.store._expenses.set(newExpenses);
+    this.store._tripExpenses.set(newTripExpenses);
     this.store._notesItems.set(notesItems);
     this.store._tripNotesItems.set(tripNotesItems);
     this.store._tripMembers.set(tripMembers);
@@ -572,10 +598,10 @@ export class TripFacade {
       this.store._tripDays.update((map) => ({ ...map, [trip.id]: remoteDayKeysList }));
     }
 
-    // 3quater. Champs primitifs du trip (titre/ville/devise/lieu/propriétaire).
+    // 3quater. Champs primitifs du trip (titre/ville/lieu/propriétaire).
     //
-    // `_tripTitle`/`_tripCurrency` (signaux dédiés, voir leur doc dans
-    // TripStore) shadowent une édition locale en cours — mais tant que rien
+    // `_tripTitle` (signal dédié, voir sa doc dans
+    // TripStore) shadowe une édition locale en cours — mais tant que rien
     // ne protège `trip.id` pendant l'écriture Firestore en vol
     // (`_pendingTripFieldIds`, voir sa doc), le snapshot de CONFIRMATION qui
     // suit systématiquement CETTE écriture comparait `trip.title` (déjà
@@ -598,30 +624,25 @@ export class TripFacade {
     const isTripFieldPending = this.store._pendingTripFieldIds().has(trip.id);
     const currentTrip = this.store._trips()[trip.id];
     const currentTripTitleShadow = this.store._tripTitle()[trip.id];
-    const currentTripCurrencyShadow = this.store._tripCurrency()[trip.id];
     const currentTripTiersShadow = this.store._tripTravelTiers()[trip.id];
     const currentTripModeOverridesShadow = this.store._tripTravelModeOverrides()[trip.id];
 
     let primitivesChanged = false;
     let titleShadowChanged = false;
-    let currencyShadowChanged = false;
     let tiersShadowChanged = false;
     let modeOverridesShadowChanged = false;
 
     if (!isTripFieldPending && currentTrip) {
       const effectiveTitle = currentTripTitleShadow ?? currentTrip.title;
-      const effectiveCurrency = currentTripCurrencyShadow ?? currentTrip.defaultCurrency;
       const effectiveTiers = currentTripTiersShadow ?? currentTrip.travelTiers;
       const effectiveModeOverrides = currentTripModeOverridesShadow ?? currentTrip.travelModeOverrides;
       const titleReallyChanged = effectiveTitle !== trip.title;
-      const currencyReallyChanged = effectiveCurrency !== trip.defaultCurrency;
       // Objet (pas primitif) : comparaison structurelle, comme `structurallyEqual` côté TripStore.
       const tiersReallyChanged = JSON.stringify(effectiveTiers) !== JSON.stringify(trip.travelTiers);
       const modeOverridesReallyChanged = JSON.stringify(effectiveModeOverrides) !== JSON.stringify(trip.travelModeOverrides);
 
       primitivesChanged =
         titleReallyChanged ||
-        currencyReallyChanged ||
         tiersReallyChanged ||
         modeOverridesReallyChanged ||
         currentTrip.ville !== trip.ville ||
@@ -629,7 +650,6 @@ export class TripFacade {
         currentTrip.placeId !== trip.placeId;
 
       titleShadowChanged = titleReallyChanged && currentTripTitleShadow !== undefined;
-      currencyShadowChanged = currencyReallyChanged && currentTripCurrencyShadow !== undefined;
       tiersShadowChanged = tiersReallyChanged && currentTripTiersShadow !== undefined;
       modeOverridesShadowChanged = modeOverridesReallyChanged && currentTripModeOverridesShadow !== undefined;
     }
@@ -670,28 +690,20 @@ export class TripFacade {
           title: trip.title,
           ville: trip.ville,
           ownerId: trip.ownerId,
-          defaultCurrency: trip.defaultCurrency,
           placeId: trip.placeId,
           travelTiers: trip.travelTiers,
           travelModeOverrides: trip.travelModeOverrides,
         },
       }));
     }
-    // Un AUTRE collaborateur a changé le titre/la devise/les paliers de
-    // trajet depuis mon dernier changement local confirmé (voir la doc du
-    // bloc 3quater ci-dessus) : efface le shadow pour que
-    // `getTripTitle`/`getTripCurrency`/`getTripTravelTiers` retombent sur
-    // `_trips[trip.id]` (qui vient d'être mis à jour juste au-dessus) —
-    // sinon ce changement distant resterait masqué indéfiniment.
+    // Un AUTRE collaborateur a changé le titre/les paliers de trajet depuis
+    // mon dernier changement local confirmé (voir la doc du bloc 3quater
+    // ci-dessus) : efface le shadow pour que
+    // `getTripTitle`/`getTripTravelTiers` retombent sur `_trips[trip.id]`
+    // (qui vient d'être mis à jour juste au-dessus) — sinon ce changement
+    // distant resterait masqué indéfiniment.
     if (titleShadowChanged) {
       this.store._tripTitle.update((map) => {
-        const copy = { ...map };
-        delete copy[trip.id];
-        return copy;
-      });
-    }
-    if (currencyShadowChanged) {
-      this.store._tripCurrency.update((map) => {
         const copy = { ...map };
         delete copy[trip.id];
         return copy;
@@ -757,6 +769,36 @@ export class TripFacade {
       const previousOrder = map[trip.id] ?? [];
       const preserved = previousOrder.filter((id) => remoteLogisticIds.has(id) || pendingLogisticIds.has(id));
       const newIds = trip.logistics.map((r) => r.id).filter((id) => !previousOrder.includes(id));
+      const nextOrder = [...preserved, ...newIds];
+      return arraysEqual(previousOrder, nextOrder) ? map : { ...map, [trip.id]: nextOrder };
+    });
+
+    // 5. Dépenses libres : même logique anti-flicker, writer débouncé indépendant.
+    const pendingExpenseIds = this.store._pendingExpenseIds();
+    const currentExpenses = this.store._expenses();
+    const newExpenses = { ...currentExpenses };
+    for (const expense of trip.expenses) {
+      if (pendingExpenseIds.has(expense.id)) continue;
+
+      const current = currentExpenses[expense.id];
+      newExpenses[expense.id] =
+        current && JSON.stringify(current) === JSON.stringify(expense)
+          ? current
+          : expense;
+    }
+
+    const remoteExpenseIds = new Set(trip.expenses.map((e) => e.id));
+    for (const id of this.store._tripExpenses()[trip.id] ?? []) {
+      if (!remoteExpenseIds.has(id) && !pendingExpenseIds.has(id)) delete newExpenses[id];
+    }
+
+    if (!recordsShallowEqual(currentExpenses, newExpenses)) {
+      this.store._expenses.set(newExpenses);
+    }
+    this.store._tripExpenses.update((map) => {
+      const previousOrder = map[trip.id] ?? [];
+      const preserved = previousOrder.filter((id) => remoteExpenseIds.has(id) || pendingExpenseIds.has(id));
+      const newIds = trip.expenses.map((e) => e.id).filter((id) => !previousOrder.includes(id));
       const nextOrder = [...preserved, ...newIds];
       return arraysEqual(previousOrder, nextOrder) ? map : { ...map, [trip.id]: nextOrder };
     });

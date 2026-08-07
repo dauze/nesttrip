@@ -1,5 +1,6 @@
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { Logistic } from '@core/models/logistic.dto';
+import { Expense } from '@core/models/expense.dto';
 import { Notes } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 export type TripRole = 'owner' | 'editor';
@@ -16,10 +17,10 @@ export interface Trip {
   dayActivityInstances: DayActivityInstance[];
   /** Réservations transverses (hôtel/vol/location/autre), indépendantes des jours. */
   logistics: Logistic[];
+  /** Dépenses libres (non rattachées à une activité/logement/transport, ex. un smoothie), indépendantes des jours — voir src/specs/devise.md 3.4. */
+  expenses: Expense[];
   notes: Notes;
   placeId?: string;
-  /** Devise par défaut du voyage, préremplie à la création d'une nouvelle activité/réservation (voir ROADMAP.md "Devise") — n'affecte jamais les éléments déjà créés. */
-  defaultCurrency?: string;
   /** Paliers de distance (vol d'oiseau, km) + mode associé pour la sélection auto du mode de trajet affiché entre activités — voir `selectTravelMode`. */
   travelTiers?: TravelTiers;
   /** Override manuel du mode de trajet pour une paire de lieux donnée (clé = `buildPlacePairKey`) — écrase la sélection auto (`selectTravelMode`) tant qu'il existe pour cette paire. Absence de clé = automatique. */

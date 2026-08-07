@@ -226,6 +226,7 @@ export class NewTripComponent {
       activities: [],
       dayActivityInstances: [],
       logistics: [],
+      expenses: [],
       notes: this.buildNote(),
       ownerId: user.uid,
       members: {

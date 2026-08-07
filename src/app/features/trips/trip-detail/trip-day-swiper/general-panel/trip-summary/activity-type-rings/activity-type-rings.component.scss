@@ -15,6 +15,18 @@
   height: 8rem;
 }
 
+// Mode interactif (montant centré, src/specs/devise.md 3.5) : l'anneau
+// devient l'élément principal de la tuile (façon Apple Health/YNAB), pas
+// juste une illustration à côté d'un montant affiché séparément — nécessite
+// plus de place que le mode legend pour rester lisible. Calé 1:1 sur
+// `GEOMETRY.interactive.viewBoxSize` (168 unités SVG = 168px = 10.5rem) —
+// plus besoin d'agrandir/épaissir pour accueillir des icônes sur l'anneau
+// (retirées, retour utilisateur : trop petites/superposées).
+.rings-chart--interactive .rings-chart__svg {
+  width: 10.5rem;
+  height: 10.5rem;
+}
+
 // `--nt-secondary-bg` (pas `--nt-surface-200`) : cette dernière reste
 // délibérément CLAIRE dans les deux modes (convention "100 = toujours clair",
 // voir tokens.scss) — une vraie piste "neutre qui recule" doit suivre le
@@ -73,4 +85,160 @@
 
 .rings-chart__legend-count {
   color: var(--nt-text-muted-color);
+}
+
+// Légende du mode `interactive` (dépenses) : icône/nom/montant/pourcentage
+// TOUJOURS visibles sans tap (retour utilisateur), distincte de
+// `.rings-chart__legend` (mode `typeBreakdown`, sans pourcentage) pour ne
+// pas changer son rendu existant. Liste verticale par défaut, grille 2
+// colonnes sous ~360dp (voir la media query plus bas) pour ne pas pousser le
+// reste de la tuile sous la ligne de flottaison sur petit écran.
+.rings-chart__interactive-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.rings-chart__interactive-legend-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border-radius: var(--nt-border-radius-sm, 0.25rem);
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+  }
+
+  i {
+    font-size: var(--nt-icon-size-sm);
+  }
+}
+
+.rings-chart__interactive-legend-label {
+  color: var(--nt-text-color);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rings-chart__interactive-legend-value {
+  color: var(--nt-text-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rings-chart__interactive-legend-percent {
+  color: var(--nt-text-muted-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+// Écran étroit (retour utilisateur, "< ~360dp") : la légende passe en
+// grille 2 colonnes ; chaque item n'a plus la largeur pour aligner
+// label/montant/pourcentage sur une seule ligne, donc le montant repasse
+// sous le nom (dot/icône gardent leur colonne sur les 2 lignes via
+// `grid-row: 1 / span 2`) et le pourcentage disparaît (déjà lisible au tap,
+// voir toggleSlice, l'essentiel — montant — reste visible sans interaction).
+@media (max-width: 360px) {
+  .rings-chart__interactive-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .rings-chart__interactive-legend-item {
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 0;
+
+    .rings-chart__legend-dot,
+    i {
+      grid-row: 1 / span 2;
+    }
+  }
+
+  .rings-chart__interactive-legend-label {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .rings-chart__interactive-legend-value {
+    grid-column: 3;
+    grid-row: 2;
+    font-size: 0.75rem;
+    color: var(--nt-text-muted-color);
+  }
+
+  .rings-chart__interactive-legend-percent {
+    display: none;
+  }
+}
+
+// Mode `interactive` (src/specs/devise.md 3.5) : le montant projeté au
+// centre (`[ringsCenter]`) est superposé au SVG, pas affiché en dessous —
+// nécessite un conteneur positionné pour l'ancrer en `absolute`.
+.rings-chart__svg-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.rings-chart__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  padding: 0 0.5rem;
+}
+
+// Zone de clic invisible au milieu de l'arc rempli (le trait de l'anneau
+// seul, 9 unités de large, est une cible trop fine au tactile) — n'affiche
+// plus d'icône dessus (retirées, retour utilisateur), sert uniquement à
+// ouvrir/fermer la bulle de détail au tap.
+.rings-chart__slice-hit {
+  cursor: pointer;
+}
+
+.rings-chart__slice-hit-area {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.rings-chart__bubble-slot {
+  pointer-events: none;
+  overflow: visible;
+}
+
+.rings-chart__bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--nt-border-radius-sm, 0.375rem);
+  background: var(--nt-overlay-background);
+  box-shadow: var(--nt-overlay-modal-shadow);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rings-chart__bubble-label {
+  color: var(--nt-text-muted-color);
+}
+
+.rings-chart__bubble-value {
+  color: var(--nt-text-color);
+  font-weight: 600;
 }

@@ -19,45 +19,49 @@
   width: 100%;
 }
 
-// Même gabarit que `.trip-header__pencil`/`.logistic-header__pencil`/
-// `.activity-header__pencil` (ROADMAP.md "Bugs / fixes") : le select devise
-// perd son chevron (`no-chevron`, discret à côté du montant), ce crayon
-// redevient donc le seul indice visuel explicite qu'il est éditable.
-.trip-summary__pencil {
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--nt-radius-sm);
-  background: transparent;
-  color: var(--nt-text-muted-color);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
-
-  &:hover {
-    background: var(--nt-content-hover-background);
-  }
-}
-
-.trip-summary-tiles {
-  align-items: stretch;
-}
-
-// `align-items: stretch` (défaut flex) sur `.trip-summary-tiles` étire les
-// deux `app-card` à la même hauteur. Le graphique "types d'activité"
-// remplace le texte qui vivait ici (ROADMAP.md "### UI") : la tuile garde sa
-// largeur d'origine (1/2, à côté de Dépenses), voir `activity-type-rings.component.scss`
-// pour l'ajustement de taille du graphique à cet espace plus étroit.
-.trip-summary-tile {
-  flex: 1 1 0;
+// Tuile Dépenses pleine largeur (retour utilisateur : la légende du donut
+// a besoin de plus de place qu'une tuile 1/2 largeur ne peut en offrir,
+// surtout sur petit écran — voir `.rings-chart__interactive-legend`).
+// Fichiers (`app-trip-files-tile`) est repassée sur sa propre ligne pleine
+// largeur juste en dessous (n'est plus dans une rangée flex partagée, voir
+// le template) ; `align-items: stretch` par défaut de `.trip-summary-body`
+// (flex column) suffit à faire prendre toute la largeur aux deux blocs.
+.trip-summary-expenses-card {
   min-width: 0;
 }
 
 // Centré par rapport à la carte + montant agrandi (retour utilisateur,
-// ROADMAP.md "### UI") — seul le montant, pas la ligne "Devise :" au-dessus.
+// ROADMAP.md "### UI"). Taille pleine UNIQUEMENT en repli sans anneau (aucune dépense) : projeté
+// au centre d'un anneau (voir `.rings-chart__center` ci-dessous), l'espace
+// disponible est bien plus restreint.
 .trip-summary-total {
   font-size: 2.25rem;
   font-weight: 700;
   text-align: center;
+}
+
+// Montant + sous-texte devise locale destination (src/specs/devise.md 3.5),
+// projetés au centre de l'anneau interactif via `[ringsCenter]" — voir
+// `ActivityTypeRingsComponent.rings-chart__center` pour le positionnement
+// absolu. Taille réduite par rapport au repli sans anneau ci-dessus : le
+// centre d'un anneau à 5 catégories n'a la place que pour 1-2 lignes courtes.
+// `::ng-deep` nécessaire : `.rings-chart__center` appartient au template
+// D'ACTIVITY-TYPE-RINGS-COMPONENT (pas projeté depuis ce composant-ci, voir
+// son template), donc hors de portée de l'encapsulation de vue émulée par
+// défaut — un simple `.rings-chart__center .trip-summary-total` ne matche
+// jamais rien malgré `.trip-summary-total` lui-même bien projeté ici (bug
+// constaté en conditions réelles : le montant débordait du cercle à sa
+// taille pleine de 2.25rem faute de cette règle appliquée).
+:host ::ng-deep .rings-chart__center .trip-summary-total {
+  font-size: 1.05rem;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.trip-summary-total-sub {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--nt-text-muted-color);
+  margin-top: 0.125rem;
 }

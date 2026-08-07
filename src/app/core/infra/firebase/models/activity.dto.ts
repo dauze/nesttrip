@@ -12,10 +12,18 @@ export interface ActivityFirebase {
   latitude?: number;
   longitude?: number;
   photoRefs?: string[];
+  /** Code pays ISO 3166-1 alpha-2 du lieu Google sélectionné — voir `suggestedCurrencyForCountry` (src/specs/devise.md 3.1). */
+  countryCode?: string;
 }
 export interface PriceFirebase {
   amount: number;
   currency: string;
+  /** Taux `currency` -> EUR figé au passage du statut de réservation à `BOOKED` (pivot technique interne, voir currency-conversion.service.ts). Absent tant que non figé. */
+  frozenRateToEur?: number;
+  /** Montant converti en EUR au moment du figeage (voir frozenRateToEur). */
+  frozenAmountEur?: number;
+  /** Epoch ms stringifié (même convention que Booking.deadline) — instant du figeage. */
+  frozenAt?: string;
 }
 export interface BookingFirebase {
   status: BookingStatus;

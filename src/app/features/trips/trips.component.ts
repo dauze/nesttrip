@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { Location } from '@angular/common';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
 import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.component';
+import { SelectComponent } from '@app/shared/components/select/select.component';
+import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { AuthService } from '@core/services/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, filter, map, merge, startWith } from 'rxjs';
@@ -28,7 +31,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
   selector: 'app-trips',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
@@ -61,6 +64,7 @@ export class TripsComponent {
   private readonly tripFacade = inject(TripFacade);
   protected readonly chromeService = inject(TripChromeService);
   protected readonly themeService = inject(ThemeService);
+  protected readonly userProfileService = inject(UserProfileService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly themeOptions: SelectButtonOption<ThemeMode>[] = [
@@ -69,9 +73,23 @@ export class TripsComponent {
     { label: '', value: 'system', icon: 'pi pi-desktop' },
   ];
 
+  protected readonly currencyOptions = CURRENCY_OPTIONS;
+  /** Devise personnelle de l'utilisateur (roue crantée, src/specs/devise.md 3.2) — jamais la devise d'un voyage précis, voir `UserProfileService.defaultCurrency`. */
+  protected readonly currencyControl = new FormControl<string>('EUR', { nonNullable: true });
+
   private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
 
   constructor() {
+    effect(() => {
+      this.currencyControl.setValue(this.userProfileService.defaultCurrency(), { emitEvent: false });
+    });
+
+    this.currencyControl.valueChanges.subscribe((currency) => {
+      if (currency !== this.userProfileService.defaultCurrency()) {
+        this.userProfileService.setDefaultCurrency(currency);
+      }
+    });
+
     afterNextRender(() => {
       const el = this.toolbarRef()?.nativeElement;
       if (!el) return;

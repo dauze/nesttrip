@@ -1,7 +1,7 @@
 import { BookingStatus } from '@core/enums/booking.status';
 import { DayActivityInstanceFirebase } from '../models/day-activity-instance.dto';
 import { DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
-import { bookingFromFb, bookingToFb } from './activity.mapper';
+import { bookingFromFb, bookingToFb, priceFromFb, priceToFb } from './activity.mapper';
 
 const TIME_STRING_RE = /^\d{1,2}:\d{2}$/;
 
@@ -30,7 +30,7 @@ function timeFromFb(raw: string | undefined): string | undefined {
 export function dayActivityInstanceFromFb(a: DayActivityInstanceFirebase): DayActivityInstance {
   return {
     ...a,
-    price: a.price ?? { amount: 0, currency: 'EUR' },
+    price: a.price ? priceFromFb(a.price) : { amount: 0, currency: 'EUR' },
     booking: a.booking ? bookingFromFb(a.booking) : { status: BookingStatus.NOT_NEEDED },
     notes: a.notes ?? '',
     startTime: timeFromFb(a.startTime),
@@ -45,6 +45,7 @@ export function dayActivityInstanceFromFb(a: DayActivityInstanceFirebase): DayAc
 export function dayActivityInstanceToFb(a: DayActivityInstance): DayActivityInstanceFirebase {
   return {
     ...a,
+    price: priceToFb(a.price),
     booking: bookingToFb(a.booking),
     startTime: a.startTime ?? '',
     endTime: a.endTime ?? '',

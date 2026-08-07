@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import { mapPlaceSummary } from './place.mapper';
 
-// Uniquement Basic Data → aucun Data SKU additionnel, tarif Pro de base seulement
+// Uniquement Basic Data → aucun Data SKU additionnel, tarif Pro de base seulement.
+// `addressComponents` (Basic Data lui aussi) permet d'extraire le pays sans
+// appel Google supplémentaire — voir mapPlaceSummary, src/specs/devise.md 3.1.
 const SEARCH_FIELD_MASK = [
   'places.id',
   'places.displayName',
   'places.formattedAddress',
   'places.location',
+  'places.addressComponents',
 ].join(',');
 
 export async function searchPlacesHandler(req: Request, res: Response, apiKey: string) {

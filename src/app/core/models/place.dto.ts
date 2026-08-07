@@ -10,6 +10,8 @@ export interface PlaceSummary {
   address: string;
   latitude: number;
   longitude: number;
+  /** Code pays ISO 3166-1 alpha-2 (ex. "TH") — voir `suggestedCurrencyForCountry` (src/specs/devise.md 3.1). */
+  countryCode?: string;
 }
 
 export interface PlaceDetails {
@@ -20,6 +22,8 @@ export interface PlaceDetails {
   reviewCount: number;
   priceLevel: number;
   reviews: { author: string; rating: number; comment: string }[];
+  /** Code pays ISO 3166-1 alpha-2 (ex. "TH") — voir `suggestedCurrencyForCountry` (src/specs/devise.md 3.5, devise locale destination). */
+  countryCode?: string;
 }
 
 export interface PlacePhotos {

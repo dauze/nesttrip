@@ -10,7 +10,8 @@ export type SelectableItemRef =
   | { kind: 'poolActivity'; id: string }
   | { kind: 'dayActivityInstance'; id: string; dayId: Date }
   | { kind: 'logistic'; id: string }
-  | { kind: 'noteItem'; id: string };
+  | { kind: 'noteItem'; id: string }
+  | { kind: 'expense'; id: string };
 
 export function selectableItemKey(ref: SelectableItemRef): string {
   return `${ref.kind}:${ref.id}`;

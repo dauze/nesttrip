@@ -3,6 +3,7 @@ import { Notes } from '@app/features/trips/trip-detail/trip-day-swiper/general-p
 import {ActivityFirebase} from './activity.dto';
 import {DayActivityInstanceFirebase} from './day-activity-instance.dto';
 import {LogisticFirebase} from './logistic.dto';
+import {ExpenseFirebase} from './expense.dto';
 
 export type TripRoleFireBase = 'owner' | 'editor';
 
@@ -25,9 +26,10 @@ export interface TripFirebase {
   dayActivityInstances: Record<string, DayActivityInstanceFirebase>;
   /** Réservations transverses (hôtel/vol/location/autre), indépendantes du map `days`. */
   logistics: Record<string, LogisticFirebase>;
+  /** Dépenses libres (non rattachées à une activité/logement/transport, ex. un smoothie), indépendantes du map `days` — voir src/specs/devise.md 3.4. */
+  expenses: Record<string, ExpenseFirebase>;
   notes: Notes;
   placeId?: string;
-  defaultCurrency?: string;
   travelTiers?: {
     tier1Mode: 'walk' | 'bike' | 'car';
     tier1MaxKm: number;

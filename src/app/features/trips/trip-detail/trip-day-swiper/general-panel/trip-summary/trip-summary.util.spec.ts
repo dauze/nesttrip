@@ -23,7 +23,7 @@ describe('computeExpenseBreakdown', () => {
     ]);
   });
 
-  it('trie les types par montant décroissant et plafonne à maxEntries, sans anneau "Autre"', () => {
+  it('trie les types par montant décroissant, garde maxEntries - 1 individuellement, agrège le reste en "Autre"', () => {
     const items = [
       item({ typeKey: 'a', label: 'A', amount: 10 }),
       item({ typeKey: 'b', label: 'B', amount: 50 }),
@@ -32,19 +32,43 @@ describe('computeExpenseBreakdown', () => {
     ];
     const result = computeExpenseBreakdown(items, '€', 2);
 
-    expect(result.map((e) => e.label)).toEqual(['B', 'C']);
+    // maxEntries=2 -> 1 seul type individuel (B, le plus gros), le reste (C+D+A=60) agrégé en "Autre".
+    expect(result.map((e) => e.label)).toEqual(['B', 'Autre']);
+    expect(result[1]).toEqual({
+      label: 'Autre',
+      icon: 'pi pi-ellipsis-h',
+      colorVar: '--nt-logistic-other',
+      count: 60,
+      valueLabel: '60.00 €',
+      share: 60 / 110,
+    });
+  });
+
+  it('ne crée pas d\'entrée "Autre" si maxEntries - 1 types ou moins existent', () => {
+    const items = [
+      item({ typeKey: 'a', label: 'A', amount: 10 }),
+      item({ typeKey: 'b', label: 'B', amount: 50 }),
+      item({ typeKey: 'c', label: 'C', amount: 30 }),
+    ];
+    const result = computeExpenseBreakdown(items, '€', 5);
+
+    expect(result.map((e) => e.label)).toEqual(['B', 'C', 'A']);
     expect(result.every((e) => e.label !== 'Autre')).toBe(true);
   });
 
-  it('calcule share proportionnellement au total GLOBAL (tous types confondus, pas seulement le top affiché)', () => {
+  it('calcule share proportionnellement au total GLOBAL (tous types confondus, y compris ceux repliés dans "Autre")', () => {
     const items = [
       item({ typeKey: 'a', label: 'A', amount: 10 }),
       item({ typeKey: 'b', label: 'B', amount: 90 }),
     ];
-    // Total = 100, mais maxEntries=1 ne garde que B : sa share reste calculée sur 100, pas sur lui-même seul.
-    const result = computeExpenseBreakdown(items, '€', 1);
+    // Total = 100, maxEntries=2 -> topCount=1 ne garde que B individuellement, A replié dans "Autre" :
+    // les deux shares restent calculées sur 100, pas sur B seul.
+    const result = computeExpenseBreakdown(items, '€', 2);
 
-    expect(result).toEqual([{ label: 'B', icon: 'pi pi-star', colorVar: '--nt-activity-visite', count: 90, valueLabel: '90.00 €', share: 0.9 }]);
+    expect(result).toEqual([
+      { label: 'B', icon: 'pi pi-star', colorVar: '--nt-activity-visite', count: 90, valueLabel: '90.00 €', share: 0.9 },
+      { label: 'Autre', icon: 'pi pi-ellipsis-h', colorVar: '--nt-logistic-other', count: 10, valueLabel: '10.00 €', share: 0.1 },
+    ]);
   });
 
   it('formate valueLabel avec le symbole de devise fourni, 2 décimales', () => {

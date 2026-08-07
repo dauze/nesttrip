@@ -12,6 +12,12 @@ export interface LogisticFile {
 export interface LogisticPrice {
   amount: number;
   currency: string;
+  /** Taux `currency` -> EUR figé au passage du statut de réservation à `BOOKED` (pivot technique interne, voir currency-conversion.service.ts). Absent tant que non figé (recalcul dynamique). */
+  frozenRateToEur?: number;
+  /** Montant converti en EUR au moment du figeage (voir frozenRateToEur). */
+  frozenAmountEur?: number;
+  /** Instant du figeage. */
+  frozenAt?: Date;
 }
 
 export interface LogisticLink {

@@ -10,6 +10,8 @@ export interface PlaceSummary {
   address: string;
   latitude: number;
   longitude: number;
+  /** Code pays ISO 3166-1 alpha-2 (ex. "TH"), déduit de `addressComponents` — voir `suggestedCurrencyForCountry` côté client (src/specs/devise.md 3.1). */
+  countryCode?: string;
 }
 
 // --------------------------------------------------------
@@ -23,6 +25,8 @@ export interface PlaceDetails {
   reviewCount: number;
   priceLevel: number;
   reviews: Array<{ author: string; rating: number; comment: string }>;
+  /** Code pays ISO 3166-1 alpha-2 (ex. "TH"), déduit de `addressComponents` — voir la devise locale destination du résumé (src/specs/devise.md 3.5). */
+  countryCode?: string;
 }
 
 export interface PlacePhotos {
@@ -30,12 +34,14 @@ export interface PlacePhotos {
 }
 
 export function mapPlaceSummary(place: any): PlaceSummary {
+  const countryComponent = (place.addressComponents ?? []).find((c: any) => c.types?.includes('country'));
   return {
     placeId: place.id,
     name: place.displayName?.text ?? '',
     address: place.formattedAddress ?? '',
     latitude: place.location?.latitude ?? 0,
     longitude: place.location?.longitude ?? 0,
+    ...(countryComponent?.shortText ? { countryCode: countryComponent.shortText } : {}),
   };
 }
 
@@ -43,23 +49,26 @@ export function mapPlaceSummary(place: any): PlaceSummary {
 // MAPPING REGROUPÉ
 // --------------------------------------------------------
 export function mapPlaceDetails(place: any): PlaceDetails {
+  const countryComponent = (place.addressComponents ?? []).find((c: any) => c.types?.includes('country'));
   return {
     // Contact
     openingHours: place.regularOpeningHours?.weekdayDescriptions ?? [],
     phone: place.internationalPhoneNumber ?? place.nationalPhoneNumber ?? '',
     website: place.websiteUri ?? '',
-    
+
     // Atmosphere
     rating: place.rating ?? 0,
     reviewCount: place.userRatingCount ?? 0,
     priceLevel: mapPriceLevel(place.priceLevel),
-    
+
     // Avis
     reviews: (place.reviews ?? []).map((r: any) => ({
       author: r.authorAttribution?.displayName ?? 'Anonyme',
       rating: r.rating ?? 0,
       comment: r.text?.text ?? '',
     })),
+
+    ...(countryComponent?.shortText ? { countryCode: countryComponent.shortText } : {}),
   };
 }
 
