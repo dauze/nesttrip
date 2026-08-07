@@ -48,7 +48,7 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible
 
-### UI spécifique Desktop
+### UI spécifique Desktop (non prioritaire)
 
 - Vue calendrier (reporté, pas assez cadré)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
@@ -57,11 +57,11 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 - refondre toute la partie générale
 
 ### UI 
-- Renommer tâche car c'est trop contraignant
-- Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? 
+- Renommer tâche en "Pense bête" dans l'ongeltr de résumé
+- Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (non prioritaire)
 - Changer le logo "Adresse" de google en logo de lien de débranchement
 - Quand on créé une nouvelle activité et qu'on met pas les date, le mettre tout en bas en fait, c'est plus logique que tout en haut
-- Le schéma des dépenses est à corriger, il faut que les 4 premier soitent les plus grand, et que le 5ime sous un libellé fixe "Autre" qui regroupe touts les autres dépenses 
+- Le schéma des dépenses est à corriger, il faut que les 4 premier soient les plus grand, et que le 5ime sous un libellé fixe "Autre" qui regroupe touts les autres dépenses 
 - Problème d'incohérence : il y a 2 éléments de liste, un avec le check et un avec la ligne en surbrillance, il faudrait les fusionner pour en avoir qu'une seule
 
 ### Carte
@@ -91,9 +91,9 @@ Le gros du lot remonté le 2026-07-29 après la clôture des 4 items OnPush/Prim
 ### Devise (non prioritaire)
 
 - Gestion de la devise par défaut qui sera affiché à l'utilisateur en fonction d'ou il vient, rajouter pays d'origine dans la demande d'inscription ? Puis modificable via un paramétrage stocké au niveau de l'utilisateur.
-- Gérer la devise sélectionnée automatiquement dans les activité / réservations en fonction du lieu de la destination. C'est cette devise qui sera modifiable dan l'onglet "infos"
-- Faire évoluer la carte dans l'onglet résumé via un clique sur le montant pour afficher la liste des dépenses dans une popup qui contient un tableau de toutes les dépenses, le tableau aurait 3 colonnes : montant, libellé et date. La dernière ligne contient un bouton + qui permet de rajouter une ligne de dépense ou l'utilisateur est invité à mettre le montant via la devise, le libellé, et la date (initialisée à la date du jour) via un chainage. On peut cliquer pour mopdifier les dépenses rajoutées à la main mais les dépenses associées aux activités sont grisées. même système que pour le reste pour la supression des montant, clique prolongé et multiselection possible.
-- il faut également faire un chantier pour que le montant total affiché dans l'onglet info affiche le montant convertie avec la devise de l'utilisateur et la devise du voyage en petit.
+- Gérer la devise sélectionnée automatiquement dans les activité / réservations en fonction du lieu de la destination ?
+- Faire évoluer la carte dans l'onglet résumé via un clique sur le montant pour afficher la liste des dépenses dans une popup qui contient un tableau de toutes les dépenses, le tableau aurait 3 colonnes : montant, libellé et date. La dernière ligne contient un bouton + qui permet de rajouter une ligne de dépense ou l'utilisateur est invité à mettre le montant via la devise, le libellé, et la date (initialisée à la date du jour) via un chainage. On peut cliquer pour modifier les dépenses rajoutées à la main mais les dépenses associées aux activités sont grisées. même système que pour le reste pour la supression des montant, clique prolongé et multiselection possible.
+- il faut également faire un chantier pour que le montant total affiché dans l'onglet résumé affiche le montant convertie avec la devise de l'utilisateur et la devise du voyage en petit.
 - Gérer toutes les conversions de devises 
 
 ### UX / Interactions
