@@ -28,4 +28,12 @@ export interface TripFirebase {
   notes: Notes;
   placeId?: string;
   defaultCurrency?: string;
+  travelTiers?: {
+    tier1Mode: 'walk' | 'bike' | 'car';
+    tier1MaxKm: number;
+    tier2Mode: 'walk' | 'bike' | 'car';
+    tier2MaxKm: number;
+    tier3Mode: 'walk' | 'bike' | 'car';
+  };
+  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car'>;
 }

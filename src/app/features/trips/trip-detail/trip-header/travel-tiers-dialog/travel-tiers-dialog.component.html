@@ -1,0 +1,36 @@
+<div class="travel-tiers-dialog flex flex-column" [formGroup]="form">
+  <div class="travel-tiers-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="travel-tiers-dialog__title">Paliers de trajet</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <div class="travel-tiers-dialog__tiers">
+    <app-select class="w-max min-w-0 transparent-select" formControlName="tier1Mode" [options]="modeOptions" label="Transport premier palier" />
+    <span class="travel-tiers-dialog__qualifier nt-text-muted">jusqu'à</span>
+    <app-slider formControlName="tier1MaxKm" [min]="0" [max]="tier1Max" [step]="0.5" unit="km" />
+
+    <div class="travel-tiers-dialog__divider"></div>
+
+    <app-select class="w-max min-w-0 transparent-select" formControlName="tier2Mode" [options]="modeOptions" label="Transport deuxième palier" />
+    <span class="travel-tiers-dialog__qualifier nt-text-muted">jusqu'à</span>
+    <app-slider formControlName="tier2MaxKm" [min]="0" [max]="tier2Max" [step]="1" unit="km" />
+
+    <div class="travel-tiers-dialog__divider"></div>
+
+    <app-select class="w-max min-w-0 transparent-select" formControlName="tier3Mode" [options]="modeOptions" label="Transport troisième palier" />
+    <span class="travel-tiers-dialog__qualifier nt-text-muted">sinon</span>
+    <span></span>
+  </div>
+
+  <div class="travel-tiers-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
+    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
+    <app-button label="OK" (click)="validate()" />
+  </div>
+</div>

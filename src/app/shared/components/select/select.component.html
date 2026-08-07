@@ -4,6 +4,9 @@
   [class.app-select__trigger--open]="isOpen()"
   [disabled]="isDisabled()"
   (click)="toggle()">
+  @if (selectedIcon(); as icon) {
+    <i [class]="icon" aria-hidden="true"></i>
+  }
   <span class="app-select__label" [class.app-select__label--placeholder]="!selectedLabel()">
     {{ selectedLabel() || placeholder() }}
   </span>
@@ -22,6 +25,9 @@
           class="app-select-panel__option"
           [class.app-select-panel__option--selected]="option.value === value()"
           (click)="selectOption(option)">
+          @if (option.icon) {
+            <i [class]="option.icon" aria-hidden="true"></i>
+          }
           {{ option.label }}
         </button>
       }

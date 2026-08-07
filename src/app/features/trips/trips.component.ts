@@ -17,7 +17,6 @@ import { ActivityDispatchService } from '@app/core/services/activity-dispatch.se
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { TravelDistanceService } from '@app/core/services/travel-distance.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
@@ -48,7 +47,6 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
     GoogleMapPanelService,
     GooglePhotoService,
     GooglePlaceService,
-    TravelDistanceService,
     PhotoViewerService,
     UserProfileService,
     FlightStatusRefreshService,

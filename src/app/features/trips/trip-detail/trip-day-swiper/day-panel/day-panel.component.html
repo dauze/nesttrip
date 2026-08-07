@@ -29,7 +29,7 @@
           <div #activityList class="flex flex-column gap-2">
             @for (entry of timelineEntriesWithGaps(); track entry.kind === 'gap' ? entry.key : entry.kind === 'echo' ? entry.originInstanceId + ':echo' : entry.kind === 'logistic' ? entry.occurrence.logistic.id + ':' + entry.occurrence.role : entry.activity.id) {
               @if (entry.kind === 'gap') {
-                <app-day-distance-gap [origin]="entry.origin" [destination]="entry.destination" />
+                <app-day-distance-gap [tripId]="tripId()" [dayId]="dayId()" [origin]="entry.origin" [destination]="entry.destination" />
               } @else if (entry.kind === 'logistic') {
                 <app-day-logistic-entry [occurrence]="entry.occurrence" [tripId]="tripId()" (dragHandleDown)="reorderService.onDragHandleDown($event)" />
               } @else if (entry.kind === 'activity') {

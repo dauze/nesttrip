@@ -20,6 +20,8 @@ import { VisualViewportService } from './core/services/visual-viewport.service';
 import { onViewTransitionCreated } from './core/navigation/route-transition';
 import { UserProfileRepository } from './core/infra/firebase/services/user-profile-repository';
 import { FirebaseUserProfileRepository } from './core/infra/firebase/services/firebase-user-profile-repository';
+import { TravelRouteRepository } from './core/infra/firebase/services/travel-route-repository';
+import { FirebaseTravelRouteRepository } from './core/infra/firebase/services/firebase-travel-route-repository';
 
 registerLocaleData(localeFr);
 
@@ -55,5 +57,7 @@ export const appConfig: ApplicationConfig = {
     }),
     FirebaseUserProfileRepository,
     { provide: UserProfileRepository, useExisting: FirebaseUserProfileRepository },
+    FirebaseTravelRouteRepository,
+    { provide: TravelRouteRepository, useExisting: FirebaseTravelRouteRepository },
   ],
 };

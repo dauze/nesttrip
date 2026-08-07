@@ -7,7 +7,7 @@ import { SelectComponent } from '@app/shared/components/select/select.component'
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { Day } from '@app/features/trips/trip.model';
+import { Day, TravelTiers } from '@app/features/trips/trip.model';
 import { TripHeaderComponent } from '../../../trip-header/trip-header.component';
 import { TripCollaboratorsComponent } from '../../../trip-collaborators/trip-collaborators.component';
 import { DayMapPoint } from '@app/core/models/day-map-point';
@@ -290,6 +290,10 @@ export class TripSummaryComponent {
 
   protected onTitleChange(title: string): void {
     this.tripFacade.updateTripTitle(this.tripId(), title);
+  }
+
+  protected onTravelTiersChange(tiers: TravelTiers): void {
+    this.tripFacade.updateTripTravelTiers(this.tripId(), tiers);
   }
 
   /** Crayon dédié à côté de "Devise :" (ROADMAP.md "Bugs / fixes") : le select lui-même perd son chevron (`no-chevron`, pour rester discret à côté du montant), le crayon redevient donc le seul indice visuel qu'il est éditable. */

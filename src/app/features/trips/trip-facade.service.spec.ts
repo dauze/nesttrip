@@ -89,6 +89,8 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
             createTrip: vi.fn().mockResolvedValue(undefined),
             updateTripTitle: vi.fn().mockResolvedValue(undefined),
             updateTripCurrency: vi.fn().mockResolvedValue(undefined),
+            updateTripTravelTiers: vi.fn().mockResolvedValue(undefined),
+            updateTripTravelModeOverrides: vi.fn().mockResolvedValue(undefined),
             removeTrip: vi.fn().mockResolvedValue(undefined),
           },
         },

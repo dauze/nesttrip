@@ -1,0 +1,50 @@
+// Même dimensionnement que simple-text-entry-dialog.component.scss (`.app-wide-dialog-panel`, field-edit-dialogs.scss).
+:host {
+  display: block;
+}
+
+.travel-tiers-dialog__row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem;
+  background: var(--nt-overlay-background);
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.travel-tiers-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+// Grille (pas 3 lignes flex indépendantes) : `jusqu'à`/`sinon` doivent
+// s'aligner verticalement à une largeur COMMUNE (celle du plus long des 2,
+// "jusqu'à"), pas se déplacer selon le contenu de chaque ligne — seule une
+// grille CSS partagée par les 3 paliers dimensionne une colonne `auto` sur
+// la largeur de son plus grand contenu à travers TOUTES les lignes en même
+// temps (3 conteneurs flex séparés n'auraient aucune notion de largeur
+// commune entre eux). Palier 3 n'a pas de slider : 3e cellule vide
+// (`<span></span>` dans le template) pour garder les 3 colonnes alignées.
+.travel-tiers-dialog__tiers {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.7rem;
+  padding: 0.7rem 0.75rem;
+}
+
+.travel-tiers-dialog__qualifier {
+  white-space: nowrap;
+}
+
+.travel-tiers-dialog__divider {
+  grid-column: 1 / -1;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.travel-tiers-dialog__footer {
+  padding: 0.5rem;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}

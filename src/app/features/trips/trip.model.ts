@@ -20,7 +20,28 @@ export interface Trip {
   placeId?: string;
   /** Devise par défaut du voyage, préremplie à la création d'une nouvelle activité/réservation (voir ROADMAP.md "Devise") — n'affecte jamais les éléments déjà créés. */
   defaultCurrency?: string;
+  /** Paliers de distance (vol d'oiseau, km) + mode associé pour la sélection auto du mode de trajet affiché entre activités — voir `selectTravelMode`. */
+  travelTiers?: TravelTiers;
+  /** Override manuel du mode de trajet pour une paire de lieux donnée (clé = `buildPlacePairKey`) — écrase la sélection auto (`selectTravelMode`) tant qu'il existe pour cette paire. Absence de clé = automatique. */
+  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car'>;
 }
+
+/**
+ * 3 paliers de distance, chacun avec son mode de trajet CHOISI PAR
+ * L'UTILISATEUR (pas figé à marche/vélo/voiture dans cet ordre) — palier 1
+ * jusqu'à `tier1MaxKm`, palier 2 de `tier1MaxKm` à `tier2MaxKm`, palier 3
+ * ("sinon") au-delà, sans borne. Voir `selectTravelMode`.
+ */
+export interface TravelTiers {
+  tier1Mode: 'walk' | 'bike' | 'car';
+  tier1MaxKm: number;
+  tier2Mode: 'walk' | 'bike' | 'car';
+  tier2MaxKm: number;
+  tier3Mode: 'walk' | 'bike' | 'car';
+}
+
+/** Valeurs par défaut appliquées tant que le trip n'a pas de `travelTiers` stocké (voir `TripStore.getTripTravelTiers`) — jamais écrites en Firestore tant que l'utilisateur n'édite pas explicitement. */
+export const DEFAULT_TRAVEL_TIERS: TravelTiers = { tier1Mode: 'walk', tier1MaxKm: 1.5, tier2Mode: 'bike', tier2MaxKm: 8, tier3Mode: 'car' };
 
 /**
  * Projection légère utilisée par le dashboard (`AccueilTripComponent`, voir

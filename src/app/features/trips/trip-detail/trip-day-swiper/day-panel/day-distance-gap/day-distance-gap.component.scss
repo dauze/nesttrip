@@ -1,22 +1,61 @@
-// `margin` négatif volontaire (voir `public/distance entre activités.png`) :
-// la rangée de pills "chevauche" légèrement le bas de la carte précédente et
-// le haut de la suivante plutôt que de prendre toute la place du `gap-2`
-// (0.5rem, day-panel.component.html) entre 2 cartes — bien trop court pour
-// contenir des pills de ~1.75rem de haut sans ce chevauchement.
 :host {
   display: block;
-  margin: -0.4rem 0;
   position: relative;
   z-index: 1;
 }
 
+// Conteneur SCOPÉ à la seule rangée de pills (PAS tout le `:host`, qui
+// grandit aussi pour contenir le bouton "Enregistrer un transport ?" en
+// dessous, voir plus bas) : le chemin décoratif ne doit jamais s'étendre
+// jusqu'à ce bouton (retour utilisateur — avec son fond transparent, le
+// pointillé se voyait "au travers"). `padding` vertical ici (pas sur
+// `:host`) : espacement normal avec les cartes voisines (plus de
+// chevauchement volontaire, contrairement à la 1re version), et un peu
+// généreux pour laisser au chemin la place d'onduler ("plus long", retour
+// utilisateur).
+.day-distance-gap-row {
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+// Chemin décoratif fin en pointillé, DERRIÈRE les pills (repassé derrière
+// après un essai par-dessus jugé pas assez propre, retour utilisateur) :
+// pour rester visible malgré les pills à fond plein, ses extrémités sont
+// volontairement DÉCALÉES du centre (25%/75%, pas 50/50 comme un 1er essai
+// centré, quasi entièrement masqué) — l'essentiel du trait chemine donc
+// dans les marges de part et d'autre des pills, seule sa portion centrale
+// disparaît sous elles (lecture "passe par le chip" conservée). Relie la
+// carte du dessus à celle du dessous, pas forcément droit —
+// `preserveAspectRatio="none"` étire un viewBox carré aux proportions
+// réelles (large et bas) de `.day-distance-gap-row`. `vector-effect:
+// non-scaling-stroke` : sans ça, cet étirement NON uniforme (largeur ≫
+// hauteur) déformerait aussi l'épaisseur du trait au lieu de la garder fine
+// et constante.
+.day-distance-gap__path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+
+  path {
+    fill: none;
+    stroke: var(--nt-secondary-color);
+    opacity: 0.55;
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
 .day-distance-gap {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  text-decoration: none;
-  color: inherit;
+  gap: 0.5rem;
 }
 
 .day-distance-gap__pill {
@@ -31,26 +70,85 @@
   line-height: 1.3;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  border: none;
+  cursor: pointer;
 
   i {
     font-size: 0.85em;
   }
 }
 
-a.day-distance-gap:hover .day-distance-gap__pill,
-a.day-distance-gap:focus-visible .day-distance-gap__pill {
-  background: var(--nt-secondary-hover-bg);
+.day-distance-gap__pill--link {
+  text-decoration: none;
+  color: var(--nt-secondary-color);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--nt-secondary-hover-bg);
+  }
 }
 
-.day-distance-gap__divider {
-  width: 0;
-  align-self: stretch;
-  min-height: 1.1rem;
-  border-left: 1px dashed var(--nt-content-border-color);
+.day-distance-gap__dot {
+  opacity: 0.6;
+}
+
+.day-distance-gap__nav-hint {
+  opacity: 0.6;
+  font-size: 0.7em !important;
+}
+
+// Bordure visible + surbrillance couleur au survol/focus : distingue
+// délibérément cette pill de la pill "trajet" (fond plein, pas de bordure)
+// pour signaler que son clic ouvre autre chose (la liste de choix du mode)
+// plutôt que la navigation Google Maps — voir `onPictogramClick`.
+.day-distance-gap__pill--mode {
+  background: var(--nt-content-background);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    border-color: var(--nt-primary-color);
+    color: var(--nt-primary-color);
+  }
+}
+
+.day-distance-gap__mode-chevron {
+  font-size: 0.6em !important;
+  opacity: 0.6;
 }
 
 .day-distance-gap__walk-icon {
   width: 0.9rem;
   height: 0.9rem;
   flex: none;
+}
+
+// Fond OPAQUE (pas transparent comme un 1er essai) : posé juste sous la
+// rangée de pills, un fond transparent laissait deviner le chemin
+// décoratif "au travers" (retour utilisateur) — la teinte reste dérivée de
+// la couleur primary (`color-mix`) plutôt qu'un fond neutre, pour ne pas
+// perdre l'identité visuelle "action" du bouton.
+.day-distance-gap__transport-cta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0.4rem auto 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--nt-radius-pill);
+  border: var(--nt-border-width-hairline) dashed var(--nt-primary-color);
+  background: color-mix(in srgb, var(--nt-primary-color) 8%, var(--nt-content-background));
+  color: var(--nt-primary-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: color-mix(in srgb, var(--nt-primary-color) 16%, var(--nt-content-background));
+  }
 }

@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.app-slider__value {
+  min-width: 3.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--nt-text-color);
+  font-size: 0.9rem;
+}
+
+// Remplissage coloré jusqu'à la valeur courante (`--app-slider-fill`, posée
+// en inline style depuis le composant) : un `<input type="range">` natif n'a
+// aucune notion de "piste remplie vs vide" par défaut, contrairement à
+// `InputNumberComponent` qui peut se contenter d'un `<input>` nu — on
+// reconstruit la piste en dégradé, le thumb reste natif (accessibilité
+// clavier/tactile gratuite, pas besoin de la réimplémenter).
+.app-slider__input {
+  --app-slider-fill: 0%;
+
+  flex: 1 1 auto;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  // Piste plus épaisse + pouce nettement plus grand (retour utilisateur :
+  // "plus facile et UI à utiliser avec le mobile") — la hauteur totale de
+  // l'`<input>` (via `padding-block`, qui NE participe PAS au dégradé de
+  // fond car `background-clip: content-box` ci-dessous) agrandit la cible
+  // tactile réelle bien au-delà de la piste visuelle, sans l'épaissir à
+  // l'excès visuellement.
+  height: 0.55rem;
+  padding-block: 0.65rem;
+  background-clip: content-box;
+  box-sizing: content-box;
+  border-radius: var(--nt-radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--nt-primary-color) var(--app-slider-fill),
+    var(--nt-secondary-bg) var(--app-slider-fill)
+  );
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--nt-primary-color);
+    border: 3px solid var(--nt-content-background);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-thumb {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--nt-primary-color);
+    border: 3px solid var(--nt-content-background);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-track {
+    height: 0.55rem;
+    border-radius: var(--nt-radius-pill);
+    background: transparent;
+  }
+
+  &:focus-visible::-webkit-slider-thumb,
+  &:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--nt-primary-color);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}

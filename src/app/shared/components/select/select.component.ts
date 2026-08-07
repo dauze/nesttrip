@@ -7,6 +7,8 @@ import { ViewportService } from '@core/services/viewport.service';
 export interface SelectOption<T> {
   label: string;
   value: T;
+  /** Classe d'icône (PrimeIcons `pi pi-*` ou icône maison `nt-icon-*`, voir icons.scss) affichée avant le libellé — trigger ET options du panneau, même précédent que `SelectButtonComponent.SelectButtonOption`. */
+  icon?: string;
 }
 
 /** Sous le champ, aligné sur son bord gauche ; bascule au-dessus si la place manque en bas. */
@@ -67,6 +69,12 @@ export class SelectComponent<T = unknown> implements ControlValueAccessor {
   protected readonly selectedLabel = computed(() => {
     const current = this.value();
     return this.options().find((o) => o.value === current)?.label ?? '';
+  });
+
+  /** Icône de l'option sélectionnée, affichée devant le libellé dans le trigger — voir `SelectOption.icon`. */
+  protected readonly selectedIcon = computed(() => {
+    const current = this.value();
+    return this.options().find((o) => o.value === current)?.icon;
   });
 
   protected readonly panelTitle = computed(() => this.label() || this.placeholder());

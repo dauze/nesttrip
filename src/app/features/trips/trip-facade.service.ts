@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
-import { Day, Trip } from './trip.model';
+import { Day, Trip, TravelTiers } from './trip.model';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { FlightLogistic, FlightStatus, Logistic } from '@core/models/logistic.dto';
 import { TripStore } from './trip-store.service';
@@ -8,6 +8,7 @@ import { TripRepository } from '@app/core/infra/firebase/services/trip-repositor
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { getLogisticDayOccurrences, LogisticDayOccurrence } from './trip-detail/trip-day-swiper/day-panel/day-logistic-banner/logistic-day-occurrence';
 import { mergeDayTimeline, pinnedLogisticOccurrences, MergedDayEntry } from './trip-detail/trip-day-swiper/day-panel/day-logistic-banner/day-timeline-merge';
+import { TravelMode } from './trip-detail/trip-day-swiper/day-panel/day-distance-gap/travel-mode.util';
 
 /**
  * `true` si deux `Record<string, T>` ont exactement les mêmes clés, chacune
@@ -101,6 +102,14 @@ export class TripFacade {
 
   updateTripCurrency(tripId: string, currency: string): void {
     this.store.updateTripCurrency(tripId, currency);
+  }
+
+  updateTripTravelTiers(tripId: string, tiers: TravelTiers): void {
+    this.store.updateTripTravelTiers(tripId, tiers);
+  }
+
+  setTravelModeOverride(tripId: string, placePairKey: string, mode: TravelMode | null): void {
+    this.store.setTravelModeOverride(tripId, placePairKey, mode);
   }
 
   removeTrip(tripId: string): void {
@@ -222,6 +231,10 @@ export class TripFacade {
   getLinkedNoteItems = this.store.getLinkedNoteItems.bind(this.store);
   /** Devise par défaut du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripCurrency). */
   getTripCurrency = this.store.getTripCurrency.bind(this.store);
+  /** Paliers de mode de trajet du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTravelTiers). */
+  getTripTravelTiers = this.store.getTripTravelTiers.bind(this.store);
+  /** Overrides manuels de mode de trajet du trip (clé = paire de lieux) — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTravelModeOverrides). */
+  getTravelModeOverrides = this.store.getTravelModeOverrides.bind(this.store);
   /** Titre du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTitle). */
   getTripTitle = this.store.getTripTitle.bind(this.store);
   /** Plage de dates (1er jour, dernier jour) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore.getTripDateRange). */
@@ -586,26 +599,39 @@ export class TripFacade {
     const currentTrip = this.store._trips()[trip.id];
     const currentTripTitleShadow = this.store._tripTitle()[trip.id];
     const currentTripCurrencyShadow = this.store._tripCurrency()[trip.id];
+    const currentTripTiersShadow = this.store._tripTravelTiers()[trip.id];
+    const currentTripModeOverridesShadow = this.store._tripTravelModeOverrides()[trip.id];
 
     let primitivesChanged = false;
     let titleShadowChanged = false;
     let currencyShadowChanged = false;
+    let tiersShadowChanged = false;
+    let modeOverridesShadowChanged = false;
 
     if (!isTripFieldPending && currentTrip) {
       const effectiveTitle = currentTripTitleShadow ?? currentTrip.title;
       const effectiveCurrency = currentTripCurrencyShadow ?? currentTrip.defaultCurrency;
+      const effectiveTiers = currentTripTiersShadow ?? currentTrip.travelTiers;
+      const effectiveModeOverrides = currentTripModeOverridesShadow ?? currentTrip.travelModeOverrides;
       const titleReallyChanged = effectiveTitle !== trip.title;
       const currencyReallyChanged = effectiveCurrency !== trip.defaultCurrency;
+      // Objet (pas primitif) : comparaison structurelle, comme `structurallyEqual` côté TripStore.
+      const tiersReallyChanged = JSON.stringify(effectiveTiers) !== JSON.stringify(trip.travelTiers);
+      const modeOverridesReallyChanged = JSON.stringify(effectiveModeOverrides) !== JSON.stringify(trip.travelModeOverrides);
 
       primitivesChanged =
         titleReallyChanged ||
         currencyReallyChanged ||
+        tiersReallyChanged ||
+        modeOverridesReallyChanged ||
         currentTrip.ville !== trip.ville ||
         currentTrip.ownerId !== trip.ownerId ||
         currentTrip.placeId !== trip.placeId;
 
       titleShadowChanged = titleReallyChanged && currentTripTitleShadow !== undefined;
       currencyShadowChanged = currencyReallyChanged && currentTripCurrencyShadow !== undefined;
+      tiersShadowChanged = tiersReallyChanged && currentTripTiersShadow !== undefined;
+      modeOverridesShadowChanged = modeOverridesReallyChanged && currentTripModeOverridesShadow !== undefined;
     }
 
     // À PARTIR D'ICI : chaque écriture de signal est CONDITIONNELLE, comparée
@@ -646,14 +672,17 @@ export class TripFacade {
           ownerId: trip.ownerId,
           defaultCurrency: trip.defaultCurrency,
           placeId: trip.placeId,
+          travelTiers: trip.travelTiers,
+          travelModeOverrides: trip.travelModeOverrides,
         },
       }));
     }
-    // Un AUTRE collaborateur a changé le titre/la devise depuis mon dernier
-    // renommage local confirmé (voir la doc du bloc 3quater ci-dessus) :
-    // efface le shadow pour que `getTripTitle`/`getTripCurrency` retombent
-    // sur `_trips[trip.id]` (qui vient d'être mis à jour juste au-dessus) —
-    // sinon ce renommage distant resterait masqué indéfiniment.
+    // Un AUTRE collaborateur a changé le titre/la devise/les paliers de
+    // trajet depuis mon dernier changement local confirmé (voir la doc du
+    // bloc 3quater ci-dessus) : efface le shadow pour que
+    // `getTripTitle`/`getTripCurrency`/`getTripTravelTiers` retombent sur
+    // `_trips[trip.id]` (qui vient d'être mis à jour juste au-dessus) —
+    // sinon ce changement distant resterait masqué indéfiniment.
     if (titleShadowChanged) {
       this.store._tripTitle.update((map) => {
         const copy = { ...map };
@@ -663,6 +692,20 @@ export class TripFacade {
     }
     if (currencyShadowChanged) {
       this.store._tripCurrency.update((map) => {
+        const copy = { ...map };
+        delete copy[trip.id];
+        return copy;
+      });
+    }
+    if (tiersShadowChanged) {
+      this.store._tripTravelTiers.update((map) => {
+        const copy = { ...map };
+        delete copy[trip.id];
+        return copy;
+      });
+    }
+    if (modeOverridesShadowChanged) {
+      this.store._tripTravelModeOverrides.update((map) => {
         const copy = { ...map };
         delete copy[trip.id];
         return copy;

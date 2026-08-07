@@ -1,6 +1,7 @@
 import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 import { inject } from '@angular/core';
-import { Trip, Day, TripMember, TripSummary } from './trip.model';
+import { Trip, Day, TripMember, TripSummary, TravelTiers, DEFAULT_TRAVEL_TIERS } from './trip.model';
+import { TravelMode } from './trip-detail/trip-day-swiper/day-panel/day-distance-gap/travel-mode.util';
 import { Activity, ActivityEcho, DayActivityEntry, PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { resolveEndDayOffset } from '@app/shared/components/activity-card/activity-time.util';
 import { ActivityType } from '@core/enums/activites-type.enum';
@@ -140,6 +141,19 @@ export class TripStore {
    */
   readonly _tripCurrency = signal<Record<string, string>>({});
   /**
+   * @internal — paliers de mode de trajet (distance + mode par palier) par
+   * trip, séparés de `_trips` pour la même raison que `_tripCurrency`
+   * ci-dessus : la modifier ne doit pas faire recalculer `activeTrip()` —
+   * voir `getTripTravelTiers`.
+   */
+  readonly _tripTravelTiers = signal<Record<string, TravelTiers>>({});
+  /**
+   * @internal — overrides manuels de mode de trajet par trip (clé = paire de
+   * lieux, voir `buildPlacePairKey`), séparés de `_trips` pour la même raison
+   * que `_tripCurrency` ci-dessus — voir `getTravelModeOverrides`.
+   */
+  readonly _tripTravelModeOverrides = signal<Record<string, Record<string, TravelMode>>>({});
+  /**
    * @internal — titre par trip, séparé de `_trips` pour la même raison que
    * `_tripCurrency` ci-dessus (voir `getTripTitle`) : un renommage ne doit
    * pas faire recalculer `activeTrip()` (et donc reconstruire `trip.days` —
@@ -154,8 +168,9 @@ export class TripStore {
    * écriture Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression
    * confirmée par retour utilisateur : "toute la page se réactualise" à
    * chaque édition du titre). Tant qu'un tripId est dans ce set,
-   * `TripFacade.mergeFromRemote` ignore ENTIÈREMENT le titre/la devise de ce
-   * trip (même logique que `_pendingActivityIds`) : sans ça, le snapshot de
+   * `TripFacade.mergeFromRemote` ignore ENTIÈREMENT le titre/la devise/les
+   * seuils de trajet de ce trip (même logique que `_pendingActivityIds`) :
+   * sans ça, le snapshot de
    * CONFIRMATION qui suit systématiquement l'écriture voyait `_trips[tripId]`
    * (jamais mis à jour par `updateTripTitle`, seul `_tripTitle` l'est,
    * exprès — voir sa doc) comme "différent" du titre fraîchement confirmé,
@@ -330,6 +345,8 @@ export class TripStore {
   private readonly poolActivityViewById = new Map<string, Signal<Activity>>();
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
   private readonly tripCurrencyByTrip = new Map<string, Signal<string>>();
+  private readonly tripTravelTiersByTrip = new Map<string, Signal<TravelTiers>>();
+  private readonly tripTravelModeOverridesByTrip = new Map<string, Signal<Record<string, TravelMode>>>();
   private readonly tripTitleByTrip = new Map<string, Signal<string>>();
   private readonly tripDateRangeByTrip = new Map<string, Signal<[Date, Date] | undefined>>();
 
@@ -368,6 +385,34 @@ export class TripStore {
       );
     }
     return this.tripCurrencyByTrip.get(tripId)!;
+  }
+
+  /** Paliers de mode de trajet du trip — voir `_tripTravelTiers` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.travelTiers` (valeur d'hydratation) puis `DEFAULT_TRAVEL_TIERS`. */
+  getTripTravelTiers(tripId: string): Signal<TravelTiers> {
+    if (!this.tripTravelTiersByTrip.has(tripId)) {
+      this.tripTravelTiersByTrip.set(
+        tripId,
+        computed(
+          () => this._tripTravelTiers()[tripId] ?? this._trips()[tripId]?.travelTiers ?? DEFAULT_TRAVEL_TIERS,
+          { equal: (a, b) => this.structurallyEqual(a, b) },
+        ),
+      );
+    }
+    return this.tripTravelTiersByTrip.get(tripId)!;
+  }
+
+  /** Overrides manuels de mode de trajet du trip (clé = paire de lieux) — voir `_tripTravelModeOverrides` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.travelModeOverrides` (valeur d'hydratation) puis `{}` (aucun override = tout est automatique). */
+  getTravelModeOverrides(tripId: string): Signal<Record<string, TravelMode>> {
+    if (!this.tripTravelModeOverridesByTrip.has(tripId)) {
+      this.tripTravelModeOverridesByTrip.set(
+        tripId,
+        computed(
+          () => this._tripTravelModeOverrides()[tripId] ?? this._trips()[tripId]?.travelModeOverrides ?? {},
+          { equal: (a, b) => this.structurallyEqual(a, b) },
+        ),
+      );
+    }
+    return this.tripTravelModeOverridesByTrip.get(tripId)!;
   }
 
   /** Titre du trip — voir `_tripTitle` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.title` (valeur d'hydratation) tant qu'aucun renommage n'a eu lieu. */
@@ -784,6 +829,42 @@ export class TripStore {
     this.tripPersistenceService.updateTripCurrency(tripId, currency)
       .catch((err) => {
         console.error('[TripStore] Erreur update devise trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
+  }
+
+  updateTripTravelTiers(tripId: string, tiers: TravelTiers): void {
+    if (!this._trips()[tripId]) return;
+
+    // 1. Signal dédié (voir `_tripTravelTiers`), pas `_trips`.
+    this._tripTravelTiers.update((map) => ({ ...map, [tripId]: tiers }));
+    this.markTripFieldPending(tripId);
+
+    // 2. Persistance Firestore
+    this.tripPersistenceService.updateTripTravelTiers(tripId, tiers)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update paliers trajet trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
+  }
+
+  /** `mode = null` efface l'override (retour à l'automatique) — voir `selectTravelMode`/`buildPlacePairKey`. */
+  setTravelModeOverride(tripId: string, placePairKey: string, mode: TravelMode | null): void {
+    if (!this._trips()[tripId]) return;
+
+    const current = this._tripTravelModeOverrides()[tripId] ?? this._trips()[tripId]?.travelModeOverrides ?? {};
+    const next = { ...current };
+    if (mode === null) delete next[placePairKey];
+    else next[placePairKey] = mode;
+
+    // 1. Signal dédié (voir `_tripTravelModeOverrides`), pas `_trips`.
+    this._tripTravelModeOverrides.update((map) => ({ ...map, [tripId]: next }));
+    this.markTripFieldPending(tripId);
+
+    // 2. Persistance Firestore
+    this.tripPersistenceService.updateTripTravelModeOverrides(tripId, next)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update override mode trajet trip Firestore :', err);
       })
       .finally(() => this.clearTripFieldPending(tripId));
   }

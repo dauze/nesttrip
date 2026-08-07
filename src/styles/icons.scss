@@ -21,3 +21,43 @@
   -webkit-mask-position: center;
   -webkit-mask-size: contain;
 }
+
+// Marche/vélo : même raison que le train ci-dessus (aucun glyphe PrimeIcons
+// adéquat, voir ROADMAP.md "Activités"/"UX / Interactions" — sélection auto
+// du mode de trajet) — silhouettes reprises des pictogrammes SVG déjà
+// livrés dans `day-distance-gap.component.html`, converties en masque pour
+// être utilisables comme icône de liste (`SelectOption.icon`) au même titre
+// qu'un glyphe `pi pi-*`.
+.nt-icon-walk {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  $nt-icon-walk-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='4.5' r='2'/%3E%3Cg fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 8v5'/%3E%3Cpath d='M12 13l-3 7'/%3E%3Cpath d='M12 13l3.5 3.5-1 4'/%3E%3Cpath d='M12 9.5l-3.5 2.5'/%3E%3Cpath d='M12 9.5l3 1.5'/%3E%3C/g%3E%3C/svg%3E");
+  mask-image: $nt-icon-walk-svg;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: $nt-icon-walk-svg;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+
+.nt-icon-bike {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  $nt-icon-bike-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5.5' cy='17.5' r='3.5'/%3E%3Ccircle cx='18.5' cy='17.5' r='3.5'/%3E%3Cpath d='M5.5 17.5 9.5 9h4l3.5 8.5'/%3E%3Cpath d='M9.5 9 8 6h-1.5'/%3E%3Cpath d='M9.5 9l3 4.5h4'/%3E%3C/g%3E%3C/svg%3E");
+  mask-image: $nt-icon-bike-svg;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: $nt-icon-bike-svg;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}

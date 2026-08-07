@@ -8,6 +8,15 @@ import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+import {
+  TravelTiersDialogComponent,
+  TravelTiersDialogData,
+} from './travel-tiers-dialog/travel-tiers-dialog.component';
+import { DEFAULT_TRAVEL_TIERS, TravelTiers } from '@app/features/trips/trip.model';
+
+const MODE_LABEL: Record<TravelTiers['tier1Mode'], string> = { walk: 'Marche', bike: 'Vélo', car: 'Voiture' };
+/** Icônes seules dans le libellé lecture seule (voir `travelTiersAriaLabel` pour l'équivalent texte, lu par les lecteurs d'écran) — `nt-icon-*` maison pour marche/vélo (aucun glyphe PrimeIcons adéquat, voir icons.scss), `pi-car` pour voiture. */
+const MODE_ICON: Record<TravelTiers['tier1Mode'], string> = { walk: 'nt-icon-walk', bike: 'nt-icon-bike', car: 'pi pi-car' };
 
 @Component({
   selector: 'app-trip-header',
@@ -25,9 +34,28 @@ export class TripHeaderComponent {
   /** Signal dédié (voir `TripFacade.getTripDateRange`/`TripStore._tripDays`), pas `activeTrip()` — voir la doc du constructeur. */
   readonly dateRange = input<[Date, Date] | undefined>(undefined);
   readonly title = input<string>('');
+  readonly travelTiers = input<TravelTiers>(DEFAULT_TRAVEL_TIERS);
 
   readonly titleChange = output<string>();
   readonly datesChange = output<[Date, Date]>();
+  readonly travelTiersChange = output<TravelTiers>();
+
+  /** Paliers courants, lus par le template pour composer le libellé icônes+km (voir `modeIcon`/`fmtKm`). */
+  protected readonly tiers = computed(() => this.travelTiers());
+
+  protected modeIcon(mode: TravelTiers['tier1Mode']): string {
+    return MODE_ICON[mode];
+  }
+
+  protected fmtKm(km: number): string {
+    return Number.isInteger(km) ? String(km) : km.toString().replace('.', ',');
+  }
+
+  /** Équivalent texte du libellé icônes-seules (lecteurs d'écran) — ordre "mode, sinon" pour le palier 3, cohérent avec l'affichage. */
+  protected readonly travelTiersAriaLabel = computed(() => {
+    const tiers = this.travelTiers();
+    return `Trajets : ${MODE_LABEL[tiers.tier1Mode]} ≤ ${this.fmtKm(tiers.tier1MaxKm)} km, ${MODE_LABEL[tiers.tier2Mode]} ≤ ${this.fmtKm(tiers.tier2MaxKm)} km, ${MODE_LABEL[tiers.tier3Mode]} sinon`;
+  });
 
   private readonly datePickerRef = viewChild(DatePickerComponent);
 
@@ -101,6 +129,23 @@ export class TripHeaderComponent {
   /** Dates en lecture seule + crayon dédié : ouvre le même calendrier qu'avant, juste plus caché derrière un déclencheur explicite. */
   protected openDatePicker(): void {
     this.datePickerRef()?.openPanel();
+  }
+
+  /** Paliers de trajet en lecture seule + crayon dédié — voir ROADMAP.md "Activités"/"UX / Interactions". */
+  protected openTravelTiersDialog(): void {
+    const dialogRef = this.dialogService.open<TravelTiers | undefined, TravelTiersDialogData>(
+      TravelTiersDialogComponent,
+      {
+        data: { initialValue: this.travelTiers() },
+        panelClass: 'app-wide-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+      },
+    );
+
+    dialogRef.closed.subscribe((result) => {
+      if (result === undefined) return;
+      this.travelTiersChange.emit(result);
+    });
   }
 
   protected onTitleBlur(value: string): void {

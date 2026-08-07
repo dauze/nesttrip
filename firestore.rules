@@ -18,5 +18,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mapCollapsedByDefault']);
       allow write: if false; // écrit uniquement côté serveur (Cloud Functions, Admin SDK)
     }
+
+    // Cache global des trajets Google Routes API (voir get-trajet.handler.ts) —
+    // lu directement par le client pour éviter même l'invocation de la Cloud
+    // Function quand la paire de lieux est déjà connue, jamais écrit côté client.
+    match /travelRoutes/{routeId} {
+      allow read: if request.auth != null;
+      allow write: if false; // écrit uniquement côté serveur (Cloud Functions, Admin SDK)
+    }
   }
 }

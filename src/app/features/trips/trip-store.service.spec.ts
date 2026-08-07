@@ -65,6 +65,8 @@ describe('TripStore', () => {
             createTrip: vi.fn().mockResolvedValue(undefined),
             updateTripTitle: vi.fn().mockResolvedValue(undefined),
             updateTripCurrency: vi.fn().mockResolvedValue(undefined),
+            updateTripTravelTiers: vi.fn().mockResolvedValue(undefined),
+            updateTripTravelModeOverrides: vi.fn().mockResolvedValue(undefined),
             removeTrip: vi.fn().mockResolvedValue(undefined),
           },
         },
@@ -172,6 +174,94 @@ describe('TripStore', () => {
       seedTrip({ defaultCurrency: 'JPY' });
       expect(store.getTripCurrency(tripId)()).toBe('JPY');
       expect(store.getTripCurrency('trip-inconnu')()).toBe('EUR');
+    });
+  });
+
+  describe('updateTripTravelTiers — signal dédié, indépendant de _trips/activeTrip', () => {
+    function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
+      store._trips.set({
+        [tripId]: {
+          id: tripId,
+          ville: 'Paris',
+          title: 'Voyage',
+          ownerId: 'u1',
+          members: {},
+          days: [],
+          activities: [],
+          dayActivityInstances: [],
+          logistics: [],
+          notes: { id: 'n1', items: [] },
+          ...overrides,
+        },
+      });
+      store._activeTripId.set(tripId);
+    }
+
+    it("met à jour getTripTravelTiers() sans changer la référence de _trips ni de activeTrip()", () => {
+      seedTrip();
+      const tripsBefore = store._trips();
+      const activeTripBefore = store.activeTrip();
+
+      store.updateTripTravelTiers(tripId, { tier1Mode: 'walk', tier1MaxKm: 2, tier2Mode: 'bike', tier2MaxKm: 10, tier3Mode: 'car' });
+
+      expect(store.getTripTravelTiers(tripId)()).toEqual({ tier1Mode: 'walk', tier1MaxKm: 2, tier2Mode: 'bike', tier2MaxKm: 10, tier3Mode: 'car' });
+      expect(store._trips()).toBe(tripsBefore);
+      expect(store.activeTrip()).toBe(activeTripBefore);
+    });
+
+    it("retombe sur trip.travelTiers tant qu'aucun changement n'a été fait, puis sur les valeurs par défaut (marche 1.5 / vélo 8 / sinon voiture)", () => {
+      const customTiers = { tier1Mode: 'walk' as const, tier1MaxKm: 3, tier2Mode: 'bike' as const, tier2MaxKm: 12, tier3Mode: 'car' as const };
+      seedTrip({ travelTiers: customTiers });
+      expect(store.getTripTravelTiers(tripId)()).toEqual(customTiers);
+      expect(store.getTripTravelTiers('trip-inconnu')()).toEqual({ tier1Mode: 'walk', tier1MaxKm: 1.5, tier2Mode: 'bike', tier2MaxKm: 8, tier3Mode: 'car' });
+    });
+  });
+
+  describe('setTravelModeOverride — signal dédié, indépendant de _trips/activeTrip', () => {
+    function seedTrip(overrides: Partial<import('./trip.model').Trip> = {}) {
+      store._trips.set({
+        [tripId]: {
+          id: tripId,
+          ville: 'Paris',
+          title: 'Voyage',
+          ownerId: 'u1',
+          members: {},
+          days: [],
+          activities: [],
+          dayActivityInstances: [],
+          logistics: [],
+          notes: { id: 'n1', items: [] },
+          ...overrides,
+        },
+      });
+      store._activeTripId.set(tripId);
+    }
+
+    it("ajoute un override sans changer la référence de _trips ni de activeTrip()", () => {
+      seedTrip();
+      const tripsBefore = store._trips();
+      const activeTripBefore = store.activeTrip();
+
+      store.setTravelModeOverride(tripId, 'a_b', 'car');
+
+      expect(store.getTravelModeOverrides(tripId)()).toEqual({ a_b: 'car' });
+      expect(store._trips()).toBe(tripsBefore);
+      expect(store.activeTrip()).toBe(activeTripBefore);
+    });
+
+    it('retombe sur {} tant qu\'aucun override n\'a été fait', () => {
+      seedTrip();
+      expect(store.getTravelModeOverrides(tripId)()).toEqual({});
+    });
+
+    it('conserve les autres overrides en ajoutant/retirant une clé', () => {
+      seedTrip({ travelModeOverrides: { a_b: 'bike' } });
+
+      store.setTravelModeOverride(tripId, 'c_d', 'car');
+      expect(store.getTravelModeOverrides(tripId)()).toEqual({ a_b: 'bike', c_d: 'car' });
+
+      store.setTravelModeOverride(tripId, 'a_b', null);
+      expect(store.getTravelModeOverrides(tripId)()).toEqual({ c_d: 'car' });
     });
   });
 

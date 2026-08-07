@@ -2,8 +2,10 @@
   <app-trip-header
     [dateRange]="tripDateRange()"
     [title]="tripTitle()"
+    [travelTiers]="tripFacade.getTripTravelTiers(tripId())()"
     (titleChange)="onTitleChange($event)"
-    (datesChange)="onDatesChange($event)">
+    (datesChange)="onDatesChange($event)"
+    (travelTiersChange)="onTravelTiersChange($event)">
     <app-trip-collaborators
       trip-actions
       [tripId]="tripId()" />
