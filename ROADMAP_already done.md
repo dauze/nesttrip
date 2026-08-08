@@ -3,6 +3,7 @@
 Ce document sert de référence pour le projet ce qui est déjà en place (à ne pas casser)
 
 ## ✅ Déjà fait
+- "Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +." on doit changer le plus en icone de map. idem pour l'icone de logement et transport" et "Liste"
 - Pour les notifications des transports / hotel, voir ou les mettre car c'est pas jolie actuellement, comme c'est le même affichage que les activités et que les activités sont dans un panel, on dirait que l'écran n'est pas uniforme (A affiner)
 - **Parcours nouvel utilisateur (`src/specs/Parcours-new-user.md`), 2026-08-08** : les 4 étapes de la spec, mobile uniquement pour les étapes 3/4 (décidé avec l'utilisateur — la spec est écrite en termes de gestes tactiles et de la barre `MobileTripNavComponent`, sans équivalent sur `TripTabsNavComponent`/desktop).
   - **Modèle** : nouveau champ `users/{uid}.onboarding` (`hasSeenOnboarding` + `seenStepIds`), même moule client-writable que `mapCollapsedByDefault`/`defaultCurrency` (`UserProfileService`/`UserProfileRepository`/`firestore.rules`). Écritures via `setDoc(..., { merge: true })` (PAS `updateDoc`, contrairement aux 2 champs existants) : `users/{uid}` n'est aujourd'hui créé paresseusement que par les Cloud Functions de collaboration (`add-collaborator.handler.ts`), donc `updateDoc` sur un doc inexistant aurait levé `NOT_FOUND` pour un tout nouvel utilisateur — exactement le cas d'usage principal de ce champ.

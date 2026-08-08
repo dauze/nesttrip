@@ -60,7 +60,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
 - Le bloc voyage des paramètre ne doit pas être affiché quand on est sur l'écran de création d'un voyage
 - Sur l'écran d'accueil, il faut que le bouton créer un trip soit positionné en bas de l'écran, et que le scoll soit dans le content du panel, pas sur tout le panel : si beaucouop de trip, le bouton "Nouvelle aventure" n'est actuellementb pas visible, il faut scroller jusqu'en bas, dommage
-- "Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +." on doit changer le plus en icone de map. idem pour l'icone de logement et transport" et "Liste"
 
 ### Qualité / process
 
@@ -76,7 +75,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
   - Pour tous les composants de base qui sont dans shared comme bouton, select, chip, etc : vérifier que tous les composants du commun se basent la dessus et ne réinvente pas les boutons, chip, select, etc, il ne faut pas redéfinir à chaque fois les éléments, Pour rappel, les composant dans le dossier feature ne doivent quasiment pas avoir de scss car le scss du théme doit être défini dans les fichiers du theme et exploité par les composant commun du shared. les composant de feature sont que des composants qui utilisent les composants de shared sans redéfinir de thème. Role des composant de shared : définir des composant dumbs réutilisable qui implémente le thème. Role des components de feature : utiliser les components de thème et implémenter les logiques par écran. seul du scss de règle de placement doit être définit dans les components de feature via des classes dse layout utilities dans le html directement
   - Fusionner app-menu et app-select qui sont les même, non ? 
 - Déplacer travel-tier-dialog, il n'a plus rien à faire ici
-- #dragPortal le mecanisme du portal pour la carte n'a plus lieu d'être car elle est completement sorti du swiper, il faudrait l'enlever 
+- #dragPortal le mecanisme du portal pour la carte n'a plus lieu d'être car elle est completement sorti du swiper, il faudrait l'enlever
+
 ### Industrialisation (non prioritaire)
 
 - Faire une étude pour savoir les prochaines étapes pour potentiellement industrialiser l'application : 

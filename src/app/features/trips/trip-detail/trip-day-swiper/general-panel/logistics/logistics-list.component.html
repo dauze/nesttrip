@@ -1,44 +1,43 @@
 <div class="logistics-list" [appFabBottomProximity]="true" (nearBottomChange)="onFabNearBottomChange($event)">
 <app-card>
   <div class="flex flex-column gap-2">
+    <div class="logistics-list__toolbar flex align-items-center gap-2 flex-wrap">
+      <span>Classer par : </span>
+      <app-select-button
+        variant="subtle"
+        [options]="sortOptions"
+        [value]="sortMode()"
+        (valueChange)="onSortModeChange($event)"
+      />
+      <div class="logistics-list__search flex-1">
+        <i class="pi pi-search logistics-list__search-icon nt-text-muted"></i>
+        <input
+          appInputText
+          type="text"
+          [value]="searchTerm()"
+          (input)="onSearchInput($event)"
+          placeholder="Rechercher un logement ou transport"
+          class="w-full logistics-list__search-input" />
+        @if (searchTerm()) {
+          <app-button
+            icon="pi pi-times"
+            [rounded]="true"
+            [text]="true"
+            size="small"
+            severity="secondary"
+            class="logistics-list__search-clear"
+            (click)="clearSearch()"
+          />
+        }
+      </div>
+    </div>
     @if (hasNoLogisticAtAll()) {
       <app-message
         severity="info"
         icon="pi pi-info-circle"
-        text="Aucun élément logistique pour l'instant, n'hésitez pas à en créer avec le bouton +."
+        text="Aucun Logement ni transport pour l'instant, n'hésitez pas à en créer avec le bouton <i class='pi pi pi-bookmark'></i>."
         class="w-full" />
     } @else {
-      <div class="logistics-list__toolbar flex align-items-center gap-2 flex-wrap">
-        <span>Classer par : </span>
-        <app-select-button
-          variant="subtle"
-          [options]="sortOptions"
-          [value]="sortMode()"
-          (valueChange)="onSortModeChange($event)"
-        />
-        <div class="logistics-list__search flex-1">
-          <i class="pi pi-search logistics-list__search-icon nt-text-muted"></i>
-          <input
-            appInputText
-            type="text"
-            [value]="searchTerm()"
-            (input)="onSearchInput($event)"
-            placeholder="Rechercher un logement ou transport"
-            class="w-full logistics-list__search-input" />
-          @if (searchTerm()) {
-            <app-button
-              icon="pi pi-times"
-              [rounded]="true"
-              [text]="true"
-              size="small"
-              severity="secondary"
-              class="logistics-list__search-clear"
-              (click)="clearSearch()"
-            />
-          }
-        </div>
-      </div>
-
       @if (matchCount() === 0) {
         <app-message severity="info" icon="pi pi-search" text="Aucun résultat pour cette recherche." class="w-full" />
       } @else if (sortMode() === 'chrono') {
