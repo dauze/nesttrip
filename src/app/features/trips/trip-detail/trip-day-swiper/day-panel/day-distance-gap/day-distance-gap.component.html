@@ -1,63 +1,76 @@
 @if (loading() || hasRoute()) {
-  <div class="day-distance-gap-rail">
+  <div class="day-distance-gap-rail justify-content-center">
     <div class="day-distance-gap-rail__line" aria-hidden="true"></div>
 
-    <div class="day-distance-gap-chip">
-      <a
-        class="day-distance-gap-chip__main"
-        [href]="mapsUrl()"
-        target="_blank"
-        rel="noopener"
-        [attr.aria-label]="loading() ? 'Ouvrir l\'itinéraire dans Google Maps' : ariaLabel()">
-        @if (loading()) {
-          <app-skeleton width="4.5rem" height="0.65rem" borderRadius="var(--nt-radius-pill)" />
-        } @else {
-          @if (mode() === 'walk') {
-            <svg class="day-distance-gap-chip__mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="4.5" r="2" fill="currentColor" />
-              <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 8v5" />
-                <path d="M12 13l-3 7" />
-                <path d="M12 13l3.5 3.5-1 4" />
-                <path d="M12 9.5l-3.5 2.5" />
-                <path d="M12 9.5l3 1.5" />
-              </g>
-            </svg>
-          } @else if (mode() === 'bike') {
-            <svg class="day-distance-gap-chip__mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="5.5" cy="17.5" r="3.5" />
-                <circle cx="18.5" cy="17.5" r="3.5" />
-                <path d="M5.5 17.5 9.5 9h4l3.5 8.5" />
-                <path d="M9.5 9 8 6h-1.5" />
-                <path d="M9.5 9l3 4.5h4" />
-              </g>
-            </svg>
+    <div class="py-2 gap-2">
+      <div class="flex align-items-center gap-2">
+      <app-chip [removable]="false" class="nt-bg-subtle text-sm cursor-pointer">
+        <button
+          #pictogram
+          type="button"
+          class="day-distance-gap-chip__chevron"
+          [attr.aria-label]="pictogramAriaLabel()"
+          (click)="onPictogramClick()">
+          <div class="flex align-items-center justify-content-center gap-2">
+            @if (mode() === 'walk') {
+              <svg class="day-distance-gap-chip__mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="4.5" r="2" fill="currentColor" />
+                <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 8v5" />
+                  <path d="M12 13l-3 7" />
+                  <path d="M12 13l3.5 3.5-1 4" />
+                  <path d="M12 9.5l-3.5 2.5" />
+                  <path d="M12 9.5l3 1.5" />
+                </g>
+              </svg>
+            } @else if (mode() === 'bike') {
+              <svg class="day-distance-gap-chip__mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="5.5" cy="17.5" r="3.5" />
+                  <circle cx="18.5" cy="17.5" r="3.5" />
+                  <path d="M5.5 17.5 9.5 9h4l3.5 8.5" />
+                  <path d="M9.5 9 8 6h-1.5" />
+                  <path d="M9.5 9l3 4.5h4" />
+                </g>
+              </svg>
+            } @else {
+              <i class="pi pi-car day-distance-gap-chip__mode-icon" aria-hidden="true"></i>
+            }
+            {{ modeLibelle() }}
+            <i class="pi pi-chevron-down" aria-hidden="true"></i>
+          </div>
+        </button>
+      </app-chip>
+      <app-chip icon="pi pi-external-link" [removable]="false" class="text-sm cursor-pointer">
+        <a
+          class="day-distance-gap-chip__main flex align-items-center gap-1 text-xs no-underline white-space-nowrap"
+          [href]="mapsUrl()"
+          target="_blank"
+          rel="noopener"
+          [attr.aria-label]="loading() ? 'Ouvrir l\'itinéraire dans Google Maps' : ariaLabel()">
+          @if (loading()) {
+            <app-skeleton width="4.5rem" height="0.65rem" borderRadius="var(--nt-radius-pill)" />
           } @else {
-            <i class="pi pi-car day-distance-gap-chip__mode-icon" aria-hidden="true"></i>
+            <span class="day-distance-gap-chip__label">{{ distanceLabel() }} · {{ durationMinutes() | duration }}</span>
           }
-          <span class="day-distance-gap-chip__label">{{ distanceLabel() }} · {{ durationMinutes() | duration }}</span>
-        }
-        <i class="pi pi-external-link day-distance-gap-chip__nav-hint" aria-hidden="true"></i>
-      </a>
-
-      <button
-        #pictogram
-        type="button"
-        class="day-distance-gap-chip__chevron"
-        [attr.aria-label]="pictogramAriaLabel()"
-        (click)="onPictogramClick()">
-        <i class="pi pi-chevron-down" aria-hidden="true"></i>
-      </button>
-    </div>
-
+        </a>
+      </app-chip>
+      </div>
     @if (showTransportCta()) {
-      <button #transportCta type="button" class="day-distance-gap-rail__transport-cta" (click)="onTransportCtaClick()">
+      <div class="pt-2">
+      <button
+        #transportCta
+        type="button"
+        class="day-distance-gap-rail__transport-cta flex align-items-center justify-content-center gap-1 text-xs cursor-pointer"
+        (click)="onTransportCtaClick()">
         <i class="pi pi-plus-circle" aria-hidden="true"></i>
         Enregistrer un transport ?
       </button>
+      </div>
     }
+    </div>
   </div>
+
   <app-menu #modeMenu [items]="modeMenuItems()" />
   @if (showTransportCta()) {
     <app-menu #transportMenu [items]="transportMenuItems()" />

@@ -78,12 +78,12 @@
     </div>
 
     <!-- Footer buttons -->
-    <div cardFooter class="flex justify-content-end gap-2">
+    <div cardFooter class="nt-footer-actions justify-content-end gap-2">
       <!-- Ajouter -->
       <app-button
         label="Nouvelle aventure"
         icon="pi pi-plus"
-        size="small"
+        [size]="viewport.isMobile() ? 'large' : 'small'"
         routerLink="/trips/new"
       />
     </div>

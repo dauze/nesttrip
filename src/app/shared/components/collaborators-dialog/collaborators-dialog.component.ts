@@ -10,6 +10,7 @@ import { MessageComponent } from '@app/shared/components/message/message.compone
 import { TripMember } from '@app/features/trips/trip.model';
 import { Companion } from '@app/core/models/user-profile.dto';
 import { getInitials } from '@app/shared/utils/get-initials';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 /**
  * Signaux (pas des valeurs figées) + callbacks : voir la doc de
@@ -40,6 +41,7 @@ export interface CollaboratorsDialogData {
 export class CollaboratorsDialogComponent {
   private readonly dialogRef = inject(DialogRef<void>);
   protected readonly data = inject<CollaboratorsDialogData>(DIALOG_DATA);
+  protected readonly viewport = inject(ViewportService);
 
   protected inviteeEmail = '';
 

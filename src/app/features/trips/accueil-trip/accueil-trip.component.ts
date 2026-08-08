@@ -15,6 +15,7 @@ import { TripSummary } from '../trip.model';
 import { AuthService } from '@app/core/services/auth.service';
 import { NgClass } from '@angular/common';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -45,6 +46,7 @@ export class AccueilTripComponent {
   private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly authService = inject(AuthService);
   protected readonly selectionService = inject(SelectionModeService);
+  protected readonly viewport = inject(ViewportService);
 
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;

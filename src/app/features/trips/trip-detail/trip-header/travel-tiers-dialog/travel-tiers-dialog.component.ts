@@ -7,6 +7,7 @@ import { SelectComponent, SelectOption } from '@app/shared/components/select/sel
 import { PaliersTrajetSliderComponent } from './paliers-trajet-slider/paliers-trajet-slider.component';
 import { TravelTiers } from '@app/features/trips/trip.model';
 import { TravelMode } from '../../trip-day-swiper/day-panel/day-distance-gap/travel-mode.util';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface TravelTiersDialogData {
   initialValue: TravelTiers;
@@ -42,6 +43,7 @@ export class TravelTiersDialogComponent {
   private readonly fb = inject(FormBuilder);
   private readonly dialogRef = inject(DialogRef<TravelTiers | undefined>);
   private readonly data = inject<TravelTiersDialogData>(DIALOG_DATA);
+  protected readonly viewport = inject(ViewportService);
 
   protected readonly modeOptions = MODE_OPTIONS;
   protected readonly maxKm = MAX_KM;

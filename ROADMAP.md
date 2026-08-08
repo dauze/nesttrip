@@ -19,14 +19,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 ### UI 
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
 - Specs/Parcours-new-user.md : fonctionnalité à part entière à développer (Non prioritaire)
-- Tuile Dépenses : modifier la disposition : il faut mettre le graphyque et la légende cote à cote et non l'un sur l'autre. A gauche il y aura le graphique et à droite du donut. Il ne faut pas que le texte soit tronqué donc il faut que si il faut peut être réduire un petit peu la taille du donut et que ce soit responsive, si ça tient pas, le mettre en dessous dans la même disposition qu'actuellement. Centrer la légende versicallement (pas horizontalement) comme ça si elle est à coté du donut et qu'il estp lus large, ils seront alignés
-- Modification visuel des boutons (pour le mobile uniquement), il doivent maintenant être plus grand et remplir toute la zone ou ils sont, sans bordures, et donc agrandir le libellé :
-  - Sur toutes les popup, les boutons du bas doivent être revue sur mobile, il doivent être plus gros et prendre toute le footer en le divisant par 2
-  - Agrandir le bouton "Nouvelle aventure" sur mobile pour qu'il prenne toute la largeur du footer
-  - Agrandir les boutons "Annuler" et "Créer un voyage" sur mobile pour qu'il prennent tout le footer divisé par 2 comme sur les popup
-  - La pop-up informative de fichier trop gros a 2 bouton ok, il faut en mettre qu'un seul qui prend tout le footer
-  - Sur l'écran de création d'un voyage, les 2 boutons "Annuler" et "Créer un voyage" doivent prendre tout le footer en le divisan par 2 "
-- Uniformiser les suppression via le clique sur des élements : sur l'écran d'accueil il y a un contour et pas sur les autres, le supprimer. L'opacity n'est peut-etre pas la même, a uniformiser. On ne voit pas assez le rouge de sélection sur les carte de logement, transport, et activité, et Listes il faut l'accentuer légèrtement. Enfin, pour logement, transport, activité et liste faire cette sélection sur les headers également pour que toute la carte soit en rouge, pas que le contenu. 
 
 ### Carte
 
@@ -65,8 +57,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 
 ### Bugs / fixes
-- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Plus tard)
-- remettre les pointillés affiché dans le calcule de distance, day-distance-gap-rail__line n'est plus visible
+- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
+- Remettre les pointillés affiché dans le calcule de distance, day-distance-gap-rail__line n'est plus visible depuis le centrage. Il doit bien être a gauche de la chip de distance
 
 ### Qualité / process
 
@@ -79,7 +71,9 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
   - html : pas de redondance ? 
   - typescript uniforme ? Signal bien géré, observable aussi ?
   - Problème d'incohérence : il y a 2 composants pour la liste sur mobile, un avec le check et un avec la ligne en surbrillance, il faudrait les fusionner pour en avoir qu'une seule
-
+  - Pour tous les composants de base qui sont dans shared comme bouton, select, chip, etc : vérifier que tous les composants du commun se basent la dessus et ne réinvente pas les boutons, chip, select, etc, il ne faut pas redéfinir à chaque fois les éléments, Pour rappel, les composant dans le dossier feature ne doivent quasiment pas avoir de scss car le scss du théme doit être défini dans les fichiers du theme et exploité par les composant commun du shared. les composant de feature sont que des composants qui utilisent les composants de shared sans redéfinir de thème. Role des composant de shared : définir des composant dumbs réutilisable qui implémente le thème. Role des components de feature : utiliser les components de thème et implémenter les logiques par écran. seul du scss de règle de placement doit être définit dans les components de feature via des classes dse layout utilities dans le html directement
+  - Fusionner app-menu et app-select qui sont les même, non ? 
+- Déplacer travel-tier-dialog, il n'a plus rien à faire ici
 ### Industrialisation (non prioritaire)
 
 - Faire une étude pour savoir les prochaines étapes pour potentiellement industrialiser l'application : 
@@ -88,3 +82,4 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
   - Gestion token multienv
   - Passage sur AppStore et Playstore ?
   - Gérer le cas de l'asi sans google ni les services google, quelles alternatives ?
+  - faire sa banque de svg et se passer de prime-icons

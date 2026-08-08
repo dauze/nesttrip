@@ -15,6 +15,8 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayLogisticQuickAddService } from '@app/features/trips/trip-detail/day-logistic-quick-add.service';
 import { LOGISTIC_TYPE_META } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/logistic.constants';
 import { LogisticType } from '@core/models/logistic.dto';
+import { ChipComponent } from '@app/shared/components/chip/chip.component';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 
 const GOOGLE_MAPS_TRAVEL_MODE: Record<TravelMode, string> = {
   walk: 'walking',
@@ -52,7 +54,7 @@ const TRANSPORT_CTA_DISTANCE_METERS = 300_000;
 @Component({
   selector: 'app-day-distance-gap',
   standalone: true,
-  imports: [DurationPipe, SkeletonComponent, MenuComponent],
+  imports: [DurationPipe, SkeletonComponent, MenuComponent, ChipComponent, ButtonComponent],
   templateUrl: './day-distance-gap.component.html',
   styleUrl: './day-distance-gap.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,6 +146,10 @@ export class DayDistanceGapComponent {
   protected readonly pictogramAriaLabel = computed(() => {
     const modeLabel = { walk: 'Marche', bike: 'Vélo', car: 'Voiture' }[this.mode()];
     return `Mode de trajet : ${modeLabel} — changer`;
+  });
+
+    protected readonly modeLibelle = computed(() => {
+    return { walk: 'Marche', bike: 'Vélo', car: 'Voiture' }[this.mode()];
   });
 
   protected readonly mapsUrl = computed(() => {

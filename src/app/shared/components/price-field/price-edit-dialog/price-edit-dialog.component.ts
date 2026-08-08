@@ -6,6 +6,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { InputNumberComponent } from '@app/shared/components/input-number/input-number.component';
 import { SelectComponent, SelectOption } from '@app/shared/components/select/select.component';
 import { PriceFieldValue } from '../price-field.component';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface PriceEditDialogData {
   initialAmount: number | null;
@@ -38,6 +39,7 @@ export interface PriceEditDialogData {
 export class PriceEditDialogComponent {
   private readonly dialogRef = inject(DialogRef<void>);
   protected readonly data = inject<PriceEditDialogData>(DIALOG_DATA);
+  protected readonly viewport = inject(ViewportService);
 
   protected readonly amountControl = new FormControl<number | null>(this.data.initialAmount);
   protected readonly currencyControl = new FormControl<string>(this.data.initialCurrency, { nonNullable: true });

@@ -38,8 +38,17 @@
     }
   </div>
 
-  <div class="title-edit-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
-    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
-    <app-button label="OK" [disabled]="inputValue().trim().length === 0" (click)="validate()" />
+  <div class="title-edit-dialog__footer nt-footer-actions align-items-center justify-content-end flex-shrink-0">
+    <app-button
+      label="Annuler"
+      [outlined]="!viewport.isMobile()"
+      severity="secondary"
+      [size]="viewport.isMobile() ? 'large' : 'normal'"
+      (click)="cancel()" />
+    <app-button
+      label="OK"
+      [size]="viewport.isMobile() ? 'large' : 'normal'"
+      [disabled]="inputValue().trim().length === 0"
+      (click)="validate()" />
   </div>
 </div>

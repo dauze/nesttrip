@@ -95,17 +95,19 @@
         </div>
 
         <!-- Actions -->
-        <div class="flex justify-content-end gap-2 pt-2">
+        <div class="nt-footer-actions justify-content-end gap-2 pt-2">
           <app-button
             label="Annuler"
             severity="secondary"
-            [outlined]="true"
+            [outlined]="!viewport.isMobile()"
+            [size]="viewport.isMobile() ? 'large' : 'normal'"
             type="button"
             (click)="onCancel()"
           />
           <app-button
             label="Créer le voyage"
             icon="pi pi-check"
+            [size]="viewport.isMobile() ? 'large' : 'normal'"
             type="submit"
             [loading]="loading()"
             [disabled]="form.invalid"

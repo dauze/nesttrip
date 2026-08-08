@@ -68,9 +68,14 @@
   <div dialogFooter class="expenses-table__footer flex align-items-center justify-content-between gap-2">
     @if (selectionService.active()) {
       <span class="text-sm">{{ selectionService.selectedCount() }} sélectionnée(s)</span>
-      <div class="flex gap-2">
-        <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="selectionService.cancel()" />
-        <app-button label="Supprimer" severity="danger" (click)="deleteSelected()" />
+      <div class="nt-footer-actions flex gap-2">
+        <app-button
+          label="Annuler"
+          [outlined]="!viewport.isMobile()"
+          severity="secondary"
+          [size]="viewport.isMobile() ? 'large' : 'normal'"
+          (click)="selectionService.cancel()" />
+        <app-button label="Supprimer" severity="danger" [size]="viewport.isMobile() ? 'large' : 'normal'" (click)="deleteSelected()" />
       </div>
     } @else {
       <app-button label="Ajouter une dépense" icon="pi pi-plus" [text]="true" (click)="openCreate()" />

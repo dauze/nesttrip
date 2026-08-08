@@ -130,6 +130,11 @@ export class TimePickerDialogComponent
                 initialDate: this.currentDate(), mode: this.mode(), label: this.label(),
                 dayOffsetReference: this.dayOffsetReference(), dayOffset: dayOffsetBox,
             },
+            // Même largeur que les autres tiroirs "champ dédié" (notes/titre/
+            // saisie simple, `.app-wide-dialog-panel`) — retour utilisateur,
+            // le cadran/les boutons de pied avaient trop peu de place par
+            // rapport au panneau par défaut (`.app-dialog-panel`, 28rem).
+            panelClass: 'app-wide-dialog-panel',
             // Mode durée : le dialog s'ouvre directement en vue clavier (pas de
             // cadran). Le focus initial du champ heure passe par ce sélecteur
             // CDK plutôt que par un `effect()` côté TimePickerClockComponent :

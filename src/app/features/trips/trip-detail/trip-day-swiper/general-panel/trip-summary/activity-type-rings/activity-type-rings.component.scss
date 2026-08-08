@@ -29,13 +29,28 @@
 // Mode interactif (montant centré, src/specs/devise.md 3.5) : l'anneau
 // devient l'élément principal de la tuile (façon Apple Health/YNAB), pas
 // juste une illustration à côté d'un montant affiché séparément — nécessite
-// plus de place que le mode legend pour rester lisible. Calé 1:1 sur
-// `GEOMETRY.interactive.viewBoxSize` (168 unités SVG = 168px = 10.5rem) —
+// plus de place que le mode legend pour rester lisible. 10.5rem = calé 1:1
+// sur `GEOMETRY.interactive.viewBoxSize` (168 unités SVG = 168px) au repos,
 // plus besoin d'agrandir/épaissir pour accueillir des icônes sur l'anneau
 // (retirées, retour utilisateur : trop petites/superposées).
+//
+// `flex: 0 1 10.5rem` + `min-width` (pas une taille fixe) : priorité donnée
+// à la réduction du DONUT plutôt qu'à la troncature de la légende
+// (ROADMAP.md "### UI") — `.rings-chart__interactive-legend` plus bas est en
+// `flex-shrink: 0`, donc tout le rétrécissement disponible est absorbé ici
+// en premier, jusqu'au plancher `min-width`. Seulement si la légende ne
+// tient alors plus à sa largeur naturelle, `flex-wrap` (voir
+// `.rings-chart--interactive` plus haut) la fait passer à la ligne
+// suivante plutôt que de la laisser tronquer son texte.
+.rings-chart--interactive .rings-chart__svg-wrap {
+  flex: 0 1 10.5rem;
+  min-width: 7rem;
+  aspect-ratio: 1 / 1;
+}
+
 .rings-chart--interactive .rings-chart__svg {
-  width: 10.5rem;
-  height: 10.5rem;
+  width: 100%;
+  height: 100%;
 }
 
 // `--nt-secondary-bg` (pas `--nt-surface-200`) : cette dernière reste
@@ -111,7 +126,12 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  width: 100%;
+  // `flex-shrink: 0` (basis 9rem) : ne rétrécit jamais — voir le commentaire
+  // sur `.rings-chart--interactive .rings-chart__svg-wrap` plus haut, c'est
+  // le donut qui absorbe la place manquante en premier. `min-width` en plus
+  // par robustesse (garde-fou si un moteur ignorait `flex-shrink:0`).
+  flex: 1 0 9rem;
+  min-width: 9rem;
 }
 
 .rings-chart__interactive-legend-item {

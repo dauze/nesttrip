@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface ConfirmDialogData {
   message: string;
@@ -9,6 +10,8 @@ export interface ConfirmDialogData {
   icon?: string;
   acceptLabel?: string;
   rejectLabel?: string;
+  /** Un seul bouton (accept) affiché, pas de reject — ex. simple accusé de réception. */
+  singleButton?: boolean;
 }
 
 /**
@@ -31,6 +34,7 @@ export interface ConfirmDialogData {
 export class ConfirmDialogComponent {
   protected readonly dialogRef = inject<DialogRef<boolean>>(DialogRef);
   protected readonly data = inject<ConfirmDialogData>(DIALOG_DATA);
+  protected readonly viewport = inject(ViewportService);
 
   protected accept(): void {
     this.dialogRef.close(true);

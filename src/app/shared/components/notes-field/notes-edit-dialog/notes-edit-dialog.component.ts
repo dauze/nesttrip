@@ -3,6 +3,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { MAX_NOTES_LENGTH } from '@app/shared/utils/input-limits';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface NotesEditDialogData {
   initialValue: string;
@@ -43,6 +44,7 @@ export interface NotesEditDialogData {
 export class NotesEditDialogComponent implements AfterViewInit {
   private readonly dialogRef = inject(DialogRef<void>);
   protected readonly data = inject<NotesEditDialogData>(DIALOG_DATA);
+  protected readonly viewport = inject(ViewportService);
 
   private readonly textareaRef = viewChild.required<ElementRef<HTMLTextAreaElement>>('textareaEl');
 

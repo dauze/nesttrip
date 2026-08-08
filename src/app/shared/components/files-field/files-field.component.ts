@@ -58,7 +58,7 @@ export class FilesFieldComponent {
           message: `"${file.name}" dépasse la taille maximale autorisée (10 Mo).`,
           icon: 'pi pi-exclamation-triangle',
           acceptLabel: 'OK',
-          rejectLabel: 'OK',
+          singleButton: true,
         });
         continue;
       }

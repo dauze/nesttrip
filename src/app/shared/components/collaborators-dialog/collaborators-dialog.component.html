@@ -77,7 +77,12 @@
     </div>
   }
 
-  <ng-container dialogFooter>
-    <app-button label="Fermer" severity="secondary" [outlined]="true" (click)="close()" />
-  </ng-container>
+  <div dialogFooter class="nt-footer-actions justify-content-end">
+    <app-button
+      label="Fermer"
+      severity="secondary"
+      [outlined]="!viewport.isMobile()"
+      [size]="viewport.isMobile() ? 'large' : 'normal'"
+      (click)="close()" />
+  </div>
 </app-dialog-frame>

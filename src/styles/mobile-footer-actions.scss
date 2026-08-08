@@ -1,0 +1,33 @@
+/* ---------------------------------------------------------------------
+ * Rangée de bouton(s) d'action en pied de popup/carte/écran — pied de
+ * dialog ([dialogFooter] de DialogFrameComponent ou tiroir "champ dédié",
+ * voir field-edit-dialogs.scss), pied de carte (`cardFooter`), ou bloc
+ * d'action de page (new-trip). Classe globale : les pieds de dialog CDK
+ * sont montés hors de l'arbre de vue du composant hôte (voir dialog.scss),
+ * et cette même rangée réapparaît aussi hors dialog — pas de scope par
+ * composant possible/pertinent ici.
+ *
+ * Ne gère QUE le LAYOUT du conteneur (répartition de largeur entre ses
+ * `app-button` enfants) — ROADMAP.md "### UI" : boutons de pied plus grands
+ * sur mobile, sans bordure. La taille/l'apparence (agrandissement,
+ * suppression de la bordure `outlined`) passe par l'API de `ButtonComponent`
+ * lui-même (`[size]`/`[outlined]` liés à `ViewportService.isMobile()` côté
+ * appelant) — volontairement PAS redéfinie ici via `.app-button`/
+ * `.app-button--outlined` (retour utilisateur : ne jamais redéfinir depuis
+ * l'extérieur les classes internes d'un composant qui existe justement pour
+ * ça).
+ * ------------------------------------------------------------------- */
+
+.nt-footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  // 1 bouton = pleine largeur, 2 boutons = 50/50 — même seuil que
+  // ViewportService/selection-mode.scss.
+  .nt-footer-actions > app-button {
+    flex: 1 1 0;
+  }
+}

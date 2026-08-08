@@ -2,6 +2,24 @@
 // centrée par défaut, EXACTEMENT le layout d'avant l'introduction du
 // sélecteur "J+N" — aucun changement pour les pickers qui n'ont pas
 // `dayOffsetReference` (Début, Durée, tous les pickers logistique...).
+// `.nt-footer-actions` (mobile-footer-actions.scss) met par défaut le
+// conteneur en `width:100%` — correct quand il est seul dans son pied de
+// dialog, mais ici `.time-picker-footer__actions` partage la ligne avec
+// `.time-picker-footer__mode` (bouton bascule cadran/clavier, absent en mode
+// durée) via `justify-content-between` : `width:100%` le ferait revendiquer
+// toute la largeur du pied par-dessus ce bouton plutôt que le reste
+// disponible. `flex:1 1 auto` à la place (spécificité 0,2,0, gagne sur la
+// règle globale 0,1,0 quel que soit l'ordre de chargement) : occupe tout
+// l'espace RESTANT après le bouton bascule (nul en mode durée, donc pleine
+// largeur comme les autres pieds de dialog dans ce cas), ses `app-button`
+// enfants (`flex:1 1 0`, toujours posé par la règle globale) se partagent
+// ensuite cet espace 50/50 — retour utilisateur, les boutons ne prenaient
+// pas assez de place ni en mode durée ni en mode heure.
+.time-picker-footer__actions.nt-footer-actions {
+    width: auto;
+    flex: 1 1 auto;
+}
+
 .clock-header-row {
     display: flex;
     justify-content: center;

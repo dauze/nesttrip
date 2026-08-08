@@ -2,6 +2,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, inject, 
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface SimpleTextEntryDialogData {
   initialValue?: string;
@@ -29,6 +30,7 @@ export interface SimpleTextEntryDialogData {
 export class SimpleTextEntryDialogComponent implements AfterViewInit {
   private readonly dialogRef = inject(DialogRef<string | undefined>);
   private readonly data = inject<SimpleTextEntryDialogData>(DIALOG_DATA);
+  protected readonly viewport = inject(ViewportService);
 
   private readonly inputRef = viewChild.required<ElementRef<HTMLInputElement>>('inputEl');
 

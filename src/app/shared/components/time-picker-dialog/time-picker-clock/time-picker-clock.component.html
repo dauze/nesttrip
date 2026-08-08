@@ -169,16 +169,18 @@
                 }
             </div>
 
-            <div class="time-picker-footer__actions flex gap-2">
+            <div class="time-picker-footer__actions nt-footer-actions flex gap-2">
                 <app-button
                     label="Annuler"
-                    [outlined]="true"
+                    [outlined]="!viewport.isMobile()"
                     severity="secondary"
+                    [size]="viewport.isMobile() ? 'large' : 'normal'"
                     (click)="close()"
                 />
 
                 <app-button
                     label="OK"
+                    [size]="viewport.isMobile() ? 'large' : 'normal'"
                     [disabled]="endBeforeStartAtDayZero"
                     (click)="validate()"
                 />

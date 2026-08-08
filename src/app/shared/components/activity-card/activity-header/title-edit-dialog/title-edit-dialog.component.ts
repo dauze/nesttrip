@@ -5,6 +5,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface TitleEditDialogData {
   initialTitle: string;
@@ -53,6 +54,7 @@ export class TitleEditDialogComponent implements AfterViewInit {
   private readonly dialogRef = inject(DialogRef<TitleEditDialogResult | undefined>);
   private readonly data = inject<TitleEditDialogData>(DIALOG_DATA);
   private readonly googlePlaceService = inject(GooglePlaceService);
+  protected readonly viewport = inject(ViewportService);
 
   private readonly inputRef = viewChild.required<ElementRef<HTMLInputElement>>('inputEl');
 

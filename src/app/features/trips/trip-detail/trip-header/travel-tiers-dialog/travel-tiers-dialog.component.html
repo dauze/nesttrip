@@ -26,8 +26,13 @@
     </app-paliers-trajet-slider>
   </div>
 
-  <div class="travel-tiers-dialog__footer flex align-items-center justify-content-end gap-2 flex-shrink-0">
-    <app-button label="Annuler" [outlined]="true" severity="secondary" (click)="cancel()" />
-    <app-button label="OK" (click)="validate()" />
+  <div class="travel-tiers-dialog__footer nt-footer-actions align-items-center justify-content-end flex-shrink-0">
+    <app-button
+      label="Annuler"
+      [outlined]="!viewport.isMobile()"
+      severity="secondary"
+      [size]="viewport.isMobile() ? 'large' : 'normal'"
+      (click)="cancel()" />
+    <app-button label="OK" [size]="viewport.isMobile() ? 'large' : 'normal'" (click)="validate()" />
   </div>
 </div>

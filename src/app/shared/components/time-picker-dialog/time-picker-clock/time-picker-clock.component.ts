@@ -5,6 +5,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { TimeFieldsComponent } from '@app/shared/components/time-picker-dialog/time-fields/time-fields.component';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 interface ClockItem {
     label: string;
@@ -63,6 +64,7 @@ export class TimePickerClockComponent implements AfterViewInit, OnDestroy {
     private readonly dialogRef = inject(DialogRef<Date | undefined>);
     private readonly data = inject<TimePickerClockData>(DIALOG_DATA);
     private readonly cdr = inject(ChangeDetectorRef);
+    protected readonly viewport = inject(ViewportService);
 
     private readonly clockFaceRef = viewChild<ElementRef<HTMLDivElement>>('clockFace');
 

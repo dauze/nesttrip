@@ -23,6 +23,7 @@ import { Expense } from '@app/core/models/expense.dto';
 import { PriceEditDialogComponent, PriceEditDialogData } from '@app/shared/components/price-field/price-edit-dialog/price-edit-dialog.component';
 import { SimpleTextEntryDialogComponent, SimpleTextEntryDialogData } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
 import { resolveFrozenEur } from './expense-currency.util';
+import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface ExpensesTableDialogData {
   tripId: string;
@@ -86,6 +87,7 @@ export class ExpensesTableDialogComponent {
   private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   protected readonly selectionService = inject(SelectionModeService);
+  protected readonly viewport = inject(ViewportService);
 
   protected readonly currencyOptions = CURRENCY_OPTIONS;
   protected readonly blockedMessage = signal<string | null>(null);
