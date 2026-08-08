@@ -11,7 +11,6 @@ import { AuthService } from '@core/services/auth.service';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, filter, map, merge, startWith } from 'rxjs';
 import { AppSettingsMenuService } from '@app/core/services/app-settings-menu.service';
-import { TripSettingsSectionComponent } from './trip-settings-section/trip-settings-section.component';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
@@ -29,6 +28,7 @@ import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
 import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
 import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { TripSettingsSectionComponent } from './trip-settings-section/trip-settings-section.component';
 
 @Component({
   selector: 'app-trips',
