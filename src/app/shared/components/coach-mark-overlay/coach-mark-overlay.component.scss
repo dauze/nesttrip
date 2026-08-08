@@ -30,9 +30,10 @@
 }
 
 // Carte flottante (remplace l'ancienne feuille bas d'écran edge-to-edge) —
-// 3 placements possibles (voir `CoachMarkOverlayComponent.placement`) :
+// 4 placements possibles (voir `CoachMarkOverlayComponent.placement`) :
 // `bottom` (défaut ci-dessous), `--anchored` (bottom recalculé en JS, voir
-// `[style.bottom.px]` dans le template) et `--center`.
+// `[style.bottom.px]` dans le template), `--anchored-below` (même principe,
+// top recalculé en JS via `[style.top.px]`) et `--center`.
 .coach-mark-overlay__card {
   position: fixed;
   left: 50%;
@@ -57,6 +58,14 @@
   top: 50%;
   bottom: auto;
   transform: translate(-50%, -50%);
+}
+
+// `top` posé en inline via `[style.top.px]` (voir `cardTopOffsetPx`) — ce
+// `bottom: auto` annule seulement la valeur par défaut du bloc de base
+// ci-dessus, qui sinon gagnerait (même carte, même spécificité, mais
+// physiquement en conflit avec un `top` explicite).
+.coach-mark-overlay__card--anchored-below {
+  bottom: auto;
 }
 
 .coach-mark-overlay__dots {

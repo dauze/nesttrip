@@ -15,9 +15,11 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop, pas cool 
 - Le drag and drop 
 - refondre toute la partie générale
+- Le onover sur les bouton juste texte n'est pas beau, il faut pas faire ça avec primary mais un truc plus doux
 
 ### UI 
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
+- Rajouter un chip "En cours" dans l'acceuil trip sur tous les trip qui on un jour correspondant à la date du jour 
 
 ### Carte
 
@@ -46,7 +48,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
-- Rajouter une popup de onboarding-drag-hint pour déclencher la "coach-mark-overlay"lorsque l'utilisateur clique pour la première fois sur une activité créé depuis le pool d'activité, que ce soit le drag and drop ou non. Le text est "Pour placer une activité sur un jour, il faut maintenir lien de drag and drop et déplacer l'activité dans le jour associé du calendrier qui apparaîtra." avec un nouveau placement via archor au dessus 
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)
 - Rajouter des attributions aux personnes associés sur tout pour pouvoir mettres des trajets, hotel et des transports + mettre une note "si le transport et partagé, mettre le prix unitaire" (non prioritaire)

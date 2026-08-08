@@ -38,8 +38,10 @@
     <div
       class="coach-mark-overlay__card"
       [class.coach-mark-overlay__card--anchored]="placement() === 'anchored-above'"
+      [class.coach-mark-overlay__card--anchored-below]="placement() === 'anchored-below'"
       [class.coach-mark-overlay__card--center]="placement() === 'center'"
       [style.bottom.px]="cardBottomOffsetPx()"
+      [style.top.px]="cardTopOffsetPx()"
     >
       @if (dots().length > 1) {
         <div class="coach-mark-overlay__dots" [attr.aria-label]="position().index + ' sur ' + position().total">

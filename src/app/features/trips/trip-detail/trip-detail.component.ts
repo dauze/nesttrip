@@ -170,15 +170,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readyFallbackTimer: ReturnType<typeof setTimeout> | null = null;
   private contentReadyTripId: string | null = null;
 
-  /**
-   * Garde-fou migration pour le tour de navigation (voir le constructeur,
-   * src/specs/Parcours-new-user.md) : un compte qui possède déjà UN AUTRE
-   * trip que celui affiché ici a forcément utilisé l'app avant l'introduction
-   * de cette fonctionnalité (`hasSeenOnboarding` n'existant pas encore pour
-   * lui) — ne pas lui (re)montrer le tour dans ce cas, même si le flag lu
-   * depuis Firestore vaut `false` par absence plutôt que par vrai "jamais vu".
-   */
-  protected readonly isLikelyFirstTrip = computed(() => true);
 
   readonly sortedDays = computed(() =>
     this.facade.activeTrip()?.days
@@ -375,8 +366,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     // uniquement (voir ViewportService.isMobileChrome, décision actée avec
     // l'utilisateur — la spec ne décrit que la barre de nav morphing mobile,
     // sans équivalent sur TripTabsNavComponent/desktop). Garde-fou migration
-    // (`isLikelyFirstTrip`, voir plus bas) : `hasSeenOnboarding` n'existe pas
-    // encore pour les comptes déjà utilisés avant l'introduction de cette
     // fonctionnalité (`UserProfileService.hasSeenOnboarding` retombe alors sur
     // `false`, comme un vrai nouvel utilisateur) — sans ce garde, ces comptes
     // reverraient le tour au prochain trip ouvert après déploiement.
@@ -386,7 +375,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     // n'empêche cet effect de se redéclencher à chaque retour sur Résumé
     // (reprise si interrompu).
     effect(() => {
-      if (!this.viewport.isMobileChrome() || this.activeDay() !== 'summary' || !this.isLikelyFirstTrip()) return;
+      if (!this.viewport.isMobileChrome() || this.activeDay() !== 'summary') return;
       if (!this.facade.activeTrip() || this.facade.activeTripLoading()) return;
       this.onboardingTour.start(IMMEDIATE_TOUR);
     });
@@ -398,7 +387,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     // déclencherait à tort `ACTIVITIES_INTRO` dès le montage, avant même que
     // l'onglet initial réel ne soit posé.
     effect(() => {
-      if (!this.viewport.isMobileChrome() || !this.isLikelyFirstTrip()) return;
+      if (!this.viewport.isMobileChrome()) return;
       if (!this.facade.activeTrip() || this.facade.activeTripLoading()) return;
       const day = this.activeDay();
       if (day === 'activities') this.onboardingTour.start(ACTIVITIES_INTRO);

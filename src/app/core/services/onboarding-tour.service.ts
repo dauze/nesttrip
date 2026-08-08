@@ -18,10 +18,13 @@ export interface CoachMarkStep {
    * du bas (ex. la barre de nav elle-même) ; `'anchored-above'` la décale
    * juste au-dessus de la zone découpée (pour une ancre plus haute, où un
    * ancrage bas laisserait un grand vide entre la zone pointée et la bulle) ;
-   * `'center'` l'affiche centrée écran (ancre large couvrant tout le contenu,
-   * ou bulle sans ancre comme un message de clôture).
+   * `'anchored-below'` la décale juste EN DESSOUS de la zone découpée (même
+   * logique qu'`'anchored-above'`, inversée — pour une ancre proche du haut
+   * d'écran, où la bulle a plus de place en dessous qu'au-dessus) ; `'center'`
+   * l'affiche centrée écran (ancre large couvrant tout le contenu, ou bulle
+   * sans ancre comme un message de clôture).
    */
-  placement?: 'bottom' | 'anchored-above' | 'center';
+  placement?: 'bottom' | 'anchored-above' | 'anchored-below' | 'center';
 }
 
 export interface CoachMarkSequence {

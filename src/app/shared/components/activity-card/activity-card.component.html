@@ -2,7 +2,9 @@
   <div #cardContainer
        [class.not-dispatched]="isPlacedNowhere()"
        [class.card-lifted]="isBeingDragged()"
-       [class.card-pending]="isPendingLift()">
+       [class.card-pending]="isPendingLift()"
+       [appOnboardingAnchor]="dragHintAnchorId()"
+       (pointerdown)="onCardPointerDown()">
     <app-panel
         [appSelectable]="selectableRef()" #sel="appSelectable"
         appLongPress (longPress)="sel.onLongPress()"

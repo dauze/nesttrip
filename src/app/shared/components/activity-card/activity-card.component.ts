@@ -17,6 +17,10 @@ import { ACTIVITY_TYPE_META } from './activity.constants';
 import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
 import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
+import { ViewportService } from '@app/core/services/viewport.service';
+import { UserProfileService } from '@app/core/services/user-profile.service';
+import { OnboardingTourService } from '@app/core/services/onboarding-tour.service';
+import { DRAG_HINT_ANCHOR_ID, DRAG_HINT_STEP_ID, DRAG_HINT_TOUR } from '@app/core/services/onboarding-sequences';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
 import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';
@@ -25,6 +29,7 @@ import { ActivityGoogleInfoComponent } from './activity-google-info/activity-goo
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
 import { LongPressDirective } from '@app/shared/directives/long-press.directive';
+import { OnboardingAnchorDirective } from '@app/shared/directives/onboarding-anchor.directive';
 import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 
 /**
@@ -48,7 +53,7 @@ const PANEL_EXPAND_DELAY_MS = 300;
     CommonModule, PanelComponent, DividerComponent, CheckboxComponent,
     ActivityHeaderComponent, ActivityFormComponent,
     FilesFieldComponent, ActivityGoogleInfoComponent,
-    SelectableDirective, LongPressDirective,
+    SelectableDirective, LongPressDirective, OnboardingAnchorDirective,
   ],
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.scss',
@@ -63,6 +68,9 @@ export class ActivityCardComponent {
   // hors de ce contexte.
   private readonly swiperLockService = inject(SwiperLockService, { optional: true });
   private readonly dayActivityFocusService = inject(DayActivityFocusService);
+  private readonly viewport = inject(ViewportService);
+  private readonly userProfileService = inject(UserProfileService);
+  private readonly onboardingTour = inject(OnboardingTourService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly hostRef = inject(ElementRef<HTMLElement>);
@@ -126,6 +134,10 @@ export class ActivityCardComponent {
   });
   /** true uniquement en contexte pool, quand cette activité n'est placée sur AUCUN jour. */
   readonly isPlacedNowhere = computed(() => !this.dayId() && this.assignedPlacements().length === 0);
+
+  /** true uniquement pour LA carte qui vient de déclencher `DRAG_HINT_TOUR` (voir `onCardPointerDown`) — s'enregistre alors sous l'ancre partagée `DRAG_HINT_ANCHOR_ID` (voir `OnboardingAnchorDirective`) le temps de la bulle. */
+  private readonly isDragHintAnchor = signal(false);
+  protected readonly dragHintAnchorId = computed(() => (this.isDragHintAnchor() ? DRAG_HINT_ANCHOR_ID : null));
 
   /** En contexte jour, une instance ; en contexte pool, l'activité de pool elle-même — même branchement que l'ancien `confirmDelete`. */
   readonly selectableRef = computed<SelectableItemRef>(() => {
@@ -321,6 +333,36 @@ export class ActivityCardComponent {
     this.selectedPlace.set(place);
   }
 
+  /**
+   * 1er clic/tap sur une carte du pool général (ROADMAP.md "UX / Interactions") —
+   * peu importe où sur la carte (poignée de drag ou non, voir `dragHandle` dans
+   * `updateDragState`) : déclenche `DRAG_HINT_TOUR` une seule fois par compte.
+   * Mobile uniquement, pas de sens en contexte jour (`dayId()`, où l'activité
+   * est déjà placée).
+   */
+  protected onCardPointerDown(): void {
+    this.maybeTriggerDragHint();
+  }
+
+  /**
+   * Retourne `true` si CETTE frappe vient de déclencher `DRAG_HINT_TOUR`
+   * (jamais vue avant) — `updateDragState` s'en sert pour NE PAS démarrer le
+   * geste de décrochage quand la frappe est sur la poignée (ROADMAP.md,
+   * retour utilisateur) : sans ce garde, le pointer était déjà capturé sur
+   * `document.documentElement` (voir plus bas) avant même que le scrim de
+   * `CoachMarkOverlayComponent` n'existe, donc rester appuyé pendant
+   * l'apparition de la bulle continuait de piloter un décrochage EN DESSOUS
+   * d'elle. Pas de neutralisation pour un tap ailleurs sur la carte : aucun
+   * geste n'y démarre de toute façon.
+   */
+  private maybeTriggerDragHint(): boolean {
+    if (this.dayId() || !this.viewport.isMobileChrome()) return false;
+    if (this.userProfileService.isOnboardingStepSeen(DRAG_HINT_STEP_ID)) return false;
+    this.isDragHintAnchor.set(true);
+    this.onboardingTour.start(DRAG_HINT_TOUR);
+    return true;
+  }
+
   onPlacementClicked(placement: { dayId: Date; instanceId: string }): void {
     this.dayActivityFocusService.requestFocus(placement.dayId.toISOString(), placement.instanceId);
   }
@@ -377,6 +419,13 @@ export class ActivityCardComponent {
     // texte sélectionné sous le doigt, interface qui reste "en drag" après
     // le relâchement).
     event.preventDefault();
+
+    // Neutralise CE geste s'il vient de déclencher la bulle d'aide au drag &
+    // drop (voir `maybeTriggerDragHint`) — sinon rester appuyé pendant que la
+    // bulle apparaît continuerait de piloter un décrochage sous elle, le
+    // pointer étant déjà capturé sur <html> avant l'existence du scrim de
+    // l'overlay. Il faudra relâcher puis ré-appuyer pour drag réellement.
+    if (this.maybeTriggerDragHint()) return;
 
     // Capture le pointer sur <html> — un élément STABLE qui ne sera jamais
     // caché/transformé/repositionné pendant le drag, contrairement à la

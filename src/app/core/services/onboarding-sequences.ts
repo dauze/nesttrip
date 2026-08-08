@@ -101,5 +101,30 @@ export const DAY_NAV_TOUR: CoachMarkSequence = {
   ],
 };
 
-/** Étape 4 (hors tour de navigation) : pas un `CoachMarkSequence` (pas de spotlight plein écran), juste un id à marquer vu — voir `TripActivitiesCreationService`. */
+/** Étape 4 (hors tour de navigation) : id de step stocké dans `seenStepIds`, référencé par `DRAG_HINT_TOUR` — voir `ActivityCardComponent`. */
 export const DRAG_HINT_STEP_ID = 'onboarding-drag-hint';
+
+/**
+ * Ancre partagée par TOUTES les cartes du pool général (voir
+ * `OnboardingAnchorDirective`) : une seule carte à la fois s'enregistre sous
+ * cet id, celle qui vient de recevoir le premier clic/tap déclenchant
+ * `DRAG_HINT_TOUR` — même esprit que les ancres fixes de `MobileTripNavComponent`,
+ * mais portée par une carte dynamique plutôt qu'un élément de layout fixe.
+ */
+export const DRAG_HINT_ANCHOR_ID = 'pool-activity-drag-hint';
+
+/** Étape 4 : 1er clic (tap ou poignée de drag) sur une carte du pool général, mobile uniquement — voir `ActivityCardComponent.onCardPointerDown`. Pas de spotlight fixe : l'ancre est reposée dynamiquement sur la carte cliquée (voir `DRAG_HINT_ANCHOR_ID`). */
+export const DRAG_HINT_TOUR: CoachMarkSequence = {
+  id: 'drag-hint-tour',
+  steps: [
+    {
+      id: DRAG_HINT_STEP_ID,
+      anchorIds: [DRAG_HINT_ANCHOR_ID],
+      placement: 'anchored-below',
+      // Icône du bouton réel plutôt qu'un texte "drag and drop" abstrait
+      // (retour utilisateur) — même classe que la poignée de la carte, voir
+      // `activity-header.component.html` (`<i class="pi pi-bars">`).
+      text: "Pour <strong>placer</strong> une activité sur un jour, il faut <strong>maintenir</strong> le bouton  <i class=\"pi pi-bars\"></i>  et déplacer <strong>l'activité</strong> dans le <strong>calendrier</strong> qui apparaîtra.",
+    },
+  ],
+};

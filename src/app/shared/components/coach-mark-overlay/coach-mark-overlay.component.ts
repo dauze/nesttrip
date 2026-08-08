@@ -84,6 +84,14 @@ export class CoachMarkOverlayComponent {
     return Math.max(0, window.innerHeight - rects.top.height + CARD_ANCHOR_GAP_PX);
   });
 
+  /** Offset (px) depuis le haut de l'écran en placement `anchored-below` — aligne le haut de la carte juste en dessous de la zone découpée (voir `dimRects().bottom`, qui commence pile là où finit le spotlight). `null` hors de ce placement, ou tant que la zone découpée n'est pas encore mesurée. */
+  protected readonly cardTopOffsetPx = computed<number | null>(() => {
+    if (this.placement() !== 'anchored-below') return null;
+    const rects = this.dimRects();
+    if (!rects) return null;
+    return rects.bottom.top + CARD_ANCHOR_GAP_PX;
+  });
+
   /** Dots de pagination (voir le template) : plein pour l'étape courante et celles déjà passées, vide sinon — pas affiché pour une séquence à un seul step (voir `position().total`). */
   protected readonly dots = computed(() => {
     const { index, total } = this.position();
