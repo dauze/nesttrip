@@ -37,3 +37,12 @@
   z-index: var(--z-drag-portal);
   pointer-events: none;
 }
+
+// Voir le template : zone mesurable pour le tour de navigation, jamais
+// peinte ni cliquable.
+.onboarding-content-anchor {
+  position: fixed;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}

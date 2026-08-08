@@ -2,7 +2,11 @@
 
     <!-- Header -->
     <div cardTitle class="flex justify-content-between align-items-center w-full">
-      <span class="text-2xl font-semibold">Mes voyages</span>
+      @if (trips().length === 0 && !userProfileService.hasSeenOnboarding()) {
+        <span class="text-2xl font-semibold">Bonjour {{firstName()}},</span>
+      } @else {
+        <span class="text-2xl font-semibold">Mes voyages</span>
+      }
     </div>
 
     <!-- Content -->
@@ -19,6 +23,12 @@
               </app-card>
             </div>
           }
+        </div>
+
+      <!-- Accueil nouvel utilisateur (étape 1, src/specs/Parcours-new-user.md) -->
+      } @else if (trips().length === 0 && !userProfileService.hasSeenOnboarding()) {
+        <div class="py-2">
+          <span class="text-xl">Prêt à rejoindre l'aventure et créer ton premier voyage ?</span>
         </div>
 
       <!-- Empty -->
@@ -81,7 +91,7 @@
     <div cardFooter class="nt-footer-actions justify-content-end gap-2">
       <!-- Ajouter -->
       <app-button
-        label="Nouvelle aventure"
+        [label]="trips().length === 0 && !userProfileService.hasSeenOnboarding() ? 'Créer nouvelle aventure' : 'Nouvelle aventure'"
         icon="pi pi-plus"
         [size]="viewport.isMobile() ? 'large' : 'small'"
         routerLink="/trips/new"

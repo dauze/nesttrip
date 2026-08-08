@@ -4,6 +4,11 @@ export interface CompanionFirebase {
   displayName?: string | null;
 }
 
+export interface OnboardingStateFirebase {
+  hasSeenOnboarding: boolean;
+  seenStepIds: string[];
+}
+
 export interface UserProfileFirebase {
   uid: string;
   email: string;
@@ -13,4 +18,6 @@ export interface UserProfileFirebase {
   mapCollapsedByDefault?: boolean;
   /** Voir `UserProfile.defaultCurrency` — champ client-writable (firestore.rules), voir src/specs/devise.md 3.2. */
   defaultCurrency?: string;
+  /** Voir `UserProfile.onboarding` — champ client-writable (firestore.rules), voir src/specs/Parcours-new-user.md. */
+  onboarding?: OnboardingStateFirebase;
 }

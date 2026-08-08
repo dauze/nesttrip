@@ -1,4 +1,8 @@
-<div class="day-panel-root" [appFabBottomProximity]="active()" (nearBottomChange)="onFabNearBottomChange($event)">
+<div
+  class="day-panel-root"
+  [appFabBottomProximity]="active()"
+  (nearBottomChange)="onFabNearBottomChange($event)"
+>
   <!-- Empilé sur mobile (`.day-panel-map-group`/`.day-panel-activities-group`
        en `display:contents`, voir day-panel.component.scss) : les 4 blocs
        redeviennent des enfants flex DIRECTS de `.day-panel-body`, réordonnés

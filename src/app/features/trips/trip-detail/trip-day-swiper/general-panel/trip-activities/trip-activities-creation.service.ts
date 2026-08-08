@@ -10,6 +10,9 @@ import { ViewportService } from '@app/core/services/viewport.service';
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { PoolActivity } from '@app/shared/components/activity-card/activity.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
+import { UserProfileService } from '@app/core/services/user-profile.service';
+import { GestureTipService } from '@app/core/services/gesture-tip.service';
+import { DRAG_HINT_STEP_ID } from '@app/core/services/onboarding-sequences';
 
 export interface TripActivitiesCreationConfig {
   getCards: () => readonly ActivityCardComponent[];
@@ -45,6 +48,8 @@ export class TripActivitiesCreationService {
   private readonly viewport = inject(ViewportService);
   private readonly tripFacade = inject(TripFacade);
   private readonly injector = inject(Injector);
+  private readonly userProfileService = inject(UserProfileService);
+  private readonly gestureTipService = inject(GestureTipService);
 
   private config!: TripActivitiesCreationConfig;
 
@@ -143,6 +148,15 @@ export class TripActivitiesCreationService {
       if (place) card.onPlaceSelected(place);
 
       card.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Astuce drag & drop (src/specs/Parcours-new-user.md, étape 4) : mobile
+      // uniquement, une seule fois jamais revue ensuite (voir GestureTipService/
+      // DRAG_HINT_STEP_ID) — marquée vue dès l'affichage, peu importe si
+      // l'utilisateur drag réellement ensuite.
+      if (this.viewport.isMobileChrome() && !this.userProfileService.isOnboardingStepSeen(DRAG_HINT_STEP_ID)) {
+        this.gestureTipService.show(card.element, 'Tu peux la glisser vers un jour pour la planifier.');
+        this.userProfileService.markOnboardingStepSeen(DRAG_HINT_STEP_ID);
+      }
     }, { injector: this.injector });
   }
 }

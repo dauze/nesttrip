@@ -14,5 +14,8 @@ export function userProfileFromFb(data: UserProfileFirebase): UserProfile {
     ),
     mapCollapsedByDefault: data.mapCollapsedByDefault,
     defaultCurrency: data.defaultCurrency,
+    onboarding: data.onboarding
+      ? { hasSeenOnboarding: data.onboarding.hasSeenOnboarding, seenStepIds: data.onboarding.seenStepIds ?? [] }
+      : undefined,
   };
 }

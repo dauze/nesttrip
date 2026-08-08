@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, e
 import { TripTab } from '../trip-tab.model';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { DayPickerSheetComponent } from './day-picker-sheet/day-picker-sheet.component';
+import { OnboardingAnchorDirective } from '@app/shared/directives/onboarding-anchor.directive';
 
 /** Icônes des 4 tabs Résumé/Activités/Logistique/Listes (voir `TripDetailComponent.tabs`) — `TripTab` ne porte pas d'icône, propre à cette barre. */
 const GENERAL_TAB_ICONS: Record<string, string> = {
@@ -34,7 +35,7 @@ const GENERAL_TAB_ICONS: Record<string, string> = {
 @Component({
   selector: 'app-mobile-trip-nav',
   standalone: true,
-  imports: [DayPickerSheetComponent],
+  imports: [DayPickerSheetComponent, OnboardingAnchorDirective],
   templateUrl: './mobile-trip-nav.component.html',
   styleUrl: './mobile-trip-nav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,0 +1,76 @@
+@if (step(); as currentStep) {
+  <div class="coach-mark-overlay">
+    <div class="coach-mark-overlay__scrim"></div>
+
+    @if (dimRects(); as rects) {
+      <div
+        class="coach-mark-overlay__dim"
+        [style.top.px]="rects.top.top"
+        [style.left.px]="rects.top.left"
+        [style.width.px]="rects.top.width"
+        [style.height.px]="rects.top.height"
+      ></div>
+      <div
+        class="coach-mark-overlay__dim"
+        [style.top.px]="rects.bottom.top"
+        [style.left.px]="rects.bottom.left"
+        [style.width.px]="rects.bottom.width"
+        [style.height.px]="rects.bottom.height"
+      ></div>
+      <div
+        class="coach-mark-overlay__dim"
+        [style.top.px]="rects.left.top"
+        [style.left.px]="rects.left.left"
+        [style.width.px]="rects.left.width"
+        [style.height.px]="rects.left.height"
+      ></div>
+      <div
+        class="coach-mark-overlay__dim"
+        [style.top.px]="rects.right.top"
+        [style.left.px]="rects.right.left"
+        [style.width.px]="rects.right.width"
+        [style.height.px]="rects.right.height"
+      ></div>
+    } @else {
+      <div class="coach-mark-overlay__dim coach-mark-overlay__dim--full"></div>
+    }
+
+    <div
+      class="coach-mark-overlay__card"
+      [class.coach-mark-overlay__card--anchored]="placement() === 'anchored-above'"
+      [class.coach-mark-overlay__card--center]="placement() === 'center'"
+      [style.bottom.px]="cardBottomOffsetPx()"
+    >
+      @if (dots().length > 1) {
+        <div class="coach-mark-overlay__dots" [attr.aria-label]="position().index + ' sur ' + position().total">
+          @for (filled of dots(); track $index) {
+            <span class="coach-mark-overlay__dot" [class.coach-mark-overlay__dot--filled]="filled"></span>
+          }
+        </div>
+      }
+
+      @for (paragraph of parsedText().intro; track paragraph) {
+        <p class="coach-mark-overlay__text" [innerHTML]="paragraph"></p>
+      }
+      @if (parsedText().bullets.length > 0) {
+        <ul class="coach-mark-overlay__bullets">
+          @for (bullet of parsedText().bullets; track bullet) {
+            <li><p class="coach-mark-overlay__text" [innerHTML]="bullet"></p></li>
+          }
+        </ul>
+      }
+
+      <div class="coach-mark-overlay__actions">
+        @if (!isLastStep()) {
+        <button type="button" class="coach-mark-overlay__skip" (click)="onSkip()">Passer</button>
+        }
+        <div class="coach-mark-overlay__nav">
+          @if (!isFirstStep()) {
+            <app-button label="Précédent" severity="secondary" [text]="true" (click)="onPrevious()" />
+          }
+          <app-button [label]="isLastStep() ? (currentStep.primaryLabel ?? 'Compris') : 'Compris'" (click)="onNext()" />
+        </div>
+      </div>
+    </div>
+  </div>
+}

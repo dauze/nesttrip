@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -16,6 +16,7 @@ import { AuthService } from '@app/core/services/auth.service';
 import { NgClass } from '@angular/common';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 import { ViewportService } from '@app/core/services/viewport.service';
+import { UserProfileService } from '@app/core/services/user-profile.service';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -47,29 +48,40 @@ export class AccueilTripComponent {
   private readonly authService = inject(AuthService);
   protected readonly selectionService = inject(SelectionModeService);
   protected readonly viewport = inject(ViewportService);
+  protected readonly userProfileService = inject(UserProfileService);
 
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;
   readonly user = this.authService.getCurrentUser();
+
+  /** Prénom seul (1er mot de `displayName`, voir AuthService) pour le message de bienvenue étape 1 (src/specs/Parcours-new-user.md). */
+  protected readonly firstName = computed(() => this.user?.displayName?.split(' ')[0] ?? '');
 
   constructor() {
     // Redirection directe, UNIQUEMENT à l'ouverture de la web app (juste
     // après un login, voir AuthService.justLoggedIn) — jamais lors d'un
     // retour manuel depuis un trip, sinon impossible de revenir sur cet écran
     // (voir ROADMAP.md, tentative précédente désactivée pour cette raison).
-    // Consommé une seule fois, dès que le chargement des trips aboutit :
-    // - aucun trip -> écran "Nouveau voyage" directement (rien à afficher ici) ;
+    // Consommé une seule fois, dès que le chargement des trips ET du profil
+    // (voir `UserProfileService.profileLoaded`, nécessaire pour trancher
+    // `hasSeenOnboarding` ci-dessous) aboutit :
+    // - aucun trip, `hasSeenOnboarding` déjà vrai -> écran "Nouveau voyage"
+    //   directement (rien à afficher ici) ;
+    // - aucun trip, `hasSeenOnboarding` faux (nouvel utilisateur) -> reste sur
+    //   cet écran, qui affiche alors l'accueil chaleureux étape 1
+    //   (src/specs/Parcours-new-user.md) — l'utilisateur clique lui-même sur
+    //   "Créer nouvelle aventure" ;
     // - un trip ACTIF (voir `isActiveTrip`) -> ce trip directement, qu'il y en
     //   ait d'autres ou non (décision actée, voir ROADMAP.md "UX / Interactions") ;
     // - sinon (aucun trip actif, un ou plusieurs) -> reste sur cet écran.
     effect(() => {
-      if (!this.authService.justLoggedIn() || this.tripsLoading()) return;
+      if (!this.authService.justLoggedIn() || this.tripsLoading() || !this.userProfileService.profileLoaded()) return;
 
       this.authService.justLoggedIn.set(false);
       const trips = this.trips();
 
       if (trips.length === 0) {
-        this.router.navigate(['/trips/new']);
+        if (this.userProfileService.hasSeenOnboarding()) this.router.navigate(['/trips/new']);
         return;
       }
 

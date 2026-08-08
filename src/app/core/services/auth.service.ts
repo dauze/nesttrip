@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   createUserWithEmailAndPassword,
+  getAdditionalUserInfo,
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -13,10 +14,12 @@ import {
 import { from, Observable, switchMap } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { firebaseAuth } from '../../app.config';
+import { UserProfileRepository } from '@core/infra/firebase/services/user-profile-repository';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private router = inject(Router);
+  private readonly userProfileRepository = inject(UserProfileRepository);
 
   /**
    * Vrai à l'ouverture de la web app, jusqu'à ce qu'`AccueilTripComponent`
@@ -52,13 +55,21 @@ export class AuthService {
   }
 
   registerWithEmail(email: string, password: string, firstName: string, lastName: string): Observable<UserCredential> {
+    const displayName = `${firstName} ${lastName}`;
     return from(createUserWithEmailAndPassword(firebaseAuth, email, password)).pipe(
       switchMap((credential) =>
-        from(updateProfile(credential.user, {
-          displayName: `${firstName} ${lastName}`,
-        })).pipe(map(() => credential))
+        from(updateProfile(credential.user, { displayName })).pipe(map(() => credential))
       ),
-      tap(() => {
+      tap((credential) => {
+        // Création de `users/{uid}` dès l'inscription (voir
+        // `UserProfileRepository.createUserProfile`) — fire-and-forget comme
+        // les autres écritures ponctuelles de ce doc (`UserProfileService`) :
+        // le compte Auth existe déjà à ce stade, un raté ici ne doit pas
+        // bloquer la navigation post-inscription.
+        this.userProfileRepository.createUserProfile(credential.user.uid, credential.user.email ?? email, displayName).catch((e) => 
+        {
+          console.log(e)
+        });
         this.justLoggedIn.set(true);
         this.router.navigate(['/app']);
       }),
@@ -69,7 +80,16 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
     return from(signInWithPopup(firebaseAuth, provider)).pipe(
       // Google remplit displayName automatiquement, rien à faire
-      tap(() => {
+      tap((credential) => {
+        // `isNewUser` (pas un appel systématique) : un login Google d'un
+        // compte déjà existant ne doit JAMAIS rappeler `createUserProfile`,
+        // qui écrase `companions` à `{}` (voir sa doc) — perdrait les
+        // companions réels d'un utilisateur qui revient se connecter.
+        if (getAdditionalUserInfo(credential)?.isNewUser) {
+          this.userProfileRepository
+            .createUserProfile(credential.user.uid, credential.user.email ?? '', credential.user.displayName ?? undefined)
+            .catch(() => undefined);
+        }
         this.justLoggedIn.set(true);
         this.router.navigate(['/app']);
       }),

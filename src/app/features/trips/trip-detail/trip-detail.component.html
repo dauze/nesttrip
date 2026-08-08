@@ -27,6 +27,18 @@
         (activeIdChange)="onSwiperActiveIdChange($event)"
         (ready)="onSwiperReady()" />
 
+      <!-- Ancre synthétique du tour de navigation (voir onboarding-sequences.ts,
+           steps ciblant 'content-area') : pas un élément visuel, juste une zone
+           mesurable représentant "tout l'écran sauf la toolbar et la barre de nav
+           mobile", recalculée en continu à partir des hauteurs de chrome mesurées
+           (TripChromeService), sans dupliquer leur logique ici. -->
+      <div
+        class="onboarding-content-anchor"
+        appOnboardingAnchor="content-area"
+        [style.top.px]="chromeService.toolbarHeight()"
+        [style.bottom.px]="chromeService.tabsNavBottomReserve()"
+      ></div>
+
       <!-- Hors du swiper de jours (voir FloatingAddButtonComponent) : un
            ancêtre `swiper-slide` applique un transform permanent, ce qui
            casserait le `position:fixed` de ce bouton. Masqué pendant le mode
@@ -57,6 +69,11 @@
   }
 
   <app-activity-day-dispatch-overlay [days]="sortedDays()" [activeDayId]="activeDay()" />
+
+  <!-- Tour de navigation (src/specs/Parcours-new-user.md, étape 3) : mobile uniquement, voir la doc de OnboardingTourService/CoachMarkOverlayComponent. -->
+  @if (viewport.isMobileChrome()) {
+    <app-coach-mark-overlay />
+  }
 
   <!-- Voir ActivityDispatchService.registerDragPortal : point d'ancrage hors du
        swiper de jours (dont un ancêtre `swiper-slide` applique transform/filter,

@@ -1,5 +1,5 @@
-<div #wrapper class="mobile-trip-nav">
-  <div #dayStrip class="day-strip">
+<div #wrapper class="mobile-trip-nav" appOnboardingAnchor="mobile-nav-bar">
+  <div #dayStrip class="day-strip" appOnboardingAnchor="mobile-day-strip">
     @if (!expanded()) {
       @for (tab of dayTabs(); track tab.id) {
         <button
@@ -26,7 +26,7 @@
     }
   </div>
 
-  <div class="bar" [attr.data-state]="expanded() ? 'expanded' : 'collapsed'">
+  <div class="bar" appOnboardingAnchor="mobile-nav-bar-primary" [attr.data-state]="expanded() ? 'expanded' : 'collapsed'">
     <div class="pill"></div>
 
     <button type="button" class="tab" [class.active]="expanded()" (click)="openGeneral()">
@@ -37,6 +37,7 @@
     <button
       type="button"
       class="tab day-badge"
+      appOnboardingAnchor="mobile-day-badge"
       [class.active]="!expanded()"
       (click)="goBackToDay()"
       (dblclick)="openDayCalendar()">

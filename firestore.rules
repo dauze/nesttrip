@@ -9,14 +9,35 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       // Exception ciblée (ROADMAP.md "### UI", préférence "carte repliée par
-      // défaut", puis "### Devise" pour `defaultCurrency`) : le client peut
+      // défaut", puis "### Devise" pour `defaultCurrency`, puis
+      // src/specs/Parcours-new-user.md pour `onboarding`) : le client peut
       // modifier UNIQUEMENT ces champs précis de son propre document — tout
       // le reste (companions...) reste réservé au serveur (Cloud Functions,
       // Admin SDK), voir `allow write: if false` juste en dessous, qui
       // continue de s'appliquer à tout le reste.
       allow update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mapCollapsedByDefault', 'defaultCurrency']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mapCollapsedByDefault', 'defaultCurrency', 'onboarding']);
+      // Création explicite à l'inscription (voir `AuthService.registerWithEmail`/
+      // `loginWithGoogle`, `UserProfileRepository.createUserProfile`) : forme
+      // minimale attendue, `companions` toujours vide à la création (la
+      // dénormalisation bidirectionnelle réelle reste réservée au serveur, voir
+      // `add-collaborator.handler.ts`/Admin SDK, qui contourne les rules).
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.email is string
+        && request.resource.data.companions == {}
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'companions']);
+      // Création paresseuse via une écriture onboarding-only (voir
+      // `UserProfileDataSource.markOnboardingStepSeen`/`completeOnboardingIntro`)
+      // — conservée pour les comptes créés avant l'ajout de la création
+      // explicite ci-dessus (uid sans doc, `allow update` seul ne matche qu'un
+      // doc déjà existant, ce qui faisait échouer silencieusement l'écriture
+      // et rouvrir le tour de coach marks à chaque session pour ces comptes).
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['mapCollapsedByDefault', 'defaultCurrency', 'onboarding']);
       allow write: if false; // écrit uniquement côté serveur (Cloud Functions, Admin SDK)
     }
 

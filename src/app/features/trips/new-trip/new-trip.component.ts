@@ -130,7 +130,7 @@ export class NewTripComponent {
     const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
       TitleEditDialogComponent,
       {
-        data: { initialTitle: this.form.value.ville ?? '', title: 'Destination', placeholder: 'Rechercher une ville...' },
+        data: { initialTitle: this.form.value.ville ?? '', title: 'Où souhaites-tu aller ?', placeholder: 'Rechercher une ville...' },
         panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
         autoFocus: '.title-edit-dialog__input',
@@ -145,7 +145,11 @@ export class NewTripComponent {
     const dialogRef = this.dialogService.open<string | undefined, SimpleTextEntryDialogData>(
       SimpleTextEntryDialogComponent,
       {
-        data: { initialValue: this.form.value.title ?? '', title: 'Nom du voyage', placeholder: 'Ex : Road trip Islande' },
+        data: {
+          initialValue: this.form.value.title ?? '',
+          title: 'Donne un nom à ton voyage, tu pourras le changer plus tard',
+          placeholder: 'Ex : Road trip Islande',
+        },
         panelClass: 'app-wide-dialog-panel',
         viewContainerRef: this.viewContainerRef,
         // Sans ça, l'autofocus CDK par défaut ('first-tabbable') cible le

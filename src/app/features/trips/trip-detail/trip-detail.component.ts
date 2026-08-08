@@ -24,6 +24,10 @@ import { DayActivityFocusService } from './day-activity-focus.service';
 import { LogisticFocusService } from './logistic-focus.service';
 import { NotesFocusService } from './notes-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
+import { CoachMarkOverlayComponent } from '@app/shared/components/coach-mark-overlay/coach-mark-overlay.component';
+import { OnboardingTourService } from '@app/core/services/onboarding-tour.service';
+import { OnboardingAnchorDirective } from '@app/shared/directives/onboarding-anchor.directive';
+import { ACTIVITIES_INTRO, DAY_NAV_TOUR, IMMEDIATE_TOUR, LOGISTICS_INTRO, NOTES_INTRO } from '@app/core/services/onboarding-sequences';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 /** Ids des 4 tabs de premier niveau Résumé/Activités/Logistique/Listes (voir `tabs`) — tout le reste de `activeDay()` est un id de jour (ISO). */
@@ -42,6 +46,8 @@ const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
     MobileTripNavComponent,
     SelectionActionBarComponent,
     MenuComponent,
+    CoachMarkOverlayComponent,
+    OnboardingAnchorDirective,
   ],
   templateUrl: 'trip-detail.component.html',
   styleUrl: 'trip-detail.component.scss',
@@ -73,6 +79,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly selectionService = inject(SelectionModeService);
   private readonly itemDeletionService = inject(TripItemDeletionService);
   private readonly dayLogisticQuickAdd = inject(DayLogisticQuickAddService);
+  private readonly onboardingTour = inject(OnboardingTourService);
 
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
@@ -162,6 +169,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly contentReady = signal(false);
   private readyFallbackTimer: ReturnType<typeof setTimeout> | null = null;
   private contentReadyTripId: string | null = null;
+
+  /**
+   * Garde-fou migration pour le tour de navigation (voir le constructeur,
+   * src/specs/Parcours-new-user.md) : un compte qui possède déjà UN AUTRE
+   * trip que celui affiché ici a forcément utilisé l'app avant l'introduction
+   * de cette fonctionnalité (`hasSeenOnboarding` n'existant pas encore pour
+   * lui) — ne pas lui (re)montrer le tour dans ce cas, même si le flag lu
+   * depuis Firestore vaut `false` par absence plutôt que par vrai "jamais vu".
+   */
+  protected readonly isLikelyFirstTrip = computed(() => true);
 
   readonly sortedDays = computed(() =>
     this.facade.activeTrip()?.days
@@ -352,6 +369,42 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       const index = this.tabs().findIndex(t => t.id === 'notes');
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
       this.updateFragment('notes');
+    });
+
+    // Tour de navigation (src/specs/Parcours-new-user.md, étape 3) : mobile
+    // uniquement (voir ViewportService.isMobileChrome, décision actée avec
+    // l'utilisateur — la spec ne décrit que la barre de nav morphing mobile,
+    // sans équivalent sur TripTabsNavComponent/desktop). Garde-fou migration
+    // (`isLikelyFirstTrip`, voir plus bas) : `hasSeenOnboarding` n'existe pas
+    // encore pour les comptes déjà utilisés avant l'introduction de cette
+    // fonctionnalité (`UserProfileService.hasSeenOnboarding` retombe alors sur
+    // `false`, comme un vrai nouvel utilisateur) — sans ce garde, ces comptes
+    // reverraient le tour au prochain trip ouvert après déploiement.
+    //
+    // Vague immédiate, à l'arrivée sur Résumé : `OnboardingTourService.start`
+    // est no-op si déjà vue ou si une séquence tourne déjà, donc rien
+    // n'empêche cet effect de se redéclencher à chaque retour sur Résumé
+    // (reprise si interrompu).
+    effect(() => {
+      if (!this.viewport.isMobileChrome() || this.activeDay() !== 'summary' || !this.isLikelyFirstTrip()) return;
+      if (!this.facade.activeTrip() || this.facade.activeTripLoading()) return;
+      this.onboardingTour.start(IMMEDIATE_TOUR);
+    });
+
+    // Vagues différées (JIT), au 1er clic sur chaque onglet. Garde-fou
+    // `activeDay() === 'activities'` par défaut (voir le `signal` plus haut,
+    // valeur de départ avant que le trip ne soit chargé) : sans le même garde
+    // `activeTrip()`/`activeTripLoading()` que l'effect ci-dessus, ce bloc
+    // déclencherait à tort `ACTIVITIES_INTRO` dès le montage, avant même que
+    // l'onglet initial réel ne soit posé.
+    effect(() => {
+      if (!this.viewport.isMobileChrome() || !this.isLikelyFirstTrip()) return;
+      if (!this.facade.activeTrip() || this.facade.activeTripLoading()) return;
+      const day = this.activeDay();
+      if (day === 'activities') this.onboardingTour.start(ACTIVITIES_INTRO);
+      else if (day === 'logistics') this.onboardingTour.start(LOGISTICS_INTRO);
+      else if (day === 'notes') this.onboardingTour.start(NOTES_INTRO);
+      else if (!GENERAL_TAB_IDS.includes(day)) this.onboardingTour.start(DAY_NAV_TOUR);
     });
   }
 

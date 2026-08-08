@@ -1,0 +1,41 @@
+/* ---------------------------------------------------------------------
+ * Bulle d'astuce de geste (src/specs/Parcours-new-user.md, étape 4) :
+ * `GestureTipService` l'insère directement en enfant de <body> (même
+ * topologie que `.app-tooltip` dans tooltip.scss, voir TooltipDirective) —
+ * cette classe doit donc rester globale.
+ * ------------------------------------------------------------------- */
+
+.app-gesture-tip {
+  position: fixed;
+  z-index: 1200;
+  max-width: 14rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--nt-overlay-popover-border-radius);
+  box-shadow: var(--nt-overlay-popover-shadow);
+  background: var(--nt-primary-color);
+  color: var(--nt-primary-contrast-color);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: none;
+  word-wrap: break-word;
+  animation: app-gesture-tip-in 0.2s ease-out;
+
+  // Neutralise le style UA par défaut d'un `[popover]` — voir `.app-tooltip`.
+  &:popover-open {
+    inset: auto;
+    margin: 0;
+    border: none;
+    overflow: visible;
+  }
+}
+
+@keyframes app-gesture-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
