@@ -1,33 +1,14 @@
 :host { display: block; }
 
-// Même gabarit que `.logistic-header__pencil`/`.activity-header__pencil` : un
-// texte simple (pas un champ) n'invite pas à taper dedans, le crayon reste le
-// seul point d'entrée explicite pour l'éditer.
-.trip-header__pencil {
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--nt-radius-sm);
-  background: transparent;
-  color: var(--nt-text-muted-color);
-  font-size: 0.85rem;
+// Toute la rangée ouvre le menu réglages (voir `onHeaderClick`) — même
+// feedback hover que les autres surfaces cliquables de l'app
+// (`--nt-content-hover-background`, voir `.app-menu-panel__item`).
+.trip-header__row {
   cursor: pointer;
-  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+  border-radius: var(--nt-radius-sm);
+  transition: background var(--nt-transition-duration) ease;
 
   &:hover {
     background: var(--nt-content-hover-background);
   }
-}
-
-// `app-date-picker` reste monté (form/overlay/writeValue toujours actifs,
-// voir `openDatePicker`) mais son propre déclencheur visuel n'a plus lieu
-// d'être affiché : le crayon dédié ci-dessus est désormais le seul point
-// d'entrée (voir ROADMAP.md "UX / Interactions"). Le panneau du calendrier
-// (CDK overlay, portail hors de cet arbre) reste visible normalement.
-.trip-header__hidden-date-picker {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
 }

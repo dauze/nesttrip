@@ -18,14 +18,11 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### UI 
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- Retravailler les dialog sur mobile car elle ressemble trop à des dialogue d'ordi, on peut faire beaucoup plus design en terme d'UI  (A affiner)
-- Renommer les titres des popup pour les trajet depuis résumé, ça fait pas uniforme les "premier", "deuxième" et "troisième".  (A affiner)
-- Retravailler le trip header en terme d'ui, le libellé du trajet peut être plus jolie et mettre des crayon partout on peut mieux faire ! (A affiner)
-- specs/Parcours-new-user.md
-- Tuile Dépenses : légende à droite du donut sur la même ligne 
-- remettre les pointillés affiché dasn le calculc de distance 
-- La pop-up informative de fichier trop gros a 2 bouton of, il faut en mettre qu'un seul !
-- Renommer pense bête en "Réservations"
+- Specs/Parcours-new-user.md : fonctionnalité à part entière à développer
+- Tuile Dépenses : légende à droite du donut sur la même ligne : il faut donc reduire un petit peu le donut. La légende doit être centrée verticallement par rapport au donut
+- Sur toutes les popup, les boutons du bas doivent être revue sur mobile, il doivent être plus gros et prendre toute le footer en le divisant par 2, là ca fait trop UI desktop donc les bouton seront le footer divisé par 2
+- Acgrandir le bouton "Nouvelle aventure" sur mobile pour qu'il prenne toute la largeur du footer
+- Agerendir les boutons "Annuler" et "Créer un voyage" sur mobile pour qu'il prennent tout le footer divisé par 2 comme sur les popup 
 
 ### Carte
 
@@ -64,7 +61,9 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 
 ### Bugs / fixes
-- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi
+- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Plus tard)
+- remettre les pointillés affiché dans le calcule de distance, day-distance-gap-rail__line n'est plus visible
+- La pop-up informative de fichier trop gros a 2 bouton ok, il faut en mettre qu'un seul !
 
 ### Qualité / process
 
@@ -72,7 +71,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là (reporté le 2026-08-07, 73 fichiers d'imports impactés — pas prioritaire pour l'instant)
 - Profiter de anfgular 22 et éviter les async function ! 
 - Définir des spec pour tout le code pour les parcours utilisateurs (et donc mettre des tests e2e qui couvrirait les différentes spec)
-- Faire une code review de fond avec Fable pour voir si il y a pas de simplification, audit de sécurité, tests, etc : 
+- Faire une code review de fond avec Fable pour voir si il y a pas de simplification, audit de sécurité, tests, etc : (Non prioritaire, à faire par fable)
   - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
   - html : pas de redondance ? 
   - typescript uniforme ? Signal bien géré, observable aussi ?

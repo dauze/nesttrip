@@ -8,8 +8,10 @@ import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.com
 import { SelectComponent } from '@app/shared/components/select/select.component';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { AuthService } from '@core/services/auth.service';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, filter, map, merge, startWith } from 'rxjs';
+import { AppSettingsMenuService } from '@app/core/services/app-settings-menu.service';
+import { TripSettingsSectionComponent } from './trip-settings-section/trip-settings-section.component';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
@@ -31,7 +33,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
   selector: 'app-trips',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule, TripSettingsSectionComponent],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
@@ -53,6 +55,7 @@ import { SelectButtonComponent, SelectButtonOption } from '@app/shared/component
     PhotoViewerService,
     UserProfileService,
     FlightStatusRefreshService,
+    AppSettingsMenuService,
   ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',
@@ -66,6 +69,7 @@ export class TripsComponent {
   protected readonly themeService = inject(ThemeService);
   protected readonly userProfileService = inject(UserProfileService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly appSettingsMenuService = inject(AppSettingsMenuService);
 
   protected readonly themeOptions: SelectButtonOption<ThemeMode>[] = [
     { label: '', value: 'light', icon: 'pi pi-sun' },
@@ -78,6 +82,8 @@ export class TripsComponent {
   protected readonly currencyControl = new FormControl<string>('EUR', { nonNullable: true });
 
   private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
+  private readonly settingsMenuRef = viewChild<MenuComponent>('menu');
+  private readonly settingsBtnRef = viewChild('settingsBtnRef', { read: ElementRef<HTMLElement> });
 
   constructor() {
     effect(() => {
@@ -88,6 +94,18 @@ export class TripsComponent {
       if (currency !== this.userProfileService.defaultCurrency()) {
         this.userProfileService.setDefaultCurrency(currency);
       }
+    });
+
+    // Ouverture/fermeture du menu réglages depuis un déclencheur hors de ce
+    // template (le header voyage épuré, monté seulement dans l'onglet Résumé)
+    // — voir AppSettingsMenuService. `toggleAt` : même méthode publique déjà
+    // utilisée pour les déclencheurs hors template de MenuComponent (voir sa doc).
+    this.appSettingsMenuService.openRequests$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      const btn = this.settingsBtnRef()?.nativeElement;
+      if (btn) this.settingsMenuRef()?.toggleAt(btn);
+    });
+    this.appSettingsMenuService.closeRequests$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.settingsMenuRef()?.close();
     });
 
     afterNextRender(() => {
@@ -143,23 +161,32 @@ export class TripsComponent {
   });
 
   /**
+   * Id du trip actif d'après l'URL (pas `activeTrip()?.id`, voir la doc de
+   * `toolbarTitle` ci-dessous pour le raisonnement) — extrait une seule fois
+   * ici, réutilisé par `toolbarTitle` ET par la section "Voyage" du menu
+   * réglages (voir template, `app-trip-settings-section`) : les deux ne
+   * doivent afficher/éditer un voyage que quand l'URL en désigne un.
+   * `[^/?#]+` (pas juste `[^/?]+`) : `currentUrl` peut porter un fragment
+   * (`/trips/abc#day-1`), sans l'exclure l'id capturé embarquait le fragment entier.
+   */
+  readonly activeTripId = computed(() => {
+    if (!this.showBack()) return undefined;
+    return (this.currentUrl() ?? '').match(/^\/trips\/([^/?#]+)/)?.[1];
+  });
+
+  /**
    * Remplace "NestTrip" par le nom du voyage sur l'écran de détail (voir
    * ROADMAP.md "UX / Interactions") — garde-fou de longueur simple (CSS
    * ellipsis, voir styleUrl) plutôt qu'une troncature JS, le titre complet
    * reste dispo au survol via l'attribut `title`.
    *
-   * Id de trip extrait de l'URL (pas de `activeTrip()?.id`) : `getTripTitle`
-   * est un signal dédié, indépendant de `activeTrip()` (voir
+   * `getTripTitle` est un signal dédié, indépendant de `activeTrip()` (voir
    * TripStore._tripTitle) — passer par `activeTrip()` ne serait-ce que pour
    * son `id` réintroduirait une dépendance à CE signal, donc un recalcul de
    * `toolbarTitle` à chaque mutation du trip actif (pas seulement son titre).
-   * `[^/?#]+` (pas juste `[^/?]+`) : `currentUrl` peut désormais porter un
-   * fragment (`/trips/abc#day-1`, voir sa doc) — sans exclure `#`, l'id
-   * capturé embarquait le fragment entier, cassant `getTripTitle(id)`.
    */
   readonly toolbarTitle = computed(() => {
-    if (!this.showBack()) return 'NestTrip';
-    const id = (this.currentUrl() ?? '').match(/^\/trips\/([^/?#]+)/)?.[1];
+    const id = this.activeTripId();
     return (id ? this.tripFacade.getTripTitle(id)() : '') || 'NestTrip';
   });
 

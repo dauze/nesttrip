@@ -1,16 +1,10 @@
 <div class="trip-summary-body">
-  <app-trip-header
-    [dateRange]="tripDateRange()"
-    [title]="tripTitle()"
-    [travelTiers]="tripFacade.getTripTravelTiers(tripId())()"
-    (titleChange)="onTitleChange($event)"
-    (datesChange)="onDatesChange($event)"
-    (travelTiersChange)="onTravelTiersChange($event)">
+  <app-trip-header [dateRange]="tripDateRange()">
     <app-trip-collaborators
       trip-actions
       [tripId]="tripId()" />
   </app-trip-header>
-
+  
   @if (hasMapPoints()) {
     <app-card>
       <div #mapContainer class="trip-summary-map-container"></div>
@@ -19,6 +13,8 @@
       }
     </app-card>
   }
+
+  <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
 
   <app-card class="trip-summary-expenses-card" [fillHeight]="true">
     <div cardTitle>Dépenses</div>
@@ -41,6 +37,4 @@
   </app-card>
 
   <app-trip-files-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
-
-  <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
 </div>

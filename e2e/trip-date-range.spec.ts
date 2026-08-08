@@ -41,10 +41,14 @@ test("modifier l'intervalle de dates depuis Résumé ne doit jamais afficher le 
 
   await page.locator('button[data-tab-id="summary"]').click();
 
-  const dateLabel = page.locator('app-trip-header').getByText(/^Date : /);
-  await expect(dateLabel).toHaveText(`Date : ${formatFr(start)} - ${formatFr(initialEnd)}`);
+  // Header épuré (ROADMAP.md "Le trip header doit évoluer") : plus de préfixe
+  // "Date : ", plus de crayon dédié — le clic sur le header ouvre le menu
+  // réglages global, dont la section "Voyage" porte désormais l'édition.
+  const dateLabel = page.locator('app-trip-header').getByText(/^du \d/);
+  await expect(dateLabel).toHaveText(`du ${formatFr(start)} au ${formatFr(initialEnd)}`);
 
-  await page.getByRole('button', { name: 'Modifier les dates' }).click();
+  await page.locator('app-trip-header').click();
+  await page.getByRole('button', { name: 'Dates' }).click();
 
   const newEnd = daysFromNow(37);
   await datesInput.fill(`${formatFr(start)} - ${formatFr(newEnd)}`);
@@ -59,5 +63,5 @@ test("modifier l'intervalle de dates depuis Résumé ne doit jamais afficher le 
     await page.waitForTimeout(250);
   }
 
-  await expect(dateLabel).toHaveText(`Date : ${formatFr(start)} - ${formatFr(newEnd)}`, { timeout: 5_000 });
+  await expect(dateLabel).toHaveText(`du ${formatFr(start)} au ${formatFr(newEnd)}`, { timeout: 5_000 });
 });

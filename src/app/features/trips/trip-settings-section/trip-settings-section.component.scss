@@ -1,0 +1,84 @@
+:host { display: block; }
+
+// Même anatomie que `.app-menu-panel__item` (menu.component.scss) : ce
+// contenu est projeté dans `[menuTop]`, hors de l'arbre de vue de
+// `MenuComponent`, donc la classe ne peut pas être partagée telle quelle
+// (encapsulation de vue Angular) — reprise ici avec une 2e ligne (valeur)
+// sous le libellé et un chevron, voir la photo de référence (ROADMAP.md
+// "Le trip header doit évoluer").
+.trip-settings-row {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: var(--nt-radius-sm);
+  background: transparent;
+  color: var(--nt-text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease;
+
+  &:hover {
+    background: var(--nt-content-hover-background);
+    color: var(--nt-text-hover-color);
+  }
+
+  &--danger {
+    color: var(--nt-red-500);
+
+    .trip-settings-row__icon {
+      color: var(--nt-red-500);
+    }
+
+    &:hover {
+      background: var(--nt-content-hover-background);
+      color: var(--nt-red-500);
+    }
+  }
+}
+
+.trip-settings-row__icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  text-align: center;
+  color: var(--nt-text-muted-color);
+}
+
+.trip-settings-row__body {
+  flex: 1;
+  min-width: 0;
+  gap: 0.125rem;
+}
+
+.trip-settings-row__label {
+  font-size: 0.8rem;
+  color: var(--nt-text-muted-color);
+}
+
+.trip-settings-row__value {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trip-settings-row--danger .trip-settings-row__label {
+  font-size: 0.9rem;
+  color: inherit;
+}
+
+.trip-settings-row__chevron {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--nt-text-muted-color);
+}
+
+// `app-date-picker` reste monté (form/overlay/writeValue toujours actifs, voir
+// `openDatePicker`) mais son propre champ visuel n'a pas de raison d'être
+// affiché : la ligne "Dates" ci-dessus est le seul point d'entrée — même
+// technique que l'ancienne `.trip-header__hidden-date-picker`.
+.trip-settings-section__hidden-date-picker {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}

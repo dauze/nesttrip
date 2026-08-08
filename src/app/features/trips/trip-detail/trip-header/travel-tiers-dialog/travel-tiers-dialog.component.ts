@@ -18,7 +18,7 @@ const MODE_OPTIONS: SelectOption<TravelMode>[] = [
   { label: 'Voiture', value: 'car', icon: 'pi pi-car' },
 ];
 
-const MAX_KM = 100;
+const MAX_KM = 20;
 
 /**
  * Tiroir "3 paliers" pilotant `selectTravelMode` : palier 1 et palier 2

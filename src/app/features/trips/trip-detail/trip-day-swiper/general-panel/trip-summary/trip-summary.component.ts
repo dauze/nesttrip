@@ -7,11 +7,9 @@ import { CardComponent } from '@app/shared/components/card/card.component';
 import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
-import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ExpensesTableDialogComponent, ExpensesTableDialogData } from './expenses-table/expenses-table-dialog.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { Day, TravelTiers } from '@app/features/trips/trip.model';
 import { TripHeaderComponent } from '../../../trip-header/trip-header.component';
 import { TripCollaboratorsComponent } from '../../../trip-collaborators/trip-collaborators.component';
 import { DayMapPoint } from '@app/core/models/day-map-point';
@@ -67,7 +65,6 @@ const MAX_EXPENSE_ENTRIES = 5;
 })
 export class TripSummaryComponent {
   private readonly route = inject(ActivatedRoute);
-  private readonly confirmDialogService = inject(ConfirmDialogService);
   protected readonly tripFacade = inject(TripFacade);
   private readonly mapHost = inject(TripDayMapHostService);
   private readonly mapCinematic = inject(GeneralMapCinematicService);
@@ -80,36 +77,10 @@ export class TripSummaryComponent {
   private readonly currencyConversionService = inject(CurrencyConversionService);
 
   private readonly mapContainerRef = viewChild<ElementRef<HTMLElement>>('mapContainer');
-  private readonly headerRef = viewChild(TripHeaderComponent);
 
   readonly tripId = input.required<string>();
   /** Slide "Résumé" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
   readonly active = input(false);
-
-  /**
-   * Lu depuis la liste des trips AVANT `activeTrip()` (Firestore async pas
-   * encore résolu au tout premier rendu) — même pattern que l'ancien
-   * `TripDetailComponent.tripTitle`, déplacé ici avec le header voyage (voir
-   * ROADMAP.md "UX / Interactions", 2026-08-01).
-   *
-   * Une fois le trip hydraté (`tripFacade.hasTrip`), le signal dédié
-   * (`getTripTitle`) prend le dessus et le reste DÉFINITIVEMENT — `trips()`
-   * (liste) vient d'une souscription Firestore complètement SÉPARÉE
-   * (`getTrips$`, requête sur toute la collection pour l'accueil), qui
-   * recalcule `title` directement depuis le document brut à CHAQUE snapshot,
-   * sans passer par `_pendingTripFieldIds` : rien ne protège cette valeur
-   * pendant qu'une écriture est en vol. La préférer inconditionnellement
-   * (comme avant ce correctif) court-circuitait donc la protection déjà en
-   * place côté `getTripTitle`, seul le hasard du timing des deux
-   * souscriptions Firestore (doc vs collection) déterminant laquelle gagnait.
-   */
-  readonly tripTitle = computed(() => {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) return '';
-    if (this.tripFacade.hasTrip(id)) return this.tripFacade.getTripTitle(id)();
-    const fromList = this.tripFacade.trips().find(t => t.id === id);
-    return fromList?.title ?? this.tripFacade.getTripTitle(id)();
-  });
 
   /**
    * Même pattern/correctif que `tripTitle` ci-dessus — voir sa doc. Signal
@@ -362,78 +333,11 @@ export class TripSummaryComponent {
     });
   }
 
-  protected onTitleChange(title: string): void {
-    this.tripFacade.updateTripTitle(this.tripId(), title);
-  }
-
-  protected onTravelTiersChange(tiers: TravelTiers): void {
-    this.tripFacade.updateTripTravelTiers(this.tripId(), tiers);
-  }
-
   /** Tableau détaillé de toutes les dépenses du voyage (voir src/specs/devise.md 3.5) — position/style provisoires, deviendra le lien discret sous l'anneau une fois la refonte visuelle faite. */
   protected openExpensesTable(): void {
     this.dialogService.open<void, ExpensesTableDialogData>(ExpensesTableDialogComponent, {
       viewContainerRef: this.viewContainerRef,
       data: { tripId: this.tripId() },
     });
-  }
-
-  /**
-   * Plus de bascule forcée vers un autre onglet après coup (contrairement à
-   * l'ancien `TripDetailComponent.onDatesChange`) : l'édition se fait
-   * désormais directement depuis Résumé (seul onglet où le header voyage
-   * vit encore, voir ROADMAP.md "UX / Interactions", 2026-08-01), donc rien
-   * ne justifie plus de quitter cet onglet une fois les jours mis à jour.
-   */
-  protected onDatesChange(range: [Date, Date]): void {
-    const trip = this.tripFacade.activeTrip();
-    if (!trip) return;
-
-    const [start, end] = range;
-    const newDays = this.buildDays(start, end, trip.days);
-    const toDelete = this.findDaysToDelete(trip.days, newDays);
-    const toAdd = this.findDaysToAdd(trip.days, newDays);
-
-    const applyChanges = () => {
-      for (const day of toDelete) this.tripFacade.removeDay(trip.id, day.id);
-      for (const day of toAdd) this.tripFacade.addDay(trip.id, day);
-    };
-
-    if (toDelete.length > 0) {
-      this.confirmDialogService.confirm({
-        message: 'Certains jours contiennent des activités et vont être supprimés. Êtes-vous sûr de vouloir continuer ?',
-        accept: applyChanges,
-        reject: () => this.headerRef()?.resetDates(),
-      });
-    } else {
-      applyChanges();
-    }
-  }
-
-  private buildDays(start: Date, end: Date, existingDays: Day[]): Day[] {
-    const days: Day[] = [];
-    const existingMap = new Map(existingDays.map(day => [day.id.getTime(), day]));
-
-    const current = new Date(start);
-    current.setHours(0, 0, 0, 0);
-    const endNorm = new Date(end);
-    endNorm.setHours(0, 0, 0, 0);
-
-    while (current <= endNorm) {
-      const key = current.getTime();
-      days.push(existingMap.get(key) ?? { id: new Date(current), activityIds: [] });
-      current.setDate(current.getDate() + 1);
-    }
-    return days;
-  }
-
-  private findDaysToAdd(existingDays: Day[], newDays: Day[]): Day[] {
-    const existingIds = new Set(existingDays.map(d => d.id.getTime()));
-    return newDays.filter(d => !existingIds.has(d.id.getTime()));
-  }
-
-  private findDaysToDelete(existingDays: Day[], newDays: Day[]): Day[] {
-    const newIds = new Set(newDays.map(d => d.id.getTime()));
-    return existingDays.filter(d => !newIds.has(d.id.getTime()));
   }
 }

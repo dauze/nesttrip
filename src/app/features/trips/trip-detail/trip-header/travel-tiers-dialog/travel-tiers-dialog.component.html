@@ -1,6 +1,6 @@
 <div class="travel-tiers-dialog flex flex-column" [formGroup]="form">
   <div class="travel-tiers-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
-    <span class="travel-tiers-dialog__title">Paliers de trajet</span>
+    <span class="travel-tiers-dialog__title">Moyen de transport</span>
     <app-button
       icon="pi pi-times"
       [rounded]="true"
@@ -20,9 +20,9 @@
       [tier2Value]="tier2Km()"
       (tier1ValueChange)="form.patchValue({ tier1MaxKm: $event })"
       (tier2ValueChange)="form.patchValue({ tier2MaxKm: $event })">
-      <app-select tier1-mode class="tier-select" formControlName="tier1Mode" [options]="modeOptions" label="Transport premier palier" />
-      <app-select tier2-mode class="tier-select" formControlName="tier2Mode" [options]="modeOptions" label="Transport deuxième palier" />
-      <app-select tier3-mode class="tier-select" formControlName="tier3Mode" [options]="modeOptions" label="Transport troisième palier" />
+      <app-select tier1-mode class="tier-select" formControlName="tier1Mode" [options]="modeOptions" label="Transport palier 1" />
+      <app-select tier2-mode class="tier-select" formControlName="tier2Mode" [options]="modeOptions" label="Transport palier 2" />
+      <app-select tier3-mode class="tier-select" formControlName="tier3Mode" [options]="modeOptions" label="Transport dernier palier" />
     </app-paliers-trajet-slider>
   </div>
 

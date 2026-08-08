@@ -93,7 +93,8 @@ export class MenuComponent {
     this.isOpen.set(true);
   }
 
-  private close(): void {
+  /** Public (pas seulement interne) : voir `AppSettingsMenuService.requestClose` (`TripsComponent`), qui ferme le menu depuis un déclencheur hors de ce composant (ex. suppression du voyage courant). */
+  close(): void {
     this.overlayRef?.dispose();
     this.overlayRef = undefined;
     this.isOpen.set(false);

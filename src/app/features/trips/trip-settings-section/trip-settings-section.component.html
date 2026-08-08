@@ -1,0 +1,58 @@
+<div class="trip-settings-section flex flex-column">
+  <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openTitleDialog()">
+    <i class="pi pi-pencil trip-settings-row__icon" aria-hidden="true"></i>
+    <span class="trip-settings-row__body flex flex-column">
+      <span class="trip-settings-row__label">Titre</span>
+      <span class="trip-settings-row__value">{{ title() }}</span>
+    </span>
+    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
+  </button>
+
+  <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openDatePicker()">
+    <i class="pi pi-calendar trip-settings-row__icon" aria-hidden="true"></i>
+    <span class="trip-settings-row__body flex flex-column">
+      <span class="trip-settings-row__label">Dates</span>
+      <span class="trip-settings-row__value">{{ dateRangeLabel() }}</span>
+    </span>
+    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
+  </button>
+
+  <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openParticipantsDialog()">
+    <i class="pi pi-users trip-settings-row__icon" aria-hidden="true"></i>
+    <span class="trip-settings-row__body flex flex-column">
+      <span class="trip-settings-row__label">Participants</span>
+      <span class="trip-settings-row__value">{{ participantsLabel() }}</span>
+    </span>
+    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
+  </button>
+
+  <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openTravelTiersDialog()">
+    <i class="pi pi-directions trip-settings-row__icon" aria-hidden="true"></i>
+    <span class="trip-settings-row__body flex flex-column">
+      <span class="trip-settings-row__label">Moyen de transport</span>
+      <span class="trip-settings-row__value flex align-items-center gap-1" [attr.aria-label]="travelTiersAriaLabel()">
+        <i [class]="modeIcon(tiers().tier1Mode)" aria-hidden="true"></i>
+        <span aria-hidden="true">≤ {{ fmtKm(tiers().tier1MaxKm) }} km,</span>
+        <i [class]="modeIcon(tiers().tier2Mode)" aria-hidden="true"></i>
+        <span aria-hidden="true">≤ {{ fmtKm(tiers().tier2MaxKm) }} km,</span>
+        <i [class]="modeIcon(tiers().tier3Mode)" aria-hidden="true"></i>
+        <span aria-hidden="true">sinon</span>
+      </span>
+    </span>
+    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
+  </button>
+
+  <button type="button" class="trip-settings-row trip-settings-row--danger flex align-items-center gap-2 w-full" (click)="confirmDeleteTrip()">
+    <i class="pi pi-trash trip-settings-row__icon" aria-hidden="true"></i>
+    <span class="trip-settings-row__label">Supprimer le voyage</span>
+  </button>
+
+  <form [formGroup]="dateForm" class="trip-settings-section__hidden-date-picker">
+    <app-date-picker
+      inputId="dates"
+      formControlName="dates"
+      [range]="true"
+      (selected)="onDatesSelected()"
+    />
+  </form>
+</div>

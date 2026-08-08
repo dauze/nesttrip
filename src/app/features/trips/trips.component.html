@@ -21,6 +21,12 @@
 
     <div toolbarEnd class="w-3rem flex justify-content-center">
       <app-menu #menu [items]="menuItems">
+        @if (activeTripId(); as tripId) {
+          <div menuTop class="app-menu-theme-picker flex flex-column">
+            <div class="app-menu-theme-picker__label">Voyage</div>
+            <app-trip-settings-section [tripId]="tripId" />
+          </div>
+        }
         <div menuTop class="app-menu-theme-picker flex flex-column">
           <div class="app-menu-theme-picker__label">Thème</div>
           <app-select-button
@@ -35,6 +41,7 @@
         </div>
       </app-menu>
       <app-button
+        #settingsBtnRef
         class="app-settings-btn"
         [class.app-settings-btn--open]="menu.isOpen()"
         (click)="menu.toggle($event)"

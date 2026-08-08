@@ -1,42 +1,11 @@
 <app-card>
-  <div cardHeader class="flex align-items-center justify-content-between px-2 pt-3">
-    <div class="flex align-items-center gap-1 flex-1 min-w-0">
-      <span class="text-xl font-semibold white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ title() }}</span>
-      <button type="button" class="trip-header__pencil flex-shrink-0" aria-label="Modifier le titre" (click)="openTitleDialog()">
-        <i class="pi pi-pencil"></i>
-      </button>
-    </div>
+  <div
+    class="trip-header__row flex align-items-center justify-content-between gap-2"
+    role="button"
+    tabindex="0"
+    (click)="onHeaderClick()"
+  >
+    <span class="text-sm flex-shrink-0">{{ dateRangeLabel() }}</span>
     <ng-content select="[trip-actions]" />
   </div>
-
-  <div class="flex align-items-center gap-1">
-    <span class="text-sm flex-shrink-0">Date : {{ dateRangeLabel() }}</span>
-    <button type="button" class="trip-header__pencil flex-shrink-0" aria-label="Modifier les dates" (click)="openDatePicker()">
-      <i class="pi pi-pencil"></i>
-    </button>
-  </div>
-
-  <div class="flex align-items-center gap-1">
-    <span class="text-sm flex-shrink-0 flex align-items-center gap-1" [attr.aria-label]="travelTiersAriaLabel()">
-      <span aria-hidden="true">Trajets :</span>
-      <i [class]="modeIcon(tiers().tier1Mode)" aria-hidden="true"></i>
-      <span aria-hidden="true">≤ {{ fmtKm(tiers().tier1MaxKm) }} km,</span>
-      <i [class]="modeIcon(tiers().tier2Mode)" aria-hidden="true"></i>
-      <span aria-hidden="true">≤ {{ fmtKm(tiers().tier2MaxKm) }} km,</span>
-      <i [class]="modeIcon(tiers().tier3Mode)" aria-hidden="true"></i>
-      <span aria-hidden="true">sinon</span>
-    </span>
-    <button type="button" class="trip-header__pencil flex-shrink-0" aria-label="Modifier les seuils de trajet" (click)="openTravelTiersDialog()">
-      <i class="pi pi-pencil"></i>
-    </button>
-  </div>
-
-  <form [formGroup]="dateForm" class="trip-header__hidden-date-picker">
-    <app-date-picker
-      inputId="dates"
-      formControlName="dates"
-      [range]="true"
-      (selected)="onDatesSelected()"
-    />
-  </form>
 </app-card>
