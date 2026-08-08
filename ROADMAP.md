@@ -18,11 +18,15 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### UI 
 - Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- Specs/Parcours-new-user.md : fonctionnalité à part entière à développer
-- Tuile Dépenses : légende à droite du donut sur la même ligne : il faut donc reduire un petit peu le donut. La légende doit être centrée verticallement par rapport au donut
-- Sur toutes les popup, les boutons du bas doivent être revue sur mobile, il doivent être plus gros et prendre toute le footer en le divisant par 2, là ca fait trop UI desktop donc les bouton seront le footer divisé par 2
-- Acgrandir le bouton "Nouvelle aventure" sur mobile pour qu'il prenne toute la largeur du footer
-- Agerendir les boutons "Annuler" et "Créer un voyage" sur mobile pour qu'il prennent tout le footer divisé par 2 comme sur les popup 
+- Specs/Parcours-new-user.md : fonctionnalité à part entière à développer (Non prioritaire)
+- Tuile Dépenses : modifier la disposition : il faut mettre le graphyque et la légende cote à cote et non l'un sur l'autre. A gauche il y aura le graphique et à droite du donut. Il ne faut pas que le texte soit tronqué donc il faut que si il faut peut être réduire un petit peu la taille du donut et que ce soit responsive, si ça tient pas, le mettre en dessous dans la même disposition qu'actuellement. Centrer la légende versicallement (pas horizontalement) comme ça si elle est à coté du donut et qu'il estp lus large, ils seront alignés
+- Modification visuel des boutons (pour le mobile uniquement), il doivent maintenant être plus grand et remplir toute la zone ou ils sont, sans bordures, et donc agrandir le libellé :
+  - Sur toutes les popup, les boutons du bas doivent être revue sur mobile, il doivent être plus gros et prendre toute le footer en le divisant par 2
+  - Agrandir le bouton "Nouvelle aventure" sur mobile pour qu'il prenne toute la largeur du footer
+  - Agrandir les boutons "Annuler" et "Créer un voyage" sur mobile pour qu'il prennent tout le footer divisé par 2 comme sur les popup
+  - La pop-up informative de fichier trop gros a 2 bouton ok, il faut en mettre qu'un seul qui prend tout le footer
+  - Sur l'écran de création d'un voyage, les 2 boutons "Annuler" et "Créer un voyage" doivent prendre tout le footer en le divisan par 2 "
+- Uniformiser les suppression via le clique sur des élements : sur l'écran d'accueil il y a un contour et pas sur les autres, le supprimer. L'opacity n'est peut-etre pas la même, a uniformiser. On ne voit pas assez le rouge de sélection sur les carte de logement, transport, et activité, et Listes il faut l'accentuer légèrtement. Enfin, pour logement, transport, activité et liste faire cette sélection sur les headers également pour que toute la carte soit en rouge, pas que le contenu. 
 
 ### Carte
 
@@ -63,7 +67,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Plus tard)
 - remettre les pointillés affiché dans le calcule de distance, day-distance-gap-rail__line n'est plus visible
-- La pop-up informative de fichier trop gros a 2 bouton ok, il faut en mettre qu'un seul !
 
 ### Qualité / process
 

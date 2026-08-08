@@ -20,9 +20,9 @@
       [tier2Value]="tier2Km()"
       (tier1ValueChange)="form.patchValue({ tier1MaxKm: $event })"
       (tier2ValueChange)="form.patchValue({ tier2MaxKm: $event })">
-      <app-select tier1-mode class="tier-select" formControlName="tier1Mode" [options]="modeOptions" label="Transport palier 1" />
-      <app-select tier2-mode class="tier-select" formControlName="tier2Mode" [options]="modeOptions" label="Transport palier 2" />
-      <app-select tier3-mode class="tier-select" formControlName="tier3Mode" [options]="modeOptions" label="Transport dernier palier" />
+      <app-select tier1-mode class="tier-select" formControlName="tier1Mode" [options]="modeOptions" label="Moyen de transport 1" />
+      <app-select tier2-mode class="tier-select" formControlName="tier2Mode" [options]="modeOptions" label="Moyen de transport 2" />
+      <app-select tier3-mode class="tier-select" formControlName="tier3Mode" [options]="modeOptions" label="Moyen de transport 3" />
     </app-paliers-trajet-slider>
   </div>
 

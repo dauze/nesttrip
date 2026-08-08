@@ -24,6 +24,7 @@ import { UserProfileService } from '@app/core/services/user-profile.service';
 import { AppSettingsMenuService } from '@app/core/services/app-settings-menu.service';
 import { TripFacade } from '../trip-facade.service';
 import { Day, TravelTiers } from '../trip.model';
+import { ButtonComponent } from '@app/shared/components/button/button.component';
 
 const MODE_LABEL: Record<TravelTiers['tier1Mode'], string> = { walk: 'Marche', bike: 'Vélo', car: 'Voiture' };
 /** Voir la doc équivalente historique dans `TripHeaderComponent` (avant ce déplacement) : `nt-icon-*` maison pour marche/vélo (aucun glyphe PrimeIcons adéquat), `pi-car` pour voiture. */
@@ -42,7 +43,7 @@ const MODE_ICON: Record<TravelTiers['tier1Mode'], string> = { walk: 'nt-icon-wal
 @Component({
   selector: 'app-trip-settings-section',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePickerComponent],
+  imports: [ReactiveFormsModule, DatePickerComponent, ButtonComponent],
   templateUrl: './trip-settings-section.component.html',
   styleUrl: './trip-settings-section.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

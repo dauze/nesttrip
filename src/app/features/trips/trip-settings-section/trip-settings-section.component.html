@@ -1,11 +1,10 @@
-<div class="trip-settings-section flex flex-column">
+<div class="trip-settings-section flex flex-column gap-3">
   <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openTitleDialog()">
     <i class="pi pi-pencil trip-settings-row__icon" aria-hidden="true"></i>
     <span class="trip-settings-row__body flex flex-column">
       <span class="trip-settings-row__label">Titre</span>
       <span class="trip-settings-row__value">{{ title() }}</span>
     </span>
-    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
   </button>
 
   <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openDatePicker()">
@@ -14,7 +13,6 @@
       <span class="trip-settings-row__label">Dates</span>
       <span class="trip-settings-row__value">{{ dateRangeLabel() }}</span>
     </span>
-    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
   </button>
 
   <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openParticipantsDialog()">
@@ -23,7 +21,6 @@
       <span class="trip-settings-row__label">Participants</span>
       <span class="trip-settings-row__value">{{ participantsLabel() }}</span>
     </span>
-    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
   </button>
 
   <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openTravelTiersDialog()">
@@ -39,13 +36,9 @@
         <span aria-hidden="true">sinon</span>
       </span>
     </span>
-    <i class="pi pi-chevron-right trip-settings-row__chevron" aria-hidden="true"></i>
   </button>
 
-  <button type="button" class="trip-settings-row trip-settings-row--danger flex align-items-center gap-2 w-full" (click)="confirmDeleteTrip()">
-    <i class="pi pi-trash trip-settings-row__icon" aria-hidden="true"></i>
-    <span class="trip-settings-row__label">Supprimer le voyage</span>
-  </button>
+  <app-button label="Supprimer le voyage" icon="pi pi-trash" severity="danger" (click)="confirmDeleteTrip()" />
 
   <form [formGroup]="dateForm" class="trip-settings-section__hidden-date-picker">
     <app-date-picker
