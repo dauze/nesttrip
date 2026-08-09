@@ -16,8 +16,8 @@
 
 .app-card__title {
   font-size: 1.25rem;
+  padding:  0.5rem 0 0.5rem 0  ;
   font-weight: 600;
-  margin-bottom: 0.5rem;
 
   &:empty {
     display: none;
@@ -50,12 +50,25 @@
 :host(.app-card--fill-height) {
   display: flex;
   flex-direction: column;
-}
+  max-height: var(--app-card-max-height, 100%);
 
-:host(.app-card--fill-height) .app-card__body,
-:host(.app-card--fill-height) .app-card__content {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  .app-card__header,
+  .app-card__title,
+  .app-card__footer {
+    flex-shrink: 0; // Garantit que le header et le footer restent intacts et visibles
+  }
+
+  .app-card__body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .app-card__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden; // Sécurité anti-scroll horizontal
+  }
 }

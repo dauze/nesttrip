@@ -17,6 +17,7 @@ import { NgClass } from '@angular/common';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
+import { TripChromeService } from '@app/core/services/trip-chrome.service';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -49,6 +50,7 @@ export class AccueilTripComponent {
   protected readonly selectionService = inject(SelectionModeService);
   protected readonly viewport = inject(ViewportService);
   protected readonly userProfileService = inject(UserProfileService);
+  protected readonly chromeService = inject(TripChromeService);
 
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;

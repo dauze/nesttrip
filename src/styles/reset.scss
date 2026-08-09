@@ -39,7 +39,6 @@ html {
 }
 
 body {
-  padding-bottom: 50px;
   // `margin` complet (pas seulement `margin-top`) : le navigateur pose 8px
   // par défaut sur les 4 côtés (UA stylesheet) — ne zérofier QUE le haut
   // laissait les 8px par défaut à droite/gauche/en bas, invisibles sur
@@ -49,7 +48,7 @@ body {
   // sur ces écrans PAR RAPPORT à trip-detail (qui, lui, applique
   // volontairement `--nt-space-1` via `.app-content`/`.tab-content-wrapper`,
   // voir trips.component.scss/trip-day-swiper.component.scss).
-  margin: 0.3rem 0 0;
+  margin: 0 0 0;
   color: var(--nt-text-color);
   background-color: var(--nt-page-background);
 }

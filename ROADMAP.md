@@ -58,7 +58,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
-- Le bloc voyage des paramètre ne doit pas être affiché quand on est sur l'écran de création d'un voyage
 - Sur l'écran d'accueil, il faut que le bouton créer un trip soit positionné en bas de l'écran, et que le scoll soit dans le content du panel, pas sur tout le panel : si beaucouop de trip, le bouton "Nouvelle aventure" n'est actuellementb pas visible, il faut scroller jusqu'en bas, dommage
 
 ### Qualité / process

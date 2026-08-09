@@ -1,5 +1,10 @@
-<app-card>
-
+<div 
+  class="flex flex-column h-full overflow-hidden"
+  [style.--toolbar-height.px]="chromeService.toolbarHeight()"
+  [style.--nt-chrome-gap.px]="chromeService.chromeGapPx()"
+  style="--app-card-max-height: calc(100dvh - var(--toolbar-height, 0px) - var(--nt-chrome-gap, 0px));"
+>
+  <app-card [fillHeight]="true">
     <!-- Header -->
     <div cardTitle class="flex justify-content-between align-items-center w-full">
       @if (trips().length === 0 && !userProfileService.hasSeenOnboarding()) {
@@ -9,87 +14,80 @@
       }
     </div>
 
-    <!-- Content -->
-    <div class="mt-3">
+    <!-- Loading -->
+    @if (tripsLoading()) {
+      <div class="grid m-0">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="col-12 md:col-6 lg:col-4">
+            <app-card class="h-full">
+              <app-skeleton height="1.5rem" class="mb-2"></app-skeleton>
+              <app-skeleton height="1rem" width="60%"></app-skeleton>
+            </app-card>
+          </div>
+        }
+      </div>
 
-      <!-- Loading -->
-      @if (tripsLoading()) {
-        <div class="grid">
-          @for (i of [1, 2, 3]; track i) {
-            <div class="col-12 md:col-6 lg:col-4">
-              <app-card class="h-full">
-                <app-skeleton height="1.5rem" class="mb-2"></app-skeleton>
-                <app-skeleton height="1rem" width="60%"></app-skeleton>
-              </app-card>
-            </div>
-          }
-        </div>
+    <!-- Accueil nouvel utilisateur -->
+    } @else if (trips().length === 0 && !userProfileService.hasSeenOnboarding()) {
+      <div class="py-2">
+        <span class="text-xl">Prêt à rejoindre l'aventure et créer ton premier voyage ?</span>
+      </div>
 
-      <!-- Accueil nouvel utilisateur (étape 1, src/specs/Parcours-new-user.md) -->
-      } @else if (trips().length === 0 && !userProfileService.hasSeenOnboarding()) {
-        <div class="py-2">
-          <span class="text-xl">Prêt à rejoindre l'aventure et créer ton premier voyage ?</span>
-        </div>
+    <!-- Empty -->
+    } @else if (trips().length === 0) {
+      <div class="flex justify-content-center align-items-center">
+        <app-message
+          severity="info"
+          text="Aucun voyage pour l'instant. Créer ton premier voyage !"
+          class="w-full md:w-6"
+        />
+      </div>
 
-      <!-- Empty -->
-      } @else if (trips().length === 0) {
-        <div class="flex justify-content-center align-items-center">
-          <app-message
-            severity="info"
-            text="Aucun voyage pour l'instant. Créer ton premier voyage !"
-            class="w-full md:w-6"
-          />
-        </div>
-
-      <!-- List -->
-      } @else {
-        <div class="grid">
-          @for (trip of trips(); track trip.id) {
-            <div class="col-12 md:col-6 lg:col-4">
-              <app-card
-                [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
-                [selectableDisabled]="user?.uid !== trip.ownerId"
-                appLongPress (longPress)="sel.onLongPress()"
-                [ngClass]="{ 'cursor-default opacity-80': selectionService.active() && user?.uid !== trip.ownerId }"
-                class="w-full h-full transition-colors transition-duration-200"
-                appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
-                tooltipEvent="both"
-                [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
+    <!-- List -->
+    } @else {
+      <div class="grid m-0">
+        @for (trip of trips(); track trip.id) {
+          <div class="col-12 md:col-6 lg:col-4">
+            <app-card
+              [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
+              [selectableDisabled]="user?.uid !== trip.ownerId"
+              appLongPress (longPress)="sel.onLongPress()"
+              [ngClass]="{ 'cursor-default opacity-80': selectionService.active() && user?.uid !== trip.ownerId }"
+              class="w-full h-full transition-colors transition-duration-200"
+              appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
+              tooltipEvent="both"
+              [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
+            >
+              <div
+                class="trip-select-row flex justify-content-between align-items-center cursor-pointer"
+                role="button"
+                tabindex="0"
+                (click)="selectTrip(trip.id)"
+                (keydown.enter)="selectTrip(trip.id)"
               >
-                <div
-                  class="trip-select-row flex justify-content-between align-items-center cursor-pointer"
-                  role="button"
-                  tabindex="0"
-                  (click)="selectTrip(trip.id)"
-                  (keydown.enter)="selectTrip(trip.id)"
+                <app-checkbox
+                  class="nt-select-checkbox flex-shrink-0"
+                  [checked]="sel.isSelected()"
+                  [disabled]="user?.uid !== trip.ownerId"
+                  (click)="sel.onCheckboxClick($event)"
+                ></app-checkbox>
+
+                <span
+                  class="trip-select-row__title font-medium text-lg flex-grow-1 ml-2"
+                  [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
                 >
-                  <app-checkbox
-                    class="nt-select-checkbox flex-shrink-0"
-                    [checked]="sel.isSelected()"
-                    [disabled]="user?.uid !== trip.ownerId"
-                    (click)="sel.onCheckboxClick($event)"
-                  ></app-checkbox>
+                  {{ trip.title }}
+                </span>
 
-                  <span
-                    class="trip-select-row__title font-medium text-lg flex-grow-1 ml-2"
-                    [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
-                  >
-                    {{ trip.title }}
-                  </span>
-
-                  <i class="trip-select-row__arrow pi pi-arrow-right nt-text-muted"></i>
-                </div>
-              </app-card>
-            </div>
-          }
-        </div>
-      }
-
-    </div>
-
+                <i class="trip-select-row__arrow pi pi-arrow-right nt-text-muted"></i>
+              </div>
+            </app-card>
+          </div>
+        }
+      </div>
+    }
     <!-- Footer buttons -->
     <div cardFooter class="nt-footer-actions justify-content-end gap-2">
-      <!-- Ajouter -->
       <app-button
         [label]="trips().length === 0 && !userProfileService.hasSeenOnboarding() ? 'Créer nouvelle aventure' : 'Nouvelle aventure'"
         icon="pi pi-plus"
@@ -97,9 +95,8 @@
         routerLink="/trips/new"
       />
     </div>
-
   </app-card>
-
+</div>
 <app-selection-action-bar
   [count]="selectionService.selectedCount()"
   (cancelSelection)="onSelectionCancel()"
