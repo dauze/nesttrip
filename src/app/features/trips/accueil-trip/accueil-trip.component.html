@@ -16,14 +16,12 @@
 
     <!-- Loading -->
     @if (tripsLoading()) {
-      <div class="grid m-0">
+      <div class="grid m-0 gap-2">
         @for (i of [1, 2, 3]; track i) {
-          <div class="col-12 md:col-6 lg:col-4">
             <app-card class="h-full">
-              <app-skeleton height="1.5rem" class="mb-2"></app-skeleton>
-              <app-skeleton height="1rem" width="60%"></app-skeleton>
+              <app-skeleton height="3rem" class="mb-2"></app-skeleton>
+              <app-skeleton height="3rem" width="60%"></app-skeleton>
             </app-card>
-          </div>
         }
       </div>
 
@@ -45,44 +43,59 @@
 
     <!-- List -->
     } @else {
-      <div class="grid m-0">
+      <div class="grid m-0 gap-2">
         @for (trip of trips(); track trip.id) {
-          <div class="col-12 md:col-6 lg:col-4">
-            <app-card
-              [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
-              [selectableDisabled]="user?.uid !== trip.ownerId"
-              appLongPress (longPress)="sel.onLongPress()"
-              [ngClass]="{ 'cursor-default opacity-80': selectionService.active() && user?.uid !== trip.ownerId }"
-              class="w-full h-full transition-colors transition-duration-200"
-              appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
-              tooltipEvent="both"
-              [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
+          <app-card
+            [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
+            [selectableDisabled]="user?.uid !== trip.ownerId"
+            appLongPress (longPress)="sel.onLongPress()"
+            [ngClass]="{ 'cursor-default opacity-80': selectionService.active() && user?.uid !== trip.ownerId }"
+            class="card w-full h-full transition-colors transition-duration-200"
+            appTooltip="Seul le propriétaire de ce voyage peut le supprimer."
+            tooltipEvent="both"
+            [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
+          >
+            <div
+              class="trip-select-row flex justify-content-between align-items-center cursor-pointer"
+              role="button"
+              tabindex="0"
+              (click)="selectTrip(trip.id)"
+              (keydown.enter)="selectTrip(trip.id)"
             >
-              <div
-                class="trip-select-row flex justify-content-between align-items-center cursor-pointer"
-                role="button"
-                tabindex="0"
-                (click)="selectTrip(trip.id)"
-                (keydown.enter)="selectTrip(trip.id)"
+              <app-checkbox
+                class="nt-select-checkbox flex-shrink-0"
+                [checked]="sel.isSelected()"
+                [disabled]="user?.uid !== trip.ownerId"
+                (click)="sel.onCheckboxClick($event)"
+              ></app-checkbox>
+
+              <span
+                class="trip-select-row__title font-medium text-lg flex-grow-1 ml-2 flex align-items-center gap-3"
+                [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
               >
-                <app-checkbox
-                  class="nt-select-checkbox flex-shrink-0"
-                  [checked]="sel.isSelected()"
-                  [disabled]="user?.uid !== trip.ownerId"
-                  (click)="sel.onCheckboxClick($event)"
-                ></app-checkbox>
+                <!-- Visuel / Avatar -->
+                <i class="pi pi-map-marker text-2xl text-primary"></i>
 
-                <span
-                  class="trip-select-row__title font-medium text-lg flex-grow-1 ml-2"
-                  [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
-                >
-                  {{ trip.title }}
-                </span>
-
-                <i class="trip-select-row__arrow pi pi-arrow-right nt-text-muted"></i>
-              </div>
-            </app-card>
-          </div>
+                <!-- Informations du voyage -->
+                <div class="flex-grow-1">
+                  <span class="font-bold">
+                    {{ trip.title }}
+                    @if(isActiveTrip(trip)){
+                      <app-chip >
+                        En cours
+                      </app-chip>
+                    }
+                  </span>
+                  <span class="flex align-items-center gap-1">
+                    <i class="pi pi-calendar text-xs"></i>
+                    <span class="text-sm">{{ trip.earliestDay ? (trip.earliestDay | date:'shortDate') : 'Prochainement' }}</span> - 
+                    <span class="text-sm">{{ trip.latestDay ? (trip.latestDay | date:'shortDate') : 'Prochainement' }}</span>
+                  </span>
+                </div>
+                  <i class="trip-select-row__arrow pi pi-arrow-right nt-text-muted"></i>
+              </span>
+            </div>
+          </app-card>
         }
       </div>
     }

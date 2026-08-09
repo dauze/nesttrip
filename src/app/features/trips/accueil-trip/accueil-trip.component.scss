@@ -20,3 +20,6 @@
     color: var(--nt-primary-color);
   }
 }
+.card {
+border: var(--nt-content-border-width) solid var(--nt-content-border-color);
+}

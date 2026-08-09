@@ -13,11 +13,12 @@ import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.servic
 import { TripFacade } from '../trip-facade.service';
 import { TripSummary } from '../trip.model';
 import { AuthService } from '@app/core/services/auth.service';
-import { NgClass } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { ChipComponent } from '@app/shared/components/chip/chip.component';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -35,6 +36,8 @@ import { TripChromeService } from '@app/core/services/trip-chrome.service';
     SelectableDirective,
     LongPressDirective,
     SelectionActionBarComponent,
+    ChipComponent,
+    DatePipe
   ],
   templateUrl: 'accueil-trip.component.html',
   styleUrl: 'accueil-trip.component.scss',
@@ -93,7 +96,7 @@ export class AccueilTripComponent {
   }
 
   /** Un trip est "actif" si la date du jour tombe dans l'intervalle (inclusif) `earliestDay`-`latestDay` — voir ROADMAP.md "UX / Interactions" et `TripSummary`. Comparaison en date seule (minuit local), l'heure n'a pas de sens ici. */
-  private isActiveTrip(trip: TripSummary): boolean {
+  isActiveTrip(trip: TripSummary): boolean {
     if (!trip.earliestDay || !trip.latestDay) return false;
     const dateOnly = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const today = dateOnly(new Date());
