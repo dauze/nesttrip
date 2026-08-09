@@ -41,6 +41,12 @@ export class ActivityGoogleInfoComponent {
     return `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${this.activity().placeId}`;
   });
 
+  readonly reviewsUrl = computed(() => {
+    const placeId = this.activity().placeId;
+    if (!placeId) return null;
+    return `https://search.google.com/local/reviews?placeid=${placeId}`;
+  });
+
   readonly todayDayName = computed(() => DAY_NAMES[(this.dayId() ?? new Date()).getDay()]);
 
   /**

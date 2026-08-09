@@ -13,12 +13,14 @@ import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.servic
 import { TripFacade } from '../trip-facade.service';
 import { TripSummary } from '../trip.model';
 import { AuthService } from '@app/core/services/auth.service';
-import { DatePipe, NgClass } from '@angular/common';
+import { AsyncPipe, DatePipe, NgClass } from '@angular/common';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { ChipComponent } from '@app/shared/components/chip/chip.component';
+import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-accueil-trip',
@@ -37,7 +39,8 @@ import { ChipComponent } from '@app/shared/components/chip/chip.component';
     LongPressDirective,
     SelectionActionBarComponent,
     ChipComponent,
-    DatePipe
+    DatePipe,
+    AsyncPipe,
   ],
   templateUrl: 'accueil-trip.component.html',
   styleUrl: 'accueil-trip.component.scss',
@@ -54,6 +57,7 @@ export class AccueilTripComponent {
   protected readonly viewport = inject(ViewportService);
   protected readonly userProfileService = inject(UserProfileService);
   protected readonly chromeService = inject(TripChromeService);
+  private readonly googlePhotoService = inject(GooglePhotoService);
 
   readonly trips = this.tripFacade.trips;
   readonly tripsLoading = this.tripFacade.tripsLoading;
@@ -101,6 +105,10 @@ export class AccueilTripComponent {
     const dateOnly = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const today = dateOnly(new Date());
     return today >= dateOnly(trip.earliestDay) && today <= dateOnly(trip.latestDay);
+  }
+
+  protected getPhotoUrl$(ref: string, maxWidth = 100): Observable<string> {
+    return this.googlePhotoService.getPhotoUrl$(ref, maxWidth);
   }
 
   selectTrip(id: string): void {

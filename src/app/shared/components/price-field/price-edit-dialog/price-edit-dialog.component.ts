@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, inject, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
@@ -36,13 +36,19 @@ export interface PriceEditDialogData {
   templateUrl: './price-edit-dialog.component.html',
   styleUrl: './price-edit-dialog.component.scss',
 })
-export class PriceEditDialogComponent {
+export class PriceEditDialogComponent implements AfterViewInit {
   private readonly dialogRef = inject(DialogRef<void>);
   protected readonly data = inject<PriceEditDialogData>(DIALOG_DATA);
   protected readonly viewport = inject(ViewportService);
 
   protected readonly amountControl = new FormControl<number | null>(this.data.initialAmount);
   protected readonly currencyControl = new FormControl<string>(this.data.initialCurrency, { nonNullable: true });
+
+  private readonly amountInputRef = viewChild.required(InputNumberComponent);
+
+  ngAfterViewInit(): void {
+    this.amountInputRef().focus();
+  }
 
   protected cancel(): void {
     this.dialogRef.close();

@@ -8,7 +8,8 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
-  sendEmailVerification, // <-- Nouvel import
+  sendEmailVerification,
+  sendPasswordResetEmail,
   User,
   UserCredential,
 } from 'firebase/auth';
@@ -46,9 +47,21 @@ export class AuthService {
     return firebaseAuth.currentUser;
   }
 
+  /**
+   * Email non vérifié : la session Firebase reste active (nécessaire pour
+   * `resendVerificationEmail`, qui a besoin d'un `currentUser` — Firebase ne
+   * permet pas de renvoyer un mail de vérification sans être connecté), mais
+   * on ne navigue PAS vers `/app` — voir `authGuard`, qui bloque `/trips`
+   * pour un compte non vérifié même si l'utilisateur force l'URL. C'est
+   * `LoginComponent` qui détecte ce cas (`getCurrentUser()?.emailVerified
+   * === false`) et affiche le rappel + le renvoi, sur CET écran plutôt que
+   * dans l'app (retour utilisateur 2026-08-09 : pas d'accès à l'app tant que
+   * le compte n'est pas vérifié).
+   */
   loginWithEmail(email: string, password: string): Observable<UserCredential> {
     return from(signInWithEmailAndPassword(firebaseAuth, email, password)).pipe(
-      tap(() => {
+      tap((credential) => {
+        if (!credential.user.emailVerified) return;
         this.justLoggedIn.set(true);
         this.router.navigate(['/app']);
       }),
@@ -62,8 +75,7 @@ export class AuthService {
         from(updateProfile(credential.user, { displayName })).pipe(map(() => credential))
       ),
       tap((credential) => {
-        // --- NOUVEAU : Envoi de l'e-mail de validation ---
-        // Exécuté en "fire-and-forget" pour ne pas bloquer le reste du flux
+        // Fire-and-forget : ne bloque pas le reste du flux.
         sendEmailVerification(credential.user).catch((e) => {
           console.error("Erreur lors de l'envoi de l'e-mail de vérification :", e);
         });
@@ -72,13 +84,14 @@ export class AuthService {
         // `UserProfileRepository.createUserProfile`) — fire-and-forget comme
         // les autres écritures ponctuelles de ce doc (`UserProfileService`) :
         // le compte Auth existe déjà à ce stade, un raté ici ne doit pas
-        // bloquer la navigation post-inscription.
-        this.userProfileRepository.createUserProfile(credential.user.uid, credential.user.email ?? email, displayName).catch((e) => 
+        // bloquer la suite.
+        this.userProfileRepository.createUserProfile(credential.user.uid, credential.user.email ?? email, displayName).catch((e) =>
         {
           console.log(e)
         });
-        this.justLoggedIn.set(true);
-        this.router.navigate(['/app']);
+        // Pas de navigation : un compte fraîchement créé n'est jamais vérifié
+        // (voir la doc de `loginWithEmail` ci-dessus) — reste sur l'écran de
+        // login, qui affiche le rappel "vérifiez votre email".
       }),
     );
   }
@@ -131,5 +144,9 @@ export class AuthService {
       return from(sendEmailVerification(currentUser));
     }
     return from(Promise.resolve());
+  }
+
+  resetPassword(email: string): Observable<void> {
+    return from(sendPasswordResetEmail(firebaseAuth, email));
   }
 }

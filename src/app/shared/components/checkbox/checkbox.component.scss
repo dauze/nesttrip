@@ -7,11 +7,11 @@
   height: 1.25rem;
   padding: 0;
   border: var(--nt-border-width-hairline) solid var(--nt-form-field-border-color);
-  border-radius: var(--nt-radius-xs);
+  border-radius: var(--nt-radius-pill);
   background: var(--nt-form-field-background);
   color: var(--nt-primary-contrast-color);
   cursor: pointer;
-  transition: background-color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+  transition: background-color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease, transform var(--nt-transition-duration) ease;
 
   i {
     font-size: 0.75rem;
@@ -19,6 +19,10 @@
 
   &:hover:not(:disabled) {
     border-color: var(--nt-form-field-hover-border-color);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
   }
 
   &:disabled {

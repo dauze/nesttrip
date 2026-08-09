@@ -159,9 +159,21 @@
   font-weight: inherit;
   text-decoration: none;
 
-  &:hover:not(:disabled) {
+  // `:not(:disabled):not(.app-button--aria-disabled)` (pas juste `:not(:disabled)`) :
+  // même nombre de classes de spécificité que la règle `.app-button:hover`
+  // de base plus haut — sans ça, celle-ci gagnait quand même (spécificité
+  // supérieure malgré l'ordre des règles) et posait `--nt-btn-hover-color`
+  // (fond primary plein) au survol, jamais le fond léger voulu ici (retour
+  // utilisateur : hover des boutons "S'inscrire"/"Se connecter" trop
+  // marqué). `--nt-btn-fg-hover-bg` (primary à faible opacité, même token
+  // que `.app-button--text` ci-dessus) plutôt que `transparent`.
+  &:hover:not(:disabled):not(.app-button--aria-disabled) {
     text-decoration: underline;
-    background: transparent;
+    background: var(--nt-btn-fg-hover-bg);
+  }
+
+  &:active:not(:disabled):not(.app-button--aria-disabled) {
+    background: var(--nt-btn-fg-active-bg);
   }
 }
 

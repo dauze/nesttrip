@@ -75,6 +75,18 @@
   }
 }
 
+.notes-edit-dialog__counter {
+  padding: 0 1rem;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--nt-text-muted-color);
+}
+
+.notes-edit-dialog__counter--limit {
+  color: var(--nt-red-500);
+  font-weight: 600;
+}
+
 .notes-edit-dialog__footer {
   padding: 0.5rem;
   border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);

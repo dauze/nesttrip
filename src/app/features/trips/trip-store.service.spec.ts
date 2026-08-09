@@ -17,6 +17,7 @@ import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { Logistic } from '@core/models/logistic.dto';
+import { Trip } from './trip.model';
 
 /** Writer débouncé factice : reproduit l'API publique de `DebounceWriter` (voir shared/debounced-writer.ts) sans jamais toucher Firestore. */
 function fakeWriter() {
@@ -598,6 +599,31 @@ describe('TripStore', () => {
       expect(store.getExpense('exp-1')()).toBeUndefined();
       expect(store.getAllExpenses(tripId)()).toEqual([]);
       expect(expenseWriter.remove).toHaveBeenCalledWith(tripId, 'exp-1');
+    });
+  });
+
+  describe('trips — tri par proximité de la date du jour (ROADMAP.md "UX / Interactions")', () => {
+    function tripWithDay(id: string, dayOffsetFromToday: number): Trip {
+      const day = new Date();
+      day.setHours(0, 0, 0, 0);
+      day.setDate(day.getDate() + dayOffsetFromToday);
+      return {
+        id, ville: 'Paris', title: id, ownerId: 'u1', members: {},
+        days: [{ id: day, activityIds: [] }],
+        activities: [], dayActivityInstances: [], logistics: [], expenses: [],
+        notes: { id: `notes-${id}`, items: [] },
+      };
+    }
+
+    it('place les voyages à venir avant les voyages passés, chacun trié par proximité de la date du jour', () => {
+      store.saveTrip(tripWithDay('past-far', -10));
+      store.saveTrip(tripWithDay('future-far', 10));
+      store.saveTrip(tripWithDay('past-near', -1));
+      store.saveTrip(tripWithDay('future-near', 1));
+
+      expect(store.trips().map((t) => t.id)).toEqual([
+        'future-near', 'future-far', 'past-near', 'past-far',
+      ]);
     });
   });
 });

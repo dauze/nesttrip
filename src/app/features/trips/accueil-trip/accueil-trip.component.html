@@ -70,11 +70,18 @@
               ></app-checkbox>
 
               <span
-                class="trip-select-row__title font-medium text-lg flex-grow-1 ml-2 flex align-items-center gap-3"
+                class="trip-select-row__title font-medium text-lg flex-grow-1 flex align-items-center gap-3"
                 [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
               >
                 <!-- Visuel / Avatar -->
-                <i class="pi pi-map-marker text-2xl text-primary"></i>
+                @if (trip.photoRef && (getPhotoUrl$(trip.photoRef) | async); as photoUrl) {
+                  <img [src]="photoUrl" alt="" class="trip-select-row__thumb flex-shrink-0" />
+                } @else {
+                  <span class="trip-select-row__thumb text-center flex align-items-center justify-content-center">
+                     <i class="pi pi-map-marker text-4xl  text-primary"></i>
+                  </span>
+                 
+                }
 
                 <!-- Informations du voyage -->
                 <div class="flex-grow-1">

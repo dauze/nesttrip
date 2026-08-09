@@ -20,6 +20,10 @@
     [attr.maxlength]="maxLength"
     (input)="onInput($any($event.target).value)"></textarea>
 
+  <div class="notes-edit-dialog__counter flex-shrink-0" [class.notes-edit-dialog__counter--limit]="value().length >= maxLength">
+    {{ value().length }}/{{ maxLength }}
+  </div>
+
   <div class="notes-edit-dialog__footer nt-footer-actions align-items-center justify-content-end flex-shrink-0">
     <app-button
       label="Annuler"

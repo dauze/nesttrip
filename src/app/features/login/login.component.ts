@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { catchError, EMPTY } from 'rxjs';
+import { catchError, EMPTY, of } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { CardComponent } from '@app/shared/components/card/card.component';
@@ -34,7 +34,25 @@ export class LoginComponent {
   isRegister = signal(false);
   loading = signal(false);
   errorMsg = signal('');
-   
+  infoMsg = signal('');
+  resetLoading = signal(false);
+
+  /**
+   * Email de la session Firebase active mais non vérifiée — `null` sinon
+   * (aucune session, ou session déjà vérifiée). Remplace tout le formulaire
+   * par le rappel "vérifiez votre email" (voir template) tant que ce champ
+   * est renseigné. Alimenté (a) au montage, pour une session non vérifiée
+   * restée active d'une visite précédente (Firebase persiste la session —
+   * `authGuard` bloque `/trips` mais ne déconnecte pas), et (b) après chaque
+   * tentative de connexion/inscription réussie (voir `submitEmail`) — ni
+   * `loginWithEmail` ni `registerWithEmail` ne naviguent vers `/app` pour un
+   * compte non vérifié (voir `AuthService`), donc `submitEmail` doit vérifier
+   * lui-même l'état du compte après coup pour afficher ce rappel.
+   */
+  unverifiedEmail = signal<string | null>(null);
+  resendLoading = signal(false);
+  resendSent = signal(false);
+
   form = this.fb.nonNullable.group({
     firstName: '',
     lastName: '',
@@ -45,6 +63,9 @@ export class LoginComponent {
 
   
   constructor() {
+    const user = this.authService.getCurrentUser();
+    if (user && !user.emailVerified) this.unverifiedEmail.set(user.email);
+
     effect(() => {
       const register = this.isRegister();
       const firstName = this.form.controls.firstName;
@@ -77,6 +98,31 @@ export class LoginComponent {
     this.isRegister.update((v) => !v);
     this.form.reset();
     this.errorMsg.set('');
+    this.infoMsg.set('');
+  }
+
+  /**
+   * Réutilise le champ email déjà saisi (pas de nouvel écran, voir décision
+   * ROADMAP.md 2026-08-09). Message générique dans tous les cas (succès ou
+   * échec Firebase) : ne pas révéler si l'email correspond à un compte
+   * existant (énumération de comptes, OWASP).
+   */
+  forgotPassword() {
+    this.form.controls.email.markAsTouched();
+    if (this.form.controls.email.invalid) {
+      this.errorMsg.set('Renseignez votre email pour réinitialiser le mot de passe.');
+      return;
+    }
+
+    const email = this.form.controls.email.value;
+    this.resetLoading.set(true);
+    this.errorMsg.set('');
+    this.infoMsg.set('');
+
+    this.authService.resetPassword(email).pipe(catchError(() => of(undefined))).subscribe(() => {
+      this.resetLoading.set(false);
+      this.infoMsg.set(`Si un compte existe pour ${email}, un e-mail de réinitialisation vient d'être envoyé.`);
+    });
   }
 
   loginGoogle() {
@@ -105,6 +151,7 @@ export class LoginComponent {
 
     this.loading.set(true);
     this.errorMsg.set('');
+    this.infoMsg.set('');
 
     const action$ = this.isRegister()
       ? this.authService.registerWithEmail(email, password, firstName, lastName)
@@ -117,10 +164,29 @@ export class LoginComponent {
           return EMPTY;
         })
       )
-      .subscribe(() => this.loading.set(false));
-
+      .subscribe(() => {
+        this.loading.set(false);
+        const user = this.authService.getCurrentUser();
+        if (user && !user.emailVerified) this.unverifiedEmail.set(user.email);
+      });
   }
 
+  resendVerification(): void {
+    this.resendLoading.set(true);
+    this.authService.resendVerificationEmail().subscribe(() => {
+      this.resendLoading.set(false);
+      this.resendSent.set(true);
+    });
+  }
+
+  /** "Utiliser un autre compte" — déconnecte la session non vérifiée et repasse au formulaire. */
+  useAnotherAccount(): void {
+    this.authService.logout().subscribe(() => {
+      this.unverifiedEmail.set(null);
+      this.resendSent.set(false);
+      this.form.reset();
+    });
+  }
 
   private friendlyError(code?: string): string {
     if (!code) return 'Une erreur est survenue.';

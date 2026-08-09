@@ -24,12 +24,17 @@ import { SelectableItemRef, SelectionModeService, selectableItemKey } from '@app
   host: {
     '[class.nt-selectable]': 'true',
     '[class.nt-selected]': 'isSelected()',
+    // Mode sélection actif (≥1 carte sélectionnée sur cette liste), pas
+    // seulement CETTE carte — voir selection-mode.scss, révèle la checkbox
+    // mobile (masquée par défaut, sinon toujours visible = plus de place pour
+    // le contenu de la carte sur mobile en usage normal, ROADMAP.md "UI").
+    '[class.nt-selection-mode]': 'selectionService.active()',
   },
 })
 export class SelectableDirective {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly selectionService = inject(SelectionModeService);
+  protected readonly selectionService = inject(SelectionModeService);
   private readonly viewport = inject(ViewportService);
 
   readonly appSelectable = input.required<SelectableItemRef>();

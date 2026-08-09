@@ -30,6 +30,7 @@ export interface TripFirebase {
   expenses: Record<string, ExpenseFirebase>;
   notes: Notes;
   placeId?: string;
+  photoRef?: string;
   travelTiers?: {
     tier1Mode: 'walk' | 'bike' | 'car';
     tier1MaxKm: number;

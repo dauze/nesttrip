@@ -31,6 +31,21 @@ type LogisticEntities = Record<string, Logistic>;
 type ExpenseEntities = Record<string, Expense>;
 type MemberEntities = Record<string, Record<string, TripMember>>; // tripId -> Record<uid, Member>
 
+/** Trie les voyages du dashboard "à venir d'abord" (ROADMAP.md "UX / Interactions") : voyages pas encore terminés (actifs ou futurs) triés par date de début croissante (le plus proche du jour en tête), puis voyages déjà terminés triés du plus récent au plus ancien. */
+function sortTripsByProximity(list: TripSummary[]): TripSummary[] {
+  const dateOnly = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const today = dateOnly(new Date());
+  const isPast = (trip: TripSummary) => !!trip.latestDay && dateOnly(trip.latestDay) < today;
+
+  return [...list].sort((a, b) => {
+    const pastA = isPast(a);
+    const pastB = isPast(b);
+    if (pastA !== pastB) return pastA ? 1 : -1;
+    if (!pastA) return (a.earliestDay?.getTime() ?? Infinity) - (b.earliestDay?.getTime() ?? Infinity);
+    return (b.latestDay?.getTime() ?? 0) - (a.latestDay?.getTime() ?? 0);
+  });
+}
+
 /** Form par défaut d'une nouvelle instance jour (activité neuve ou pool fraîchement dispatché) — `currency` reprend la devise par défaut du trip (voir ROADMAP.md "Devise"), EUR à défaut. */
 function defaultInstanceForm(currency = 'EUR'): Omit<DayActivityInstance, 'id' | 'activityId'> {
   return {
@@ -222,7 +237,7 @@ export class TripStore {
   private readonly membersByTrip = new Map<string, Signal<Record<string, TripMember>>>();
   // ── Liste des trips (dashboard) ───────────────────────────────────────────
  
-  readonly trips = computed(() => this._tripsResult() ?? []);
+  readonly trips = computed(() => sortTripsByProximity(this._tripsResult() ?? []));
   readonly tripsLoading = computed(() => this._tripsResult() === undefined);    
 
   // ── Sélecteur — trip actif reconstitué ───────────────────────────────────
@@ -802,6 +817,7 @@ export class TripStore {
       ...(list ?? []),
       {
         id: trip.id, title: trip.title, ownerId: trip.ownerId,
+        ...(trip.photoRef ? { photoRef: trip.photoRef } : {}),
         ...(dayTimes.length ? { earliestDay: new Date(Math.min(...dayTimes)), latestDay: new Date(Math.max(...dayTimes)) } : {}),
       },
     ]);
