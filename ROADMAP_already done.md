@@ -3,6 +3,8 @@
 Ce document sert de référence pour le projet ce qui est déjà en place (à ne pas casser)
 
 ## ✅ Déjà fait
+- Rajouter un chip "En cours" dans l'acceuil trip sur tous les trip qui on un jour correspondant à la date du jour 
+- Sur l'écran d'accueil, il faut que le bouton créer un trip soit positionné en bas de l'écran, et que le scoll soit dans le content du panel, pas sur tout le panel : si beaucouop de trip, le bouton "Nouvelle aventure" n'est actuellementb pas visible, il faut scroller jusqu'en bas, dommage
 - "Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +." on doit changer le plus en icone de map. idem pour l'icone de logement et transport" et "Liste"
 - Pour les notifications des transports / hotel, voir ou les mettre car c'est pas jolie actuellement, comme c'est le même affichage que les activités et que les activités sont dans un panel, on dirait que l'écran n'est pas uniforme (A affiner)
 - **Parcours nouvel utilisateur (`src/specs/Parcours-new-user.md`), 2026-08-08** : les 4 étapes de la spec, mobile uniquement pour les étapes 3/4 (décidé avec l'utilisateur — la spec est écrite en termes de gestes tactiles et de la barre `MobileTripNavComponent`, sans équivalent sur `TripTabsNavComponent`/desktop).

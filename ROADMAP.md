@@ -2,14 +2,11 @@
 
 Ce document sert de référence pour le projet ce qu'il reste à faire.
 
-
 ### Offline & données (non prioritaire)
-
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible (A affiner)
 
 ### UI spécifique Desktop (A affiner)
-
 - Vue calendrier (A affiner)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
 - Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop, pas cool 
@@ -18,34 +15,27 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Le onover sur les bouton juste texte n'est pas beau, il faut pas faire ça avec primary mais un truc plus doux
 
 ### UI 
-- Quand on déclace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- Rajouter un chip "En cours" dans l'acceuil trip sur tous les trip qui on un jour correspondant à la date du jour 
+- Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
 
 ### Carte
-
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
 
 ### Activités
-
 - Suggestions d'activités via la ville dans le pool (A affiner)
 
 ### Nouveau voyage / IA
-
-- Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera (A affiner)
+- Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera -> voir plan process-creation-trip-ia.md
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA) (A affiner)
 
 ### I18n (non prioritaire)
-
 - Variabiliser tous les libellés de l'application dans un fichier de propriété
 - faire renaming de tout pour avoir un truc stylé : exemple "Nouvelle aventure" plutôt que "créer un voyage" 
 - Internationalisation de l'app (textes)
 
 ### Collaborateurs (non prioritaire)
-
 - Email quand ajouté à un trip
 
 ### UX / Interactions
-
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
 
@@ -58,10 +48,11 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
-- Sur l'écran d'accueil, il faut que le bouton créer un trip soit positionné en bas de l'écran, et que le scoll soit dans le content du panel, pas sur tout le panel : si beaucouop de trip, le bouton "Nouvelle aventure" n'est actuellementb pas visible, il faut scroller jusqu'en bas, dommage
+
+### Sécurité (non prioritaire)
+- Implémenter le mot de passe fort et la vérification par email
 
 ### Qualité / process
-
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
 - Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là (reporté le 2026-08-07, 73 fichiers d'imports impactés — pas prioritaire pour l'instant)
 - Profiter de anfgular 22 et éviter les async function ! 
@@ -77,7 +68,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - #dragPortal le mecanisme du portal pour la carte n'a plus lieu d'être car elle est completement sorti du swiper, il faudrait l'enlever
 
 ### Industrialisation (non prioritaire)
-
 - Faire une étude pour savoir les prochaines étapes pour potentiellement industrialiser l'application : 
   - Changement de la base vers une base postgres en conservant l'hydratation en temps réel
   - Réduire les cout en changeant de firebase à autre chose, à voir la renta

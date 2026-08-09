@@ -8,6 +8,7 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
+  sendEmailVerification, // <-- Nouvel import
   User,
   UserCredential,
 } from 'firebase/auth';
@@ -61,6 +62,12 @@ export class AuthService {
         from(updateProfile(credential.user, { displayName })).pipe(map(() => credential))
       ),
       tap((credential) => {
+        // --- NOUVEAU : Envoi de l'e-mail de validation ---
+        // Exécuté en "fire-and-forget" pour ne pas bloquer le reste du flux
+        sendEmailVerification(credential.user).catch((e) => {
+          console.error("Erreur lors de l'envoi de l'e-mail de vérification :", e);
+        });
+
         // Création de `users/{uid}` dès l'inscription (voir
         // `UserProfileRepository.createUserProfile`) — fire-and-forget comme
         // les autres écritures ponctuelles de ce doc (`UserProfileService`) :
@@ -115,5 +122,14 @@ export class AuthService {
         subscriber.complete();
       }
     });
+  }
+
+  // --- NOUVEAU : Méthode utilitaire pour renvoyer le mail si besoin ---
+  resendVerificationEmail(): Observable<void> {
+    const currentUser = firebaseAuth.currentUser;
+    if (currentUser && !currentUser.emailVerified) {
+      return from(sendEmailVerification(currentUser));
+    }
+    return from(Promise.resolve());
   }
 }
