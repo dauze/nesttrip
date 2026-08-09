@@ -6,7 +6,7 @@ import { environment } from '@environments/environment';
 import { LoadingState } from '../models/place.dto';
 import { ExchangeRates } from '../models/exchange-rate.dto';
 import { ExchangeRateRepository } from '@app/core/infra/firebase/services/exchange-rate-repository';
-import { convertWithRates } from './currency-conversion.util';
+import { convertWithRates } from '../utils/currency-conversion.util';
 
 export interface ConvertedAmount {
   amount: number;

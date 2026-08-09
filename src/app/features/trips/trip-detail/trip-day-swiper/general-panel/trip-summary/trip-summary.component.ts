@@ -20,7 +20,7 @@ import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-act
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
-import { convertWithRates } from '@app/core/services/currency-conversion.util';
+import { convertWithRates } from '@app/core/utils/currency-conversion.util';
 import { suggestedCurrencyForCountry } from '@app/core/utils/country-currency.util';
 import { TripTasksTileComponent } from './trip-tasks-tile/trip-tasks-tile.component';
 import { TripFilesTileComponent } from './trip-files-tile/trip-files-tile.component';

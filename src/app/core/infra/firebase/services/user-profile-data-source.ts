@@ -5,9 +5,10 @@ import { FirebaseService } from '@core/infra/firebase/firebase.service';
 import { UserProfileFirebase } from '@app/core/infra/firebase/models/user-profile.dto';
 import { userProfileFromFb } from '@app/core/infra/firebase/mappers/user-profile.mapper';
 import { UserProfile } from '@app/core/models/user-profile.dto';
+import { UserProfileRepository } from './user-profile-repository';
 
 @Injectable({ providedIn: 'root' })
-export class UserProfileDataSource {
+export class UserProfileDataSource extends UserProfileRepository {
   private readonly db = inject(FirebaseService).db;
 
   /**

@@ -5,7 +5,7 @@ import { environment } from '@environments/environment';
 import { LoadingState } from '../models/place.dto';
 import { WalkingRoute } from '../models/travel-route.dto';
 import { TravelRouteRepository } from '@app/core/infra/firebase/services/travel-route-repository';
-import { buildTravelRouteId, TravelMode } from './travel-route-id.util';
+import { buildTravelRouteId, TravelMode } from '../utils/travel-route-id.util';
 
 /**
  * Distance/temps entre 2 `placeId` pour un mode donné (marche/vélo/voiture,

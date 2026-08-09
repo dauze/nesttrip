@@ -1,25 +1,7 @@
-// Clic sur une carte de voyage (voir accueil-trip.component.html) : pas
-// d'anneau de focus ici (voir reset.scss pour l'anneau global par défaut) —
-// juste le titre et la flèche qui se colorent, moins intrusif sur une zone
-// aussi large. `:focus-visible` en plus de `:focus` (retour utilisateur,
-// ROADMAP.md "### UI" : "sur l'écran d'accueil il y a un contour et pas sur
-// les autres") : `.trip-select-row` est la SEULE carte de l'app rendue
-// focusable via `tabindex` (pour l'activation clavier, voir le `role="button"`
-// dans le template) — sur mobile, un tap peut y déclencher `:focus-visible`
-// (contrairement à l'heuristique desktop Chromium, qui elle ne le fait
-// qu'au clavier), faisant réapparaître l'anneau thématisé global
-// (`--nt-focus-ring-*`, reset.scss) juste ici alors qu'aucune autre carte
-// sélectionnable n'est focusable de cette façon et n'affiche donc jamais cet
-// anneau. Perte de l'anneau clavier sur ce cas précis, gardé partout ailleurs.
 .trip-select-row:focus,
 .trip-select-row:focus-visible {
-  outline: none;
-
   .trip-select-row__title,
   .trip-select-row__arrow {
     color: var(--nt-primary-color);
   }
-}
-.card {
-border: var(--nt-content-border-width) solid var(--nt-content-border-color);
 }

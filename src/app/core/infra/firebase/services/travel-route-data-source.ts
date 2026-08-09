@@ -5,9 +5,10 @@ import { FirebaseService } from '@core/infra/firebase/firebase.service';
 import { TravelRouteFirebase } from '@app/core/infra/firebase/models/travel-route.dto';
 import { travelRouteFromFb } from '@app/core/infra/firebase/mappers/travel-route.mapper';
 import { WalkingRoute } from '@app/core/models/travel-route.dto';
+import { TravelRouteRepository } from './travel-route-repository';
 
 @Injectable({ providedIn: 'root' })
-export class TravelRouteDataSource {
+export class TravelRouteDataSource extends TravelRouteRepository {
   private readonly db = inject(FirebaseService).db;
 
   /**

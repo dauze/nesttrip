@@ -4,7 +4,7 @@ import { FirebaseService } from '../../firebase.service';
 import { Day } from '@app/features/trips/trip.model';
 
 @Injectable({ providedIn: 'root' })
-export class DayPersistenceService {
+export class DayPersistenceService  {
   private readonly db = inject(FirebaseService).db;
 
   removeDay(tripId: string, dayId: Date): Promise<void> {

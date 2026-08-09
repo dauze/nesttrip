@@ -13,12 +13,12 @@
             <button
               type="button"
               id="ville"
-              class="app-input-text new-trip-field-trigger"
+              class="app-input-text block w-full text-left cursor-pointer"
               (click)="onVilleTriggerClick()">
               @if (form.value.ville) {
                 <span>{{ form.value.ville }}</span>
               } @else {
-                <span class="new-trip-field-trigger__placeholder">Ex : Reykjavik</span>
+                <span class="new-trip-field-trigger__placeholder ">Ex : Reykjavik</span>
               }
             </button>
           } @else {
@@ -55,7 +55,7 @@
             <button
               type="button"
               id="title"
-              class="app-input-text new-trip-field-trigger"
+              class="app-input-text block w-full text-left cursor-pointer "
               (click)="onNomTriggerClick()">
               @if (form.value.title) {
                 <span>{{ form.value.title }}</span>

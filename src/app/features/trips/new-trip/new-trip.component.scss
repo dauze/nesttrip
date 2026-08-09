@@ -1,16 +1,3 @@
-// Déclencheurs mobiles Ville/Nom (voir ROADMAP.md "UX / Interactions",
-// même principe que `PriceFieldComponent`/`DatePickerComponent` : sur mobile,
-// un tiroir dédié remplace la saisie inline) — `.app-input-text` (global,
-// voir form-fields.scss) donne déjà le look "champ" ; ce qui suit ne corrige
-// que ce qu'un `<button>` natif n'a pas par défaut (alignement, curseur).
-.new-trip-field-trigger {
-  display: block;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-}
-
 .new-trip-field-trigger__placeholder {
   color: var(--nt-form-field-placeholder-color);
 }
