@@ -1,5 +1,6 @@
-import { tripFromFb } from './trip.mapper';
+import { tripFromFb, tripToFb } from './trip.mapper';
 import { TripFirebase } from '../models/trip.dto';
+import { Trip } from '@app/features/trips/trip.model';
 
 function baseTripFb(days: TripFirebase['days']): TripFirebase {
   return {
@@ -16,6 +17,36 @@ function baseTripFb(days: TripFirebase['days']): TripFirebase {
     notes: { id: 'n1', items: [] },
   };
 }
+
+function baseTrip(): Trip {
+  return {
+    id: 't1',
+    ville: 'Paris',
+    ownerId: 'u1',
+    members: {},
+    title: 'Trip',
+    days: [],
+    activities: [],
+    dayActivityInstances: [],
+    logistics: [],
+    expenses: [],
+    notes: { id: 'n1', items: [] },
+  };
+}
+
+describe('tripToFb', () => {
+  it('omet photoRef quand absent, plutôt que de l\'écrire à undefined (Firestore le rejette)', () => {
+    const tripFb = tripToFb(baseTrip());
+
+    expect('photoRef' in tripFb).toBe(false);
+  });
+
+  it('conserve photoRef quand présent', () => {
+    const tripFb = tripToFb({ ...baseTrip(), photoRef: 'places/xyz/photos/abc' });
+
+    expect(tripFb.photoRef).toBe('places/xyz/photos/abc');
+  });
+});
 
 describe('tripFromFb', () => {
   it('trie days par ordre chronologique (clé epoch ms) même si Firestore les renvoie dans le désordre', () => {

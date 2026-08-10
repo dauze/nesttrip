@@ -1,5 +1,33 @@
 <div class="flex justify-content-center align-items-center bg-transparent p-3" style="min-width: 24rem; min-height: 100dvh;">
   <app-card class="w-full p-2 login-card" >
+    @if (unverifiedEmail(); as email) {
+      <div class="text-center mb-3">
+        <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
+        <h1 class="text-2xl font-bold text-900 m-0 mb-2">Vérifiez votre email</h1>
+        <p class="nt-text-muted m-0">
+          Un lien de confirmation a été envoyé à <strong>{{ email }}</strong>. Cliquez dessus pour activer votre compte, puis connectez-vous à nouveau.
+        </p>
+      </div>
+
+      <div class="flex flex-column gap-3">
+        @if (resendSent()) {
+          <app-message severity="success" text="Email renvoyé." class="w-full justify-content-start"></app-message>
+        }
+        <app-button
+          label="Renvoyer l'email"
+          [loading]="resendLoading()"
+          class="w-full justify-content-center"
+          (click)="resendVerification()">
+        </app-button>
+        <app-button
+          label="Utiliser un autre compte"
+          severity="secondary"
+          [text]="true"
+          class="w-full justify-content-center"
+          (click)="useAnotherAccount()">
+        </app-button>
+      </div>
+    } @else {
     <form [formGroup]="form" (ngSubmit)="submitEmail()">
     <div class="text-center mb-5">
       <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
@@ -87,11 +115,24 @@
           </small>
         }
 
-
+        @if (!isRegister()) {
+          <div class="flex justify-content-end">
+            <app-button
+              label="Mot de passe oublié ?"
+              [link]="true"
+              [loading]="resetLoading()"
+              class="p-0 text-sm"
+              (click)="forgotPassword()">
+            </app-button>
+          </div>
+        }
       </div>
 
       @if (errorMsg()) {
         <app-message severity="error" [text]="errorMsg()" class="w-full justify-content-start"></app-message>
+      }
+      @if (infoMsg()) {
+        <app-message severity="success" [text]="infoMsg()" class="w-full justify-content-start"></app-message>
       }
 
       <app-button
@@ -112,5 +153,6 @@
       </p>
     </div>
     </form>
+    }
   </app-card>
 </div>

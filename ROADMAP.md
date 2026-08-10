@@ -2,6 +2,18 @@
 
 Ce document sert de référence pour le projet ce qu'il reste à faire.
 
+### ✅ Déjà fait (2026-08-09)
+- Bouton "plus..." sous les avis Google d'une activité, ouvre tous les avis du lieu (`search.google.com/local/reviews`).
+- Photo de voyage récupérée automatiquement (Google Places, au choix de la destination) à la création, affichée à l'accueil à la place de l'icône pin — `Trip.photoRef`/`TripSummary.photoRef`.
+- Login : accès à l'app bloqué tant que le compte n'est pas vérifié (`authGuard`) — écran de login remplacé par un rappel "vérifiez votre email" (avec renvoi) dès qu'une session non vérifiée est active, + "mot de passe oublié" réutilisant le champ email du formulaire de connexion.
+- Checkbox de sélection rondes (`--nt-radius-pill`) partout dans l'app ; sur mobile, visibles uniquement une fois le mode sélection actif (`.nt-selection-mode`, au moins une carte sélectionnée), plus systématiquement masquées.
+- Focus auto sur le montant à l'ouverture du dialogue prix (mobile) — le libellé l'avait déjà.
+- Dialogue note : compteur de caractères X/5000, passe en rouge à la limite ; le repositionnement clavier (VisualViewportService) était déjà en place.
+- Nouveau token de thème `--nt-content-inset-background` (contenu d'une carte distinct du fond de page), appliqué à toute la carte des tuiles voyage de l'accueil (override scoped de `--nt-content-background`, pas un fond posé sur un élément interne — sinon masque le dégradé de sélection).
+- Hover des boutons "link" (S'inscrire/Se connecter/Mot de passe oublié) : fond primary à faible opacité au lieu du plein — correctif d'un bug de spécificité CSS (`.app-button--link:hover` perdait contre la règle de base).
+- Voyages de l'accueil triés à venir d'abord (date de début croissante), puis passés (date de fin décroissante).
+- Résumé : conditionnement de l'affichage des tuiles Tâches/Fichiers remonté dans le composant parent (fix du gap double flex quand une tuile est vide) — `computeTasks`/`computeFileGroups` extraits en fonctions pures testables.
+
 ### Offline & données (non prioritaire)
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible (A affiner)
@@ -16,7 +28,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- Retravailler les checkbox pour les mettre ronde, et simplifier tout en les affichants sur mobile aussi 
+- Séparer le paramétrage du trip de celui de générale, mais ou mettre le clique ? (A affiner)
 
 ### Carte
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
@@ -25,7 +37,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Suggestions d'activités via la ville dans le pool (A affiner)
 
 ### Nouveau voyage / IA
-- Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera -> voir plan process-creation-trip-ia.md
+- Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera -> voir plan process-creation-trip-ia.md (Non prioritaire)
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA) (A affiner)
 
 ### I18n (non prioritaire)
@@ -39,9 +51,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 ### UX / Interactions
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
-- Rajouter un bouton "plus..." sous les avis pour rediriger vers tous les avis de google
-- Rajouter la récupération d'une photo à la création du trip et la stocker au niveau du trip pour pouvoir l'afficher au niveau de l'écran d'accueil
-- Compléter l'écran de login pour mettre l'envoei de mail, l'activation du code, et la partie mot de passe oublié
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)
 - Rajouter des attributions aux personnes associés sur tout pour pouvoir mettres des trajets, hotel et des transports + mettre une note "si le transport et partagé, mettre le prix unitaire" (non prioritaire)
@@ -52,20 +61,13 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
-- Ajouter le focus sur la zone de saisie de la dépense, puis le libellé sur les 2 dialogues qui s'ouvrent lors de la cinématique d'ajout d'une dépense sur mobile 
-- le dialogue pour saisir une note ne pend pas en compte la taille du clavier et n'est pas centré, il faudrait que la popup, à l'ouverture du clavier, se décale vers le haut. Lorsque l'on saisie du texte, elle doit se décaler vers le haut jusqu'à atteindre le haut de l'écran (azvec un padding standard de l'application), puis un scroll, uniquement sur la partie contenue prend le relais. Il faut également rajouter un compteur de nombre de caractère et arréter de taper quand la limite est atteinte, avec le compteur X/5000 affiché qui passe en rouge quand on a atteind la limite
-- Modifier le theme pour rajouter un niveau de couleur : il faut séparer la couleur des contenus type card ou panel pour pouvoir faire un dégradé d'une carte sur le contenue d'un card notemment dans l'écran d'accueil (les élements de chaque voyage devrait avoir une teinte légèrement différente du fond de la card)
-- le hover sur les boutons "s'inscrire" et se "connecter" n'est pas bon, il utilise la primary, il devrait être beaucou plus léger (un primary avec une opacité plus faible par exemple)
-- Ordonner les voyage dans l'accueil pour mettre du plus proche de la date du jour au moins proche
-
-
-- Dans résumé, l'affichage n'est pas bon quand certaines fiches sont pas affichés, déplacer le ngif au parent
+- Si je suis sur un jour et que je clique sur "Générale, la map reste, à tord 
 
 
 ### Sécurité (non prioritaire)
 - Implémenter le mot de passe fort et la vérification par email
 
-### Qualité / process (la cvode review est à faire à la fin !)
+### Qualité / process (Non prioritaire, la cvode review est à faire à la fin !)
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
 - Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là (reporté le 2026-08-07, 73 fichiers d'imports impactés — pas prioritaire pour l'instant)
 - Profiter de anfgular 22 et éviter les async function ! 

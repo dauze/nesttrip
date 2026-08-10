@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ViewContainerRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { filter, take } from 'rxjs';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -60,6 +62,9 @@ export class NewTripComponent {
 
   readonly loading = signal(false);
   readonly searching = this.googlePlaceService.searching;
+
+  /** Réf photo Google Places de la destination sélectionnée, résolue automatiquement (voir `onSelect`) — pas d'action utilisateur, `undefined` si pas encore résolue/échec au moment du submit (non bloquant, voir ROADMAP.md "UX / Interactions"). */
+  private readonly photoRef = signal<string | undefined>(undefined);
 
   private titleManuallyEdited = false;
 
@@ -199,6 +204,18 @@ export class NewTripComponent {
       ville: place.name,
       placeId: place.placeId,
     });
+
+    this.photoRef.set(undefined);
+    this.googlePlaceService.getPlacePhotos$(place.placeId)
+      .pipe(
+        // On attend un état terminal (succès ou erreur), jamais "loading"/"idle".
+        filter((state) => state.status === 'success' || state.status === 'error'),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((state) => {
+        if (state.status === 'success') this.photoRef.set(state.data?.photos?.[0]?.name);
+      });
   }
 
   onSearch(query: string): void {
@@ -226,6 +243,7 @@ export class NewTripComponent {
       title: this.form.value.title ?? '',
       ville: this.form.value.ville ?? '',
       placeId: this.form.value.placeId ?? '',
+      ...(this.photoRef() ? { photoRef: this.photoRef() } : {}),
       days: this.buildDays(dateDebut, dateFin),
       activities: [],
       dayActivityInstances: [],

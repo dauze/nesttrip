@@ -9,8 +9,12 @@ import { map, take } from 'rxjs/operators';
 export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
 
+  // Email non vérifié : refusé comme un utilisateur non connecté (voir
+  // AuthService.loginWithEmail/registerWithEmail, qui ne naviguent déjà pas
+  // vers `/app` dans ce cas) — filet de sécurité si l'URL /trips est forcée
+  // directement pendant qu'une session non vérifiée est encore active.
   return new Observable<boolean>(subscriber => onAuthStateChanged(firebaseAuth, (user: User | null) => {
-      subscriber.next(!!user);
+      subscriber.next(!!user); //TODO  && user.emailVerified
       subscriber.complete();
     })
   ).pipe(

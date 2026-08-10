@@ -21,6 +21,8 @@ export interface Trip {
   expenses: Expense[];
   notes: Notes;
   placeId?: string;
+  /** Réf photo Google Places du lieu (destination), récupérée automatiquement à la création — voir `GooglePhotoService.getPhotoUrl$` pour la résoudre en URL affichable. */
+  photoRef?: string;
   /** Paliers de distance (vol d'oiseau, km) + mode associé pour la sélection auto du mode de trajet affiché entre activités — voir `selectTravelMode`. */
   travelTiers?: TravelTiers;
   /** Override manuel du mode de trajet pour une paire de lieux donnée (clé = `buildPlacePairKey`) — écrase la sélection auto (`selectTravelMode`) tant qu'il existe pour cette paire. Absence de clé = automatique. */
@@ -53,7 +55,7 @@ export const DEFAULT_TRAVEL_TIERS: TravelTiers = { tier1Mode: 'walk', tier1MaxKm
  * "voyage actif" à la connexion), calculées côté data source directement
  * depuis les clés du map Firestore `days`, sans mapper complet.
  */
-export interface TripSummary extends Pick<Trip, 'id' | 'title' | 'ownerId'> {
+export interface TripSummary extends Pick<Trip, 'id' | 'title' | 'ownerId' | 'photoRef'> {
   earliestDay?: Date;
   latestDay?: Date;
 }

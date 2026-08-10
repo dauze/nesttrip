@@ -23,7 +23,9 @@ import { CurrencyConversionService } from '@app/core/services/currency-conversio
 import { convertWithRates } from '@app/core/utils/currency-conversion.util';
 import { suggestedCurrencyForCountry } from '@app/core/utils/country-currency.util';
 import { TripTasksTileComponent } from './trip-tasks-tile/trip-tasks-tile.component';
+import { computeTasks } from './trip-tasks-tile/trip-tasks-tile.util';
 import { TripFilesTileComponent } from './trip-files-tile/trip-files-tile.component';
+import { computeFileGroups } from './trip-files-tile/trip-files-tile.util';
 import { ActivityTypeRingsComponent, RingChartEntry } from './activity-type-rings/activity-type-rings.component';
 import { computeExpenseBreakdown, ExpenseItem } from './trip-summary.util';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
@@ -255,6 +257,25 @@ export class TripSummaryComponent {
   );
 
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
+
+  /**
+   * Conditionne l'AFFICHAGE de `<app-trip-tasks-tile>`/`<app-trip-files-tile>`
+   * ici, dans le parent (ROADMAP.md "Bugs / fixes", retour utilisateur :
+   * gap double dans `.trip-summary-body`, `display:flex` + `gap`) — un `@if`
+   * posé À L'INTÉRIEUR du template de la tuile enfant laisse quand même son
+   * host `<app-trip-xxx-tile>` dans le DOM (vide), qui compte alors comme un
+   * item flex à part entière et reçoit son propre `gap` de chaque côté. En
+   * réutilisant les mêmes fonctions pures que chaque tuile (`computeTasks`/
+   * `computeFileGroups`, voir leurs `.util.ts`) juste pour la longueur, la
+   * tuile enfant n'est plus du tout instanciée quand elle n'a rien à montrer.
+   */
+  readonly hasTasks = computed(() =>
+    computeTasks(this.allPlacedActivities(), this.tripFacade.getAllLogistics(this.tripId())()).length > 0,
+  );
+
+  readonly hasFiles = computed(() =>
+    computeFileGroups(this.allPlacedActivities(), this.tripFacade.allLogisticsSorted(this.tripId())).length > 0,
+  );
 
   /**
    * Dépenses regroupées par TYPE (vol, logement, activités, visites,

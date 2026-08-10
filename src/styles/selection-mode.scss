@@ -53,15 +53,24 @@
   border-bottom: 0!important;
 }
 
-// Checkbox PC toujours visible (voir SelectableDirective.onCheckboxClick) :
-// absente sur mobile, où la sélection passe uniquement par long-press + tap.
-// Même breakpoint que ViewportService (768px). Sélecteur doublé (spécificité
-// 2, même convention que `.compact-form.compact-form` dans utilities.scss) :
+// Checkbox PC toujours visible (voir SelectableDirective.onCheckboxClick).
+// Sur mobile, masquée tant qu'aucune carte n'est sélectionnée (entrée en mode
+// sélection uniquement via long-press, voir ROADMAP.md "UI") : réapparaît dès
+// que `.nt-selection-mode` (SelectableDirective, reflète
+// `SelectionModeService.active()`) est posé sur la carte ancêtre. Même
+// breakpoint que ViewportService (768px). Sélecteur doublé (spécificité 2,
+// même convention que `.compact-form.compact-form` dans utilities.scss) :
 // doit gagner à coup sûr contre `:host { display: inline-flex }` de
 // CheckboxComponent (spécificité 1) sans dépendre de l'ordre de chargement
 // entre la feuille globale et le style scopé du composant, injecté au runtime.
 .nt-select-checkbox.nt-select-checkbox {
   @media (max-width: 768px) {
     display: none;
+  }
+}
+
+.nt-selectable.nt-selection-mode .nt-select-checkbox.nt-select-checkbox {
+  @media (max-width: 768px) {
+    display: inline-flex;
   }
 }

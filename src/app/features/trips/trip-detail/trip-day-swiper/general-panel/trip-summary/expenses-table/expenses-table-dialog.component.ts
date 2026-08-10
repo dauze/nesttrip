@@ -204,6 +204,7 @@ export class ExpensesTableDialogComponent {
   protected openCreate(): void {
     this.dialogService.open<void, PriceEditDialogData>(PriceEditDialogComponent, {
       viewContainerRef: this.viewContainerRef,
+      autoFocus: '.price-edit-dialog__amount',
       data: {
         initialAmount: null,
         initialCurrency: this.currencyOptions[0]?.value ?? 'EUR',
@@ -221,6 +222,7 @@ export class ExpensesTableDialogComponent {
     this.dialogService
       .open<string | undefined, SimpleTextEntryDialogData>(SimpleTextEntryDialogComponent, {
         viewContainerRef: this.viewContainerRef,
+        autoFocus: '.simple-text-entry-dialog__input',
         data: { placeholder: 'Libellé (ex. Smoothie)', title: 'Libellé' },
       })
       .closed.subscribe((label) => {
@@ -263,6 +265,7 @@ export class ExpensesTableDialogComponent {
   protected openAmountDialog(expense: Expense): void {
     this.dialogService.open<void, PriceEditDialogData>(PriceEditDialogComponent, {
       viewContainerRef: this.viewContainerRef,
+      autoFocus: '.price-edit-dialog__amount',
       data: {
         initialAmount: expense.amount,
         initialCurrency: expense.currency,
@@ -281,6 +284,7 @@ export class ExpensesTableDialogComponent {
     this.dialogService
       .open<string | undefined, SimpleTextEntryDialogData>(SimpleTextEntryDialogComponent, {
         viewContainerRef: this.viewContainerRef,
+        autoFocus: '.simple-text-entry-dialog__input',
         data: { initialValue: expense.label, placeholder: 'Libellé (ex. Smoothie)', title: 'Libellé' },
       })
       .closed.subscribe((label) => {

@@ -1,3 +1,22 @@
+// Teinte légèrement différente du fond de page pour TOUTE la carte (pas
+// juste son contenu, retour utilisateur 2026-08-09) — override localisé de
+// `--nt-content-background` (voir card.component.scss, `:host { background:
+// var(--nt-content-background) }`) plutôt qu'un fond posé sur un élément
+// interne : un second fond opaque à l'intérieur de la carte masquait le
+// dégradé de sélection (`.nt-selectable.nt-selected`, selection-mode.scss),
+// peint sur ce MÊME host `app-card` — cette variable CSS scoped laisse le
+// dégradé de sélection s'appliquer normalement par-dessus.
+app-card.card {
+  --nt-content-background: var(--nt-content-inset-background);
+}
+
+.trip-select-row__thumb {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: var(--nt-content-border-radius);
+}
+
 .trip-select-row:focus,
 .trip-select-row:focus-visible {
   .trip-select-row__title,

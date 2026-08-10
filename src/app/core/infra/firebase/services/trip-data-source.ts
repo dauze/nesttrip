@@ -22,7 +22,7 @@ export class TripDataSource extends TripRepository {
       const unsub = onSnapshot(
         query(collection(this.db, 'trips'), where(`members.${user.uid}`, '!=', null)),
         (snap) => observer.next(snap.docs.map((d) => {
-          const { id, title, ownerId, days } = d.data() as TripFirebase;
+          const { id, title, ownerId, photoRef, days } = d.data() as TripFirebase;
           // Bornes de l'intervalle de jours, directement depuis les clés du
           // map Firestore (`getTime()` en string, voir CLAUDE.md) — pas
           // besoin du mapper complet (`tripFromFb`) juste pour ça, cette
@@ -31,7 +31,7 @@ export class TripDataSource extends TripRepository {
           const dayRange = dayKeys.length
             ? { earliestDay: new Date(Math.min(...dayKeys)), latestDay: new Date(Math.max(...dayKeys)) }
             : {};
-          return { id, title, ownerId, ...dayRange };
+          return { id, title, ownerId, ...(photoRef ? { photoRef } : {}), ...dayRange };
         })),
         (err) => observer.error(err)
       );

@@ -1,18 +1,16 @@
-@if (tasks().length > 0) {
-  <app-card class="trip-tasks-tile">
-    <div cardTitle>Réservations</div>
-    <div class="flex flex-column gap-1">
-      @for (task of tasks(); track task.key) {
-        <div
-          class="trip-tasks-tile__item"
-          role="button"
-          tabindex="0"
-          [style.--task-color]="task.colorVar"
-          (click)="task.onClick()"
-          (keydown.enter)="task.onClick()">
-          <span class="trip-tasks-tile__label">{{ task.label }}</span>
-        </div>
-      }
-    </div>
-  </app-card>
-}
+<app-card class="trip-tasks-tile">
+  <div cardTitle>Réservations</div>
+  <div class="flex flex-column gap-1">
+    @for (task of tasks(); track task.key) {
+      <div
+        class="trip-tasks-tile__item"
+        role="button"
+        tabindex="0"
+        [style.--task-color]="task.colorVar"
+        (click)="onTaskClick(task)"
+        (keydown.enter)="onTaskClick(task)">
+        <span class="trip-tasks-tile__label">{{ task.label }}</span>
+      </div>
+    }
+  </div>
+</app-card>

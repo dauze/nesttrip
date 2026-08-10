@@ -121,6 +121,17 @@
   // gardent cette valeur par défaut.
   --nt-content-border-width: var(--nt-border-width-hairline);
 
+  // Fond du CONTENU imbriqué dans une carte/panel (ex. la ligne voyage dans
+  // sa tuile d'accueil) — distinct de `--nt-content-background` (la carte/le
+  // panel lui-même) pour matérialiser une légère différence de teinte entre
+  // les deux niveaux (ROADMAP.md "UX / Interactions"/"Bugs / fixes", décision
+  // 2026-08-09 : contenu plus clair que la carte). En light, `--nt-surface-0`
+  // (blanc) est déjà la teinte la plus claire possible : `--nt-surface-50`
+  // reste la seule étape suivante disponible dans l'échelle (même
+  // convention que `--nt-content-hover-background` un cran plus loin), la
+  // différence de teinte prime ici sur le sens strict "plus clair".
+  --nt-content-inset-background: var(--nt-surface-50);
+
   // Fond de page (body, toolbar, carte épinglée en mode empilé) — distinct de
   // `--nt-content-background` (cartes/panels) pour qu'on distingue visuellement
   // les cartes du fond, dans les deux modes (voir ROADMAP.md "UX / Interactions" :
@@ -156,8 +167,7 @@
   // thème : un rayon doit suivre l'échelle typographique de l'utilisateur,
   // pas rester figé en pixels physiques). Échelle agrandie (ROADMAP.md
   // "### UI", "aggrandi les border radius") par rapport aux valeurs Aura
-  // d'origine — direction "premium" plus arrondie (DESIGN.md) — tout en
-  // gardant `--nt-radius-xs` intact (checkbox, volontairement anguleuse).
+  // d'origine — direction "premium" plus arrondie (DESIGN.md).
   --nt-radius-none: 0;
   --nt-radius-xs: 0.125rem;
   --nt-radius-sm: 0.25rem;
@@ -441,6 +451,9 @@
   --nt-content-background: var(--nt-surface-900);
   --nt-content-hover-background: var(--nt-surface-800);
   --nt-content-border-color: var(--nt-surface-700);
+  // Ici, contrairement au light, réellement PLUS CLAIR que la carte (surface-800
+  // > surface-900) — voir la doc du token dans `:root` plus haut.
+  --nt-content-inset-background: var(--nt-surface-800);
   --nt-page-background: var(--nt-surface-950);
 
   --nt-overlay-background: var(--nt-surface-900);
@@ -525,6 +538,7 @@
   --nt-content-background: var(--nt-surface-0);
   --nt-content-hover-background: var(--nt-surface-100);
   --nt-content-border-color: var(--nt-surface-200);
+  --nt-content-inset-background: var(--nt-surface-50);
   --nt-page-background: var(--nt-surface-50);
 
   --nt-overlay-background: var(--nt-surface-0);

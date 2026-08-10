@@ -14,7 +14,9 @@
     </app-card>
   }
 
-  <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
+  @if (hasTasks()) {
+    <app-trip-tasks-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
+  }
 
   <app-card class="trip-summary-expenses-card" [fillHeight]="true">
     <div cardTitle>Dépenses</div>
@@ -36,5 +38,7 @@
     </div>
   </app-card>
 
-  <app-trip-files-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
+  @if (hasFiles()) {
+    <app-trip-files-tile [tripId]="tripId()" [placedActivities]="allPlacedActivities()" />
+  }
 </div>

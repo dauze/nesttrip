@@ -1,25 +1,23 @@
-@if (fileGroups().length > 0) {
-  <app-card class="trip-files-tile flex-1 min-w-0" [fillHeight]="true">
-    <div cardTitle>Fichiers</div>
-      <div class="trip-files-tile__list flex flex-column gap-2 flex-1">
-        @for (group of fileGroups(); track group.key) {
-          <div class="flex flex-column gap-1">
-            <div class="flex align-items-center gap-1 text-sm nt-text-muted min-w-0">
-              <i [class]="group.icon" [style.color]="'var(' + group.colorVar + ')'"></i>
-              <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ group.title }}</span>
-            </div>
-            <div class="flex flex-wrap gap-1">
-              @for (file of group.files; track file.path) {
-                <app-chip
-                  [icon]="fileIcon(file.name)"
-                  (click)="openFile(file)"
-                  class="nt-bg-subtle text-sm cursor-pointer">
-                  <span class="trip-files-tile__file-name" [title]="file.name">{{ file.name }}</span>
-                </app-chip>
-              }
-            </div>
+<app-card class="trip-files-tile flex-1 min-w-0" [fillHeight]="true">
+  <div cardTitle>Fichiers</div>
+    <div class="trip-files-tile__list flex flex-column gap-2 flex-1">
+      @for (group of fileGroups(); track group.key) {
+        <div class="flex flex-column gap-1">
+          <div class="flex align-items-center gap-1 text-sm nt-text-muted min-w-0">
+            <i [class]="group.icon" [style.color]="'var(' + group.colorVar + ')'"></i>
+            <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ group.title }}</span>
           </div>
-        }
-      </div>
-  </app-card>
-}
+          <div class="flex flex-wrap gap-1">
+            @for (file of group.files; track file.path) {
+              <app-chip
+                [icon]="fileIcon(file.name)"
+                (click)="openFile(file)"
+                class="nt-bg-subtle text-sm cursor-pointer">
+                <span class="trip-files-tile__file-name" [title]="file.name">{{ file.name }}</span>
+              </app-chip>
+            }
+          </div>
+        </div>
+      }
+    </div>
+</app-card>
