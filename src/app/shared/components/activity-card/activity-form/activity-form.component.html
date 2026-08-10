@@ -85,7 +85,7 @@
       <!-- DEADLINE -->
       @if (showDeadline()) {
         <app-divider class="m-1" />
-        <div class="col-12 p-0 min-w-0 overflow-hidden" formGroupName="booking">
+        <div class="col-6 p-0 min-w-0 overflow-hidden" formGroupName="booking">
           <div class="flex flex-column gap-1 w-full min-w-0">
             <label for="booking-deadline" class="text-xs flex align-items-center gap-1" [ngClass]="isDeadlineSoon() ? 'nt-text-warning' : 'nt-text-muted'">
               <i class="pi pi-calendar text-xs"></i>Deadline

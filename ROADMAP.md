@@ -8,7 +8,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Login : accès à l'app bloqué tant que le compte n'est pas vérifié (`authGuard`) — écran de login remplacé par un rappel "vérifiez votre email" (avec renvoi) dès qu'une session non vérifiée est active, + "mot de passe oublié" réutilisant le champ email du formulaire de connexion.
 - Checkbox de sélection rondes (`--nt-radius-pill`) partout dans l'app ; sur mobile, visibles uniquement une fois le mode sélection actif (`.nt-selection-mode`, au moins une carte sélectionnée), plus systématiquement masquées.
 - Focus auto sur le montant à l'ouverture du dialogue prix (mobile) — le libellé l'avait déjà.
-- Dialogue note : compteur de caractères X/5000, passe en rouge à la limite ; le repositionnement clavier (VisualViewportService) était déjà en place.
 - Nouveau token de thème `--nt-content-inset-background` (contenu d'une carte distinct du fond de page), appliqué à toute la carte des tuiles voyage de l'accueil (override scoped de `--nt-content-background`, pas un fond posé sur un élément interne — sinon masque le dégradé de sélection).
 - Hover des boutons "link" (S'inscrire/Se connecter/Mot de passe oublié) : fond primary à faible opacité au lieu du plein — correctif d'un bug de spécificité CSS (`.app-button--link:hover` perdait contre la règle de base).
 - Voyages de l'accueil triés à venir d'abord (date de début croissante), puis passés (date de fin décroissante).
@@ -29,6 +28,15 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
 - Séparer le paramétrage du trip de celui de générale, mais ou mettre le clique ? (A affiner)
+- Dialogue note : ne doit pas permetre de saisir plus de caractères qure 5000 avec une animation sur le compteur qui check à chaque saisie supérieur à 5000; le repositionnement clavier (VisualViewportService) ne fonctionne pas sur cette popup mais sur tous les autres oui, lorsque j'affiche la popup, le clavier s'ouvre, et la popup n'est pas décalée vers le haut comme pour les autres popup 
+- Les deadlines sur mobile sont cliquable en dehors de leur zone, il faudrait que la zone cliquable soit la tail de l'input, pas plus (comme les autres champs)
+- Pour le login, réaliser la page de réinitialisation du mdp et la page de confirmation après activation du lien dans le même style que le login
+- Retravailler l'ui de l'écran d'accueil : mettre du box shadow sur la carte, supprimer le padding entre la photo et le bords, la rendre plus jolie. Et échanger la couleur, la carte doit être blanche, et le contenu un peu plus foncé mais moins que le foncé du background (un dégradé)
+- Pour la selection lors de la suppression, il faudrait pas plutît mettre la coueur primary ? Ce serait plus jolie non ? 
+- Le logo affiché dans le libellé de "Prix" doit être le logo de la currency de la personne 
+- Si il n'y a pas d'activité, la carte doit être centré sur le placeid du trip, pas paris 
+- Dans les settings du trip, pouvoir changer la destination, cela changerais aussi la photo
+- déplacer les settings du trip pour les mettre ailleurs que sur les settings généraux (A affiner) 
 
 ### Carte
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
@@ -51,6 +59,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 ### UX / Interactions
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
+- Rajouter les transports en commun comme moyen de transports
+ 
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)
 - Rajouter des attributions aux personnes associés sur tout pour pouvoir mettres des trajets, hotel et des transports + mettre une note "si le transport et partagé, mettre le prix unitaire" (non prioritaire)
@@ -61,7 +71,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
-- Si je suis sur un jour et que je clique sur "Générale, la map reste, à tord 
+- Si je suis sur un jour et que je clique sur "Générale", la map reste, à tord 
 
 
 ### Sécurité (non prioritaire)
