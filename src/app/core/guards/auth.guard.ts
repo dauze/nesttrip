@@ -14,7 +14,7 @@ export const authGuard: CanActivateFn = () => {
   // vers `/app` dans ce cas) — filet de sécurité si l'URL /trips est forcée
   // directement pendant qu'une session non vérifiée est encore active.
   return new Observable<boolean>(subscriber => onAuthStateChanged(firebaseAuth, (user: User | null) => {
-      subscriber.next(!!user); //TODO  && user.emailVerified
+      subscriber.next(!!user && user.emailVerified );
       subscriber.complete();
     })
   ).pipe(
