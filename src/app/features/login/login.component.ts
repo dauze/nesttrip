@@ -57,10 +57,8 @@ export class LoginComponent {
     firstName: '',
     lastName: '',
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, ]],
+    password: ['', [Validators.required, Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/) ]],
   });
-  //TODO rajouter Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/) après le process de mot de passe oublié 
-
   
   constructor() {
     const user = this.authService.getCurrentUser();
