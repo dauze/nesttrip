@@ -102,6 +102,9 @@
       @if (hasFiles()) {
         <i class="pi pi-paperclip activity-header__meta-icon" aria-label="Fichiers associés" title="Fichiers associés"></i>
       }
+      @if (activity().source === 'ai_generated') {
+        <app-tag severity="info" value="Suggéré par IA" class="flex-shrink-0" />
+      }
     </div>
   </div>
 </div>

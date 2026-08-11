@@ -46,6 +46,18 @@ describe('activity.mapper', () => {
       expect(result.files).toEqual([]);
       expect(result.photoRefs).toEqual(['ref-1']);
     });
+
+    it("n'écrit pas source pour une activité créée manuellement", () => {
+      const result = activityToFb({ id: 'act-4', title: 'Manuelle', files: [], photoRefs: [] });
+
+      expect('source' in result).toBe(false);
+    });
+
+    it('écrit source pour une activité issue de la génération IA', () => {
+      const result = activityToFb({ id: 'act-5', title: 'Générée', files: [], photoRefs: [], source: 'ai_generated' });
+
+      expect(result.source).toBe('ai_generated');
+    });
   });
 
   describe('bookingFromFb / bookingToFb', () => {

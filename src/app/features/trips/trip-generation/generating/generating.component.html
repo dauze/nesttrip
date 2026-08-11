@@ -1,0 +1,26 @@
+<div class="flex flex-column gap-2">
+  <app-card>
+    <div cardTitle class="flex justify-content-between align-items-center w-full">
+      <span class="text-2xl font-semibold">On prépare ton voyage...</span>
+    </div>
+
+    <div class="flex flex-column gap-4">
+      @if (status() === 'failed') {
+        <div class="generating__step flex align-items-center gap-2">
+          <i class="pi pi-times-circle nt-text-danger"></i>
+          <span>La recherche d'activités a échoué{{ error() ? ' : ' + error() : '' }}.</span>
+        </div>
+        <app-button label="Continuer en mode manuel" (click)="backToManual()" />
+      } @else {
+        <div class="generating__step flex align-items-center gap-2">
+          <app-progress-spinner [style]="{ width: '1.1rem', height: '1.1rem' }" />
+          <span>Recherche des activités</span>
+        </div>
+
+        <div class="nt-footer-actions justify-content-end pt-2">
+          <app-button label="Annuler" severity="secondary" [outlined]="true" (click)="backToManual()" />
+        </div>
+      }
+    </div>
+  </app-card>
+</div>

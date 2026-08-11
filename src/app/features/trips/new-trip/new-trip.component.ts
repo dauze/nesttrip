@@ -28,6 +28,8 @@ import {
 import { SelectButtonComponent } from '@app/shared/components/select-button/select-button.component';
 import { AiTripPreferencesComponent } from './ai-trip-preferences/ai-trip-preferences.component';
 import { PLANNING_MODE_OPTIONS, PlanningMode, TripAiPreferences, createDefaultAiPreferences } from './trip-ai-preferences.model';
+import { TripGeneration } from './trip-generation.model';
+import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip-generation-repository';
 
 @Component({
   selector: 'app-new-trip',
@@ -50,6 +52,7 @@ export class NewTripComponent {
   private readonly dialogService = inject(DialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly tripGenerationRepository = inject(TripGenerationRepository);
 
   private readonly rawPlaces = this.googlePlaceService.places;
 
@@ -93,6 +96,21 @@ export class NewTripComponent {
 
   /** Réf photo Google Places de la destination sélectionnée, résolue automatiquement (voir `onSelect`) — pas d'action utilisateur, `undefined` si pas encore résolue/échec au moment du submit (non bloquant, voir ROADMAP.md "UX / Interactions"). */
   private readonly photoRef = signal<string | undefined>(undefined);
+
+  /** Coordonnées de la destination sélectionnée via Google (voir `onSelect`) — nécessaires pour biaiser géographiquement la recherche Places du pipeline IA (§4.1). `undefined` si la ville a été saisie en texte libre (pas de sélection Google) : le mode IA est alors bloqué (voir `aiSubmitError`), la recherche élargie ne peut pas fonctionner sans point d'ancrage géographique. */
+  private readonly destinationLocation = signal<{ latitude: number; longitude: number } | undefined>(undefined);
+
+  /** Raison de blocage du mode IA au submit, affichée sous la carte manuel/IA — `null` si rien ne bloque. Réévalué à chaque rendu (pas un `computed()`, mêmes raisons que `showPlanningModeCard`). */
+  protected aiSubmitError(): string | null {
+    if (this.planningMode() !== 'ai') return null;
+    if (this.aiPreferences().assistanceLevel !== 'activities_only') {
+      return "Seul le mode \"Suggérer des activités\" est disponible pour l'instant — les autres arrivent bientôt.";
+    }
+    if (!this.destinationLocation()) {
+      return 'Choisis une destination dans les suggestions Google (pas juste un texte libre) pour que l\'IA puisse chercher des activités autour.';
+    }
+    return null;
+  }
 
   private titleManuallyEdited = false;
 
@@ -207,6 +225,7 @@ export class NewTripComponent {
       this.onSelect(result.place);
       return;
     }
+    this.destinationLocation.set(undefined);
     this.form.controls.ville.setValue(result.text);
   }
 
@@ -239,6 +258,7 @@ export class NewTripComponent {
       placeId: place.placeId,
     });
 
+    this.destinationLocation.set({ latitude: place.latitude, longitude: place.longitude });
     this.photoRef.set(undefined);
     this.googlePlaceService.getPlacePhotos$(place.placeId)
       .pipe(
@@ -253,6 +273,7 @@ export class NewTripComponent {
   }
 
   onSearch(query: string): void {
+    this.destinationLocation.set(undefined);
     this.googlePlaceService.setSearchTerm(query ?? '');
   }
 
@@ -265,6 +286,8 @@ export class NewTripComponent {
       this.form.markAllAsTouched();
       return;
     }
+    if (this.aiSubmitError()) return;
+
     this.loading.set(true);
 
     const user = this.authService.getCurrentUser();
@@ -290,7 +313,11 @@ export class NewTripComponent {
       },
     };
 
-    this.saveTrip(trip);
+    if (this.planningMode() === 'ai') {
+      this.saveTripAndStartGeneration(trip);
+    } else {
+      this.saveTrip(trip);
+    }
   }
 
   private buildDays(start: Date, end: Date): Day[] {
@@ -313,6 +340,44 @@ export class NewTripComponent {
   private saveTrip(trip: Trip): void {
     this.tripFacade.saveTrip(trip);
     this.router.navigate([`/trips/${trip.id}`]);
+  }
+
+  /**
+   * Mode IA (`activities_only` uniquement pour l'instant, voir `aiSubmitError`) :
+   * le trip est créé exactement comme en mode manuel (mêmes days/activités
+   * vides — voir process-creation-trip-ia.md §2.4, "le trip est créé en base"),
+   * PUIS le job de génération (`tripGenerations/{tripId}`, collection séparée,
+   * voir `TripGenerationRepository`) est créé à son tour — c'est cette
+   * seconde écriture qui déclenche la Cloud Function de génération. Redirige
+   * vers l'écran de génération plutôt que l'éditeur de voyage.
+   */
+  private saveTripAndStartGeneration(trip: Trip): void {
+    const location = this.destinationLocation();
+    if (!location) return; // garde déjà faite par aiSubmitError, ceinture-bretelles
+
+    this.tripFacade.saveTrip(trip);
+
+    const now = new Date();
+    const job: TripGeneration = {
+      tripId: trip.id,
+      status: 'generating',
+      preferences: this.aiPreferences(),
+      destination: { ville: trip.ville, placeId: trip.placeId ?? '', latitude: location.latitude, longitude: location.longitude },
+      candidates: [],
+      preview: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.tripGenerationRepository.create(job)
+      .then(() => this.router.navigate([`/trips/${trip.id}/generating`]))
+      .catch((err) => {
+        // Le trip lui-même est déjà créé (saveTrip ci-dessus, optimiste) : on
+        // n'échoue pas toute la création pour un souci sur le SEUL job IA,
+        // on retombe simplement sur l'éditeur de voyage classique.
+        console.error('[NewTripComponent] tripGeneration create error', err);
+        this.router.navigate([`/trips/${trip.id}`]);
+      });
   }
 
   onCancel(): void {

@@ -14,6 +14,8 @@ export interface PoolActivity {
   photoRefs: string[];
   /** Code pays ISO 3166-1 alpha-2 du lieu Google sélectionné — voir `suggestedCurrencyForCountry` (src/specs/devise.md 3.1). */
   countryCode?: string;
+  /** Absent = créée manuellement (comportement historique). `'ai_generated'` : issue du pipeline de génération IA (voir src/specs/process-creation-trip-ia.md §2.5/§4.3) — affiche un badge "Suggéré par IA", n'affecte jamais l'édition (une activité générée redevient une activité normale dès qu'elle est modifiée). */
+  source?: 'ai_generated';
 }
 
 /** Instance réelle d'une activité rattachée à un jour : son propre form, indépendant des autres instances. */
@@ -62,6 +64,8 @@ export interface Activity {
   latitude?: number;
   longitude?: number;
   photoRefs: string[];
+  /** Voir `PoolActivity.source`. */
+  source?: 'ai_generated';
 }
 
 /**

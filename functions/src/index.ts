@@ -13,6 +13,7 @@ import { getFlightStatusHandler } from './flights/get-flight-status.handler';
 import { getFlightLookupHandler } from './flights/get-flight-lookup.handler';
 import { getTrajetHandler } from './trajets/get-trajet.handler';
 import { getExchangeRatesHandler } from './taux-change/get-exchange-rates.handler';
+import { makeGenerateTripTrigger } from './trip-generation/generate-trip.trigger';
 
 admin.initializeApp();
 
@@ -48,3 +49,8 @@ export const api = onRequest(
   { secrets: [googleApiKey, aeroDataBoxApiKey], region: 'europe-west1' },
   app
 );
+
+// Pipeline de génération de voyage assistée par IA (voir
+// src/specs/process-creation-trip-ia.md §4) — trigger Firestore, pas de
+// route HTTP.
+export const generateTrip = makeGenerateTripTrigger(googleApiKey);

@@ -14,6 +14,8 @@ export interface ActivityFirebase {
   photoRefs?: string[];
   /** Code pays ISO 3166-1 alpha-2 du lieu Google sélectionné — voir `suggestedCurrencyForCountry` (src/specs/devise.md 3.1). */
   countryCode?: string;
+  /** Voir `PoolActivity.source` (activity.model.ts). */
+  source?: 'ai_generated';
 }
 export interface PriceFirebase {
   amount: number;

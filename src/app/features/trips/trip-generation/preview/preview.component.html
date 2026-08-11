@@ -1,0 +1,42 @@
+<div class="flex flex-column gap-2">
+  <app-card>
+    <div cardTitle class="flex justify-content-between align-items-center w-full">
+      <span class="text-2xl font-semibold">Activités proposées</span>
+    </div>
+
+    <div class="flex flex-column gap-3">
+      @if (items().length === 0) {
+        <p class="nt-text-muted">Aucune activité proposée pour l'instant.</p>
+      }
+
+      @for (item of items(); track item.candidateId) {
+        <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
+          <app-checkbox [checked]="item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
+
+          <div class="flex flex-column flex-1 min-w-0 gap-1">
+            <span class="font-semibold">{{ item.title }}</span>
+            @if (item.address) {
+              <span class="nt-text-muted text-sm">{{ item.address }}</span>
+            }
+            <span class="nt-text-muted text-xs">{{ item.reason }}</span>
+          </div>
+
+          <app-button
+            label="Remplacer"
+            severity="secondary"
+            [outlined]="true"
+            size="small"
+            class="flex-shrink-0"
+            [disabled]="!canReplace(item)"
+            (click)="replace(item.candidateId)"
+          />
+        </div>
+      }
+    </div>
+
+    <div cardFooter class="nt-footer-actions justify-content-end gap-2 pt-2">
+      <app-button label="Régénérer tout" severity="secondary" [outlined]="true" (click)="regenerateAll()" />
+      <app-button label="Valider" icon="pi pi-check" [loading]="validating()" (click)="validate()" />
+    </div>
+  </app-card>
+</div>

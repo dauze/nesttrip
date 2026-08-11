@@ -24,6 +24,8 @@ import { TravelRouteRepository } from './core/infra/firebase/services/travel-rou
 import { FirebaseTravelRouteRepository } from './core/infra/firebase/services/firebase-travel-route-repository';
 import { ExchangeRateRepository } from './core/infra/firebase/services/exchange-rate-repository';
 import { FirebaseExchangeRateRepository } from './core/infra/firebase/services/firebase-exchange-rate-repository';
+import { TripGenerationRepository } from './core/infra/firebase/services/trip-generation-repository';
+import { FirebaseTripGenerationRepository } from './core/infra/firebase/services/firebase-trip-generation-repository';
 
 registerLocaleData(localeFr);
 
@@ -63,5 +65,7 @@ export const appConfig: ApplicationConfig = {
     { provide: TravelRouteRepository, useExisting: FirebaseTravelRouteRepository },
     FirebaseExchangeRateRepository,
     { provide: ExchangeRateRepository, useExisting: FirebaseExchangeRateRepository },
+    FirebaseTripGenerationRepository,
+    { provide: TripGenerationRepository, useExisting: FirebaseTripGenerationRepository },
   ],
 };

@@ -21,6 +21,7 @@ export function activityToFb(a: PoolActivity): ActivityFirebase {
     ...(a.latitude !== undefined ? { latitude: a.latitude } : {}),
     ...(a.longitude !== undefined ? { longitude: a.longitude } : {}),
     ...(a.countryCode ? { countryCode: a.countryCode } : {}),
+    ...(a.source ? { source: a.source } : {}),
   };
 }
 

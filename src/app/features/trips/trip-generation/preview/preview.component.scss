@@ -1,0 +1,12 @@
+.preview-item {
+  padding: 0.5rem 0;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.preview-item--excluded {
+  opacity: 0.5;
+}

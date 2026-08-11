@@ -26,6 +26,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: ':id/generating',
+        loadComponent: () =>
+          import('@features/trips/trip-generation/generating/generating.component').then(
+            (m) => m.GeneratingComponent,
+          ),
+      },
+      {
+        path: ':id/preview',
+        loadComponent: () =>
+          import('@features/trips/trip-generation/preview/preview.component').then(
+            (m) => m.PreviewComponent,
+          ),
+      },
+      {
         path: ':id',
         loadComponent: () =>
           import('@features/trips/trip-detail/trip-detail.component').then(

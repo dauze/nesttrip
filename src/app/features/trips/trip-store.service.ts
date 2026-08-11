@@ -332,6 +332,7 @@ export class TripStore {
       price: instance.price,
       booking: instance.booking,
       notes: instance.notes,
+      source: pool?.source,
     };
   }
 
@@ -353,6 +354,7 @@ export class TripStore {
       latitude: pool.latitude,
       longitude: pool.longitude,
       photoRefs: pool.photoRefs,
+      source: pool.source,
       ...(instance
         ? {
             type: instance.type,
