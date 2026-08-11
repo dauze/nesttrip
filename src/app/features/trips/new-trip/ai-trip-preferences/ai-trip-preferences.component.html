@@ -83,6 +83,21 @@
     }
   </div>
 
+  <!-- Budget max -->
+  <div class="flex flex-column gap-2">
+    <label for="ai-budget-max" class="font-medium">Budget max des activités (€, optionnel)</label>
+    <input
+      appInputText
+      type="number"
+      id="ai-budget-max"
+      min="0"
+      class="w-full"
+      [value]="preferences().budgetMaxEur ?? ''"
+      (input)="onBudgetMaxInput($event)"
+      placeholder="Ex : 300"
+    />
+  </div>
+
   <!-- Contexte libre -->
   <div class="flex flex-column gap-2">
     <label for="ai-free-text" class="font-medium">Dis-nous en plus</label>

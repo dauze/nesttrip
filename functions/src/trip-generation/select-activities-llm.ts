@@ -14,6 +14,10 @@ interface LlmCandidateView {
   address?: string;
 }
 
+/** Défauts appliqués quand le LLM omet `duration`/`price` sur un item — jamais bloquants pour la sélection (voir la boucle de parsing plus bas, même philosophie que le traitement de `day`). */
+const DEFAULT_DURATION_MINUTES = 120;
+const DEFAULT_PRICE_EUR = 0;
+
 const RESPONSE_SCHEMA = {
   type: Type.ARRAY,
   items: {
@@ -21,8 +25,11 @@ const RESPONSE_SCHEMA = {
     properties: {
       candidateId: { type: Type.STRING },
       day: { type: Type.INTEGER },
+      duration: { type: Type.INTEGER },
+      price: { type: Type.NUMBER },
       reason: { type: Type.STRING },
     },
+    // `duration`/`price` volontairement absents d'ici : un item qui les omet ne doit jamais disparaître de la sélection (retombe sur un défaut au parsing), seul un candidateId/day invalide fait `continue`.
     required: ['candidateId', 'reason'],
   },
 };
@@ -45,6 +52,7 @@ function buildPrompt(
     constraints,
     'Varie les centres d\'intérêt représentés plutôt que de piocher dans un seul.',
     'Pour chaque activité choisie, donne une courte raison affichable à l\'utilisateur (ex. "Choisi pour ton intérêt musées").',
+    'Pour chaque activité choisie, indique aussi "duration" (durée réaliste en minutes pour une visite, ex. 60 à 180) et "price" (estimation du prix moyen par personne en euros, 0 si gratuit ou inconnu).',
     '',
     'Candidats disponibles (JSON) :',
     JSON.stringify(candidates),
@@ -85,19 +93,30 @@ export async function selectActivitiesLlm(
 
   const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
-    // Flash : modèle le moins cher/rapide de la famille Gemini — largement
-    // suffisant pour une tâche de sélection/classement, pas de raisonnement
-    // complexe requis (voir la note de coût dans generate-trip.trigger.ts).
-    model: 'gemini-2.5-flash',
+    // Alias maintenu à jour par Google plutôt qu'une version datée (ex.
+    // "gemini-2.5-flash") — ces dernières finissent retirées ("no longer
+    // available to new users") sans avertissement, ce qui faisait
+    // silencieusement échouer chaque appel (404) et retomber sur le stub.
+    // Flash reste largement suffisant pour une tâche de sélection/classement,
+    // pas de raisonnement complexe requis (voir la note de coût dans
+    // generate-trip.trigger.ts).
+    model: 'gemini-flash-latest',
     contents: buildPrompt(view, preferences, numDays, targetSize),
     config: {
       responseMimeType: 'application/json',
       responseSchema: RESPONSE_SCHEMA,
-      maxOutputTokens: 2000,
+      // `thinkingConfig: { thinkingBudget: 0 }` a été retiré : sur l'alias
+      // `gemini-flash-latest`, ce paramètre fait échouer l'appel à coup sûr
+      // avec "400 INVALID_ARGUMENT" (reproduit en conditions réelles avec la
+      // clé du projet, 2026-08-11) — c'était la cause du repli systématique
+      // sur `selectActivitiesStub`, jamais remarquée faute de log consulté à
+      // l'époque. Le modèle "pense" donc par défaut sur cette tâche ; coût
+      // marginal acceptable pour un appel unique par génération.
+      maxOutputTokens: 4000,
     },
   });
 
-  const raw = JSON.parse(response.text ?? '[]') as { candidateId: string; day?: number; reason: string }[];
+  const raw = JSON.parse(response.text ?? '[]') as { candidateId: string; day?: number; duration?: number; price?: number; reason: string }[];
 
   const byId = new Map(candidates.map((c) => [c.candidateId, c]));
   const seen = new Set<string>();
@@ -114,6 +133,8 @@ export async function selectActivitiesLlm(
       ...candidate,
       reason: item.reason || candidate.reason,
       ...(numDays !== undefined ? { day: item.day } : {}),
+      estimatedDurationMinutes: Number.isFinite(item.duration) && item.duration! > 0 ? item.duration! : DEFAULT_DURATION_MINUTES,
+      estimatedPriceEur: Number.isFinite(item.price) && item.price! >= 0 ? item.price! : DEFAULT_PRICE_EUR,
     });
     if (selected.length >= targetSize) break;
   }

@@ -32,6 +32,7 @@
       }
 
       @if (hasDayPlacement()) {
+        <p class="nt-text-muted text-xs">Horaires et enchaînements estimés par l'IA à partir de sa connaissance des lieux — à revérifier avant de partir.</p>
         @for (day of dayGroups(); track day.dayIndex) {
           <div class="flex flex-column gap-2">
             <span class="preview-section-title">Jour {{ day.dayIndex + 1 }} — {{ day.date | date:'EEEE d MMMM' }}</span>

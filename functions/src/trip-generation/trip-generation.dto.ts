@@ -16,6 +16,8 @@ export interface TripAiPreferences {
   multiCity: boolean;
   cities: string[];
   freeText: string;
+  /** Budget max du voyage en euros (activités uniquement) — optionnel, best-effort (voir apply-budget-cap.ts). */
+  budgetMaxEur?: number;
 }
 
 export type TripGenerationStatus = 'generating' | 'ready_for_preview' | 'failed';
@@ -33,6 +35,10 @@ export interface GeneratedActivityCandidate {
   reason: string;
   excluded: boolean;
   day?: number;
+  /** Estimation LLM (ou défaut fixe côté stub, voir select-activities-stub.ts) — minutes. */
+  estimatedDurationMinutes?: number;
+  /** Estimation LLM (ou défaut fixe côté stub) — prix moyen par personne, euros. */
+  estimatedPriceEur?: number;
 }
 
 export interface GeneratedLodgingCandidate {

@@ -6,6 +6,7 @@ import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.comp
 import { ChipComponent } from '@app/shared/components/chip/chip.component';
 import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
+import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ViewportService } from '@core/services/viewport.service';
 import { GooglePlaceService } from '@core/services/google-place.service';
@@ -41,7 +42,7 @@ import { InterestsDialogComponent, InterestsDialogData } from './interests-dialo
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, SelectButtonComponent, CheckboxComponent, ChipComponent,
-    AutoCompleteComponent, TextareaDirective,
+    AutoCompleteComponent, TextareaDirective, InputTextDirective,
   ],
   templateUrl: './ai-trip-preferences.component.html',
   styleUrl: './ai-trip-preferences.component.scss',
@@ -105,6 +106,13 @@ export class AiTripPreferencesComponent {
   protected onFreeTextInput(event: Event): void {
     const text = (event.target as HTMLTextAreaElement).value;
     this.preferences.update((p) => ({ ...p, freeText: text }));
+  }
+
+  /** Best-effort côté LLM (voir apply-budget-cap.ts côté serveur) — jamais une garantie stricte, d'où le libellé "Budget max" plutôt qu'un vrai plafond contractuel. */
+  protected onBudgetMaxInput(event: Event): void {
+    const raw = (event.target as HTMLInputElement).value;
+    const budgetMaxEur = raw === '' ? undefined : Number(raw);
+    this.preferences.update((p) => ({ ...p, budgetMaxEur: budgetMaxEur !== undefined && budgetMaxEur >= 0 ? budgetMaxEur : undefined }));
   }
 
   protected onCitySearch(query: string): void {

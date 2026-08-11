@@ -5,6 +5,9 @@ import { searchActivityCandidates } from './search-activities';
 import { searchLodgingCandidates } from './search-lodging';
 import { selectActivitiesStub } from './select-activities-stub';
 import { selectActivitiesLlm } from './select-activities-llm';
+import { planTripLlm } from './plan-trip-llm';
+import { enrichActivitiesWithPlaces, enrichLodgingWithPlaces } from './enrich-activities-with-places';
+import { applyBudgetCap } from './apply-budget-cap';
 import { geocodeCity, GeocodedCity } from './geocode-city';
 import { estimateTransportSegment } from './transport-estimate';
 import { GeneratedActivityCandidate, GeneratedLodgingCandidate, TripAiPreferences, TripGenerationDoc } from './trip-generation.dto';
@@ -32,6 +35,78 @@ async function selectActivities(
     console.error('selectActivitiesLlm error, fallback sur le stub:', err);
     return selectActivitiesStub(candidates, preferences, numDays);
   }
+}
+
+/** Résultat du chemin primaire (`planTripLlm` + enrichissement) — `lodging` est `null` si ce chemin n'a rien produit d'exploitable pour les logements (hors `full_plan`, 0 logement retrouvé par Google...), auquel cas l'appelant retombe sur `buildLodging` (repli historique). */
+interface ActivityGenerationResult {
+  candidates: GeneratedActivityCandidate[];
+  preview: GeneratedActivityCandidate[];
+  lodging: { candidates: GeneratedLodgingCandidate[]; preview: GeneratedLodgingCandidate[] } | null;
+}
+
+/**
+ * Génère les activités (et, en mode `full_plan`, les logements) du voyage —
+ * 2 chemins :
+ * - **Primaire** (`planTripLlm` + `enrichActivitiesWithPlaces`/
+ *   `enrichLodgingWithPlaces`) : le LLM invente directement l'itinéraire (et
+ *   le logement) à partir des préférences complètes (intérêts, texte libre,
+ *   budget, villes), sans pool Google en entrée — Google Places n'intervient
+ *   qu'après, pour ancrer chaque proposition dans un vrai lieu. Pris si
+ *   `geminiApiKey` est configuré ET que ça produit au moins une activité une
+ *   fois enrichie.
+ * - **Repli** (`searchActivityCandidates` + `selectActivities`, chemin
+ *   historique) : recherche Google par catégorie puis sélection LLM/stub
+ *   dans ce pool ; logements repris séparément via `buildLodging`
+ *   (`searchNearby` trié par note). Utilisé si le chemin primaire est
+ *   indisponible (pas de clé, exception) ou n'a produit aucune activité
+ *   exploitable après enrichissement — même philosophie §4.5 partout dans ce
+ *   pipeline : ne jamais bloquer toute la génération pour l'échec d'une seule
+ *   source.
+ *
+ * Note UX connue (chemin primaire) : `candidates === preview` (pas de pool
+ * plus large que ce qui est proposé) — le bouton "Remplacer" de l'aperçu n'a
+ * donc rien d'autre à piocher tant que l'activité/le logement vient de ce
+ * chemin, contrairement au chemin de repli qui garde tout le pool
+ * `searchNearby` comme réservoir. Accepté comme limitation connue plutôt que
+ * doubler les appels Places pour générer un surplus de candidats jamais
+ * montrés.
+ */
+async function generateActivities(
+  doc: TripGenerationDoc,
+  cities: GeocodedCity[],
+  apiKey: string,
+  geminiApiKey: string | undefined,
+): Promise<ActivityGenerationResult | { error: string }> {
+  const numDays = doc.preferences.assistanceLevel === 'activities_only' ? undefined : doc.tripDayDates.length;
+
+  if (geminiApiKey) {
+    try {
+      const planned = await planTripLlm(doc.preferences, cities, numDays, geminiApiKey);
+      const enriched = await enrichActivitiesWithPlaces(planned.activities, cities, apiKey);
+      if (enriched.length > 0) {
+        const enrichedLodging = planned.lodging.length > 0
+          ? await enrichLodgingWithPlaces(planned.lodging, cities, apiKey)
+          : [];
+        return {
+          candidates: enriched,
+          preview: enriched,
+          lodging: enrichedLodging.length > 0 ? { candidates: enrichedLodging, preview: enrichedLodging } : null,
+        };
+      }
+      console.error('planTripLlm: 0 activité exploitable après enrichissement, repli sur recherche+sélection.');
+    } catch (err) {
+      console.error('planTripLlm error, repli sur recherche+sélection:', err);
+    }
+  }
+
+  const activityResults = await Promise.all(
+    cities.map((city) => searchActivityCandidates({ latitude: city.latitude, longitude: city.longitude }, doc.preferences.interests, apiKey)),
+  );
+  const candidates = dedupeByPlaceId(activityResults.flat());
+  if (candidates.length === 0) return { error: 'Aucune activité trouvée autour de cette destination.' };
+
+  const preview = await selectActivities(candidates, doc.preferences, numDays, geminiApiKey);
+  return { candidates, preview, lodging: null };
 }
 
 /**
@@ -103,26 +178,26 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?
       try {
         const cities = await resolveCities(doc, apiKey);
 
-        const activityResults = await Promise.all(
-          cities.map((city) => searchActivityCandidates({ latitude: city.latitude, longitude: city.longitude }, doc.preferences.interests, apiKey)),
-        );
-        const candidates = dedupeByPlaceId(activityResults.flat());
-
-        if (candidates.length === 0) {
+        const activitiesResult = await generateActivities(doc, cities, apiKey, geminiApiKey?.value());
+        if ('error' in activitiesResult) {
           await db.doc(`tripGenerations/${tripId}`).update({
             status: 'failed',
-            error: 'Aucune activité trouvée autour de cette destination.',
+            error: activitiesResult.error,
             updatedAt: Date.now(),
           });
           return;
         }
 
-        const numDays = doc.preferences.assistanceLevel === 'activities_only' ? undefined : doc.tripDayDates.length;
-        const preview = await selectActivities(candidates, doc.preferences, numDays, geminiApiKey?.value());
+        const { candidates } = activitiesResult;
+        const preview = applyBudgetCap(activitiesResult.preview, doc.preferences.budgetMaxEur);
 
-        const { lodgingCandidates, lodgingPreview } = doc.preferences.assistanceLevel === 'full_plan'
-          ? await buildLodging(cities, apiKey)
-          : { lodgingCandidates: [] as GeneratedLodgingCandidate[], lodgingPreview: [] as GeneratedLodgingCandidate[] };
+        // Logements proposés par le chemin primaire (pépites respectant freeText, voir plan-trip-llm.ts) préférés
+        // s'ils existent ; `buildLodging` (searchNearby trié par note, ignore freeText) reste le repli.
+        const { lodgingCandidates, lodgingPreview } = activitiesResult.lodging
+          ? { lodgingCandidates: activitiesResult.lodging.candidates, lodgingPreview: activitiesResult.lodging.preview }
+          : doc.preferences.assistanceLevel === 'full_plan'
+            ? await buildLodging(cities, apiKey)
+            : { lodgingCandidates: [] as GeneratedLodgingCandidate[], lodgingPreview: [] as GeneratedLodgingCandidate[] };
 
         const transportSegments = doc.preferences.assistanceLevel === 'full_plan' && cities.length > 1
           ? cities.slice(1).map((city, i) => estimateTransportSegment(cities[i], city))

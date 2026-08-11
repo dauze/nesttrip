@@ -3,6 +3,15 @@
 Ce document sert de référence pour le projet ce qui est déjà en place (à ne pas casser)
 
 ## ✅ Déjà fait
+- Bouton "plus..." sous les avis Google d'une activité, ouvre tous les avis du lieu (`search.google.com/local/reviews`).
+- Photo de voyage récupérée automatiquement (Google Places, au choix de la destination) à la création, affichée à l'accueil à la place de l'icône pin — `Trip.photoRef`/`TripSummary.photoRef`.
+- Login : accès à l'app bloqué tant que le compte n'est pas vérifié (`authGuard`) — écran de login remplacé par un rappel "vérifiez votre email" (avec renvoi) dès qu'une session non vérifiée est active, + "mot de passe oublié" réutilisant le champ email du formulaire de connexion.
+- Checkbox de sélection rondes (`--nt-radius-pill`) partout dans l'app ; sur mobile, visibles uniquement une fois le mode sélection actif (`.nt-selection-mode`, au moins une carte sélectionnée), plus systématiquement masquées.
+- Focus auto sur le montant à l'ouverture du dialogue prix (mobile) — le libellé l'avait déjà.
+- Nouveau token de thème `--nt-content-inset-background` (contenu d'une carte distinct du fond de page), appliqué à toute la carte des tuiles voyage de l'accueil (override scoped de `--nt-content-background`, pas un fond posé sur un élément interne — sinon masque le dégradé de sélection).
+- Hover des boutons "link" (S'inscrire/Se connecter/Mot de passe oublié) : fond primary à faible opacité au lieu du plein — correctif d'un bug de spécificité CSS (`.app-button--link:hover` perdait contre la règle de base).
+- Voyages de l'accueil triés à venir d'abord (date de début croissante), puis passés (date de fin décroissante).
+- Résumé : conditionnement de l'affichage des tuiles Tâches/Fichiers remonté dans le composant parent (fix du gap double flex quand une tuile est vide) — `computeTasks`/`computeFileGroups` extraits en fonctions pures testables.
 - Rajouter un chip "En cours" dans l'acceuil trip sur tous les trip qui on un jour correspondant à la date du jour 
 - Sur l'écran d'accueil, il faut que le bouton créer un trip soit positionné en bas de l'écran, et que le scoll soit dans le content du panel, pas sur tout le panel : si beaucouop de trip, le bouton "Nouvelle aventure" n'est actuellementb pas visible, il faut scroller jusqu'en bas, dommage
 - "Aucune activité pour l'instant, n'hésitez pas à en créer avec le bouton +." on doit changer le plus en icone de map. idem pour l'icone de logement et transport" et "Liste"

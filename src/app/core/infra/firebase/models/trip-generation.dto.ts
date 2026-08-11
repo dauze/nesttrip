@@ -9,6 +9,7 @@ export interface TripAiPreferencesFirebase {
   multiCity: boolean;
   cities: string[];
   freeText: string;
+  budgetMaxEur?: number;
 }
 
 export interface GeneratedActivityCandidateFirebase {
@@ -24,6 +25,8 @@ export interface GeneratedActivityCandidateFirebase {
   reason: string;
   excluded: boolean;
   day?: number;
+  estimatedDurationMinutes?: number;
+  estimatedPriceEur?: number;
 }
 
 export interface GeneratedLodgingCandidateFirebase {

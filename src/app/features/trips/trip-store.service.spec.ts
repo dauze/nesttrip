@@ -41,8 +41,8 @@ describe('TripStore', () => {
   const tripId = 't1';
   const dayId = new Date('2026-08-01T00:00:00.000Z');
 
-  let activityWriter: ReturnType<typeof fakeWriter>;
-  let instanceWriter: ReturnType<typeof fakeWriter>;
+  let activityWriter: ReturnType<typeof fakeWriter> & { removeActivity: ReturnType<typeof vi.fn> };
+  let instanceWriter: ReturnType<typeof fakeWriter> & { removeInstance: ReturnType<typeof vi.fn> };
   let expenseWriter: ReturnType<typeof fakeCrudWriter>;
   let store: TripStore;
 
@@ -93,8 +93,8 @@ describe('TripStore', () => {
   let currencyConversionService: { convert$: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    activityWriter = fakeWriter();
-    instanceWriter = fakeWriter();
+    activityWriter = { ...fakeWriter(), removeActivity: vi.fn().mockResolvedValue(undefined) };
+    instanceWriter = { ...fakeWriter(), removeInstance: vi.fn().mockResolvedValue(undefined) };
     expenseWriter = fakeCrudWriter();
     logisticWriter = fakeWriter();
     currencyConversionService = { convert$: vi.fn() };
@@ -336,6 +336,47 @@ describe('TripStore', () => {
 
       const ids = store.getDayActivities(dayId)().map((a) => a.id);
       expect(ids).toEqual(['instance-1', 'instance-2']);
+    });
+  });
+
+  describe('createGeneralActivity — instance orpheline (génération IA activities_only)', () => {
+    it("avec une instance fournie, l'expose via getPoolActivityView sans la rattacher à aucun jour", () => {
+      store.createGeneralActivity(tripId, poolActivity(), instance());
+
+      expect(store.getPoolActivityView('pool-1')()).toMatchObject({
+        type: ActivityType.VISITE,
+        duration: 60,
+      });
+      expect(store._dayActivityIds()).toEqual({});
+      expect(store.getDayActivities(dayId)()).toHaveLength(0);
+    });
+
+    it('sans instance fournie, garde le comportement historique (pool seul, form par défaut affiché)', () => {
+      store.createGeneralActivity(tripId, poolActivity());
+
+      expect(store.getPoolActivityView('pool-1')()).toMatchObject({ type: ActivityType.ACTIVITE, duration: 0 });
+    });
+  });
+
+  describe('removePoolActivity — nettoyage', () => {
+    it('supprime aussi une instance orpheline (jamais rattachée à un jour), sinon elle fuirait en mémoire et en Firestore', () => {
+      store.createGeneralActivity(tripId, poolActivity(), instance());
+
+      store.removePoolActivity(tripId, 'pool-1');
+
+      expect(store._dayActivityInstances()['instance-1']).toBeUndefined();
+      expect(instanceWriter.removeInstance).toHaveBeenCalledWith(tripId, 'instance-1');
+      expect(activityWriter.removeActivity).toHaveBeenCalledWith(tripId, 'pool-1');
+    });
+
+    it('supprime toujours aussi les instances rattachées à un jour (comportement existant)', () => {
+      store._tripDays.set({ [tripId]: [dayId.toISOString()] });
+      store.createActivity(tripId, dayId, poolActivity(), instance());
+
+      store.removePoolActivity(tripId, 'pool-1');
+
+      expect(store.getDayActivities(dayId)()).toHaveLength(0);
+      expect(instanceWriter.removeInstance).toHaveBeenCalledWith(tripId, 'instance-1');
     });
   });
 

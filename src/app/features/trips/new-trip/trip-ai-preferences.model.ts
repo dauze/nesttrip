@@ -24,6 +24,8 @@ export interface TripAiPreferences {
   multiCity: boolean;
   cities: string[];
   freeText: string;
+  /** Budget max du voyage en euros (activités uniquement, hors logement — voir ROADMAP.md) — optionnel, best-effort côté LLM (jamais une garantie stricte). */
+  budgetMaxEur?: number;
 }
 
 export function createDefaultAiPreferences(): TripAiPreferences {

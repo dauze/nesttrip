@@ -8,7 +8,9 @@ import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.comp
 import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip-generation-repository';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GeneratedActivityCandidate, GeneratedLodgingCandidate, GeneratedTransportSegment } from '@app/features/trips/new-trip/trip-generation.model';
+import { Interest } from '@app/features/trips/new-trip/trip-ai-preferences.model';
 import { DayActivityInstance, PoolActivity } from '@app/shared/components/activity-card/activity.model';
+import { minutesToTime, timeToMinutes } from '@app/shared/components/activity-card/activity-time.util';
 import { Logistic } from '@core/models/logistic.dto';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
@@ -18,6 +20,24 @@ interface DayGroup {
   date: Date;
   items: GeneratedActivityCandidate[];
 }
+
+/** Défaut si le LLM (ou le stub) n'a pas fourni de durée exploitable — voir select-activities-llm.ts/select-activities-stub.ts. */
+const DEFAULT_DURATION_MINUTES = 120;
+/** Horaires dérivés à la validation (§6, décision : pas de champ horaire demandé au LLM, non fiable sur des listes longues) : premier créneau du jour, puis enchaînement séquentiel avec ce battement entre deux activités. */
+const DAY_START_TIME = '09:00';
+const GAP_MINUTES = 30;
+
+/** Type d'activité déduit du centre d'intérêt ayant produit le candidat (recherche Google Places, voir search-activities.ts) — défaut ACTIVITE pour les intérêts sans correspondance directe. */
+const INTEREST_TO_ACTIVITY_TYPE: Record<Interest, ActivityType> = {
+  museums: ActivityType.VISITE,
+  nature: ActivityType.NATURE,
+  sport: ActivityType.ACTIVITE,
+  food: ActivityType.REPAS,
+  nightlife: ActivityType.ACTIVITE,
+  shopping: ActivityType.SHOPPING,
+  relaxation: ActivityType.DETENTE,
+  offbeat: ActivityType.ACTIVITE,
+};
 
 /**
  * Écran d'aperçu (process-creation-trip-ia.md §2.5) — 3 niveaux :
@@ -175,35 +195,57 @@ export class PreviewComponent {
     if (!job) return;
     this.validating.set(true);
 
+    const byDay = new Map<number, GeneratedActivityCandidate[]>();
+    const withoutDay: GeneratedActivityCandidate[] = [];
     for (const item of this.items()) {
       if (item.excluded) continue;
-
-      const poolActivity: PoolActivity = {
-        id: crypto.randomUUID(),
-        title: item.title,
-        files: [],
-        photoRefs: item.photoRefs,
-        source: 'ai_generated',
-        ...(item.placeId ? { placeId: item.placeId } : {}),
-        ...(item.address ? { address: item.address } : {}),
-        ...(item.latitude !== undefined ? { latitude: item.latitude } : {}),
-        ...(item.longitude !== undefined ? { longitude: item.longitude } : {}),
-      };
-
       if (item.day !== undefined && job.tripDayDates[item.day] !== undefined) {
+        const bucket = byDay.get(item.day) ?? [];
+        bucket.push(item);
+        byDay.set(item.day, bucket);
+      } else {
+        withoutDay.push(item);
+      }
+    }
+
+    // Modes activities_day/full_plan : aucun chemin de génération ne fournit d'horaire précis (voir plan-trip-llm.ts —
+    // un champ horaire libre s'est avéré faire dérailler la sortie structurée du LLM) — l'ordre des activités dans
+    // `dayItems` (celui renvoyé par le LLM/le stub) est en revanche significatif, on en déduit un horaire séquentiel.
+    for (const [day, dayItems] of byDay) {
+      let cursorMinutes = timeToMinutes(DAY_START_TIME);
+      for (const item of dayItems) {
+        const poolActivity = this.buildPoolActivity(item);
+        const { startTime, endTime, duration } = this.resolveDaySchedule(item, cursorMinutes);
         const instance: DayActivityInstance = {
           id: crypto.randomUUID(),
           activityId: poolActivity.id,
-          type: ActivityType.ACTIVITE,
-          duration: 0,
-          price: { amount: 0, currency: 'EUR' },
+          type: INTEREST_TO_ACTIVITY_TYPE[item.interest],
+          duration,
+          startTime,
+          endTime,
+          price: { amount: item.estimatedPriceEur ?? 0, currency: 'EUR' },
           booking: { status: BookingStatus.NOT_NEEDED },
           notes: '',
         };
-        this.tripFacade.createActivity(this.tripId, new Date(job.tripDayDates[item.day]), poolActivity, instance);
-      } else {
-        this.tripFacade.createGeneralActivity(this.tripId, poolActivity);
+        cursorMinutes += duration + GAP_MINUTES;
+
+        this.tripFacade.createActivity(this.tripId, new Date(job.tripDayDates[day]), poolActivity, instance);
       }
+    }
+
+    // Mode activities_only : pas de jour, donc pas d'horaire — instance "orpheline" (voir TripStore.createGeneralActivity) pour porter type/durée/prix réels sur la carte pool.
+    for (const item of withoutDay) {
+      const poolActivity = this.buildPoolActivity(item);
+      const instance: DayActivityInstance = {
+        id: crypto.randomUUID(),
+        activityId: poolActivity.id,
+        type: INTEREST_TO_ACTIVITY_TYPE[item.interest],
+        duration: item.estimatedDurationMinutes ?? DEFAULT_DURATION_MINUTES,
+        price: { amount: item.estimatedPriceEur ?? 0, currency: 'EUR' },
+        booking: { status: BookingStatus.NOT_NEEDED },
+        notes: '',
+      };
+      this.tripFacade.createGeneralActivity(this.tripId, poolActivity, instance);
     }
 
     for (const item of this.lodgingItems()) {
@@ -216,6 +258,26 @@ export class PreviewComponent {
     }
 
     this.router.navigate([`/trips/${this.tripId}`]);
+  }
+
+  /** Aucun chemin de génération ne fournit d'horaire précis (voir plan-trip-llm.ts) — dérive toujours un créneau séquentiel à partir du curseur du jour et de la durée estimée. */
+  private resolveDaySchedule(item: GeneratedActivityCandidate, cursorMinutes: number): { startTime: string; endTime: string; duration: number } {
+    const duration = item.estimatedDurationMinutes ?? DEFAULT_DURATION_MINUTES;
+    return { startTime: minutesToTime(cursorMinutes), endTime: minutesToTime(cursorMinutes + duration), duration };
+  }
+
+  private buildPoolActivity(item: GeneratedActivityCandidate): PoolActivity {
+    return {
+      id: crypto.randomUUID(),
+      title: item.title,
+      files: [],
+      photoRefs: item.photoRefs,
+      source: 'ai_generated',
+      ...(item.placeId ? { placeId: item.placeId } : {}),
+      ...(item.address ? { address: item.address } : {}),
+      ...(item.latitude !== undefined ? { latitude: item.latitude } : {}),
+      ...(item.longitude !== undefined ? { longitude: item.longitude } : {}),
+    };
   }
 
   private buildLodgingLogistic(item: GeneratedLodgingCandidate): Logistic {

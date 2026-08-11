@@ -1014,9 +1014,20 @@ export class TripStore {
     this.addDayActivityInstance(tripId, dayId, instance);
   }
 
-  /** Crée une activité dans le pool général du trip uniquement (aucun jour) : elle sera affichée avec des contours en tiret tant qu'elle n'est placée sur aucun jour. */
-  createGeneralActivity(tripId: string, poolActivity: PoolActivity): void {
+  /**
+   * Crée une activité dans le pool général du trip uniquement (aucun jour) :
+   * elle sera affichée avec des contours en tiret tant qu'elle n'est placée
+   * sur aucun jour. `instance` optionnelle : porte un form réel (type/durée/
+   * prix, jamais `startTime`/`endTime` — pas de jour, pas d'horaire) sans
+   * être rattachée à aucun jour (`_dayActivityIds`) — voir
+   * `addOrphanDayActivityInstance`. Utilisé par la génération IA en mode
+   * `activities_only` (voir `PreviewComponent.validate`) pour afficher un
+   * vrai type/durée/prix sur la carte pool plutôt que le form par défaut
+   * vide (`composePoolView`/`getPoolActivityView`).
+   */
+  createGeneralActivity(tripId: string, poolActivity: PoolActivity, instance?: DayActivityInstance): void {
     this.addPoolActivity(tripId, poolActivity);
+    if (instance) this.addOrphanDayActivityInstance(tripId, instance);
   }
 
   private addPoolActivity(tripId: string, poolActivity: PoolActivity): void {
@@ -1043,6 +1054,21 @@ export class TripStore {
 
     this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
     this.syncDayActivityIds(tripId, dayId);
+  }
+
+  /**
+   * Comme `addDayActivityInstance`, MOINS l'attache à un jour
+   * (`_dayActivityIds`/`syncDayActivityIds`) : l'instance existe dans
+   * `_dayActivityInstances` (persistée, comme toute autre) mais n'apparaît
+   * dans aucun jour — récupérée uniquement via le `.find()` de secours de
+   * `getPoolActivityView`/`composePoolView`. Voir `createGeneralActivity`.
+   * `removePoolActivity` doit la nettoyer explicitement (pas trouvée par son
+   * scan habituel via `_dayActivityIds`).
+   */
+  private addOrphanDayActivityInstance(tripId: string, instance: DayActivityInstance): void {
+    this._dayActivityInstances.update((i) => ({ ...i, [instance.id]: instance }));
+    this.markActivityPending(instance.id);
+    this.dayActivityInstancePersistenceService.queueUpdate(tripId, instance);
   }
 
   /**
@@ -1232,6 +1258,15 @@ export class TripStore {
         affectedDayKeys.push(dayKey);
         instanceIdsToRemove.push(...ids);
       }
+    }
+
+    // Instances "orphelines" (voir addOrphanDayActivityInstance) : jamais
+    // dans _dayActivityIds, donc jamais trouvées par le scan par jour
+    // ci-dessus — sans ça, elles ne seraient ni nettoyées en mémoire ni
+    // supprimées de Firestore à la suppression de l'activité de pool.
+    const alreadyFound = new Set(instanceIdsToRemove);
+    for (const [id, instance] of Object.entries(instances)) {
+      if (instance.activityId === poolId && !alreadyFound.has(id)) instanceIdsToRemove.push(id);
     }
 
     this._poolActivities.update((a) => {

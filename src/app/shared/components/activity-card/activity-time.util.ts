@@ -4,6 +4,14 @@ export function timeToMinutes(hhmm: string): number {
   return h * 60 + m;
 }
 
+/** Inverse de `timeToMinutes` — minutes depuis minuit vers "HH:mm", modulo 24h (pas de gestion de dépassement de jour ici, voir `endDayOffset` pour ça). */
+export function minutesToTime(minutes: number): string {
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(wrapped / 60);
+  const m = wrapped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 /**
  * Nombre de jours après le jour de début où l'activité se termine réellement
  * (0 = même jour). `endDayOffset` est le champ explicite posé par le

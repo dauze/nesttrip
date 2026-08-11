@@ -35,6 +35,10 @@ export interface GeneratedActivityCandidate {
   excluded: boolean;
   /** Index (0-based) dans `TripGeneration.tripDayDates` — assigné en mode `activities_day`/`full_plan` uniquement (§4.2 : "day (null en mode activities_only)"). */
   day?: number;
+  /** Estimation LLM (ou défaut fixe côté stub) — minutes. Utilisée à la validation pour remplir `DayActivityInstance.duration` et dériver `startTime`/`endTime` par curseur séquentiel (voir PreviewComponent.validate) — aucun chemin de génération ne fournit d'horaire précis (voir functions/src/trip-generation/plan-trip-llm.ts pour la raison : un champ horaire libre s'est avéré faire dérailler la sortie structurée du LLM). */
+  estimatedDurationMinutes?: number;
+  /** Estimation LLM (ou défaut fixe côté stub) — prix moyen par personne, euros. */
+  estimatedPriceEur?: number;
 }
 
 /** Même anatomie qu'un candidat d'activité (Google Places, `lodging`), rattaché à une ville plutôt qu'à un centre d'intérêt — un seul logement par ville en v1 (§6 : "juste de la donnée descriptive... pas de réservation"). */

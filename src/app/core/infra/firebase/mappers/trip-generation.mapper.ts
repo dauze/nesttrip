@@ -26,6 +26,8 @@ function candidateToFb(c: GeneratedActivityCandidate): GeneratedActivityCandidat
     ...(c.longitude !== undefined ? { longitude: c.longitude } : {}),
     ...(c.rating !== undefined ? { rating: c.rating } : {}),
     ...(c.day !== undefined ? { day: c.day } : {}),
+    ...(c.estimatedDurationMinutes !== undefined ? { estimatedDurationMinutes: c.estimatedDurationMinutes } : {}),
+    ...(c.estimatedPriceEur !== undefined ? { estimatedPriceEur: c.estimatedPriceEur } : {}),
   };
 }
 

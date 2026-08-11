@@ -4,6 +4,9 @@ import { GeneratedActivityCandidate, Interest, Pace, TripAiPreferences } from '.
 const ACTIVITIES_PER_DAY: Record<Pace, number> = { relaxed: 2, balanced: 3, intense: 4 };
 /** Mode `activities_only` (pas de placement par jour) : nombre total fixe (§2.5), aucune notion de jour disponible pour calibrer autrement. */
 const PREVIEW_SIZE_NO_DAYS = 10;
+/** Ce chemin (fallback sans LLM) n'a aucune donnée réelle de durée/prix — valeur par défaut fixe faute de mieux, pas une estimation (voir select-activities-llm.ts pour la vraie estimation). */
+const DEFAULT_DURATION_MINUTES = 120;
+const DEFAULT_PRICE_EUR = 0;
 
 const INTEREST_LABELS: Record<Interest, string> = {
   museums: 'musées',
@@ -63,7 +66,12 @@ export function selectActivitiesStub(
       const bucket = byInterest.get(interest) ?? [];
       const candidate = bucket[round];
       if (!candidate) continue;
-      selected.push({ ...candidate, reason: `Choisi pour ton intérêt ${INTEREST_LABELS[interest]}` });
+      selected.push({
+        ...candidate,
+        reason: `Choisi pour ton intérêt ${INTEREST_LABELS[interest]}`,
+        estimatedDurationMinutes: DEFAULT_DURATION_MINUTES,
+        estimatedPriceEur: DEFAULT_PRICE_EUR,
+      });
       if (selected.length >= targetSize) break;
     }
     round++;

@@ -138,9 +138,9 @@ export class TripFacade {
     this.store.createActivity(tripId, dayId, poolActivity, instance);
   }
 
-  /** Crée une activité directement dans le pool général du trip, sans jour associé. */
-  createGeneralActivity(tripId: string, poolActivity: PoolActivity): void {
-    this.store.createGeneralActivity(tripId, poolActivity);
+  /** Crée une activité directement dans le pool général du trip, sans jour associé. `instance` optionnelle : voir `TripStore.createGeneralActivity`. */
+  createGeneralActivity(tripId: string, poolActivity: PoolActivity, instance?: DayActivityInstance): void {
+    this.store.createGeneralActivity(tripId, poolActivity, instance);
   }
 
   /** Crée une nouvelle instance référençant une activité de pool existante et l'attache à ce jour, sans toucher au pool. Retourne l'id de l'instance créée. */
