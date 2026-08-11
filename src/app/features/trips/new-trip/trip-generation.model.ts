@@ -1,12 +1,12 @@
 import { Interest, TripAiPreferences } from './trip-ai-preferences.model';
 
 /**
- * État du job de génération IA d'un trip (Lot 2, mode `activities_only` —
- * voir src/specs/process-creation-trip-ia.md §4). Vit dans sa PROPRE
- * collection Firestore (`tripGenerations/{tripId}`), volontairement séparée
- * du document `trips/{tripId}` : le statut de génération est un état
- * transitoire de PIPELINE (recherche → sélection → aperçu), pas une
- * propriété durable du domaine `Trip` — l'isoler évite de complexifier
+ * État du job de génération IA d'un trip (Lots 2/3 — voir
+ * src/specs/process-creation-trip-ia.md §4). Vit dans sa PROPRE collection
+ * Firestore (`tripGenerations/{tripId}`), volontairement séparée du document
+ * `trips/{tripId}` : le statut de génération est un état transitoire de
+ * PIPELINE (recherche → sélection → aperçu), pas une propriété durable du
+ * domaine `Trip` — l'isoler évite de complexifier
  * `TripFacade.mergeFromRemote`/`TripStore` (déjà très sensibles, voir leur
  * doc) avec un concept qui n'a plus aucune utilité une fois l'aperçu validé.
  */
@@ -33,6 +33,38 @@ export interface GeneratedActivityCandidate {
   /** Courte justification affichable (§4.2, ex. "Choisi pour ton intérêt musées"). */
   reason: string;
   excluded: boolean;
+  /** Index (0-based) dans `TripGeneration.tripDayDates` — assigné en mode `activities_day`/`full_plan` uniquement (§4.2 : "day (null en mode activities_only)"). */
+  day?: number;
+}
+
+/** Même anatomie qu'un candidat d'activité (Google Places, `lodging`), rattaché à une ville plutôt qu'à un centre d'intérêt — un seul logement par ville en v1 (§6 : "juste de la donnée descriptive... pas de réservation"). */
+export interface GeneratedLodgingCandidate {
+  candidateId: string;
+  placeId: string;
+  title: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  photoRefs: string[];
+  rating?: number;
+  city: string;
+  reason: string;
+  excluded: boolean;
+}
+
+/**
+ * Estimation générique entre deux villes consécutives (mode `full_plan`
+ * multi-villes) — pas d'API de trajet inter-villes branchée en v1 (§6,
+ * fallback explicitement prévu par la spec) : distance à vol d'oiseau +
+ * libellé indicatif, jamais un vrai horaire. Aucun "Remplacer" possible
+ * (rien à repiocher, c'est un calcul déterministe, pas une recherche).
+ */
+export interface GeneratedTransportSegment {
+  id: string;
+  fromCity: string;
+  toCity: string;
+  distanceKm: number;
+  estimatedLabel: string;
 }
 
 export interface TripGeneration {
@@ -40,10 +72,17 @@ export interface TripGeneration {
   status: TripGenerationStatus;
   preferences: TripAiPreferences;
   destination: { ville: string; placeId: string; latitude: number; longitude: number };
-  /** Pool complet récupéré côté serveur (§4.1) — sert de réservoir pour "Remplacer" (§2.6), jamais ré-appelé pour ça. */
+  /** Dates des jours du trip (epoch ms, ordre chronologique) — permet de répartir les activités par jour (`activities_day`/`full_plan`) et de recréer les vraies `DayActivityInstance` sur le bon jour à la validation. */
+  tripDayDates: number[];
+  /** Pool complet d'activités récupéré côté serveur (§4.1) — sert de réservoir pour "Remplacer" (§2.6), jamais ré-appelé pour ça. */
   candidates: GeneratedActivityCandidate[];
-  /** Sous-ensemble actuellement proposé à l'utilisateur (§2.5) — modifié localement (exclusion) et via "Remplacer" avant validation. */
+  /** Sous-ensemble d'activités actuellement proposé à l'utilisateur (§2.5) — modifié localement (exclusion) et via "Remplacer" avant validation. */
   preview: GeneratedActivityCandidate[];
+  /** Mode `full_plan` uniquement — voir `GeneratedLodgingCandidate`. */
+  lodgingCandidates: GeneratedLodgingCandidate[];
+  lodgingPreview: GeneratedLodgingCandidate[];
+  /** Mode `full_plan` multi-villes uniquement — voir `GeneratedTransportSegment`. */
+  transportSegments: GeneratedTransportSegment[];
   /** Renseigné seulement si `status === 'failed'` (§4.5). */
   error?: string;
   createdAt: Date;

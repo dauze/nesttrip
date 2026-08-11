@@ -43,6 +43,9 @@ export class TripGenerationDataSource extends TripGenerationRepository {
       preferences,
       candidates: [],
       preview: [],
+      lodgingCandidates: [],
+      lodgingPreview: [],
+      transportSegments: [],
       updatedAt: Date.now(),
     });
   }

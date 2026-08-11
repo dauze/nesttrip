@@ -103,9 +103,6 @@ export class NewTripComponent {
   /** Raison de blocage du mode IA au submit, affichée sous la carte manuel/IA — `null` si rien ne bloque. Réévalué à chaque rendu (pas un `computed()`, mêmes raisons que `showPlanningModeCard`). */
   protected aiSubmitError(): string | null {
     if (this.planningMode() !== 'ai') return null;
-    if (this.aiPreferences().assistanceLevel !== 'activities_only') {
-      return "Seul le mode \"Suggérer des activités\" est disponible pour l'instant — les autres arrivent bientôt.";
-    }
     if (!this.destinationLocation()) {
       return 'Choisis une destination dans les suggestions Google (pas juste un texte libre) pour que l\'IA puisse chercher des activités autour.';
     }
@@ -363,8 +360,12 @@ export class NewTripComponent {
       status: 'generating',
       preferences: this.aiPreferences(),
       destination: { ville: trip.ville, placeId: trip.placeId ?? '', latitude: location.latitude, longitude: location.longitude },
+      tripDayDates: trip.days.map((d) => d.id.getTime()),
       candidates: [],
       preview: [],
+      lodgingCandidates: [],
+      lodgingPreview: [],
+      transportSegments: [],
       createdAt: now,
       updatedAt: now,
     };

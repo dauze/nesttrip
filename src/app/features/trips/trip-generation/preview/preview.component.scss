@@ -10,3 +10,10 @@
 .preview-item--excluded {
   opacity: 0.5;
 }
+
+.preview-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+  text-transform: capitalize;
+}

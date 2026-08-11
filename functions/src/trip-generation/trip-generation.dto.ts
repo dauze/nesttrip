@@ -32,6 +32,29 @@ export interface GeneratedActivityCandidate {
   interest: Interest;
   reason: string;
   excluded: boolean;
+  day?: number;
+}
+
+export interface GeneratedLodgingCandidate {
+  candidateId: string;
+  placeId: string;
+  title: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  photoRefs: string[];
+  rating?: number;
+  city: string;
+  reason: string;
+  excluded: boolean;
+}
+
+export interface GeneratedTransportSegment {
+  id: string;
+  fromCity: string;
+  toCity: string;
+  distanceKm: number;
+  estimatedLabel: string;
 }
 
 export interface TripGenerationDoc {
@@ -39,8 +62,12 @@ export interface TripGenerationDoc {
   status: TripGenerationStatus;
   preferences: TripAiPreferences;
   destination: { ville: string; placeId: string; latitude: number; longitude: number };
+  tripDayDates: number[];
   candidates: GeneratedActivityCandidate[];
   preview: GeneratedActivityCandidate[];
+  lodgingCandidates: GeneratedLodgingCandidate[];
+  lodgingPreview: GeneratedLodgingCandidate[];
+  transportSegments: GeneratedTransportSegment[];
   error?: string;
   createdAt: number;
   updatedAt: number;

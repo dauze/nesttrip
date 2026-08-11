@@ -1,7 +1,9 @@
-import { GeneratedActivityCandidate, Interest, TripAiPreferences } from './trip-generation.dto';
+import { GeneratedActivityCandidate, Interest, Pace, TripAiPreferences } from './trip-generation.dto';
 
-/** Nombre total d'activités proposées à l'aperçu (§2.5) — v1 fixe, pas de règle sur le nombre de jours (mode `activities_only`, aucun placement par jour). */
-const PREVIEW_SIZE = 10;
+/** Nombre d'activités par jour selon le rythme choisi (§2.3) — utilisé en mode `activities_day`/`full_plan` (placement par jour). */
+const ACTIVITIES_PER_DAY: Record<Pace, number> = { relaxed: 2, balanced: 3, intense: 4 };
+/** Mode `activities_only` (pas de placement par jour) : nombre total fixe (§2.5), aucune notion de jour disponible pour calibrer autrement. */
+const PREVIEW_SIZE_NO_DAYS = 10;
 
 const INTEREST_LABELS: Record<Interest, string> = {
   museums: 'musées',
@@ -24,14 +26,25 @@ const INTEREST_LABELS: Record<Interest, string> = {
  *
  * Répartition round-robin par centre d'intérêt (jamais tous les résultats du
  * même intérêt d'affilée), triée par note Google décroissante à l'intérieur
- * de chaque intérêt, jusqu'à `PREVIEW_SIZE` — garde-fou anti-hallucination
- * respecté par construction : ne fait que sélectionner des `candidateId`
- * déjà présents dans le pool reçu, jamais de donnée inventée.
+ * de chaque intérêt — garde-fou anti-hallucination respecté par construction
+ * (ne sélectionne que des `candidateId` déjà présents dans le pool reçu).
+ *
+ * `numDays` : `undefined` en mode `activities_only` (pas de placement, taille
+ * fixe `PREVIEW_SIZE_NO_DAYS`, voir §2.5) ; sinon (`activities_day`/
+ * `full_plan`) la taille cible est `rythme × numDays` (§2.3) et chaque item
+ * sélectionné reçoit un `day` (0-based, cyclique sur l'ordre de sélection —
+ * "ordre dans la journée uniquement", pas d'horaire précis, voir §6
+ * recommandation v1).
  */
 export function selectActivitiesStub(
   candidates: GeneratedActivityCandidate[],
-  _preferences: TripAiPreferences,
+  preferences: TripAiPreferences,
+  numDays?: number,
 ): GeneratedActivityCandidate[] {
+  const targetSize = numDays
+    ? Math.min(candidates.length, ACTIVITIES_PER_DAY[preferences.pace ?? 'balanced'] * numDays)
+    : Math.min(candidates.length, PREVIEW_SIZE_NO_DAYS);
+
   const byInterest = new Map<Interest, GeneratedActivityCandidate[]>();
   for (const candidate of candidates) {
     const bucket = byInterest.get(candidate.interest) ?? [];
@@ -45,16 +58,17 @@ export function selectActivitiesStub(
   const interests = [...byInterest.keys()];
   const selected: GeneratedActivityCandidate[] = [];
   let round = 0;
-  while (selected.length < PREVIEW_SIZE && interests.some((i) => (byInterest.get(i)?.length ?? 0) > round)) {
+  while (selected.length < targetSize && interests.some((i) => (byInterest.get(i)?.length ?? 0) > round)) {
     for (const interest of interests) {
       const bucket = byInterest.get(interest) ?? [];
       const candidate = bucket[round];
       if (!candidate) continue;
       selected.push({ ...candidate, reason: `Choisi pour ton intérêt ${INTEREST_LABELS[interest]}` });
-      if (selected.length >= PREVIEW_SIZE) break;
+      if (selected.length >= targetSize) break;
     }
     round++;
   }
 
-  return selected;
+  if (!numDays) return selected;
+  return selected.map((candidate, index) => ({ ...candidate, day: index % numDays }));
 }

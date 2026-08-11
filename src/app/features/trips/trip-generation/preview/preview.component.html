@@ -1,35 +1,91 @@
+<ng-template #activityRow let-item="item">
+  <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
+    <app-checkbox [checked]="item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
+    <div class="flex flex-column flex-1 min-w-0 gap-1">
+      <span class="font-semibold">{{ item.title }}</span>
+      @if (item.address) {
+        <span class="nt-text-muted text-sm">{{ item.address }}</span>
+      }
+      <span class="nt-text-muted text-xs">{{ item.reason }}</span>
+    </div>
+    <app-button
+      label="Remplacer"
+      severity="secondary"
+      [outlined]="true"
+      size="small"
+      class="flex-shrink-0"
+      [disabled]="!canReplace(item)"
+      (click)="replace(item.candidateId)"
+    />
+  </div>
+</ng-template>
+
 <div class="flex flex-column gap-2">
   <app-card>
     <div cardTitle class="flex justify-content-between align-items-center w-full">
-      <span class="text-2xl font-semibold">Activités proposées</span>
+      <span class="text-2xl font-semibold">Ton voyage proposé</span>
     </div>
 
-    <div class="flex flex-column gap-3">
-      @if (items().length === 0) {
-        <p class="nt-text-muted">Aucune activité proposée pour l'instant.</p>
+    <div class="flex flex-column gap-4">
+      @if (items().length === 0 && lodgingItems().length === 0) {
+        <p class="nt-text-muted">Aucune suggestion pour l'instant.</p>
       }
 
-      @for (item of items(); track item.candidateId) {
-        <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
-          <app-checkbox [checked]="item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
-
-          <div class="flex flex-column flex-1 min-w-0 gap-1">
-            <span class="font-semibold">{{ item.title }}</span>
-            @if (item.address) {
-              <span class="nt-text-muted text-sm">{{ item.address }}</span>
+      @if (hasDayPlacement()) {
+        @for (day of dayGroups(); track day.dayIndex) {
+          <div class="flex flex-column gap-2">
+            <span class="preview-section-title">Jour {{ day.dayIndex + 1 }} — {{ day.date | date:'EEEE d MMMM' }}</span>
+            @for (item of day.items; track item.candidateId) {
+              <ng-container [ngTemplateOutlet]="activityRow" [ngTemplateOutletContext]="{ item }" />
             }
-            <span class="nt-text-muted text-xs">{{ item.reason }}</span>
           </div>
+        }
+      } @else {
+        <div class="flex flex-column gap-3">
+          @for (item of items(); track item.candidateId) {
+            <ng-container [ngTemplateOutlet]="activityRow" [ngTemplateOutletContext]="{ item }" />
+          }
+        </div>
+      }
 
-          <app-button
-            label="Remplacer"
-            severity="secondary"
-            [outlined]="true"
-            size="small"
-            class="flex-shrink-0"
-            [disabled]="!canReplace(item)"
-            (click)="replace(item.candidateId)"
-          />
+      @if (lodgingByCity().length > 0) {
+        <div class="flex flex-column gap-2">
+          <span class="preview-section-title">Logements</span>
+          @for (group of lodgingByCity(); track group.city) {
+            @for (item of group.items; track item.candidateId) {
+              <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
+                <app-checkbox [checked]="item.excluded" (checkedChange)="toggleExcludeLodging(item.candidateId)" />
+                <div class="flex flex-column flex-1 min-w-0 gap-1">
+                  <span class="font-semibold">{{ item.title }}</span>
+                  @if (item.address) {
+                    <span class="nt-text-muted text-sm">{{ item.address }}</span>
+                  }
+                  <span class="nt-text-muted text-xs">{{ item.reason }}</span>
+                </div>
+                <app-button
+                  label="Remplacer"
+                  severity="secondary"
+                  [outlined]="true"
+                  size="small"
+                  class="flex-shrink-0"
+                  [disabled]="!canReplaceLodging(item)"
+                  (click)="replaceLodging(item.candidateId)"
+                />
+              </div>
+            }
+          }
+        </div>
+      }
+
+      @if (transportSegments().length > 0) {
+        <div class="flex flex-column gap-2">
+          <span class="preview-section-title">Trajets estimés</span>
+          @for (segment of transportSegments(); track segment.id) {
+            <div class="preview-item flex flex-column gap-1">
+              <span class="font-semibold">{{ segment.fromCity }} → {{ segment.toCity }}</span>
+              <span class="nt-text-muted text-xs">{{ segment.estimatedLabel }}</span>
+            </div>
+          }
         </div>
       }
     </div>

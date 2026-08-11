@@ -54,7 +54,7 @@ service cloud.firestore {
         && request.resource.data.tripId == tripId
         && request.resource.data.status == 'generating';
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'preferences', 'candidates', 'preview', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'preferences', 'candidates', 'preview', 'lodgingCandidates', 'lodgingPreview', 'transportSegments', 'updatedAt']);
       allow delete: if false;
     }
 

@@ -11,8 +11,12 @@ describe('trip-generation.mapper', () => {
         status: 'generating',
         preferences: { ...createDefaultAiPreferences() },
         destination: { ville: 'Rome', placeId: 'place-1', latitude: 41.9, longitude: 12.5 },
+        tripDayDates: [1_700_000_000_000],
         candidates: [],
         preview: [],
+        lodgingCandidates: [],
+        lodgingPreview: [],
+        transportSegments: [],
         createdAt: 1_700_000_000_000,
         updatedAt: 1_700_000_100_000,
       };
@@ -23,7 +27,7 @@ describe('trip-generation.mapper', () => {
       expect(result.updatedAt).toEqual(new Date(1_700_000_100_000));
     });
 
-    it('remplace candidates/preview absents par des tableaux vides', () => {
+    it('remplace candidates/preview/lodging*/transportSegments/tripDayDates absents par des tableaux vides', () => {
       const fb = {
         tripId: 'trip-2',
         status: 'generating',
@@ -37,6 +41,10 @@ describe('trip-generation.mapper', () => {
 
       expect(result.candidates).toEqual([]);
       expect(result.preview).toEqual([]);
+      expect(result.lodgingCandidates).toEqual([]);
+      expect(result.lodgingPreview).toEqual([]);
+      expect(result.transportSegments).toEqual([]);
+      expect(result.tripDayDates).toEqual([]);
     });
   });
 
@@ -46,8 +54,12 @@ describe('trip-generation.mapper', () => {
       status: 'generating',
       preferences: createDefaultAiPreferences(),
       destination: { ville: 'Rome', placeId: 'place-1', latitude: 41.9, longitude: 12.5 },
+      tripDayDates: [1_700_000_000_000],
       candidates: [],
       preview: [],
+      lodgingCandidates: [],
+      lodgingPreview: [],
+      transportSegments: [],
       createdAt: new Date('2026-08-01T10:00:00Z'),
       updatedAt: new Date('2026-08-01T10:00:00Z'),
     };
@@ -89,7 +101,7 @@ describe('trip-generation.mapper', () => {
       expect('rating' in result.preview[0]).toBe(false);
     });
 
-    it('est symétrique (fromFb ∘ toFb) sur un job complet', () => {
+    it('est symétrique (fromFb ∘ toFb) sur un job complet (activité placée sur un jour, logement, transport)', () => {
       const job: TripGeneration = {
         ...baseJob,
         preview: [
@@ -105,11 +117,39 @@ describe('trip-generation.mapper', () => {
             interest: 'offbeat',
             reason: 'Choisi pour ton intérêt insolite',
             excluded: false,
+            day: 2,
           },
+        ],
+        lodgingPreview: [
+          {
+            candidateId: 'h1',
+            placeId: 'h1',
+            title: 'Hôtel Roma',
+            photoRefs: [],
+            city: 'Rome',
+            reason: '',
+            excluded: false,
+          },
+        ],
+        transportSegments: [
+          { id: 't1', fromCity: 'Rome', toCity: 'Florence', distanceKm: 230, estimatedLabel: '~2h estimées (route/train)' },
         ],
       };
 
       expect(tripGenerationFromFb(tripGenerationToFb(job))).toEqual(job);
+    });
+
+    it("n'écrit pas day pour une activité en mode activities_only (non placée)", () => {
+      const job: TripGeneration = {
+        ...baseJob,
+        preview: [
+          { candidateId: 'c1', placeId: 'c1', title: 'Colisée', photoRefs: [], interest: 'offbeat', reason: '', excluded: false },
+        ],
+      };
+
+      const result = tripGenerationToFb(job);
+
+      expect('day' in result.preview[0]).toBe(false);
     });
   });
 });
