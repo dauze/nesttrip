@@ -25,6 +25,9 @@ import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+import { SelectButtonComponent } from '@app/shared/components/select-button/select-button.component';
+import { AiTripPreferencesComponent } from './ai-trip-preferences/ai-trip-preferences.component';
+import { PLANNING_MODE_OPTIONS, PlanningMode, TripAiPreferences, createDefaultAiPreferences } from './trip-ai-preferences.model';
 
 @Component({
   selector: 'app-new-trip',
@@ -32,7 +35,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, InputTextDirective, DatePickerComponent, ButtonComponent,
-    CardComponent, AutoCompleteComponent
+    CardComponent, AutoCompleteComponent, SelectButtonComponent, AiTripPreferencesComponent,
   ],
   templateUrl: 'new-trip.component.html',
   styleUrl: 'new-trip.component.scss',
@@ -62,6 +65,31 @@ export class NewTripComponent {
 
   readonly loading = signal(false);
   readonly searching = this.googlePlaceService.searching;
+
+  /** Carte "Je planifie moi-même" / "Laisser l'IA m'aider" (voir process-creation-trip-ia.md §2.2), affichée une fois Destination/Nom/Dates renseignés. Lot 1 : `aiPreferences` n'est jamais envoyé au backend, purement local au formulaire. */
+  protected readonly planningModeOptions = PLANNING_MODE_OPTIONS;
+  readonly planningMode = signal<PlanningMode>('manual');
+  readonly aiPreferences = signal<TripAiPreferences>(createDefaultAiPreferences());
+
+  /** `SelectButtonComponent.valueChange` type toujours `T | undefined` — en pratique toujours défini, un clic sélectionne forcément une des 2 options. */
+  protected onPlanningModeChange(mode: PlanningMode | undefined): void {
+    if (mode === undefined) return;
+    this.planningMode.set(mode);
+  }
+
+  /**
+   * Les 3 champs existants suffisent à afficher la 4ᵉ carte (voir §2.1/§2.2
+   * de la spec) — pas besoin d'attendre une validation plus poussée (ex.
+   * dates cohérentes), déjà vérifiée par `form.invalid` au submit. Méthode
+   * simple (pas de `computed()`) : `form.value` n'est pas un signal, même
+   * pattern que les erreurs de champ déjà lues inline dans le template
+   * (`form.controls.ville.hasError(...)`), réévaluée à chaque passe de
+   * détection de changements déclenchée par les événements du formulaire.
+   */
+  protected showPlanningModeCard(): boolean {
+    const { title, ville, dates } = this.form.value;
+    return !!title && !!ville && Array.isArray(dates) && dates.length === 2;
+  }
 
   /** Réf photo Google Places de la destination sélectionnée, résolue automatiquement (voir `onSelect`) — pas d'action utilisateur, `undefined` si pas encore résolue/échec au moment du submit (non bloquant, voir ROADMAP.md "UX / Interactions"). */
   private readonly photoRef = signal<string | undefined>(undefined);
@@ -93,7 +121,14 @@ export class NewTripComponent {
     });
   }
 
-  /** Ville → Nom → Dates, chacune ouvrant son tiroir dédié (voir openVilleDialog/openNomDialog) — auto-soumission dès que la plage de dates est complète, jamais bloquant si une étape est annulée en cours de route. */
+  /**
+   * Ville → Nom → Dates, chacune ouvrant son tiroir dédié (voir
+   * openVilleDialog/openNomDialog) — jamais bloquant si une étape est annulée
+   * en cours de route. Ne soumet plus automatiquement une fois les dates
+   * choisies (voir process-creation-trip-ia.md §2.1) : la 4ᵉ carte
+   * manuel/IA doit encore pouvoir s'afficher, donc l'utilisateur tape
+   * explicitement "Créer le voyage".
+   */
   protected async startGuidedEntry(): Promise<void> {
     const villeResult = await this.openVilleDialog();
     if (!villeResult) return;
@@ -110,7 +145,6 @@ export class NewTripComponent {
     const range = await this.awaitOnce(datePicker.selected);
     if (!Array.isArray(range)) return;
     this.form.controls.dates.setValue(range);
-    this.onSubmit();
   }
 
   /** Retap du déclencheur mobile Ville (hors chaînage initial, voir template) — réédition ponctuelle. */

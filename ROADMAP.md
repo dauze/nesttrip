@@ -2,6 +2,12 @@
 
 Ce document sert de référence pour le projet ce qu'il reste à faire.
 
+### Plan d'exécution en cours (2026-08-11)
+- Génération de voyage assistée par IA (voir "Nouveau voyage / IA" ci-dessous et `src/specs/process-creation-trip-ia.md`) : repris malgré le statut "non prioritaire", à la demande explicite de l'utilisateur. Découpage en lots suivi tel que défini dans la spec (§7) :
+  - **Lot 1 (front-only) — fait.** 4ᵉ carte "Je planifie moi-même"/"Laisser l'IA m'aider" (`app-select-button--solid`) sur l'écran "Nouveau voyage", affichée une fois Destination/Nom/Dates renseignés ; en mode IA, panneau de préférences (niveau d'assistance, type de voyageurs, rythme, centres d'intérêt, plusieurs villes, texte libre) — état purement local au formulaire, rien n'est envoyé au backend. L'auto-soumission mobile en fin de cinématique guidée (Ville → Nom → Dates) a été retirée : l'utilisateur doit désormais taper explicitement "Créer le voyage".
+  - **Lot 2 (pipeline `activities_only` end-to-end) — en cours.** Recherche Places élargie, sélection par LLM (tool use contraint au pool de candidats), écran de génération, aperçu, validation.
+  - Lot 3 (`full_plan`) et Lot 4 (régénération ciblée) : non commencés, cf. §6/§7 de la spec.
+
 ### ✅ Déjà fait (2026-08-09)
 - Bouton "plus..." sous les avis Google d'une activité, ouvre tous les avis du lieu (`search.google.com/local/reviews`).
 - Photo de voyage récupérée automatiquement (Google Places, au choix de la destination) à la création, affichée à l'accueil à la place de l'icône pin — `Trip.photoRef`/`TripSummary.photoRef`.

@@ -95,6 +95,21 @@
           }
         </div>
 
+        <!-- Mode manuel / IA -->
+        @if (showPlanningModeCard()) {
+          <div class="flex flex-column gap-2">
+            <span class="font-medium">Comment veux-tu organiser ce voyage ?</span>
+            <app-select-button
+              [options]="planningModeOptions"
+              [value]="planningMode()"
+              (valueChange)="onPlanningModeChange($event)" />
+          </div>
+
+          @if (planningMode() === 'ai') {
+            <app-ai-trip-preferences [(preferences)]="aiPreferences" />
+          }
+        }
+
         <!-- Actions -->
         <div class="nt-footer-actions justify-content-end gap-2 pt-2">
           <app-button
