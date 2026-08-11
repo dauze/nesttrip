@@ -4,9 +4,35 @@ import * as admin from 'firebase-admin';
 import { searchActivityCandidates } from './search-activities';
 import { searchLodgingCandidates } from './search-lodging';
 import { selectActivitiesStub } from './select-activities-stub';
+import { selectActivitiesLlm } from './select-activities-llm';
 import { geocodeCity, GeocodedCity } from './geocode-city';
 import { estimateTransportSegment } from './transport-estimate';
-import { GeneratedActivityCandidate, GeneratedLodgingCandidate, TripGenerationDoc } from './trip-generation.dto';
+import { GeneratedActivityCandidate, GeneratedLodgingCandidate, TripAiPreferences, TripGenerationDoc } from './trip-generation.dto';
+
+/**
+ * Sélection des activités — un SEUL appel LLM par génération (voir doc de
+ * classe ci-dessous), jamais par candidat ni par jour, le pool étant déjà
+ * réduit en amont (§4.1, ~50-70 candidats max). Retombe sur le stub
+ * déterministe (`selectActivitiesStub`) si `geminiApiKey` est absent (pas
+ * encore configuré) OU si l'appel échoue (quota, réseau...) — même
+ * philosophie que §4.5 : ne jamais faire échouer toute la génération pour
+ * l'indisponibilité d'UNE seule source.
+ */
+async function selectActivities(
+  candidates: GeneratedActivityCandidate[],
+  preferences: TripAiPreferences,
+  numDays: number | undefined,
+  geminiApiKey: string | undefined,
+): Promise<GeneratedActivityCandidate[]> {
+  if (!geminiApiKey) return selectActivitiesStub(candidates, preferences, numDays);
+
+  try {
+    return await selectActivitiesLlm(candidates, preferences, numDays, geminiApiKey);
+  } catch (err) {
+    console.error('selectActivitiesLlm error, fallback sur le stub:', err);
+    return selectActivitiesStub(candidates, preferences, numDays);
+  }
+}
 
 /**
  * Résout la liste des villes à traiter (§4.1) : la destination principale
@@ -55,10 +81,14 @@ async function resolveCities(doc: TripGenerationDoc, apiKey: string): Promise<Ge
  * - `full_plan` : idem + logements (1 par ville, §6) + estimations de
  *   trajet entre villes consécutives si multi-villes (§6, pas d'API de
  *   trajet inter-villes branchée en v1 — distance à vol d'oiseau).
+ *
+ * `geminiApiKey` optionnel : `undefined` tant que le secret `GEMINI_API_KEY`
+ * n'est pas configuré (voir `index.ts`) — la génération reste alors sur le
+ * stub déterministe, jamais bloquée pour autant (voir `selectActivities`).
  */
-export function makeGenerateTripTrigger(googleApiKey: SecretParam) {
+export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?: SecretParam) {
   return onDocumentWritten(
-    { document: 'tripGenerations/{tripId}', region: 'europe-west1', secrets: [googleApiKey] },
+    { document: 'tripGenerations/{tripId}', region: 'europe-west1', secrets: geminiApiKey ? [googleApiKey, geminiApiKey] : [googleApiKey] },
     async (event) => {
       const after = event.data?.after;
       if (!after?.exists) return;
@@ -88,7 +118,7 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam) {
         }
 
         const numDays = doc.preferences.assistanceLevel === 'activities_only' ? undefined : doc.tripDayDates.length;
-        const preview = selectActivitiesStub(candidates, doc.preferences, numDays);
+        const preview = await selectActivities(candidates, doc.preferences, numDays, geminiApiKey?.value());
 
         const { lodgingCandidates, lodgingPreview } = doc.preferences.assistanceLevel === 'full_plan'
           ? await buildLodging(cities, apiKey)

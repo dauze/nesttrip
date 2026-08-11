@@ -19,6 +19,11 @@ admin.initializeApp();
 
 const googleApiKey = defineSecret('GOOGLE_PLACES_API_KEY');
 const aeroDataBoxApiKey = defineSecret('AERODATABOX_API_KEY');
+// Sélection LLM du pipeline de génération IA (voir generate-trip.trigger.ts,
+// select-activities-llm.ts) — Gemini (Google AI Studio), tier gratuit visé
+// pour un usage à faible volume. Doit être créé AVANT le déploiement :
+// `firebase functions:secrets:set GEMINI_API_KEY`.
+const geminiApiKey = defineSecret('GEMINI_API_KEY');
 
 const app = express();
 app.use(express.json());
@@ -53,4 +58,4 @@ export const api = onRequest(
 // Pipeline de génération de voyage assistée par IA (voir
 // src/specs/process-creation-trip-ia.md §4) — trigger Firestore, pas de
 // route HTTP.
-export const generateTrip = makeGenerateTripTrigger(googleApiKey);
+export const generateTrip = makeGenerateTripTrigger(googleApiKey, geminiApiKey);
