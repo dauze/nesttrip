@@ -19,9 +19,12 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Stockage des fichiers en local si possible (A affiner)
 
 ### IA 
-- Il faut que tu améliores la génération de parcours par IA : Il a le champs "Statut" avec a reserver ou réservé qui doit être renseigné par l'iA si celle-ci pense qu'il faut réserver. Une deadline est alors à positionner, du temps qu'elle pense qu'il faut pour réserver en avance : par exemple, si on doit reserver une semaine en avance, alors il faut mettre une deadline une semaine avant la date positionné. Idem pour les logements et les transports. 
-- Il faut améliorer le traitement si jamais on a besoin d'une location de voiture, le conseiller
+- Il faut que tu améliores la génération de parcours par IA : Il a le champs "Statut" avec "a reserver", "sans réservation", "réservé" qui doit être renseigné par l'iA si celle-ci pense qu'il faut réserver. Une deadline est alors à positionner, du temps qu'elle pense qu'il faut pour réserver en avance : par exemple, si on doit reserver une semaine en avance, alors il faut mettre une deadline une semaine avant la date positionné. Idem pour les logements et les transports.
+- Il faut améliorer le traitement si jamais on a besoin d'une location de voiture, le conseiller via un transport ajouté (renseigner tpute les zones 
 - Renseigner les date de début et de fin pour les logements 
+- Certains item peuvent etre généré de manières generale sans les assigner à une activité, par exemple les infos sur une destination, les tutor avant de venir, les infos à savoir sur les costumes, etc
+- Si une activité depasse 00h00, l'ia doit renseigner l'info "J+1", "J+2"
+- De manière générale, l'ia doit renseigner absolument toutes les données qu'ils y a sur les activités, logements et transports, infos, etc. Refaire un scan complet pour vérifier qu'aucune infos n'est mise en dur durant le process de création de trip à partir de generation trip
 
 ### UI spécifique Desktop (A affiner)
 - Vue calendrier (A affiner)
@@ -33,17 +36,23 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- Séparer le paramétrage du trip de celui de générale, mais ou mettre le clique ? (A affiner)
 - Dialogue note : ne doit pas permetre de saisir plus de caractères qure 5000 avec une animation sur le compteur qui check à chaque saisie supérieur à 5000; le repositionnement clavier (VisualViewportService) ne fonctionne pas sur cette popup mais sur tous les autres oui, lorsque j'affiche la popup, le clavier s'ouvre, et la popup n'est pas décalée vers le haut comme pour les autres popup 
 - Les deadlines sur mobile sont cliquable en dehors de leur zone, il faudrait que la zone cliquable soit la tail de l'input, pas plus (comme les autres champs)
-- Pour le login, réaliser la page de réinitialisation du mdp et la page de confirmation après activation du lien dans le même style que le login
-- Retravailler l'ui de l'écran d'accueil : mettre du box shadow sur la carte, supprimer le padding entre la photo et le bords et supprimer les round sur le coté droite de l'image, la rendre plus jolie. Et échanger la couleur, la carte doit être blanche, et le contenu un peu plus foncé mais moins que le foncé du background (un dégradé). Attention lorque l'on selectionne une carte pour le mode suppression il y a 2 problèmes : il n'y a pas de paddign entre la checkbox et la pohto, et si une carte est grise car ce n'est pas mon voyage, quand je clique dessus ça déplenche le clique à tord
-- Pour la selection lors de la suppression, il faudrait pas plutît mettre la coueur primary ? Ce serait plus jolie non ? 
+- Pour le login, réaliser la page de réinitialisation du mdp et la page de confirmation après activation du lien dans le même style que le login ou que la page de auth guard 
+- Retravailler l'ui de l'écran d'accueil : mettre du box shadow sur la carte, supprimer le padding entre la photo et le bords et supprimer les round sur le coté droite de l'image, la rendre plus jolie. Et échanger la couleur, la carte doit être blanche, et le panel qui contient les panel de trip un tout petit peu plus foncé que le fond mais moins que les cartes des trip. Attention lorque l'on selectionne une carte pour le mode suppression il y a 2 problèmes : il n'y a pas de padding entre la checkbox et la photo, et si une carte est grise car ce n'est pas mon voyage, quand je clique dessus ça déplenche le clique à tord : il faut que le clique soit désactivé en mode modifications sur les cartes non supprimable
+- Pour la selection lors de la suppression, il faudrait pas plutît mettre la couleur primary plutôt que le rouge, ce sera plus jolie
 - Le logo affiché dans le libellé de "Prix" doit être le logo de la currency de la personne 
-- Si il n'y a pas d'activité, la carte doit être centré sur le placeid du trip, pas paris 
-- Dans les settings du trip, pouvoir changer la destination, cela changerais aussi la photo
-- déplacer les settings du trip pour les mettre ailleurs que sur les settings généraux (A affiner) 
-- Supprimer le champs "Note" des activitées et Logement et transport car c'est maintenant les listes, et remplacer liste par note ? (A affiner) 
+- Si il n'y a pas d'activité sur un jour, la carte doit être centré sur le placeid du trip, pas sur Parid paris 
+- Dans les settings du trip, pouvoir changer le multi destination, cela changerais aussi la photo si il change la destination principale
+- Dans le parcours de création d'un trip, il faudrait déplacer le remplissage du champs "plusieurs destinations ?" Pour qu'il soit avant la saisie de l'ia et toujours saisissable 
+- modifier le svg du repas pour mettre ce logo dans le même style que les autres logos: 🍽
+- Rajouter un message informatif dans le formulaire de création de voyage pour indiquer que la génération par ia peut donner de fausses informations et qu'il faut les vérifier, juste après le choix de "laisser l'IA m'aider". 
+- sur le déplacement de la camera sur la carte dans résumé, la faire moins varier en recul et accélérer un peu les transitions. Il faudrait également rajouter les titres des activités avec les photos. Je ne sais pas comment faire ça de manière compact et UI, propose moi un truc bien.
+- Retirer les infos relatives au voyage du drawer général de la roue cranté en haut
+- créer un nouveau drawer qui aura uniquement les paramètres du voyage, son ouverture sera uniquement au clique sur le trip header.
+- Dans l'onglet résumé, modifier le trip header : il faut rajouter en fin de carte un logo de réglage (autre que la roue cranté pour ne pas faure doublon). Au clique, l'utilisateur arrivera sur le drawer qui contiendra uniquement les paramètres relatifs au voyage. pour rajouter une information pour cliquer sur le voyage et a l'ouverture il y aura uniquement la modification du voyage dans un drawer séparé
+- Rajouter un s au libellés logementS et tranportS
+- Renomer le bouton "Jour + X" en "Jour par jour" et faire le renommant également dans l'aide pour l'onboarding
 
 ### Carte
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
@@ -52,8 +61,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Suggestions d'activités via la ville dans le pool (A affiner)
 
 ### Nouveau voyage / IA
-- Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera -> voir plan process-creation-trip-ia.md :
-- L'ia doit également proposer dans le prompt un endroit ou manger aux heure prévue 
+- Page "nouveau voyage" : appel IA pour pré-remplir jours/activités/période en fonction des choses à faire, si l'utilisateur propose des trucs, dis ce qu'il veut faire, excetera -> voir plan process-creation-trip-ia.md (fait)
+- L'ia doit également proposer dans le prompt un endroit ou manger aux heure prévue(fait) 
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA) (A affiner)
 
 ### I18n (non prioritaire)
