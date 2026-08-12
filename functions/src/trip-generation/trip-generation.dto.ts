@@ -7,6 +7,8 @@ export type AssistanceLevel = 'activities_only' | 'activities_day' | 'full_plan'
 export type TravelerType = 'solo' | 'couple' | 'family' | 'friends';
 export type Pace = 'relaxed' | 'balanced' | 'intense';
 export type Interest = 'museums' | 'nature' | 'sport' | 'food' | 'nightlife' | 'shopping' | 'relaxation' | 'offbeat';
+/** Moment de la journée réaliste pour une activité (ouverture/ambiance) — voir plan-trip-llm.ts/select-activities-llm.ts, consommé par PreviewComponent pour placer l'horaire. */
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
 
 export interface TripAiPreferences {
   assistanceLevel: AssistanceLevel;
@@ -39,6 +41,25 @@ export interface GeneratedActivityCandidate {
   estimatedDurationMinutes?: number;
   /** Estimation LLM (ou défaut fixe côté stub) — prix moyen par personne, euros. */
   estimatedPriceEur?: number;
+  /** Détecté par le LLM à partir de sa connaissance du lieu (ouverture/ambiance) — absent côté stub. Défaut 'afternoon' appliqué à la consommation (PreviewComponent), pas ici. */
+  timeOfDay?: TimeOfDay;
+  /** Horaire de départ suggéré par le LLM (0-1439, minutes depuis 00:00) — chemin primaire uniquement (voir plan-trip-llm.ts). Prioritaire sur timeOfDay à la consommation (PreviewComponent.resolveDaySchedule). */
+  suggestedStartMinutes?: number;
+  /** Remarque pratique courte (réservation, espèces uniquement, tenue exigée...) — va dans DayActivityInstance.notes à la validation. */
+  notes?: string;
+}
+
+export type NoteType = 'TODO' | 'INFO';
+
+/** Note générale de voyage générée par le LLM (packing list, choses à ne pas oublier...) — devient un `Item` du système de notes existant côté client à la validation (voir notes.model.ts). Chemin primaire uniquement (voir plan-trip-llm.ts). */
+export interface GeneratedGeneralNote {
+  id: string;
+  title: string;
+  type: NoteType;
+  points: string[];
+  excluded: boolean;
+  /** = candidateId d'une GeneratedActivityCandidate — résolu dans generate-trip.trigger.ts depuis PlannedGeneralNote.relatedActivityIndex (voir plan-trip-llm.ts/enrich-activities-with-places.ts). Absent = note générale non liée. */
+  relatedCandidateId?: string;
 }
 
 export interface GeneratedLodgingCandidate {
@@ -74,6 +95,11 @@ export interface TripGenerationDoc {
   lodgingCandidates: GeneratedLodgingCandidate[];
   lodgingPreview: GeneratedLodgingCandidate[];
   transportSegments: GeneratedTransportSegment[];
+  /** Heure de début/fin de journée souhaitée (0-23), détectée par le LLM dans preferences.freeText — chemin primaire uniquement (voir plan-trip-llm.ts). Absent = comportement historique côté PreviewComponent. */
+  dayStartHour?: number;
+  dayEndHour?: number;
+  /** Toujours renseigné (tableau, comme lodgingPreview/transportSegments) — [] sur le chemin de repli (voir generate-trip.trigger.ts). */
+  generalNotes: GeneratedGeneralNote[];
   error?: string;
   createdAt: number;
   updatedAt: number;

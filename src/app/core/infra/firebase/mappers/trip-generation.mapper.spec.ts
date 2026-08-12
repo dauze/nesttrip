@@ -17,6 +17,7 @@ describe('trip-generation.mapper', () => {
         lodgingCandidates: [],
         lodgingPreview: [],
         transportSegments: [],
+        generalNotes: [],
         createdAt: 1_700_000_000_000,
         updatedAt: 1_700_000_100_000,
       };
@@ -45,6 +46,7 @@ describe('trip-generation.mapper', () => {
       expect(result.lodgingPreview).toEqual([]);
       expect(result.transportSegments).toEqual([]);
       expect(result.tripDayDates).toEqual([]);
+      expect(result.generalNotes).toEqual([]);
     });
   });
 
@@ -60,6 +62,7 @@ describe('trip-generation.mapper', () => {
       lodgingCandidates: [],
       lodgingPreview: [],
       transportSegments: [],
+      generalNotes: [],
       createdAt: new Date('2026-08-01T10:00:00Z'),
       updatedAt: new Date('2026-08-01T10:00:00Z'),
     };
@@ -99,11 +102,34 @@ describe('trip-generation.mapper', () => {
       expect('latitude' in result.preview[0]).toBe(false);
       expect('longitude' in result.preview[0]).toBe(false);
       expect('rating' in result.preview[0]).toBe(false);
+      expect('timeOfDay' in result.preview[0]).toBe(false);
+      expect('suggestedStartMinutes' in result.preview[0]).toBe(false);
+      expect('notes' in result.preview[0]).toBe(false);
     });
 
-    it('est symétrique (fromFb ∘ toFb) sur un job complet (activité placée sur un jour, logement, transport)', () => {
+    it("omet relatedCandidateId d'une note générale non liée", () => {
       const job: TripGeneration = {
         ...baseJob,
+        generalNotes: [{ id: 'note-0', title: 'À emporter', type: 'TODO', points: ['Adaptateur'], excluded: false }],
+      };
+
+      const result = tripGenerationToFb(job);
+
+      expect('relatedCandidateId' in result.generalNotes![0]).toBe(false);
+    });
+
+    it("n'écrit pas dayStartHour/dayEndHour tant qu'aucune heure n'a été détectée", () => {
+      const result = tripGenerationToFb(baseJob);
+
+      expect('dayStartHour' in result).toBe(false);
+      expect('dayEndHour' in result).toBe(false);
+    });
+
+    it('est symétrique (fromFb ∘ toFb) sur un job complet (activité placée sur un jour, logement, transport, timeOfDay, heures de journée, notes générales liée/non liée)', () => {
+      const job: TripGeneration = {
+        ...baseJob,
+        dayStartHour: 11,
+        dayEndHour: 2,
         preview: [
           {
             candidateId: 'c1',
@@ -118,6 +144,9 @@ describe('trip-generation.mapper', () => {
             reason: 'Choisi pour ton intérêt insolite',
             excluded: false,
             day: 2,
+            timeOfDay: 'night',
+            suggestedStartMinutes: 630,
+            notes: 'Réserver à l\'avance',
           },
         ],
         lodgingPreview: [
@@ -133,6 +162,10 @@ describe('trip-generation.mapper', () => {
         ],
         transportSegments: [
           { id: 't1', fromCity: 'Rome', toCity: 'Florence', distanceKm: 230, estimatedLabel: '~2h estimées (route/train)' },
+        ],
+        generalNotes: [
+          { id: 'note-0', title: 'À emporter', type: 'TODO', points: ['Adaptateur', 'Passeport'], excluded: false, relatedCandidateId: 'c1' },
+          { id: 'note-1', title: 'Bon à savoir', type: 'INFO', points: ['Pourboire non attendu'], excluded: false },
         ],
       };
 

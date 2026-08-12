@@ -90,6 +90,9 @@ async function resolveActivity(
     ...(planned.day !== undefined ? { day: planned.day } : {}),
     estimatedDurationMinutes: planned.estimatedDurationMinutes,
     estimatedPriceEur: planned.estimatedPriceEur,
+    ...(planned.timeOfDay ? { timeOfDay: planned.timeOfDay } : {}),
+    ...(planned.suggestedStartMinutes !== undefined ? { suggestedStartMinutes: planned.suggestedStartMinutes } : {}),
+    ...(planned.notes ? { notes: planned.notes } : {}),
   };
 }
 
@@ -106,13 +109,21 @@ async function resolveActivity(
  * pas le proposer à l'utilisateur (même philosophie que le filtrage
  * `candidateId` inconnu dans select-activities-llm.ts, appliquée ici à
  * l'existence du lieu lui-même).
+ *
+ * Renvoie aussi `candidateIdByPlannedIndex` (même longueur/ordre que
+ * `planned`, calculé AVANT le filtrage dédup ci-dessous) — permet à
+ * `generate-trip.trigger.ts` de résoudre `PlannedGeneralNote.relatedActivityIndex`
+ * (index dans `planned`, voir plan-trip-llm.ts) vers le `candidateId` stable
+ * utilisé partout en aval, sans jamais avoir à recomparer un titre qui a pu
+ * changer ci-dessus (`place.displayName?.text ?? planned.title`).
  */
 export async function enrichActivitiesWithPlaces(
   planned: PlannedActivity[],
   cities: GeocodedCity[],
   apiKey: string,
-): Promise<GeneratedActivityCandidate[]> {
+): Promise<{ candidates: GeneratedActivityCandidate[]; candidateIdByPlannedIndex: (string | undefined)[] }> {
   const resolved = await Promise.all(planned.map((p) => resolveActivity(p, cities, apiKey)));
+  const candidateIdByPlannedIndex = resolved.map((candidate) => candidate?.candidateId);
 
   const seenPlaceIds = new Set<string>();
   const candidates: GeneratedActivityCandidate[] = [];
@@ -122,7 +133,7 @@ export async function enrichActivitiesWithPlaces(
     seenPlaceIds.add(candidate.placeId);
     candidates.push(candidate);
   }
-  return candidates;
+  return { candidates, candidateIdByPlannedIndex };
 }
 
 async function resolveLodging(

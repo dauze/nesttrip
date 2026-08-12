@@ -5,12 +5,26 @@ import { searchActivityCandidates } from './search-activities';
 import { searchLodgingCandidates } from './search-lodging';
 import { selectActivitiesStub } from './select-activities-stub';
 import { selectActivitiesLlm } from './select-activities-llm';
-import { planTripLlm } from './plan-trip-llm';
+import { planTripLlm, PlannedGeneralNote } from './plan-trip-llm';
 import { enrichActivitiesWithPlaces, enrichLodgingWithPlaces } from './enrich-activities-with-places';
 import { applyBudgetCap } from './apply-budget-cap';
 import { geocodeCity, GeocodedCity } from './geocode-city';
 import { estimateTransportSegment } from './transport-estimate';
-import { GeneratedActivityCandidate, GeneratedLodgingCandidate, TripAiPreferences, TripGenerationDoc } from './trip-generation.dto';
+import { GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate, TripAiPreferences, TripGenerationDoc } from './trip-generation.dto';
+
+/** Résout PlannedGeneralNote.relatedActivityIndex (index dans `planned.activities`, voir plan-trip-llm.ts) vers le candidateId stable via `candidateIdByPlannedIndex` (voir enrichActivitiesWithPlaces) — index absent/hors bornes/jamais résolu par Google ⇒ note créée SANS lien plutôt que perdue. */
+function resolveGeneralNotes(planned: PlannedGeneralNote[], candidateIdByPlannedIndex: (string | undefined)[]): GeneratedGeneralNote[] {
+  return planned.map((note, i) => ({
+    id: `note-${i}`,
+    title: note.title,
+    type: note.type,
+    points: note.points,
+    excluded: false,
+    ...(note.relatedActivityIndex !== undefined && candidateIdByPlannedIndex[note.relatedActivityIndex]
+      ? { relatedCandidateId: candidateIdByPlannedIndex[note.relatedActivityIndex] }
+      : {}),
+  }));
+}
 
 /**
  * Sélection des activités — un SEUL appel LLM par génération (voir doc de
@@ -42,6 +56,11 @@ interface ActivityGenerationResult {
   candidates: GeneratedActivityCandidate[];
   preview: GeneratedActivityCandidate[];
   lodging: { candidates: GeneratedLodgingCandidate[]; preview: GeneratedLodgingCandidate[] } | null;
+  /** Détecté depuis preferences.freeText — chemin primaire (planTripLlm) uniquement, voir sa doc. `undefined` sur le chemin de repli (pas de risque pris sur son schéma déjà fragile, voir select-activities-llm.ts). */
+  dayStartHour?: number;
+  dayEndHour?: number;
+  /** Toujours renseigné — chemin primaire uniquement produit un contenu réel (voir resolveGeneralNotes), [] sur le chemin de repli. */
+  generalNotes: GeneratedGeneralNote[];
 }
 
 /**
@@ -82,7 +101,7 @@ async function generateActivities(
   if (geminiApiKey) {
     try {
       const planned = await planTripLlm(doc.preferences, cities, numDays, geminiApiKey);
-      const enriched = await enrichActivitiesWithPlaces(planned.activities, cities, apiKey);
+      const { candidates: enriched, candidateIdByPlannedIndex } = await enrichActivitiesWithPlaces(planned.activities, cities, apiKey);
       if (enriched.length > 0) {
         const enrichedLodging = planned.lodging.length > 0
           ? await enrichLodgingWithPlaces(planned.lodging, cities, apiKey)
@@ -91,6 +110,9 @@ async function generateActivities(
           candidates: enriched,
           preview: enriched,
           lodging: enrichedLodging.length > 0 ? { candidates: enrichedLodging, preview: enrichedLodging } : null,
+          dayStartHour: planned.dayStartHour,
+          dayEndHour: planned.dayEndHour,
+          generalNotes: resolveGeneralNotes(planned.generalNotes, candidateIdByPlannedIndex),
         };
       }
       console.error('planTripLlm: 0 activité exploitable après enrichissement, repli sur recherche+sélection.');
@@ -106,7 +128,7 @@ async function generateActivities(
   if (candidates.length === 0) return { error: 'Aucune activité trouvée autour de cette destination.' };
 
   const preview = await selectActivities(candidates, doc.preferences, numDays, geminiApiKey);
-  return { candidates, preview, lodging: null };
+  return { candidates, preview, lodging: null, generalNotes: [] };
 }
 
 /**
@@ -210,6 +232,11 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?
           lodgingCandidates,
           lodgingPreview,
           transportSegments,
+          generalNotes: activitiesResult.generalNotes,
+          // Écrit OU efface explicitement (pas juste "omis si absent") : un "Régénérer tout" sans
+          // heure détectée doit effacer une valeur laissée par un run précédent, pas la garder.
+          dayStartHour: activitiesResult.dayStartHour ?? admin.firestore.FieldValue.delete(),
+          dayEndHour: activitiesResult.dayEndHour ?? admin.firestore.FieldValue.delete(),
           updatedAt: Date.now(),
         });
       } catch (err) {

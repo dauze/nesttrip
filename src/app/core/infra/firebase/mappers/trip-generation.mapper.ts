@@ -1,9 +1,9 @@
 import {
-  GeneratedActivityCandidateFirebase, GeneratedLodgingCandidateFirebase,
+  GeneratedActivityCandidateFirebase, GeneratedGeneralNoteFirebase, GeneratedLodgingCandidateFirebase,
   GeneratedTransportSegmentFirebase, TripGenerationFirebase,
 } from '../models/trip-generation.dto';
 import {
-  GeneratedActivityCandidate, GeneratedLodgingCandidate,
+  GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate,
   GeneratedTransportSegment, TripGeneration,
 } from '@app/features/trips/new-trip/trip-generation.model';
 
@@ -28,6 +28,9 @@ function candidateToFb(c: GeneratedActivityCandidate): GeneratedActivityCandidat
     ...(c.day !== undefined ? { day: c.day } : {}),
     ...(c.estimatedDurationMinutes !== undefined ? { estimatedDurationMinutes: c.estimatedDurationMinutes } : {}),
     ...(c.estimatedPriceEur !== undefined ? { estimatedPriceEur: c.estimatedPriceEur } : {}),
+    ...(c.timeOfDay !== undefined ? { timeOfDay: c.timeOfDay } : {}),
+    ...(c.suggestedStartMinutes !== undefined ? { suggestedStartMinutes: c.suggestedStartMinutes } : {}),
+    ...(c.notes !== undefined ? { notes: c.notes } : {}),
   };
 }
 
@@ -59,6 +62,21 @@ function transportSegmentToFb(s: GeneratedTransportSegment): GeneratedTransportS
   return { ...s };
 }
 
+function generalNoteFromFb(n: GeneratedGeneralNoteFirebase): GeneratedGeneralNote {
+  return { ...n };
+}
+
+function generalNoteToFb(n: GeneratedGeneralNote): GeneratedGeneralNoteFirebase {
+  return {
+    id: n.id,
+    title: n.title,
+    type: n.type,
+    points: n.points,
+    excluded: n.excluded,
+    ...(n.relatedCandidateId !== undefined ? { relatedCandidateId: n.relatedCandidateId } : {}),
+  };
+}
+
 export function tripGenerationFromFb(data: TripGenerationFirebase): TripGeneration {
   return {
     ...data,
@@ -68,6 +86,7 @@ export function tripGenerationFromFb(data: TripGenerationFirebase): TripGenerati
     lodgingCandidates: (data.lodgingCandidates ?? []).map(lodgingFromFb),
     lodgingPreview: (data.lodgingPreview ?? []).map(lodgingFromFb),
     transportSegments: (data.transportSegments ?? []).map(transportSegmentFromFb),
+    generalNotes: (data.generalNotes ?? []).map(generalNoteFromFb),
     createdAt: new Date(data.createdAt),
     updatedAt: new Date(data.updatedAt),
   };
@@ -86,8 +105,11 @@ export function tripGenerationToFb(data: TripGeneration): TripGenerationFirebase
     lodgingCandidates: data.lodgingCandidates.map(lodgingToFb),
     lodgingPreview: data.lodgingPreview.map(lodgingToFb),
     transportSegments: data.transportSegments.map(transportSegmentToFb),
+    generalNotes: data.generalNotes.map(generalNoteToFb),
     createdAt: data.createdAt.getTime(),
     updatedAt: data.updatedAt.getTime(),
+    ...(data.dayStartHour !== undefined ? { dayStartHour: data.dayStartHour } : {}),
+    ...(data.dayEndHour !== undefined ? { dayEndHour: data.dayEndHour } : {}),
     ...(data.error ? { error: data.error } : {}),
   };
 }

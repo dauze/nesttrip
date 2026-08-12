@@ -366,6 +366,7 @@ export class NewTripComponent {
       lodgingCandidates: [],
       lodgingPreview: [],
       transportSegments: [],
+      generalNotes: [],
       createdAt: now,
       updatedAt: now,
     };

@@ -1,5 +1,5 @@
 import { AssistanceLevel, Interest, Pace, TravelerType } from '@app/features/trips/new-trip/trip-ai-preferences.model';
-import { TripGenerationStatus } from '@app/features/trips/new-trip/trip-generation.model';
+import { NoteType, TimeOfDay, TripGenerationStatus } from '@app/features/trips/new-trip/trip-generation.model';
 
 export interface TripAiPreferencesFirebase {
   assistanceLevel: AssistanceLevel;
@@ -27,6 +27,9 @@ export interface GeneratedActivityCandidateFirebase {
   day?: number;
   estimatedDurationMinutes?: number;
   estimatedPriceEur?: number;
+  timeOfDay?: TimeOfDay;
+  suggestedStartMinutes?: number;
+  notes?: string;
 }
 
 export interface GeneratedLodgingCandidateFirebase {
@@ -51,6 +54,15 @@ export interface GeneratedTransportSegmentFirebase {
   estimatedLabel: string;
 }
 
+export interface GeneratedGeneralNoteFirebase {
+  id: string;
+  title: string;
+  type: NoteType;
+  points: string[];
+  excluded: boolean;
+  relatedCandidateId?: string;
+}
+
 export interface TripGenerationFirebase {
   tripId: string;
   status: TripGenerationStatus;
@@ -62,6 +74,9 @@ export interface TripGenerationFirebase {
   lodgingCandidates: GeneratedLodgingCandidateFirebase[];
   lodgingPreview: GeneratedLodgingCandidateFirebase[];
   transportSegments: GeneratedTransportSegmentFirebase[];
+  dayStartHour?: number;
+  dayEndHour?: number;
+  generalNotes?: GeneratedGeneralNoteFirebase[];
   error?: string;
   /** Epoch ms — même convention que `Price.frozenAt`/`Booking.deadline` côté activités, mais en `number` (pas de contrainte de type `map` Firestore ici). */
   createdAt: number;

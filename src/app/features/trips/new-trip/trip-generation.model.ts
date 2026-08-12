@@ -12,6 +12,9 @@ import { Interest, TripAiPreferences } from './trip-ai-preferences.model';
  */
 export type TripGenerationStatus = 'generating' | 'ready_for_preview' | 'failed';
 
+/** Moment de la journée réaliste pour une activité (ouverture/ambiance du lieu) — détecté par le LLM, voir functions/src/trip-generation/plan-trip-llm.ts et select-activities-llm.ts. Consommé par PreviewComponent pour placer l'horaire. */
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
 /**
  * Candidat brut issu de la recherche Google Places élargie (§4.1), avant/après
  * sélection par le LLM (§4.2). `excluded` est piloté par l'utilisateur sur
@@ -39,6 +42,25 @@ export interface GeneratedActivityCandidate {
   estimatedDurationMinutes?: number;
   /** Estimation LLM (ou défaut fixe côté stub) — prix moyen par personne, euros. */
   estimatedPriceEur?: number;
+  /** Détecté par le LLM (connaissance du lieu — ouverture/ambiance), absent côté stub. Défaut 'afternoon' appliqué à la consommation, voir PreviewComponent. */
+  timeOfDay?: TimeOfDay;
+  /** Horaire de départ suggéré par le LLM (0-1439, minutes depuis 00:00) — chemin primaire uniquement. Prioritaire sur timeOfDay à la consommation (PreviewComponent.resolveDaySchedule). */
+  suggestedStartMinutes?: number;
+  /** Remarque pratique courte (réservation, espèces uniquement, tenue exigée...) — distinct de `reason`. Va dans DayActivityInstance.notes à la validation. */
+  notes?: string;
+}
+
+export type NoteType = 'TODO' | 'INFO';
+
+/** Note générale de voyage générée par le LLM (packing list, choses à ne pas oublier...) — devient un `Item` du système de notes existant (voir notes.model.ts) à la validation, optionnellement lié à une activité précise. Chemin primaire uniquement. */
+export interface GeneratedGeneralNote {
+  id: string;
+  title: string;
+  type: NoteType;
+  points: string[];
+  excluded: boolean;
+  /** = candidateId d'une GeneratedActivityCandidate proposée — résolu côté serveur (voir generate-trip.trigger.ts). Absent = note générale non liée. Résolu en `DayActivityInstance.id` à la validation, voir PreviewComponent.validate. */
+  relatedCandidateId?: string;
 }
 
 /** Même anatomie qu'un candidat d'activité (Google Places, `lodging`), rattaché à une ville plutôt qu'à un centre d'intérêt — un seul logement par ville en v1 (§6 : "juste de la donnée descriptive... pas de réservation"). */
@@ -87,6 +109,11 @@ export interface TripGeneration {
   lodgingPreview: GeneratedLodgingCandidate[];
   /** Mode `full_plan` multi-villes uniquement — voir `GeneratedTransportSegment`. */
   transportSegments: GeneratedTransportSegment[];
+  /** Heure de début/fin de journée souhaitée (0-23), détectée par le LLM dans `preferences.freeText` — chemin primaire uniquement (voir plan-trip-llm.ts). Consommé par `PreviewComponent` pour initialiser/plafonner le curseur horaire du jour ; `undefined` = comportement historique (09:00, pas de plafond). */
+  dayStartHour?: number;
+  dayEndHour?: number;
+  /** Notes générales de voyage générées par le LLM — chemin primaire uniquement, [] sinon (voir generate-trip.trigger.ts). Modifiées localement (exclusion) avant validation, comme `preview`/`lodgingPreview`. */
+  generalNotes: GeneratedGeneralNote[];
   /** Renseigné seulement si `status === 'failed'` (§4.5). */
   error?: string;
   createdAt: Date;

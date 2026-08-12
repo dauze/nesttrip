@@ -11,6 +11,11 @@ import { GeneratedActivityCandidate } from './trip-generation.dto';
  * garantie stricte de respect du budget, juste un plafonnage a posteriori.
  * Ordre d'origine préservé (pas de tri de la liste retournée) ; `undefined` =
  * pas de budget renseigné, aucun filtrage.
+ *
+ * Limitation connue et acceptée : aucune awareness du mandat "déjeuner+dîner"
+ * (voir plan-trip-llm.ts) — un repas mandaté, souvent l'activité la plus
+ * chère du jour, peut être retiré en premier sous un budget serré. Corner
+ * case rare (budgetMaxEur ET dépassement), pas de logique dédiée pour l'instant.
  */
 export function applyBudgetCap(
   activities: GeneratedActivityCandidate[],

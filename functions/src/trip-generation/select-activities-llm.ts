@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { GeneratedActivityCandidate, Pace, TripAiPreferences } from './trip-generation.dto';
+import { GeneratedActivityCandidate, Pace, TimeOfDay, TripAiPreferences } from './trip-generation.dto';
+
+const TIME_OF_DAYS: TimeOfDay[] = ['morning', 'afternoon', 'evening', 'night'];
 
 /** Même calibrage que le stub (voir select-activities-stub.ts) — cohérence du nombre de suggestions entre les deux chemins (LLM / fallback). */
 const ACTIVITIES_PER_DAY: Record<Pace, number> = { relaxed: 2, balanced: 3, intense: 4 };
@@ -27,9 +29,11 @@ const RESPONSE_SCHEMA = {
       day: { type: Type.INTEGER },
       duration: { type: Type.INTEGER },
       price: { type: Type.NUMBER },
+      timeOfDay: { type: Type.STRING, enum: TIME_OF_DAYS },
+      notes: { type: Type.STRING },
       reason: { type: Type.STRING },
     },
-    // `duration`/`price` volontairement absents d'ici : un item qui les omet ne doit jamais disparaître de la sélection (retombe sur un défaut au parsing), seul un candidateId/day invalide fait `continue`.
+    // `duration`/`price`/`timeOfDay`/`notes` volontairement absents d'ici : un item qui les omet ne doit jamais disparaître de la sélection (retombe sur un défaut au parsing), seul un candidateId/day invalide fait `continue`.
     required: ['candidateId', 'reason'],
   },
 };
@@ -53,6 +57,8 @@ function buildPrompt(
     'Varie les centres d\'intérêt représentés plutôt que de piocher dans un seul.',
     'Pour chaque activité choisie, donne une courte raison affichable à l\'utilisateur (ex. "Choisi pour ton intérêt musées").',
     'Pour chaque activité choisie, indique aussi "duration" (durée réaliste en minutes pour une visite, ex. 60 à 180) et "price" (estimation du prix moyen par personne en euros, 0 si gratuit ou inconnu).',
+    'Pour chaque activité choisie, indique aussi "timeOfDay" (morning/afternoon/evening/night) : le moment RÉEL où ce lieu (d\'après son titre/adresse/type) a du sens et est ouvert — ex. un bar de nuit/une boîte de nuit → evening ou night, jamais morning/afternoon ; un musée → morning/afternoon ; un dîner → evening.',
+    'Pour chaque activité choisie, indique aussi si utile "notes" : une remarque PRATIQUE courte (ex. "Réserver à l\'avance", "Espèces uniquement") — vide si rien à signaler.',
     '',
     'Candidats disponibles (JSON) :',
     JSON.stringify(candidates),
@@ -116,7 +122,7 @@ export async function selectActivitiesLlm(
     },
   });
 
-  const raw = JSON.parse(response.text ?? '[]') as { candidateId: string; day?: number; duration?: number; price?: number; reason: string }[];
+  const raw = JSON.parse(response.text ?? '[]') as { candidateId: string; day?: number; duration?: number; price?: number; timeOfDay?: string; notes?: string; reason: string }[];
 
   const byId = new Map(candidates.map((c) => [c.candidateId, c]));
   const seen = new Set<string>();
@@ -135,6 +141,8 @@ export async function selectActivitiesLlm(
       ...(numDays !== undefined ? { day: item.day } : {}),
       estimatedDurationMinutes: Number.isFinite(item.duration) && item.duration! > 0 ? item.duration! : DEFAULT_DURATION_MINUTES,
       estimatedPriceEur: Number.isFinite(item.price) && item.price! >= 0 ? item.price! : DEFAULT_PRICE_EUR,
+      ...(TIME_OF_DAYS.includes(item.timeOfDay as TimeOfDay) ? { timeOfDay: item.timeOfDay as TimeOfDay } : {}),
+      ...(item.notes?.trim() ? { notes: item.notes.trim() } : {}),
     });
     if (selected.length >= targetSize) break;
   }

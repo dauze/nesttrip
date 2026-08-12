@@ -1,6 +1,6 @@
 <ng-template #activityRow let-item="item">
   <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
-    <app-checkbox [checked]="item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
+    <app-checkbox [checked]="!item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
     <div class="flex flex-column flex-1 min-w-0 gap-1">
       <span class="font-semibold">{{ item.title }}</span>
       @if (item.address) {
@@ -55,7 +55,7 @@
           @for (group of lodgingByCity(); track group.city) {
             @for (item of group.items; track item.candidateId) {
               <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
-                <app-checkbox [checked]="item.excluded" (checkedChange)="toggleExcludeLodging(item.candidateId)" />
+                <app-checkbox [checked]="!item.excluded" (checkedChange)="toggleExcludeLodging(item.candidateId)" />
                 <div class="flex flex-column flex-1 min-w-0 gap-1">
                   <span class="font-semibold">{{ item.title }}</span>
                   @if (item.address) {
@@ -85,6 +85,23 @@
             <div class="preview-item flex flex-column gap-1">
               <span class="font-semibold">{{ segment.fromCity }} → {{ segment.toCity }}</span>
               <span class="nt-text-muted text-xs">{{ segment.estimatedLabel }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      @if (generalNotesItems().length > 0) {
+        <div class="flex flex-column gap-2">
+          <span class="preview-section-title">Notes de voyage</span>
+          @for (note of generalNotesItems(); track note.id) {
+            <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="note.excluded">
+              <app-checkbox [checked]="!note.excluded" (checkedChange)="toggleExcludeGeneralNote(note.id)" />
+              <div class="flex flex-column flex-1 min-w-0 gap-1">
+                <span class="font-semibold">{{ note.title }}</span>
+                @for (point of note.points; track point) {
+                  <span class="nt-text-muted text-xs">• {{ point }}</span>
+                }
+              </div>
             </div>
           }
         </div>

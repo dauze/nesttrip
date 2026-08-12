@@ -7,13 +7,15 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
 import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip-generation-repository';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { GeneratedActivityCandidate, GeneratedLodgingCandidate, GeneratedTransportSegment } from '@app/features/trips/new-trip/trip-generation.model';
+import { GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate, GeneratedTransportSegment, NoteType, TimeOfDay, TripGeneration } from '@app/features/trips/new-trip/trip-generation.model';
 import { Interest } from '@app/features/trips/new-trip/trip-ai-preferences.model';
 import { DayActivityInstance, PoolActivity } from '@app/shared/components/activity-card/activity.model';
 import { minutesToTime, timeToMinutes } from '@app/shared/components/activity-card/activity-time.util';
 import { Logistic } from '@core/models/logistic.dto';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
+import { NotesType } from '@core/enums/notes.type';
+import { Item } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 interface DayGroup {
   dayIndex: number;
@@ -23,9 +25,30 @@ interface DayGroup {
 
 /** Défaut si le LLM (ou le stub) n'a pas fourni de durée exploitable — voir select-activities-llm.ts/select-activities-stub.ts. */
 const DEFAULT_DURATION_MINUTES = 120;
-/** Horaires dérivés à la validation (§6, décision : pas de champ horaire demandé au LLM, non fiable sur des listes longues) : premier créneau du jour, puis enchaînement séquentiel avec ce battement entre deux activités. */
+/** Horaires dérivés à la validation (§6, décision : pas de champ horaire précis demandé au LLM, non fiable sur des listes longues) — départ par défaut si `job.dayStartHour` n'a pas été détecté (voir `TripGeneration.dayStartHour`, plan-trip-llm.ts). */
 const DAY_START_TIME = '09:00';
 const GAP_MINUTES = 30;
+
+/**
+ * Fenêtres horaires indicatives par `timeOfDay` (voir `GeneratedActivityCandidate.timeOfDay`,
+ * détecté par le LLM à partir de sa connaissance réelle du lieu — ex. boîte de nuit → night).
+ * Utilisées par `resolveDaySchedule` pour "sauter" au créneau réaliste plutôt que d'empiler
+ * aveuglément les activités à la suite — voir sa doc. `night` peut légitimement déborder sur le
+ * lendemain (`endDayOffset`), pattern déjà supporté par `DayActivityInstance`/`activity-time.util.ts`.
+ */
+const TIME_OF_DAY_START_MINUTES: Record<TimeOfDay, number> = {
+  morning: 9 * 60,
+  afternoon: 12 * 60,
+  evening: 18 * 60,
+  night: 21 * 60,
+};
+const DEFAULT_TIME_OF_DAY: TimeOfDay = 'afternoon';
+
+/** `NotesType.TODO === 'CHECKLIST'`, pas `'TODO'` — un cast direct de `GeneratedGeneralNote.type` écrirait la mauvaise valeur Firestore, d'où ce mapping explicite. */
+const GENERATED_NOTE_TYPE_TO_NOTES_TYPE: Record<NoteType, NotesType> = {
+  TODO: NotesType.TODO,
+  INFO: NotesType.INFO,
+};
 
 /** Type d'activité déduit du centre d'intérêt ayant produit le candidat (recherche Google Places, voir search-activities.ts) — défaut ACTIVITE pour les intérêts sans correspondance directe. */
 const INTEREST_TO_ACTIVITY_TYPE: Record<Interest, ActivityType> = {
@@ -78,6 +101,7 @@ export class PreviewComponent {
   protected readonly items = signal<GeneratedActivityCandidate[]>([]);
   protected readonly lodgingItems = signal<GeneratedLodgingCandidate[]>([]);
   protected readonly transportSegments = signal<GeneratedTransportSegment[]>([]);
+  protected readonly generalNotesItems = signal<GeneratedGeneralNote[]>([]);
   protected readonly validating = signal(false);
   private lastSyncedStatus: string | null = null;
 
@@ -121,6 +145,7 @@ export class PreviewComponent {
         this.items.set(job.preview);
         this.lodgingItems.set(job.lodgingPreview);
         this.transportSegments.set(job.transportSegments);
+        this.generalNotesItems.set(job.generalNotes);
       }
       this.lastSyncedStatus = job.status;
     });
@@ -181,6 +206,12 @@ export class PreviewComponent {
     return job.lodgingCandidates.some((c) => c.city === item.city && !usedIds.has(c.candidateId));
   }
 
+  // --- Notes générales (chemin primaire) ---
+
+  protected toggleExcludeGeneralNote(id: string): void {
+    this.generalNotesItems.update((list) => list.map((n) => (n.id === id ? { ...n, excluded: !n.excluded } : n)));
+  }
+
   // --- Actions globales ---
 
   protected regenerateAll(): void {
@@ -208,26 +239,45 @@ export class PreviewComponent {
       }
     }
 
-    // Modes activities_day/full_plan : aucun chemin de génération ne fournit d'horaire précis (voir plan-trip-llm.ts —
-    // un champ horaire libre s'est avéré faire dérailler la sortie structurée du LLM) — l'ordre des activités dans
-    // `dayItems` (celui renvoyé par le LLM/le stub) est en revanche significatif, on en déduit un horaire séquentiel.
+    // Modes activities_day/full_plan : aucun chemin de génération ne fournit d'horaire précis par
+    // activité (voir plan-trip-llm.ts — un champ horaire libre par activité s'est avéré faire
+    // dérailler la sortie structurée du LLM) — l'ordre des activités dans `dayItems` (celui renvoyé
+    // par le LLM/le stub) reste toujours respecté tel quel, mais l'horaire n'est plus un simple
+    // empilement : voir resolveDaySchedule/resolveDayWindow (timeOfDay, dayStartHour/dayEndHour).
+    const { startMinutes: dayStartMinutes, endMinutesAbs: dayEndMinutesAbs } = this.resolveDayWindow(job);
+
+    // candidateId (identité stable côté serveur, voir generate-trip.trigger.ts) -> instanceId
+    // fraîchement créé ici — permet de résoudre GeneratedGeneralNote.relatedCandidateId en un
+    // vrai Item.linkedActivityInstanceId plus bas, une fois les deux boucles terminées.
+    const candidateIdToInstanceId = new Map<string, string>();
+
     for (const [day, dayItems] of byDay) {
-      let cursorMinutes = timeToMinutes(DAY_START_TIME);
+      let cursorMinutes = dayStartMinutes;
       for (const item of dayItems) {
+        const schedule = this.resolveDaySchedule(item, cursorMinutes);
+        // Jamais démarrer une NOUVELLE activité après minuit (seule la fin d'une activité en
+        // cours peut déborder sur le lendemain, via endDayOffset) ni après l'heure de fin voulue
+        // par l'utilisateur si détectée — le curseur étant monotone, tout ce qui suit échouerait
+        // aussi ce test : on arrête ce jour-là plutôt que de continuer à empiler (même logique
+        // "plafonnage a posteriori" que apply-budget-cap.ts côté serveur).
+        if (schedule.startMinutes >= 1440) break;
+        if (dayEndMinutesAbs !== undefined && schedule.startMinutes >= dayEndMinutesAbs) break;
+
         const poolActivity = this.buildPoolActivity(item);
-        const { startTime, endTime, duration } = this.resolveDaySchedule(item, cursorMinutes);
         const instance: DayActivityInstance = {
           id: crypto.randomUUID(),
           activityId: poolActivity.id,
           type: INTEREST_TO_ACTIVITY_TYPE[item.interest],
-          duration,
-          startTime,
-          endTime,
+          duration: schedule.duration,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          ...(schedule.endDayOffset ? { endDayOffset: schedule.endDayOffset } : {}),
           price: { amount: item.estimatedPriceEur ?? 0, currency: 'EUR' },
           booking: { status: BookingStatus.NOT_NEEDED },
-          notes: '',
+          notes: item.notes ?? '',
         };
-        cursorMinutes += duration + GAP_MINUTES;
+        cursorMinutes = schedule.startMinutes + schedule.duration + GAP_MINUTES;
+        candidateIdToInstanceId.set(item.candidateId, instance.id);
 
         this.tripFacade.createActivity(this.tripId, new Date(job.tripDayDates[day]), poolActivity, instance);
       }
@@ -243,9 +293,27 @@ export class PreviewComponent {
         duration: item.estimatedDurationMinutes ?? DEFAULT_DURATION_MINUTES,
         price: { amount: item.estimatedPriceEur ?? 0, currency: 'EUR' },
         booking: { status: BookingStatus.NOT_NEEDED },
-        notes: '',
+        notes: item.notes ?? '',
       };
+      candidateIdToInstanceId.set(item.candidateId, instance.id);
       this.tripFacade.createGeneralActivity(this.tripId, poolActivity, instance);
+    }
+
+    // Notes générales de voyage (chemin primaire uniquement, voir plan-trip-llm.ts) — créées comme
+    // de vrais Item du système de notes existant (voir notes.model.ts), liées à l'activité créée
+    // ci-dessus si relatedCandidateId matche une instance effectivement créée (activité exclue ou
+    // jamais retrouvée par Google ⇒ note créée SANS lien plutôt que perdue).
+    for (const note of this.generalNotesItems()) {
+      if (note.excluded) continue;
+      const linkedActivityInstanceId = note.relatedCandidateId ? candidateIdToInstanceId.get(note.relatedCandidateId) : undefined;
+      const item: Item = {
+        id: crypto.randomUUID(),
+        title: note.title,
+        type: GENERATED_NOTE_TYPE_TO_NOTES_TYPE[note.type],
+        elements: note.points.map((text) => ({ id: crypto.randomUUID(), text, checked: false })),
+        ...(linkedActivityInstanceId ? { linkedActivityInstanceId } : {}),
+      };
+      this.tripFacade.createItem(this.tripId, item);
     }
 
     for (const item of this.lodgingItems()) {
@@ -260,10 +328,36 @@ export class PreviewComponent {
     this.router.navigate([`/trips/${this.tripId}`]);
   }
 
-  /** Aucun chemin de génération ne fournit d'horaire précis (voir plan-trip-llm.ts) — dérive toujours un créneau séquentiel à partir du curseur du jour et de la durée estimée. */
-  private resolveDaySchedule(item: GeneratedActivityCandidate, cursorMinutes: number): { startTime: string; endTime: string; duration: number } {
+  /** Heure de début du jour (`job.dayStartHour` si détecté par le LLM, sinon défaut historique 09:00) et heure de fin absolue en minutes depuis 00:00 du jour de début (`job.dayEndHour`, "+1 jour" si elle tombe avant/à l'heure de début — ex. début 11h/fin 2h ⇒ fin réelle à 26h). */
+  private resolveDayWindow(job: TripGeneration): { startMinutes: number; endMinutesAbs?: number } {
+    const startMinutes = job.dayStartHour !== undefined ? job.dayStartHour * 60 : timeToMinutes(DAY_START_TIME);
+    const endMinutesAbs = job.dayEndHour === undefined
+      ? undefined
+      : job.dayEndHour * 60 <= startMinutes ? job.dayEndHour * 60 + 1440 : job.dayEndHour * 60;
+    return { startMinutes, endMinutesAbs };
+  }
+
+  /**
+   * Dérive le créneau réel d'une activité à partir du curseur du jour : au lieu d'empiler
+   * aveuglément à la suite, "saute" à l'horaire suggéré par le LLM (`suggestedStartMinutes`,
+   * chemin primaire uniquement) s'il est présent, sinon au créneau réaliste de son `timeOfDay`
+   * (voir TIME_OF_DAY_START_MINUTES) — cible dépassée par le curseur ⇒ ignorée, ne recule jamais,
+   * ne réordonne jamais (l'ordre du LLM/du stub reste toujours respecté). `endDayOffset` posé
+   * explicitement dès que la fin dépasse minuit (créneau `night`, déjà supporté par
+   * `DayActivityInstance`/`activity-time.util.ts`).
+   */
+  private resolveDaySchedule(item: GeneratedActivityCandidate, cursorMinutes: number): { startMinutes: number; startTime: string; endTime: string; duration: number; endDayOffset: number } {
     const duration = item.estimatedDurationMinutes ?? DEFAULT_DURATION_MINUTES;
-    return { startTime: minutesToTime(cursorMinutes), endTime: minutesToTime(cursorMinutes + duration), duration };
+    const targetMinutes = item.suggestedStartMinutes ?? TIME_OF_DAY_START_MINUTES[item.timeOfDay ?? DEFAULT_TIME_OF_DAY];
+    const startMinutes = Math.max(cursorMinutes, targetMinutes);
+    const endMinutesAbs = startMinutes + duration;
+    return {
+      startMinutes,
+      startTime: minutesToTime(startMinutes),
+      endTime: minutesToTime(endMinutesAbs),
+      duration,
+      endDayOffset: endMinutesAbs >= 1440 ? 1 : 0,
+    };
   }
 
   private buildPoolActivity(item: GeneratedActivityCandidate): PoolActivity {

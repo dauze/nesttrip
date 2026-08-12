@@ -3,6 +3,7 @@
 Ce document sert de référence pour le projet ce qui est déjà en place (à ne pas casser)
 
 ## ✅ Déjà fait
+- Implémenter le mot de passe fort et la vérification par email
 - Bouton "plus..." sous les avis Google d'une activité, ouvre tous les avis du lieu (`search.google.com/local/reviews`).
 - Photo de voyage récupérée automatiquement (Google Places, au choix de la destination) à la création, affichée à l'accueil à la place de l'icône pin — `Trip.photoRef`/`TripSummary.photoRef`.
 - Login : accès à l'app bloqué tant que le compte n'est pas vérifié (`authGuard`) — écran de login remplacé par un rappel "vérifiez votre email" (avec renvoi) dès qu'une session non vérifiée est active, + "mot de passe oublié" réutilisant le champ email du formulaire de connexion.
