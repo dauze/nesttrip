@@ -18,6 +18,11 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible (A affiner)
 
+### IA 
+- Il faut que tu améliores la génération de parcours par IA : Il a le champs "Statut" avec a reserver ou réservé qui doit être renseigné par l'iA si celle-ci pense qu'il faut réserver. Une deadline est alors à positionner, du temps qu'elle pense qu'il faut pour réserver en avance : par exemple, si on doit reserver une semaine en avance, alors il faut mettre une deadline une semaine avant la date positionné. Idem pour les logements et les transports. 
+- Il faut améliorer le traitement si jamais on a besoin d'une location de voiture, le conseiller
+- Renseigner les date de début et de fin pour les logements 
+
 ### UI spécifique Desktop (A affiner)
 - Vue calendrier (A affiner)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
@@ -38,6 +43,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire.
 - Si il n'y a pas d'activité, la carte doit être centré sur le placeid du trip, pas paris 
 - Dans les settings du trip, pouvoir changer la destination, cela changerais aussi la photo
 - déplacer les settings du trip pour les mettre ailleurs que sur les settings généraux (A affiner) 
+- Supprimer le champs "Note" des activitées et Logement et transport car c'est maintenant les listes, et remplacer liste par note ? (A affiner) 
 
 ### Carte
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
