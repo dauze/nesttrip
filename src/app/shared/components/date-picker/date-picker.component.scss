@@ -1,6 +1,16 @@
+// `min-width: 0` (pas `width: 100%`, même pattern que `price-field.component.scss`) :
+// un `width: 100%` fixé ici gagnait systématiquement contre la classe utilitaire
+// `w-max` posée par certains appelants (ex. ActivityFormComponent, deadline à côté
+// du prix — ROADMAP.md "### UI"), forçant le bouton déclencheur mobile (`w-full`
+// dans le template) à occuper toute la largeur de la colonne au lieu de se limiter
+// au texte affiché, avec une zone cliquable qui débordait donc largement du champ
+// visible. Sans largeur imposée ici, `w-max`/`w-full`/`flex-1` déjà posés par les
+// appelants (voir leurs usages) redeviennent effectifs ; les champs qui n'en posent
+// aucun restent pleine largeur via le comportement `flex`/`block` par défaut de leur
+// conteneur (ex. dates du voyage dans `new-trip`/`trip-settings-section`).
 :host {
   display: block;
-  width: 100%;
+  min-width: 0;
 }
 
 // Champ sans bordure/fond propre (activity-form : deadline à côté du prix,
