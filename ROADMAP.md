@@ -36,8 +36,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Si il n'y a pas d'activité sur un jour, la carte doit être centré sur le placeid du trip, pas sur Parid paris 
 - Dans les settings du trip, pouvoir changer le multi destination, cela changerais aussi la photo si il change la destination principale
 - Dans le parcours de création d'un trip, il faudrait déplacer le remplissage du champs "plusieurs destinations ?" Pour qu'il soit avant la saisie de l'ia et toujours saisissable 
-- modifier le svg du repas pour mettre ce logo dans le même style que les autres logos: 🍽
-- Rajouter un message informatif dans le formulaire de création de voyage pour indiquer que la génération par ia peut donner de fausses informations et qu'il faut les vérifier, juste après le choix de "laisser l'IA m'aider". 
 - sur le déplacement de la camera sur la carte dans résumé, la faire moins varier en recul et accélérer un peu les transitions. Il faudrait également rajouter les titres des activités avec les photos. Je ne sais pas comment faire ça de manière compact et UI, propose moi un truc bien. (A affiner — demande explicite de proposition UX avant implémentation, décision actée le 2026-08-13 : laissé de côté cette session)
 - Retirer les infos relatives au voyage du drawer général de la roue cranté en haut
 - créer un nouveau drawer qui aura uniquement les paramètres du voyage, son ouverture sera uniquement au clique sur le trip header.
