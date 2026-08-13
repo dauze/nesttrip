@@ -27,7 +27,7 @@ Bouton : **Créer nouvelle aventure** → bascule sur l'écran de création de t
 Structure réelle de la navigation, en bas d'écran :
 
 ```
-[Résumé] [Activités] [Logement & Transport] [Listes]   <- sous-onglets (visibles quand Général est actif)
+[Résumé] [Activités] [Logements & Transports] [Listes]   <- sous-onglets (visibles quand Général est actif)
 [Général]                              [Jour N]         <- onglets principaux, tout en bas
 ```
 
@@ -42,8 +42,8 @@ Rien à révéler par clic : Résumé est déjà affiché, donc les bulles point
 1. **Pointée sur la barre du bas [Général] / [Jour N]**
    *"Ton voyage se pilote de 2 façons : Général pour le voir par thème, Jour N pour le voir jour par jour."*
 
-2. **Pointée sur la ligne de sous-onglets [Résumé] [Activités] [Logement & Transport] [Listes] + le contenu Résumé déjà affiché**
-   *"Tu es sur Résumé : dates, budget, pense-bête de réservations. À côté, 3 autres thèmes : Activités, Logement & Transport, Listes."*
+2. **Pointée sur la ligne de sous-onglets [Résumé] [Activités] [Logements & Transports] [Listes] + le contenu Résumé déjà affiché**
+   *"Tu es sur Résumé : dates, budget, pense-bête de réservations. À côté, 3 autres thèmes : Activités, Logements & Transports, Listes."*
 
 Fin de la vague immédiate ici → petit message de clôture (ex. *"À toi de jouer !"*), puis retour à l'état normal de l'écran.
 
@@ -52,7 +52,7 @@ Fin de la vague immédiate ici → petit message de clôture (ex. *"À toi de jo
 - **1er clic sur Activités** :
   *"Crée une activité sans date et place-la sur un jour plus tard depuis cet écran, ou crée-la directement sur le jour choisi dans le menu Jour. Astuce : reste appuyé sur une carte pour la supprimer."*
 
-- **1er clic sur Logement & Transport** :
+- **1er clic sur Logements & Transports** :
   *"Même fonctionnement que les activités : crée-le ici ou sur un jour, tu le retrouves aux deux endroits."*
 
 - **1er clic sur Listes** :

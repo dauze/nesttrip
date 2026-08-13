@@ -188,7 +188,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly tabs = computed<TripTab[]>(() => [
     { id: 'summary', label: 'Résumé' },
     { id: 'activities', label: 'Activités' },
-    { id: 'logistics', label: 'Logement & Transport' },
+    { id: 'logistics', label: 'Logements & Transports' },
     { id: 'notes', label: 'Listes' },
     ...this.sortedDays().map(d => this.formatDayTab(d.id)),
   ]);

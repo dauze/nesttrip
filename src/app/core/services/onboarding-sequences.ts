@@ -22,13 +22,13 @@ export const IMMEDIATE_TOUR: CoachMarkSequence = {
       // cette bulle ne parle que des 2 boutons, la découpe ne doit montrer que ça.
       anchorIds: ['mobile-nav-bar-primary'],
       placement: 'anchored-above',
-      text: 'Ton voyage se pilote de <strong>2 façons</strong> : \n  - <strong>Général</strong>, pour le voir par thèmatique \n  - <strong>Jour 1</strong>, pour le voir jour par jour',
+      text: 'Ton voyage se pilote de <strong>2 façons</strong> : \n  - <strong>Général</strong>, pour le voir par thèmatique \n  - <strong>Jour par jour</strong>, pour le parcourir jour après jour',
     },
     {
       id: 'onboarding-immediate-2',
       anchorIds: ['content-area'],
       placement: 'center',
-      text: 'Tu es sur l\'onglet <strong>Résumé</strong>, qui affiche un <strong>aperçu</strong>, le <strong>budget</strong>, le <strong>pense-bête de réservations</strong> et les <strong>pieces jointes</strong>. \n À côté, <strong>3</strong> autres thèmes de <strong>Général</strong> : \n  - Activités \n  - Logement & Transport \n  - Listes',
+      text: 'Tu es sur l\'onglet <strong>Résumé</strong>, qui affiche un <strong>aperçu</strong>, le <strong>budget</strong>, le <strong>pense-bête de réservations</strong> et les <strong>pieces jointes</strong>. \n À côté, <strong>3</strong> autres thèmes de <strong>Général</strong> : \n  - Activités \n  - Logements & Transports \n  - Listes',
     },
     {
       id: 'onboarding-immediate-closing',
@@ -47,7 +47,7 @@ export const ACTIVITIES_INTRO: CoachMarkSequence = {
       id: 'onboarding-activities-intro',
       anchorIds: ['content-area'],
       placement: 'center',
-      text: "Crée <strong>ici</strong> des activités sans date (tu pourras les placer sur un jour plus tard depuis cet écran), <strong>ou</strong> crée-les directement sur le jour choisi dans le menu <strong>Jour 1</strong>. \n <strong>Astuce</strong> : reste appuyé sur une carte pour la supprimer.",
+      text: "Crée <strong>ici</strong> des activités sans date (tu pourras les placer sur un jour plus tard depuis cet écran), <strong>ou</strong> crée-les directement sur le jour choisi dans le menu <strong>Jour par jour</strong>. \n <strong>Astuce</strong> : reste appuyé sur une carte pour la supprimer.",
     },
   ],
 };
@@ -90,7 +90,7 @@ export const DAY_NAV_TOUR: CoachMarkSequence = {
       id: 'onboarding-day-nav-2',
       anchorIds: ['mobile-day-badge'],
       placement: 'anchored-above',
-      text: 'Navigue entre les jours plus <strong>rapidement</strong> par ici, en <strong>double tappant</strong> sur le bouton <strong>Jour 1</strong>.',
+      text: 'Navigue entre les jours plus <strong>rapidement</strong> par ici, en <strong>double tappant</strong> sur le bouton <strong>Jour par jour</strong>.',
     },
     {
       id: 'onboarding-day-nav-3',

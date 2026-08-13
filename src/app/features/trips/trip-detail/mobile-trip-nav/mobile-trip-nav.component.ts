@@ -58,36 +58,18 @@ export class MobileTripNavComponent {
   /** Vrai dès que le tab actif est l'un des 3 tabs Général (Activités/Logistique/Listes). */
   protected readonly expanded = computed(() => this.generalTabs().some(t => t.id === this.activeId()));
 
-  /** Numéro séquentiel du jour actif dans le voyage (pas la date) — badge affiché en état "Jours". */
-  protected readonly activeDayIndex = computed(() => this.dayTabs().findIndex(t => t.id === this.activeId()));
-
   /**
    * Dernier jour actif connu (mis à jour dès que `activeId()` est un jour) :
    * seul signal local ajouté par ce composant — ne duplique pas la source de
    * vérité de la section active (`expanded`, dérivé de `activeId()`), sert
-   * uniquement à savoir vers quel jour revenir en retapant l'icône compacte
-   * "Jour X" (interaction absente de l'UI précédente, il n'y avait rien vers
-   * quoi "revenir") — et à afficher un numéro de jour cohérent (voir
-   * `activeDayLabel`) tant qu'aucun jour n'est actif.
+   * uniquement à savoir vers quel jour revenir en retapant le bouton bascule
+   * "Jour par jour" (interaction absente de l'UI précédente, il n'y avait rien
+   * vers quoi "revenir").
    */
   private readonly lastDayId = signal<string | null>(null);
 
-  /**
-   * Badge affiché en état "Jours" — mais aussi en état "Général" (le badge
-   * compact "Jour X" reste visible des deux côtés, voir le template). Sur
-   * "Général", `activeDayIndex()` vaut -1 (aucun tab de jour n'est actif),
-   * ce qui affichait à tort "Jour 0" (retour utilisateur) : on retombe alors
-   * sur le DERNIER jour visité (`lastDayId`), ou sur le premier jour du
-   * voyage tant qu'aucun n'a encore été visité — jamais 0.
-   */
-  protected readonly activeDayLabel = computed(() => {
-    const index = this.activeDayIndex();
-    if (index >= 0) return `Jour ${index + 1}`;
-
-    const lastId = this.lastDayId();
-    const lastIndex = lastId ? this.dayTabs().findIndex(t => t.id === lastId) : -1;
-    return `Jour ${lastIndex >= 0 ? lastIndex + 1 : 1}`;
-  });
+  /** Libellé statique du bouton bascule (ex badge dynamique "Jour N", renommé — voir ROADMAP.md) : le jour actif reste visible via le chip surligné de la bande de jours, pas besoin de le répéter ici. */
+  protected readonly dayToggleLabel = 'Jour par jour';
 
   protected dayChipLabel(tab: TripTab): string {
     return `${tab.weekday} ${tab.dayNumber} ${tab.month}`;
@@ -147,7 +129,7 @@ export class MobileTripNavComponent {
     this.tabSelected.emit({ id: tab.id, index });
   }
 
-  /** Icône compacte "Jour X" en état "Général" : referme et revient au dernier jour actif (ou le premier jour du trip si aucun n'a encore été visité). */
+  /** Bouton "Jour par jour" en état "Général" : referme et revient au dernier jour actif (ou le premier jour du trip si aucun n'a encore été visité). */
   protected goBackToDay(): void {
     if (!this.expanded()) return;
     const targetId = this.lastDayId() ?? this.dayTabs()[0]?.id;

@@ -1,9 +1,9 @@
 # NestTrip — Roadmap
 
-Ce document sert de référence pour le projet ce qu'il reste à faire. Les items clos sont déplacés vers `ROADMAP_ALREADY_DONE.md` (voir ce fichier pour l'historique détaillé) — ne pas les redupliquer ici.
+Ce document sert de référence pour le projet ce qu'il reste à faire. Les items clos sont déplacés vers `ROADMAP_already done.md` (voir ce fichier pour l'historique détaillé) — ne pas les redupliquer ici.
 
 ### Plan d'exécution en cours (2026-08-11)
-- Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_ALREADY_DONE.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
+- Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_already done.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
 
 ### Offline & données (non prioritaire)
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?

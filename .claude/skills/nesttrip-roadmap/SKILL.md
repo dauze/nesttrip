@@ -5,7 +5,7 @@ description: Reprendre, détailler et clore un item de ROADMAP.md dans le projet
 
 # Itérer sur ROADMAP.md (NestTrip)
 
-Deux fichiers à la racine : `ROADMAP.md` (ce qui reste à faire — seul fichier à lire pour choisir un item) et `ROADMAP_ALREADY_DONE.md` (historique de ce qui est clos, pour ne pas alourdir le contexte de session avec du texte qui ne bouge plus). Ne lire `ROADMAP_ALREADY_DONE.md` que si on a explicitement besoin de contexte sur du travail déjà fait.
+Deux fichiers à la racine : `ROADMAP.md` (ce qui reste à faire — seul fichier à lire pour choisir un item) et `ROADMAP_already done.md` (historique de ce qui est clos, pour ne pas alourdir le contexte de session avec du texte qui ne bouge plus). Ne lire `ROADMAP_already done.md` que si on a explicitement besoin de contexte sur du travail déjà fait.
 
 ## 1. Choisir l'item
 
@@ -33,6 +33,6 @@ Toujours passer par la skill `nesttrip-verify` avant d'annoncer l'item terminé.
 
 ## 5. Clore proprement
 
-- Une fois l'item terminé (et vérifié, voir étape 4), le **retirer de `ROADMAP.md`** et l'**ajouter à `ROADMAP_ALREADY_DONE.md`** (à la racine, à côté de `ROADMAP.md`) sous une section thématique (créer la section si besoin) — une entrée autonome (contexte + ce qui a été fait), même registre/voix que les entrées existantes (français direct, technique, sans emoji superflu). C'est le but même du fichier : garder `ROADMAP.md` court (ce qui reste à faire) pour ne pas alourdir le contexte de session avec l'historique de ce qui ne bouge plus.
-- Supprimer toute trace de l'item ailleurs dans `ROADMAP.md` (section "Plan d'exécution en cours", décisions provisoires) : un item terminé ne doit être décrit qu'à un seul endroit, dans `ROADMAP_ALREADY_DONE.md`. Ne jamais dupliquer un item entre les deux fichiers.
-- Si l'item n'est que partiellement traité, le laisser dans `ROADMAP.md` avec une note précise de ce qui reste (ne pas le marquer fait par optimisme — cf. le cas du pull-to-refresh, marqué "fait, non confirmé" puis retombé cassé). Ne rien écrire dans `ROADMAP_ALREADY_DONE.md` tant que ce n'est pas réellement clos.
+- Une fois l'item terminé (et vérifié, voir étape 4), le **retirer de `ROADMAP.md`** et l'**ajouter à `ROADMAP_already done.md`** (à la racine, à côté de `ROADMAP.md`) — le fichier est une liste à plat sous un seul titre `## ✅ Déjà fait` (pas de sous-sections par thème), ajouter une nouvelle puce à la fin dans ce même style (un `**lead-in en gras**` court pour les items groupés/multi-lots, suivi du détail), même registre/voix que les entrées existantes (français direct, technique, sans emoji superflu). C'est le but même du fichier : garder `ROADMAP.md` court (ce qui reste à faire) pour ne pas alourdir le contexte de session avec l'historique de ce qui ne bouge plus.
+- Supprimer toute trace de l'item ailleurs dans `ROADMAP.md` (section "Plan d'exécution en cours", décisions provisoires) : un item terminé ne doit être décrit qu'à un seul endroit, dans `ROADMAP_already done.md`. Ne jamais dupliquer un item entre les deux fichiers.
+- Si l'item n'est que partiellement traité, le laisser dans `ROADMAP.md` avec une note précise de ce qui reste (ne pas le marquer fait par optimisme — cf. le cas du pull-to-refresh, marqué "fait, non confirmé" puis retombé cassé). Ne rien écrire dans `ROADMAP_already done.md` tant que ce n'est pas réellement clos.
