@@ -26,6 +26,7 @@ import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.component';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { TripDestinationLocationService } from '@app/core/services/trip-destination-location.service';
 
 @Component({
   selector: 'app-trip-day-swiper',
@@ -42,6 +43,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly injector = inject(Injector);
   protected readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
+  private readonly destinationLocationService = inject(TripDestinationLocationService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
   private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
   private readonly mapAnchorRef = viewChild<ElementRef<HTMLElement>>('mapAnchor');
@@ -97,6 +99,23 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const map = this.dayMapRef();
       if (map) this.mapHost.register(map);
+    });
+
+    // Résout la destination du trip (`placeId`) en coordonnées une seule
+    // fois par trip et les pose sur `TripDayMapComponent.defaultCenter` —
+    // centre par défaut affiché par la carte partagée quand le jour/contexte
+    // courant n'a aucune activité géolocalisée, à la place du repli Paris
+    // fixe (ROADMAP.md "### UI"). Pas de `placeId` (trip créé avant son
+    // introduction, ou saisi en texte libre non résolu) : `defaultCenter`
+    // reste `null`, `TripDayMapComponent` retombe alors lui-même sur Paris.
+    effect((onCleanup) => {
+      const map = this.dayMapRef();
+      const placeId = this.trip().placeId;
+      if (!map || !placeId) return;
+
+      const sub = this.destinationLocationService.getCoordinates$(placeId)
+        .subscribe((coords) => map.defaultCenter.set(coords));
+      onCleanup(() => sub.unsubscribe());
     });
 
     // Conteneur fixe "carte jour" (voir sa doc dans le template) : enregistré

@@ -10,6 +10,9 @@ import { environment } from '@environments/environment';
 import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
 import { haversineDistanceMeters } from '@app/shared/utils/geo.util';
 
+/** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
+const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
+
 @Component({
   selector: 'app-trip-day-map',
   standalone: true,
@@ -112,8 +115,11 @@ export class TripDayMapComponent {
   // On ne recalcule le centre par défaut que lors d'un VRAI changement de
   // jour (un nouveau set d'activityId), pas lors d'une simple mise à jour
   // de champs sur les activités déjà affichées.
-  readonly center = signal<google.maps.LatLngLiteral>({ lat: 48.8566, lng: 2.3522 });
+  readonly center = signal<google.maps.LatLngLiteral>(PARIS_FALLBACK_CENTER);
   private lastPointsKey: string | null = null;
+
+  /** Coordonnées de la destination du trip (résolues depuis `Trip.placeId` par `TripDaySwiperComponent`, seul appelant) — centre par défaut affiché quand le jour/contexte courant n'a aucune activité géolocalisée, à la place de Paris (ROADMAP.md "### UI", "la carte doit être centrée sur le placeid du trip"). `null` tant que non résolu ou si le trip n'a pas de destination : repli sur `PARIS_FALLBACK_CENTER`. */
+  readonly defaultCenter = signal<google.maps.LatLngLiteral | null>(null);
 
   constructor() {
     effect(() => {
@@ -143,7 +149,7 @@ export class TripDayMapComponent {
         // toute donnée (voir la valeur initiale de `center`) — imperative
         // (`moveCameraTo`), jamais `this.center.set()`, voir le commentaire
         // juste en dessous.
-        this.moveCameraTo({ lat: 48.8566, lng: 2.3522 }, this.zoom());
+        this.moveCameraTo(this.defaultCenter() ?? PARIS_FALLBACK_CENTER, this.zoom());
         return;
       }
 
@@ -162,6 +168,20 @@ export class TripDayMapComponent {
       // ROADMAP.md. Les DEUX contextes ont désormais leur propre système
       // établissant la caméra correcte à l'activation ; ce recentrage par
       // défaut n'est plus nécessaire nulle part.
+    });
+
+    // `defaultCenter` se résout de façon asynchrone (géocodage du `placeId`
+    // du trip, voir sa doc) : peut arriver APRÈS le premier passage de
+    // l'effect ci-dessus, qui aurait alors déjà affiché le repli Paris faute
+    // de mieux. Recentre sur la vraie destination dès qu'elle est connue,
+    // mais seulement si le jour/contexte affiché n'a toujours aucune
+    // activité géolocalisée (sinon la vue d'ensemble déjà posée par
+    // `GeneralMapCinematicService`/`DayScrollSyncService` ne doit pas être
+    // écrasée, même raison que le early-return juste au-dessus).
+    effect(() => {
+      const coords = this.defaultCenter();
+      if (!coords || this.points().length) return;
+      this.moveCameraTo(coords, this.zoom());
     });
 
     // Miniature photo Google sur les markers (voir ROADMAP.md "UX /
