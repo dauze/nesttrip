@@ -42,8 +42,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Retirer les infos relatives au voyage du drawer général de la roue cranté en haut
 - créer un nouveau drawer qui aura uniquement les paramètres du voyage, son ouverture sera uniquement au clique sur le trip header.
 - Dans l'onglet résumé, modifier le trip header : il faut rajouter en fin de carte un logo de réglage (autre que la roue cranté pour ne pas faure doublon). Au clique, l'utilisateur arrivera sur le drawer qui contiendra uniquement les paramètres relatifs au voyage. pour rajouter une information pour cliquer sur le voyage et a l'ouverture il y aura uniquement la modification du voyage dans un drawer séparé
-- Rajouter un s au libellés logementS et tranportS
-- Renomer le bouton "Jour + X" en "Jour par jour" et faire le renommant également dans l'aide pour l'onboarding
 
 ### Carte
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
