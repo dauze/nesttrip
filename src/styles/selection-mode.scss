@@ -25,19 +25,29 @@
   // En restant strictement à l'intérieur de la boîte, l'anneau ne peut plus
   // jamais être rogné par un ancêtre, quel que soit l'élément hôte.
   //
-  // 1. Liseré fin et semi-transparent (pas le rouge plein, plus subtil).
+  // 1. Liseré fin et semi-transparent (pas la couleur pleine, plus subtil).
   // 2. Halo flouté vers l'intérieur, pour la profondeur.
   // 3. Dégradé "glossy" (lueur en haut qui s'estompe) par-dessus un très
   //    léger lavis de fond uniforme.
   // box-shadow:
-  //   inset 0 0 0 2px color-mix(in srgb, var(--nt-red-500) 85%, transparent),
-  //   inset 0 0 1rem 0 color-mix(in srgb, var(--nt-red-500) 20%, transparent);
+  //   inset 0 0 0 2px color-mix(in srgb, var(--nt-primary-color) 85%, transparent),
+  //   inset 0 0 1rem 0 color-mix(in srgb, var(--nt-primary-color) 20%, transparent);
+  //
+  // Couleur primary (pas rouge, ROADMAP.md "### UI", "ce sera plus joli") —
+  // GÉNÉRALISÉ à tout le mode sélection transverse (activités, réservations,
+  // notes, trips...) : une variante antérieure ne posait cette teinte que sur
+  // la liste "Mes voyages" de l'accueil (feuille scopée à
+  // `AccueilTripComponent`, retirée) alors que `.nt-selectable`/`.nt-selected`
+  // sont des classes globales posées par `SelectableDirective` sur N'IMPORTE
+  // QUELLE carte sélectionnable de l'app — le rouge par défaut ici s'appliquait
+  // donc partout ailleurs, incohérence retour utilisateur (comportement
+  // scopé à un seul endroit au lieu d'être généralisé).
   background-image: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--nt-red-500) 14%, transparent),
+    color-mix(in srgb, var(--nt-primary-color) 14%, transparent),
     transparent 65%
   );
-  background-color: color-mix(in srgb, var(--nt-red-500) 7%, transparent);
+  background-color: color-mix(in srgb, var(--nt-primary-color) 7%, transparent);
 }
 
 // `PanelComponent` (logement/transport/activité/listes, voir panel.component.scss)

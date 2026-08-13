@@ -10,8 +10,20 @@
   display: none;
 }
 
+// `padding-left`/`padding` séparés en custom property : un composant parent
+// (ex. `AccueilTripComponent`) ne peut PAS atteindre `.app-card__body` avec un
+// sélecteur imbriqué classique (`app-card.card .app-card__body {...}`) — cet
+// élément est rendu par LE TEMPLATE DE CardComponent, donc porte l'attribut
+// `_ngcontent-*` de CardComponent, jamais celui du parent, sous l'encapsulation
+// émulée d'Angular : un tel sélecteur ne matche donc jamais réellement (ROADMAP.md
+// "### UI", "il y a toujours un écart entre la photo et les bords" — la tuile
+// voyage de l'accueil réglait déjà `padding: 0` sur `.app-card__body` dans SA
+// propre feuille scopée, sans effet). Une custom property, elle, traverse
+// normalement les frontières de composant (héritage CSS standard, non affecté
+// par le scoping des sélecteurs) — même principe que
+// `--nt-panel-content-padding-left` dans panel.component.scss.
 .app-card__body {
-  padding: 0.5rem;
+  padding: var(--nt-card-body-padding, 0.5rem);
 }
 
 .app-card__title {

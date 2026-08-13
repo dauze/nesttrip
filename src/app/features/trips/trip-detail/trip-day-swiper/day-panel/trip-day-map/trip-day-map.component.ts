@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
@@ -12,6 +12,11 @@ import { haversineDistanceMeters } from '@app/shared/utils/geo.util';
 
 /** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
 const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
+
+/** Distance de tirage (px) pour une ouverture complète de la carte (voir `onGrabberPointerMove`) — au-delà, la prévisualisation reste plafonnée à 100%. */
+const DRAG_OPEN_DISTANCE_PX = 130;
+/** Fraction de tirage minimale au relâchement pour VALIDER l'ouverture (sinon la carte se referme, voir `onGrabberPointerUp`) — cohérent avec les seuils "geste vs tap" déjà utilisés ailleurs (`LongPressDirective`), mais exprimé en fraction plutôt qu'en px puisque la distance totale dépend de la hauteur réelle de la carte. */
+const DRAG_OPEN_COMMIT_THRESHOLD = 0.35;
 
 @Component({
   selector: 'app-trip-day-map',
@@ -68,6 +73,106 @@ export class TripDayMapComponent {
   readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
   private readonly themeService = inject(ThemeService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /**
+   * Geste de tirage vers le bas sur `.map-panel__grabber` (footer togglable,
+   * voir trip-day-map.component.html) — en plus du clic déjà géré par
+   * `PanelComponent.toggle()`, ouvre la carte en suivant le doigt (retour
+   * utilisateur, ROADMAP.md). N'ouvre QUE (jamais ne referme par tirage,
+   * "vers le bas" — le clic reste seul responsable de la fermeture) et
+   * uniquement quand actuellement repliée (`onGrabberPointerDown`).
+   * `dragOpenProgress` (0-1, `null` = pas de drag en cours) pilote
+   * `PanelComponent.dragProgress` : ce composant ne mesure jamais lui-même la
+   * hauteur du contenu, seul `PanelComponent` (propriétaire de `#content`)
+   * sait le faire — voir sa doc.
+   */
+  protected readonly dragOpenProgress = signal<number | null>(null);
+  private dragPointerId: number | null = null;
+  private dragStartY = 0;
+  /** Vrai dès que le tirage a dépassé un mouvement négligeable — sert à avaler le `click` de fin de geste (voir `onGrabberClickCapture`) pour ne pas déclencher EN PLUS le toggle normal du bouton footer. */
+  private dragMoved = false;
+  private readonly grabberFooter = viewChild<ElementRef<HTMLElement>>('grabberFooter');
+
+  constructor() {
+    afterNextRender(() => {
+      document.addEventListener('pointermove', this.onGrabberPointerMove);
+      document.addEventListener('pointerup', this.onGrabberPointerUp);
+      document.addEventListener('pointercancel', this.onGrabberPointerUp);
+
+      // Écouteur natif posé impérativement (PAS un `(click)` de template) :
+      // ce n'est pas un nouveau contrôle interactif pour l'utilisateur (le
+      // vrai bouton accessible/focusable reste `<button class="app-panel__footer-toggle">`,
+      // posé par `PanelComponent` — voir sa doc), juste un mécanisme technique
+      // de désambiguïsation tap/drag qui doit s'exécuter AVANT que ce click
+      // n'atteigne ce bouton (`capture: true`) — passer par le template
+      // déclenchait à tort les règles a11y `click-events-have-key-events`/
+      // `interactive-supports-focus` sur un simple `<div>` de contenu projeté.
+      const footerEl = this.grabberFooter()?.nativeElement;
+      footerEl?.addEventListener('click', this.onGrabberClickCapture, { capture: true });
+
+      this.destroyRef.onDestroy(() => {
+        document.removeEventListener('pointermove', this.onGrabberPointerMove);
+        document.removeEventListener('pointerup', this.onGrabberPointerUp);
+        document.removeEventListener('pointercancel', this.onGrabberPointerUp);
+        footerEl?.removeEventListener('click', this.onGrabberClickCapture, { capture: true });
+      });
+    });
+
+    this.setupMapEffects();
+  }
+
+  /** Démarre le suivi UNIQUEMENT si la carte est actuellement repliée — dépliée, la poignée garde son comportement de clic normal (`PanelComponent.toggle()`), aucun tirage dédié à la fermeture ici (voir la doc du champ). */
+  protected onGrabberPointerDown(event: PointerEvent): void {
+    if (!this.collapsed()) return;
+    this.dragPointerId = event.pointerId;
+    this.dragStartY = event.clientY;
+    this.dragMoved = false;
+    this.dragOpenProgress.set(0);
+  }
+
+  private readonly onGrabberPointerMove = (event: PointerEvent): void => {
+    if (event.pointerId !== this.dragPointerId) return;
+    const delta = event.clientY - this.dragStartY;
+    if (delta <= 0) {
+      // Remonte au-dessus du point de départ : pas de tirage vers le haut ici, la prévisualisation reste fermée.
+      this.dragOpenProgress.set(0);
+      return;
+    }
+    if (delta > 4) this.dragMoved = true;
+    this.dragOpenProgress.set(Math.min(1, delta / DRAG_OPEN_DISTANCE_PX));
+  };
+
+  private readonly onGrabberPointerUp = (event: PointerEvent): void => {
+    if (event.pointerId !== this.dragPointerId) return;
+    const progress = this.dragOpenProgress() ?? 0;
+    this.dragPointerId = null;
+    // Repasse à `null` (pas de valeur figée) : `PanelComponent` reprend la
+    // main via `collapsed()` et sa propre transition CSS anime le reste du
+    // trajet (ouverture validée) ou le retour à 0 (annulée) — voir sa doc.
+    this.dragOpenProgress.set(null);
+    if (progress >= DRAG_OPEN_COMMIT_THRESHOLD) {
+      this.collapsed.set(false);
+      this.onCollapsedToggled({ collapsed: false });
+    }
+  };
+
+  /**
+   * Posé en phase de CAPTURE sur `.map-panel__footer-icons` (voir le
+   * constructeur), donc évalué avant le `(click)` du `<button>` de
+   * `PanelComponent` qui l'englobe : avale le click de fin de geste quand un
+   * vrai tirage a eu lieu, pour ne pas déclencher EN PLUS
+   * `PanelComponent.toggle()` (qui refermerait aussitôt une ouverture par
+   * tirage tout juste validée). Un simple tap (jamais `dragMoved`) laisse le
+   * click continuer normalement vers ce toggle.
+   */
+  private readonly onGrabberClickCapture = (event: MouseEvent): void => {
+    if (this.dragMoved) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.dragMoved = false;
+  };
 
   // Suit ThemeService (mode clair/sombre/système choisi dans le menu
   // réglages, voir sa doc) plutôt qu'un matchMedia local : un seul point de
@@ -121,7 +226,7 @@ export class TripDayMapComponent {
   /** Coordonnées de la destination du trip (résolues depuis `Trip.placeId` par `TripDaySwiperComponent`, seul appelant) — centre par défaut affiché quand le jour/contexte courant n'a aucune activité géolocalisée, à la place de Paris (ROADMAP.md "### UI", "la carte doit être centrée sur le placeid du trip"). `null` tant que non résolu ou si le trip n'a pas de destination : repli sur `PARIS_FALLBACK_CENTER`. */
   readonly defaultCenter = signal<google.maps.LatLngLiteral | null>(null);
 
-  constructor() {
+  private setupMapEffects(): void {
     effect(() => {
       const pts = this.points();
 

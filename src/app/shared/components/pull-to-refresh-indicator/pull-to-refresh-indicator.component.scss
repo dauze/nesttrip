@@ -1,0 +1,95 @@
+// Overlay fixe, centré horizontalement, superposé au CONTENU (pas à la
+// toolbar elle-même — voir TripsComponent, sibling de `.app-content`) :
+// `top: 0` + `translateY` (piloté par le composant, part de `topOffset()`
+// = hauteur réelle de la toolbar) fait "émerger" l'indicateur de sous la
+// barre d'en-tête au fil du tirage, exactement comme demandé (retour
+// utilisateur : "la flèche doit venir de sous la bar de header").
+:host {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  // Volontairement SOUS la toolbar (`.app-toolbar`, trips.component.scss) :
+  // au repos/en début de tirage, l'indicateur doit être visuellement
+  // RECOUVERT par elle (voir `translateY` dans le composant, qui le fait
+  // partir à moitié derrière) — c'est ce recouvrement qui donne l'effet
+  // "émerge de sous la barre" plutôt qu'une simple apparition sur place.
+  z-index: calc(var(--z-app-toolbar) - 1);
+  pointer-events: none;
+}
+
+.pull-to-refresh-indicator {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-overlay-background);
+  box-shadow: var(--nt-shadow-md);
+  visibility: hidden;
+  // `opacity`/`transform` sont posés en INLINE par le composant (voir
+  // `.ts`) à CHAQUE frame de tirage — une transition courte ici lisse
+  // légèrement ce flux à haute fréquence (effet "amorti", plutôt agréable
+  // pour ce type de geste, cf. le rubber-band iOS) SANS jamais devenir un
+  // vrai lag perceptible, tout en offrant surtout ce qu'on veut vraiment :
+  // un retour animé (pas un saut sec) au relâchement — soit vers 0
+  // (tirage annulé, sous le seuil), soit vers la position de repos
+  // `--refreshing` (seuil franchi) — les deux ne sont plus pilotés image
+  // par image mais par un `.set()` ponctuel de la directive.
+  transition: transform 150ms ease-out, opacity 150ms ease-out;
+}
+
+.pull-to-refresh-indicator--visible {
+  visibility: visible;
+}
+
+.pull-to-refresh-indicator__svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.pull-to-refresh-indicator__track {
+  stroke: var(--nt-content-border-color);
+}
+
+.pull-to-refresh-indicator__arc {
+  stroke: var(--nt-primary-color);
+}
+
+.pull-to-refresh-indicator__arrow {
+  stroke: var(--nt-primary-color);
+  transition: opacity var(--nt-transition-duration) ease;
+}
+
+// Seuil atteint (prêt à lâcher, `progress() >= 1`) : la flèche pointe déjà
+// plein sud (rotation 180° déjà appliquée par le composant) — un léger
+// changement de teinte confirme visuellement le "prêt à déclencher", même
+// principe que le retour haptique/visuel de Gmail/Chrome au même instant.
+.pull-to-refresh-indicator--ready .pull-to-refresh-indicator__arc {
+  stroke: var(--nt-primary-active-color);
+}
+
+// Actualisation en cours : la flèche s'efface, seul l'arc tourne en boucle
+// (spinner classique) — la rotation pilotée par le composant (`rotationDeg`,
+// figée au dernier angle atteint) est remplacée par cette animation continue.
+.pull-to-refresh-indicator--refreshing {
+  .pull-to-refresh-indicator__arrow {
+    opacity: 0;
+  }
+
+  .pull-to-refresh-indicator__svg {
+    animation: pull-to-refresh-spin 900ms linear infinite;
+  }
+}
+
+@keyframes pull-to-refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-to-refresh-indicator--refreshing .pull-to-refresh-indicator__svg {
+    animation: none;
+  }
+}

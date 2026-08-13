@@ -45,6 +45,19 @@
     </div>
   </app-toolbar>
 </div>
-<div class="app-content" style="min-width: 24rem;" [style.padding-top.px]="chromeService.toolbarHeight()">
+<app-pull-to-refresh-indicator
+  [progress]="ptrProgress()"
+  [refreshing]="ptrRefreshing()"
+  [topOffset]="chromeService.toolbarHeight()"
+/>
+<div
+  class="app-content"
+  style="min-width: 24rem;"
+  [style.padding-top.px]="chromeService.toolbarHeight()"
+  appPullToRefresh
+  [(pullProgress)]="ptrProgress"
+  [(refreshing)]="ptrRefreshing"
+  (refresh)="onPullRefresh()"
+>
   <router-outlet />
 </div>

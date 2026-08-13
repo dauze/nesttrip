@@ -68,6 +68,12 @@
 .map-panel__footer-icons {
   gap: 0.25rem;
   padding: 0.125rem 0;
+  // Sans ça, un tirage vers le bas sur cette poignée (voir
+  // `onGrabberPointerDown`/`onGrabberPointerMove`, trip-day-map.component.ts)
+  // déclenche EN PLUS le scroll natif de la page en dessous — le navigateur
+  // continue d'interpréter le geste tactile comme un scroll tant qu'on ne lui
+  // dit pas explicitement de laisser la main au JS sur cette zone précise.
+  touch-action: none;
 
   i {
     font-size: var(--nt-icon-size-sm);

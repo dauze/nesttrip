@@ -56,6 +56,15 @@
 // classe et gèrent déjà leur propre repositionnement via CDK.
 .cdk-global-overlay-wrapper {
   height: var(--nt-visual-viewport-height, 100%);
+  // `top` (pas seulement `height`) : voir VisualViewportService pour le
+  // raisonnement complet — sans ce décalage, un panel correctement plafonné
+  // en hauteur pouvait rester positionné à cheval sur la zone que le clavier
+  // recouvre effectivement (panning du viewport visuel, `offsetTop` > 0),
+  // le pied de page (boutons "OK"/"Annuler") se retrouvant alors masqué même
+  // si `max-height` était pourtant déjà correct. `position: fixed` (posé par
+  // CDK sur cet élément, overlay-prebuilt.css) est nécessaire pour que `top`
+  // ait un effet ici.
+  top: var(--nt-visual-viewport-offset-top, 0px);
 }
 
 .cdk-overlay-pane.app-dialog-panel {

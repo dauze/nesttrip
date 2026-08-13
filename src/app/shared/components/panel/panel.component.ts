@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, input, model, output, signal, viewChild } from '@angular/core';
 
 export interface PanelToggleEvent {
   collapsed: boolean;
@@ -114,6 +114,21 @@ export class PanelComponent {
    * appelant (défaut `false`).
    */
   readonly noHeader = input(false);
+  /**
+   * Optionnel : pendant un geste de tirage (drag) piloté par l'appelant (ex.
+   * `TripDayMapComponent`, poignée `.map-panel__grabber`) — fraction 0
+   * (replié) à 1 (déplié) qui prend la main sur `max-height` le temps du
+   * geste, `null` = pas de drag en cours (comportement normal piloté par
+   * `collapsed()`/`toggle()`, inchangé). Mesure `scrollHeight` À LA VOLÉE
+   * (`dragMaxHeightPx`, pas `maxHeightPx` qui ne se fige que via `toggle()`)
+   * : l'appelant n'a pas accès à `contentRef` (privé), il ne pilote qu'une
+   * fraction 0-1, jamais un pixel brut — ce composant reste seul responsable
+   * de mesurer sa propre hauteur de contenu. Transition CSS désactivée tant
+   * que non-null (voir le template, même mécanisme que `instant()`) : la
+   * hauteur doit suivre le doigt à chaque frame, une transition ajouterait
+   * un lag perçu comme un décalage entre le geste et le rendu.
+   */
+  readonly dragProgress = input<number | null>(null);
 
   readonly beforeToggle = output<PanelToggleEvent>();
   readonly afterToggle = output<PanelToggleEvent>();
@@ -122,6 +137,15 @@ export class PanelComponent {
 
   /** Plafond figé le temps d'une transition déclenchée par `toggle()` ; `null` = pas de plafond (état au repos une fois dépliée). */
   protected readonly maxHeightPx = signal<number | null>(null);
+
+  /** Voir la doc de `dragProgress` — hauteur cible (px) pour la fraction de drag courante, mesurée à la volée sur le contenu réel. */
+  protected readonly dragMaxHeightPx = computed(() => {
+    const progress = this.dragProgress();
+    if (progress === null) return null;
+    const el = this.contentRef()?.nativeElement;
+    if (!el) return 0;
+    return Math.round(el.scrollHeight * Math.min(1, Math.max(0, progress)));
+  });
 
   /**
    * Clic (ou Entrée/Espace, le contenu étant focusable quand toggleable)

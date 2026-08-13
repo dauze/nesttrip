@@ -1,0 +1,14 @@
+<div
+  class="pull-to-refresh-indicator flex align-items-center justify-content-center"
+  [class.pull-to-refresh-indicator--visible]="visible()"
+  [class.pull-to-refresh-indicator--refreshing]="refreshing()"
+  [class.pull-to-refresh-indicator--ready]="ready()"
+  [style.transform]="'translate(-50%, ' + translateY() + 'px)'"
+  [style.opacity]="opacity()"
+  aria-hidden="true">
+  <svg class="pull-to-refresh-indicator__svg" viewBox="0 0 24 24" [style.transform]="'rotate(' + rotationDeg() + 'deg)'">
+    <circle class="pull-to-refresh-indicator__track" cx="12" cy="12" r="9" fill="none" stroke-width="2" />
+    <path class="pull-to-refresh-indicator__arc" d="M12 3a9 9 0 0 1 9 9" fill="none" stroke-width="2" stroke-linecap="round" />
+    <path class="pull-to-refresh-indicator__arrow" d="M12 7.5v6m0 0-2.4-2.4M12 13.5l2.4-2.4" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+</div>

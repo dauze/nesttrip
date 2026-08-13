@@ -1,11 +1,30 @@
 // Panel qui contient toutes les tuiles voyage (ROADMAP.md "### UI") : un
-// tout petit peu plus foncé que le fond de page (`--nt-page-background`,
-// `--nt-surface-50`) mais moins que les tuiles trip elles-mêmes (blanches,
-// `--nt-content-background` par défaut — voir `.card` plus bas, qui
-// N'HÉRITE PLUS de cette teinte depuis cette refonte) : `--nt-surface-100`,
-// le cran suivant sur l'échelle de gris après `--nt-surface-50`.
+// tout petit peu plus foncé que le fond de page (`--nt-page-background`)
+// mais distinct des tuiles trip elles-mêmes (`--nt-content-background` par
+// défaut — voir `.card` plus bas, qui N'HÉRITE PLUS de cette teinte depuis
+// cette refonte) — `--nt-content-inset-background`, PAS le brut
+// `--nt-surface-100` (retour utilisateur, mode sombre cassé) : la palette
+// `--nt-surface-*` est le même dégradé de gris QUELLE QUE SOIT le thème
+// (convention Aura/zinc, tokens.scss) — seuls les jetons SÉMANTIQUES comme
+// `--nt-content-background`/`--nt-content-inset-background` sont réellement
+// redéfinis par thème pour rester lisibles (`--nt-surface-100` reste un
+// gris quasi blanc `#f4f4f5` même en dark, cf. `@mixin nt-dark-tokens`) — une
+// référence directe à `--nt-surface-100` forçait ce panel à rester clair même
+// en mode sombre. `--nt-content-inset-background` est le jeton PENSÉ pour ce
+// rôle ("contenu imbriqué, légèrement distinct de la carte/panel") et reste
+// correctement sombre dans les deux thèmes.
+//
+// `background` (propriété réelle), PAS `--nt-content-background` (custom
+// property) : `CardComponent` lit `--nt-content-background` sur `:host`
+// (card.component.scss), qui HÉRITE comme toute custom property — la
+// redéfinir ici aurait donc aussi teinté les tuiles trip ENFANTS (`.card`
+// plus bas, dans le DOM RÉEL de CE template) de la même couleur que ce
+// panel, alors qu'elles doivent rester sur leur propre teinte par défaut
+// (voir sa doc juste en dessous). `background` n'est PAS une propriété
+// héritée : poser la valeur ici ne descend pas dans les enfants, tout en
+// restant théma-consciente via le jeton sémantique.
 app-card.accueil-panel {
-  --nt-content-background: var(--nt-surface-100);
+  background: var(--nt-content-inset-background);
 }
 
 // Tuiles trip individuelles : blanches (défaut `--nt-content-background`,
@@ -24,36 +43,24 @@ app-card.accueil-panel {
 // source de vérité `--nt-content-border-radius` posée une fois sur la carte
 // (`card.component.scss`).
 //
-// `.app-card__body { padding: 0 }` : la photo doit toucher les bords
-// haut/bas/gauche de la carte (ROADMAP.md "### UI", "supprimer le padding
-// entre la photo et les bords") — remplace le padding par défaut d'`app-card`
-// (0.5rem, card.component.scss) par un espacement posé directement sur
-// `.trip-select-row` (marges ciblées, voir plus bas) plutôt qu'une marge
-// négative sur un enfant profondément imbriqué (fragile : constaté ne pas
-// bien se propager à travers `align-self: stretch` sur plusieurs niveaux de
-// flex imbriqués, cause probable du bug initial).
+// `--nt-card-body-padding: 0` (custom property, card.component.scss) : la
+// photo doit toucher les bords haut/bas/gauche de la carte (ROADMAP.md
+// "### UI", "supprimer le padding entre la photo et les bords") — remplace
+// le padding par défaut d'`app-card` (0.5rem) par un espacement posé
+// directement sur `.trip-select-row` (marges ciblées, voir plus bas) plutôt
+// qu'une marge négative sur un enfant profondément imbriqué (fragile :
+// constaté ne pas bien se propager à travers `align-self: stretch` sur
+// plusieurs niveaux de flex imbriqués, cause probable du bug initial).
+// Une PRÉCÉDENTE tentative ciblait `.app-card__body` via un sélecteur imbriqué
+// classique (`app-card.card { .app-card__body { padding: 0 } } }`) : sans
+// effet, cet élément appartient au template de `CardComponent` (porte SON
+// `_ngcontent-*`, jamais celui de ce composant) sous l'encapsulation émulée
+// d'Angular — d'où l'écart persistant malgré ce code (retour utilisateur).
+// Seule une custom property traverse réellement la frontière de composant.
 app-card.card {
+  --nt-card-body-padding: 0;
   overflow: hidden;
   box-shadow: var(--nt-shadow-md);
-
-  .app-card__body {
-    padding: 0;
-  }
-}
-
-// Couleur de sélection primary plutôt que rouge (ROADMAP.md "### UI", "ce
-// sera plus joli") — override scopé à CETTE liste uniquement (pas le rouge
-// partagé par activités/réservations/notes, voir selection-mode.scss) : la
-// spécificité de `.nt-selectable.nt-selected` suffit à gagner, même sélecteur
-// que la règle globale mais dans la feuille scopée de ce composant, qui
-// charge après la feuille globale partagée.
-.nt-selectable.nt-selected {
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--nt-primary-color) 14%, transparent),
-    transparent 65%
-  );
-  background-color: color-mix(in srgb, var(--nt-primary-color) 7%, transparent);
 }
 
 // Une seule rangée flex à plat (checkbox / photo / infos / flèche, tous
@@ -113,8 +120,11 @@ app-card.card {
   object-fit: cover;
 }
 
+// `--nt-content-hover-background` (théma-consciente), PAS le brut
+// `--nt-surface-100` — même correctif que le panel plus haut (mode sombre) :
+// une valeur brute de la palette resterait un gris quasi blanc même en dark.
 .trip-select-row__thumb--placeholder {
-  background: var(--nt-surface-100);
+  background: var(--nt-content-hover-background);
 }
 
 .trip-select-row__body {

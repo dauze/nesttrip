@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, viewChild, afterNextRender, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild, afterNextRender, DestroyRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { Location } from '@angular/common';
@@ -27,12 +27,14 @@ import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
 import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
 import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { PullToRefreshIndicatorComponent } from '@app/shared/components/pull-to-refresh-indicator/pull-to-refresh-indicator.component';
+import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule, PullToRefreshIndicatorComponent, PullToRefreshDirective],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
@@ -80,6 +82,22 @@ export class TripsComponent {
   protected readonly currencyControl = new FormControl<string>('EUR', { nonNullable: true });
 
   private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
+
+  /** Voir `PullToRefreshDirective`/`PullToRefreshIndicatorComponent` (template) — état du geste "tirer pour actualiser", posé au niveau du shell pour couvrir accueil-trip/new-trip (seuls écrans en flux de page normal sous `.app-content` ; trip-detail est explicitement exclu par la directive elle-même, voir sa doc). */
+  protected readonly ptrProgress = signal(0);
+  protected readonly ptrRefreshing = signal(false);
+
+  /**
+   * Pas de vrai refetch ici : les données de l'app sont déjà en temps réel
+   * (`onSnapshot` Firestore, voir CLAUDE.md) — rien à re-demander au serveur.
+   * On rejoue simplement l'affordance visuelle standard (bref spinner) pour
+   * que le geste reste cohérent avec ce que l'utilisateur connaît déjà
+   * (Gmail/Chrome mobile), sans faire croire à une vraie requête réseau plus
+   * longue qu'elle ne l'est.
+   */
+  protected onPullRefresh(): void {
+    setTimeout(() => this.ptrRefreshing.set(false), 700);
+  }
 
   constructor() {
     effect(() => {
