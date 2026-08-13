@@ -22,6 +22,6 @@
       severity="secondary"
       [size]="viewport.isMobile() ? 'large' : 'normal'"
       (click)="cancel()" />
-    <app-button label="OK" [size]="viewport.isMobile() ? 'large' : 'normal'" (click)="validate()" />
+    <app-button label="OK" [disabled]="noDestinationLeft()" [size]="viewport.isMobile() ? 'large' : 'normal'" (click)="validate()" />
   </div>
 </div>
