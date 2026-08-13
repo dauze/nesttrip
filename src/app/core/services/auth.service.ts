@@ -1,6 +1,9 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
+  ActionCodeSettings,
+  applyActionCode,
+  confirmPasswordReset,
   createUserWithEmailAndPassword,
   getAdditionalUserInfo,
   GoogleAuthProvider,
@@ -12,11 +15,24 @@ import {
   sendPasswordResetEmail,
   User,
   UserCredential,
+  verifyPasswordResetCode,
 } from 'firebase/auth';
 import { from, Observable, switchMap } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { firebaseAuth } from '../../app.config';
 import { UserProfileRepository } from '@core/infra/firebase/services/user-profile-repository';
+
+/**
+ * `handleCodeInApp: true` : les liens envoyés par Firebase (réinitialisation
+ * de mot de passe, vérification d'email) redirigent directement vers
+ * `AuthActionComponent` (`/auth/action?mode=...&oobCode=...`) au lieu de la
+ * page hébergée par défaut de Firebase (non stylée, hors de l'app) —
+ * ROADMAP.md "### UI".
+ */
+const ACTION_CODE_SETTINGS: ActionCodeSettings = {
+  url: `${location.origin}/auth/action`,
+  handleCodeInApp: true,
+};
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -76,7 +92,7 @@ export class AuthService {
       ),
       tap((credential) => {
         // Fire-and-forget : ne bloque pas le reste du flux.
-        sendEmailVerification(credential.user).catch((e) => {
+        sendEmailVerification(credential.user, ACTION_CODE_SETTINGS).catch((e) => {
           console.error("Erreur lors de l'envoi de l'e-mail de vérification :", e);
         });
 
@@ -141,12 +157,29 @@ export class AuthService {
   resendVerificationEmail(): Observable<void> {
     const currentUser = firebaseAuth.currentUser;
     if (currentUser && !currentUser.emailVerified) {
-      return from(sendEmailVerification(currentUser));
+      return from(sendEmailVerification(currentUser, ACTION_CODE_SETTINGS));
     }
     return from(Promise.resolve());
   }
 
   resetPassword(email: string): Observable<void> {
-    return from(sendPasswordResetEmail(firebaseAuth, email));
+    return from(sendPasswordResetEmail(firebaseAuth, email, ACTION_CODE_SETTINGS));
+  }
+
+  // --- Action Firebase (lien email) : voir AuthActionComponent ---
+
+  /** Vérifie que le lien de réinitialisation (`oobCode`) est valide et non expiré — retourne l'email associé si oui (affiché dans le formulaire de nouveau mot de passe), rejette sinon. */
+  checkPasswordResetCode(oobCode: string): Observable<string> {
+    return from(verifyPasswordResetCode(firebaseAuth, oobCode));
+  }
+
+  /** Applique le nouveau mot de passe — `oobCode` déjà validé par `checkPasswordResetCode`. */
+  submitNewPassword(oobCode: string, newPassword: string): Observable<void> {
+    return from(confirmPasswordReset(firebaseAuth, oobCode, newPassword));
+  }
+
+  /** Marque l'email vérifié — `oobCode` du lien de confirmation d'inscription. */
+  confirmEmailVerification(oobCode: string): Observable<void> {
+    return from(applyActionCode(firebaseAuth, oobCode));
   }
 }

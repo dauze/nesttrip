@@ -1,0 +1,81 @@
+<div class="flex justify-content-center align-items-center bg-transparent p-3" style="min-width: 24rem; min-height: 100dvh;">
+  <app-card class="w-full p-2 auth-action-card">
+    @switch (state()) {
+      @case ('loading') {
+        <div class="text-center">
+          <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
+        </div>
+      }
+
+      @case ('reset-form') {
+        <form [formGroup]="form" (ngSubmit)="submitNewPassword()">
+          <div class="text-center mb-5">
+            <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
+            <h1 class="text-2xl font-bold text-900 m-0 mb-2">{{ title() }}</h1>
+            <p class="nt-text-muted m-0">
+              Choisis un nouveau mot de passe pour <strong>{{ email() }}</strong>.
+            </p>
+          </div>
+
+          <div class="flex flex-column gap-3">
+            <div class="flex flex-column gap-2">
+              <label for="new-password" class="font-medium text-900">Nouveau mot de passe</label>
+              <app-password
+                [inputId]="'new-password'"
+                formControlName="password"
+                placeholder="••••••••"
+                autocomplete="new-password"
+                class="w-full">
+              </app-password>
+              @if (form.controls.password.touched && form.controls.password.invalid) {
+                <small class="nt-text-danger">
+                  @if (form.controls.password.errors?.['required']) {
+                    Mot de passe requis
+                  }
+                  @if (form.controls.password.errors?.['pattern']) {
+                    Doit contenir au moins :
+                    1 majuscule, 1 minuscule, 1 chiffre et 1 symbole
+                  }
+                </small>
+              }
+            </div>
+
+            <app-button
+              type="submit"
+              label="Mettre à jour le mot de passe"
+              class="w-full justify-content-center mt-2"
+              [loading]="submitting()">
+            </app-button>
+          </div>
+        </form>
+      }
+
+      @case ('reset-done') {
+        <div class="text-center mb-3">
+          <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
+          <h1 class="text-2xl font-bold text-900 m-0 mb-2">{{ title() }}</h1>
+          <p class="nt-text-muted m-0">Ton mot de passe a bien été mis à jour. Tu peux maintenant te connecter.</p>
+        </div>
+        <app-button label="Se connecter" class="w-full justify-content-center" (click)="goToLogin()"></app-button>
+      }
+
+      @case ('verify-done') {
+        <div class="text-center mb-3">
+          <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
+          <h1 class="text-2xl font-bold text-900 m-0 mb-2">{{ title() }}</h1>
+          <p class="nt-text-muted m-0">Ton adresse email est confirmée. Tu peux maintenant te connecter.</p>
+        </div>
+        <app-button label="Se connecter" class="w-full justify-content-center" (click)="goToLogin()"></app-button>
+      }
+
+      @case ('error') {
+        <div class="text-center mb-3">
+          <img src="nesttrip.ico" alt="Logo" class="h-4rem w-4rem mb-3 border-circle shadow-1" />
+          <h1 class="text-2xl font-bold text-900 m-0 mb-2">{{ title() }}</h1>
+        </div>
+        <app-message severity="error" [text]="errorMsg()" class="w-full justify-content-start mb-3"></app-message>
+        <app-button label="Retour à la connexion" severity="secondary" class="w-full justify-content-center" (click)="goToLogin()"></app-button>
+      }
+    }
+  </app-card>
+</div>

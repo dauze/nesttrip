@@ -1,0 +1,6 @@
+// Même contrainte de largeur que login.component.scss (`.login-card`) : sans
+// ça la carte s'étire sur toute la largeur de son conteneur flex, correct
+// sur mobile mais beaucoup trop large sur desktop.
+.auth-action-card {
+  max-width: 26rem;
+}
