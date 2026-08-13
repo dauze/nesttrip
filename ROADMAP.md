@@ -72,8 +72,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 
 ### Bugs / fixes
-- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
-- Si je suis sur un jour et que je clique sur "Générale", la map reste, à tord 
+- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire) 
 
 ### Qualité / process (Non prioritaire, la cvode review est à faire à la fin !)
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
