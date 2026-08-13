@@ -1,4 +1,4 @@
-<div class="flex flex-column gap-2">
+<div class="flex flex-column gap-2" appPullToRefresh appPullToRefreshTarget="window">
   <app-card class="accueil-panel">
     <!-- Header -->
     <div cardTitle class="flex justify-content-between align-items-center w-full">
@@ -92,7 +92,7 @@
                   <span class="text-sm">{{ trip.latestDay ? (trip.latestDay | date:'shortDate') : 'Prochainement' }}</span>
                 </span>
               </div>
-              <i class="trip-select-row__arrow pi pi-arrow-right nt-text-muted"></i>
+              <i class="trip-select-row__arrow pi pi-chevron-right nt-text-muted"></i>
             </div>
           </app-card>
         }

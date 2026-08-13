@@ -29,6 +29,7 @@ import { SelectButtonComponent } from '@app/shared/components/select-button/sele
 import { MessageComponent } from '@app/shared/components/message/message.component';
 import { MultiCityFieldComponent } from '@app/shared/components/multi-city-field/multi-city-field.component';
 import { AiTripPreferencesComponent } from './ai-trip-preferences/ai-trip-preferences.component';
+import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 import { PLANNING_MODE_OPTIONS, PlanningMode, TripAiPreferences, createDefaultAiPreferences } from './trip-ai-preferences.model';
 import { TripGeneration } from './trip-generation.model';
 import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip-generation-repository';
@@ -40,7 +41,7 @@ import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip
   imports: [
     ReactiveFormsModule, InputTextDirective, DatePickerComponent, ButtonComponent,
     CardComponent, AutoCompleteComponent, SelectButtonComponent, AiTripPreferencesComponent,
-    MessageComponent, MultiCityFieldComponent,
+    MessageComponent, MultiCityFieldComponent, PullToRefreshDirective,
   ],
   templateUrl: 'new-trip.component.html',
   styleUrl: 'new-trip.component.scss',

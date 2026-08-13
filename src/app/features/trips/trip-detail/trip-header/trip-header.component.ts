@@ -1,13 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { format } from 'date-fns';
 import { CardComponent } from '@app/shared/components/card/card.component';
 import { MenuComponent } from '@app/shared/components/menu/menu.component';
 import { TripSettingsSectionComponent } from '@app/features/trips/trip-settings-section/trip-settings-section.component';
+import { TripFacade } from '@app/features/trips/trip-facade.service';
 
 /**
- * Header voyage épuré (ROADMAP.md, "Le trip header doit évoluer") : plage de
- * dates à gauche, avatars projetés à droite (`[trip-actions]`, voir
- * `TripSummaryComponent`), plus aucun champ éditable directement ici.
+ * Header voyage épuré (ROADMAP.md, "Le trip header doit évoluer") : destination
+ * + plage de dates à gauche (et, en dessous, les noms des compagnons de route
+ * — les avatars, eux, vivent désormais dans la toolbar app, voir
+ * `TripCollaboratorsComponent`/`TripsComponent`), chevron d'ouverture à
+ * droite, plus aucun champ éditable directement ici.
  *
  * Drawer "Voyage" séparé (ROADMAP.md "### UI", 2026-08-13 — remplace la
  * précédente section "Voyage" injectée dans le menu réglages global de la
@@ -36,6 +39,8 @@ import { TripSettingsSectionComponent } from '@app/features/trips/trip-settings-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripHeaderComponent {
+  private readonly tripFacade = inject(TripFacade);
+
   readonly tripId = input.required<string>();
   /** Signal dédié (voir `TripFacade.getTripDateRange`/`TripStore._tripDays`), pas `activeTrip()` — évite un recalcul à chaque mutation du trip actif sans rapport avec les jours. */
   readonly dateRange = input<[Date, Date] | undefined>(undefined);
@@ -44,12 +49,23 @@ export class TripHeaderComponent {
 
   protected readonly settingsOpened = signal(false);
 
+  /** Destination principale (voir `TripFacade.getTripDestination`) — remplace le libellé fixe "Voyage" (retour utilisateur). */
+  private readonly destination = computed(() => this.tripFacade.getTripDestination(this.tripId())());
+
   readonly dateRangeLabel = computed(() => {
     const range = this.dateRange();
     if (!range) return '';
     const [start, end] = range;
-    return `Voyage du ${format(start, 'dd/MM/yyyy')} au ${format(end, 'dd/MM/yyyy')}`;
+    const label = this.destination().ville || 'Voyage';
+    return `${label} du ${format(start, 'dd/MM/yyyy')} au ${format(end, 'dd/MM/yyyy')}`;
   });
+
+  /** Noms des compagnons de route (voir doc de classe) — les avatars sont désormais dans la toolbar app. */
+  protected readonly companionNamesLabel = computed(() =>
+    Object.values(this.tripFacade.getTripMembers(this.tripId())())
+      .map((m) => m.displayName || m.email)
+      .join(', '),
+  );
 
   protected onHeaderClick(event: Event): void {
     this.settingsOpened.set(true);

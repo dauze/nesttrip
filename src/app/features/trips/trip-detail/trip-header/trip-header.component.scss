@@ -26,6 +26,16 @@
   -webkit-text-stroke: 0.035em currentColor;
 }
 
+// Ligne "compagnons de route" (noms, texte) sous la plage de dates — les
+// avatars, eux, sont désormais affichés dans la toolbar app (voir
+// `TripCollaboratorsComponent`), plus ici.
+.trip-header__companions {
+  color: var(--nt-text-muted-color);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 // Même style que `.app-menu-panel__group-label` (menu.component.scss) :
 // classe dupliquée plutôt que partagée (même choix documenté dans
 // trips.component.scss) — ce contenu est projeté depuis LE TEMPLATE de ce

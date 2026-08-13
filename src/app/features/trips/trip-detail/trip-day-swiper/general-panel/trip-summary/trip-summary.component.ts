@@ -11,7 +11,6 @@ import { DialogService } from '@app/shared/services/dialog.service';
 import { ExpensesTableDialogComponent, ExpensesTableDialogData } from './expenses-table/expenses-table-dialog.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { TripHeaderComponent } from '../../../trip-header/trip-header.component';
-import { TripCollaboratorsComponent } from '../../../trip-collaborators/trip-collaborators.component';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { LoadingState, PlaceDetails } from '@app/core/models/place.dto';
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
@@ -56,7 +55,7 @@ const MAX_EXPENSE_ENTRIES = 5;
 @Component({
   selector: 'app-trip-summary',
   standalone: true,
-  imports: [DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, TripHeaderComponent, TripCollaboratorsComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
+  imports: [DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, TripHeaderComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
   templateUrl: './trip-summary.component.html',
   styleUrl: './trip-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

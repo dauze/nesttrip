@@ -25,28 +25,28 @@
   [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
   [style.--sticky-top-offset.px]="chromeService.stickyContentTop()"
   [style.--fixed-map-height.px]="mapHost.dayFixedContainerHeight()">
-  <swiper-slide>
+  <swiper-slide appPullToRefresh>
     @if (visitedDays().has('summary')) {
       <app-trip-summary [tripId]="trip().id" [active]="activeId() === 'summary'" />
     }
   </swiper-slide>
-  <swiper-slide>
+  <swiper-slide appPullToRefresh>
     @if (visitedDays().has('activities')) {
       <app-trip-activities [tripId]="trip().id" />
     }
   </swiper-slide>
-  <swiper-slide>
+  <swiper-slide appPullToRefresh>
     @if (visitedDays().has('logistics')) {
       <app-logistics-list [tripId]="trip().id" />
     }
   </swiper-slide>
-  <swiper-slide>
+  <swiper-slide appPullToRefresh>
     @if (visitedDays().has('notes')) {
       <app-notes [notes]="trip().notes" [tripId]="trip().id" />
     }
   </swiper-slide>
   @for (day of sortedDays(); track day.id) {
-    <swiper-slide>
+    <swiper-slide appPullToRefresh>
       @if (visitedDays().has(day.id.toISOString())) {
         <app-day-panel
           [dayId]="day.id"

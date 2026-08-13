@@ -7,7 +7,7 @@
   (keydown.enter)="toggle()">
   <ng-content select="[fieldsetHeader]" />
   @if (toggleable()) {
-    <i class="pi" [class.pi-chevron-right]="isCollapsed()" [class.pi-chevron-down]="!isCollapsed()"></i>
+    <i class="pi" [class.pi-plus]="isCollapsed()" [class.pi-minus]="!isCollapsed()"></i>
   }
 </div>
 @if (!isCollapsed()) {

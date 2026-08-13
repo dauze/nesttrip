@@ -27,12 +27,13 @@ import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
 import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
 import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { TripCollaboratorsComponent } from './trip-detail/trip-collaborators/trip-collaborators.component';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule, TripCollaboratorsComponent],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.

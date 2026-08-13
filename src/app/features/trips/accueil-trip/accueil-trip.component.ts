@@ -19,6 +19,7 @@ import { ViewportService } from '@app/core/services/viewport.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
 import { ChipComponent } from '@app/shared/components/chip/chip.component';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
+import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -40,6 +41,7 @@ import { Observable } from 'rxjs';
     ChipComponent,
     DatePipe,
     AsyncPipe,
+    PullToRefreshDirective,
   ],
   templateUrl: 'accueil-trip.component.html',
   styleUrl: 'accueil-trip.component.scss',

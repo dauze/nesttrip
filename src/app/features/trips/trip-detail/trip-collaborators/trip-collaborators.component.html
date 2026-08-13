@@ -1,4 +1,9 @@
-<div class="flex align-items-center gap-3">
+<button
+  type="button"
+  class="trip-collaborators flex align-items-center gap-3"
+  aria-label="Compagnons de route"
+  (click)="openDialog()"
+>
   <app-avatar-group>
     @for (entry of visibleMembers(); track entry[0]) {
       <app-avatar
@@ -18,4 +23,4 @@
         tooltipPosition="bottom" />
     }
   </app-avatar-group>
-</div>
+</button>

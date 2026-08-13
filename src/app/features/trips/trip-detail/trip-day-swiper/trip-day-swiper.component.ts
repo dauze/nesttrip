@@ -27,13 +27,14 @@ import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.compo
 import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
 import { TripChromeService } from '@app/core/services/trip-chrome.service';
 import { TripDestinationLocationService } from '@app/core/services/trip-destination-location.service';
+import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 
 @Component({
   selector: 'app-trip-day-swiper',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent],
+  imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent, PullToRefreshDirective],
   providers: [SwiperLockService, TripDayMapHostService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',

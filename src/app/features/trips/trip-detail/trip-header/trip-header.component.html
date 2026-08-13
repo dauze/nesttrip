@@ -6,11 +6,13 @@
     aria-label="Paramètres du voyage"
     (click)="onHeaderClick($event)"
   >
-    <span class="text-sm flex-shrink-0">{{ dateRangeLabel() }}</span>
-    <div class="flex align-items-center gap-2 flex-shrink-0">
-      <ng-content select="[trip-actions]" />
-      <i class="pi pi-sliders-h trip-header__settings-icon" aria-hidden="true"></i>
+    <div class="trip-header__info flex flex-column min-w-0">
+      <span class="text-sm">{{ dateRangeLabel() }}</span>
+      @if (companionNamesLabel()) {
+        <span class="text-xs trip-header__companions">{{ companionNamesLabel() }}</span>
+      }
     </div>
+    <i class="pi pi-chevron-right trip-header__settings-icon flex-shrink-0" aria-hidden="true"></i>
   </div>
 </app-card>
 

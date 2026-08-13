@@ -1,0 +1,37 @@
+/* ---------------------------------------------------------------------
+ * Indicateur visuel du geste "tirer pour actualiser" maison (voir
+ * PullToRefreshDirective) — élément créé/piloté en JS (Renderer2), pas de
+ * template Angular : la directive n'a pas de vue propre, ces règles restent
+ * donc globales plutôt que scoped à un composant.
+ * ------------------------------------------------------------------- */
+
+.nt-pull-to-refresh {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-sm);
+  opacity: 0;
+  pointer-events: none;
+  z-index: var(--z-app-toolbar);
+}
+
+.nt-pull-to-refresh__icon {
+  color: var(--nt-primary-color);
+  font-size: 1rem;
+}
+
+.nt-pull-to-refresh--spinning .nt-pull-to-refresh__icon {
+  animation: nt-pull-to-refresh-spin 700ms linear infinite;
+}
+
+@keyframes nt-pull-to-refresh-spin {
+  to { transform: rotate(360deg); }
+}

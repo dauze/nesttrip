@@ -1,9 +1,5 @@
 <div class="trip-summary-body">
-  <app-trip-header [tripId]="tripId()" [dateRange]="tripDateRange()">
-    <app-trip-collaborators
-      trip-actions
-      [tripId]="tripId()" />
-  </app-trip-header>
+  <app-trip-header [tripId]="tripId()" [dateRange]="tripDateRange()" />
   
   @if (hasMapPoints()) {
     <app-card>

@@ -19,7 +19,10 @@
 
     <span toolbarCenter class="nesttrip-logo" [attr.title]="toolbarTitle()">{{ toolbarTitle() }}</span>
 
-    <div toolbarEnd class="w-3rem flex justify-content-center">
+    <div toolbarEnd class="flex align-items-center justify-content-end gap-2">
+      @if (activeTripId(); as tripId) {
+        <app-trip-collaborators [tripId]="tripId" />
+      }
       <app-menu #menu [items]="menuItems">
         <div menuTop class="app-menu-theme-picker flex flex-column">
           <div class="app-menu-theme-picker__label">Thème</div>
