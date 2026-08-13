@@ -4,7 +4,7 @@
   [style.--nt-chrome-gap.px]="chromeService.chromeGapPx()"
   style="--app-card-max-height: calc(100dvh - var(--toolbar-height, 0px) - var(--nt-chrome-gap, 0px));"
 >
-  <app-card [fillHeight]="true">
+  <app-card [fillHeight]="true" class="accueil-panel">
     <!-- Header -->
     <div cardTitle class="flex justify-content-between align-items-center w-full">
       @if (trips().length === 0 && !userProfileService.hasSeenOnboarding()) {
@@ -56,7 +56,7 @@
             [tooltipDisabled]="!selectionService.active() || user?.uid === trip.ownerId"
           >
             <div
-              class="trip-select-row flex justify-content-between align-items-center cursor-pointer"
+              class="trip-select-row flex justify-content-between align-items-center gap-2 cursor-pointer"
               role="button"
               tabindex="0"
               (click)="selectTrip(trip.id)"

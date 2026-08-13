@@ -1,20 +1,62 @@
-// Teinte légèrement différente du fond de page pour TOUTE la carte (pas
-// juste son contenu, retour utilisateur 2026-08-09) — override localisé de
-// `--nt-content-background` (voir card.component.scss, `:host { background:
-// var(--nt-content-background) }`) plutôt qu'un fond posé sur un élément
-// interne : un second fond opaque à l'intérieur de la carte masquait le
-// dégradé de sélection (`.nt-selectable.nt-selected`, selection-mode.scss),
-// peint sur ce MÊME host `app-card` — cette variable CSS scoped laisse le
-// dégradé de sélection s'appliquer normalement par-dessus.
-app-card.card {
-  --nt-content-background: var(--nt-content-inset-background);
+// Panel qui contient toutes les tuiles voyage (ROADMAP.md "### UI") : un
+// tout petit peu plus foncé que le fond de page (`--nt-page-background`,
+// `--nt-surface-50`) mais moins que les tuiles trip elles-mêmes (blanches,
+// `--nt-content-background` par défaut — voir `.card` plus bas, qui
+// N'HÉRITE PLUS de cette teinte depuis cette refonte) : `--nt-surface-100`,
+// le cran suivant sur l'échelle de gris après `--nt-surface-50`.
+app-card.accueil-panel {
+  --nt-content-background: var(--nt-surface-100);
 }
 
+// Tuiles trip individuelles : blanches (défaut `--nt-content-background`,
+// plus d'override vers `--nt-content-inset-background` — l'ancienne teinte
+// se confondait avec le fond de page, ROADMAP.md "### UI") + un box-shadow
+// plus marqué que le défaut `app-card` (`--nt-shadow-xs`, à peine
+// perceptible) pour qu'elles se détachent nettement du panel plus foncé
+// qui les contient.
+app-card.card {
+  box-shadow: var(--nt-shadow-sm);
+}
+
+// Couleur de sélection primary plutôt que rouge (ROADMAP.md "### UI", "ce
+// sera plus joli") — override scopé à CETTE liste uniquement (pas le rouge
+// partagé par activités/réservations/notes, voir selection-mode.scss) : la
+// spécificité de `.nt-selectable.nt-selected` suffit à gagner, même sélecteur
+// que la règle globale mais dans la feuille scopée de ce composant, qui
+// charge après la feuille globale partagée.
+.nt-selectable.nt-selected {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--nt-primary-color) 14%, transparent),
+    transparent 65%
+  );
+  background-color: color-mix(in srgb, var(--nt-primary-color) 7%, transparent);
+}
+
+// Photo bord-à-bord (ROADMAP.md "### UI", "supprimer le padding entre la
+// photo et les bords") : marges négatives annulant le padding du corps de
+// la carte (`app-card__body`, 0.5rem, card.component.scss) sur les 3 côtés
+// SAUF la droite (qui continue vers le texte, avec son gap normal) +
+// `align-self: stretch` pour occuper toute la hauteur réelle de la rangée
+// (pas seulement les 4rem fixes) et vraiment toucher le haut/bas de la
+// carte, quelle que soit sa hauteur. Coins arrondis UNIQUEMENT à gauche
+// (ceux qui touchent réellement le bord arrondi de la carte) — à droite,
+// coin carré (bord "intérieur", contre le texte) : sans quoi une valeur de
+// border-radius symétrique laisserait deviner un coin arrondi flottant au
+// milieu de la carte, sans rapport avec son propre contour.
 .trip-select-row__thumb {
   width: 4rem;
-  height: 4rem;
+  // `min-height` (pas `height`) : garde le gabarit actuel de 4rem comme
+  // PLANCHER (aucune régression si la rangée ne grandit jamais au-delà),
+  // `align-self: stretch` grandit au-delà si la rangée est un jour plus
+  // haute (ex. titre sur 2 lignes) — sans dépendre d'un changement de
+  // `align-items` sur `.trip-select-row__title` (utilitaire PrimeFlex
+  // `!important`, pas la peine de le combattre).
+  min-height: 4rem;
+  align-self: stretch;
   object-fit: cover;
-  border-radius: var(--nt-content-border-radius);
+  margin: -0.5rem 0 -0.5rem -0.5rem;
+  border-radius: var(--nt-content-border-radius) 0 0 var(--nt-content-border-radius);
 }
 
 .trip-select-row:focus,

@@ -70,7 +70,24 @@ export class SelectableDirective {
   }
 
   private readonly onCaptureClick = (event: MouseEvent): void => {
-    if (this.selectableDisabled() || !this.selectionService.active() || !this.viewport.isMobile()) return;
+    if (!this.selectionService.active()) return;
+
+    // Carte non sélectionnable (ex. accueil-trip, pas le propriétaire du
+    // voyage) : bloque le clic plutôt que de le laisser passer vers le
+    // comportement normal de la carte (navigation, dépli...) tant que le mode
+    // sélection est actif — ROADMAP.md "### UI", régression où une carte
+    // grisée déclenchait quand même son clic normal. S'applique aussi bien
+    // mobile que PC (contrairement au reste de cette méthode ci-dessous, PC
+    // uniquement) : PC n'a normalement rien à intercepter ici (seule la
+    // checkbox toujours visible sélectionne), mais un clic qui ne doit
+    // justement JAMAIS aboutir sur une carte désactivée n'y fait pas exception.
+    if (this.selectableDisabled()) {
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+
+    if (!this.viewport.isMobile()) return;
     event.stopPropagation();
     event.preventDefault();
     this.selectionService.toggle(this.appSelectable());
