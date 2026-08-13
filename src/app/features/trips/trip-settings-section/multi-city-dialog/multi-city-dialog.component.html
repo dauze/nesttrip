@@ -1,0 +1,27 @@
+<div class="multi-city-dialog flex flex-column">
+  <div class="multi-city-dialog__row flex align-items-center justify-content-between gap-2 flex-shrink-0">
+    <span class="multi-city-dialog__title">Destinations</span>
+    <app-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      class="flex-shrink-0"
+      aria-label="Fermer"
+      (click)="cancel()" />
+  </div>
+
+  <div class="multi-city-dialog__body">
+    <app-multi-city-field [(cities)]="cities" />
+  </div>
+
+  <div class="multi-city-dialog__footer nt-footer-actions align-items-center justify-content-end flex-shrink-0">
+    <app-button
+      label="Annuler"
+      [outlined]="!viewport.isMobile()"
+      severity="secondary"
+      [size]="viewport.isMobile() ? 'large' : 'normal'"
+      (click)="cancel()" />
+    <app-button label="OK" [size]="viewport.isMobile() ? 'large' : 'normal'" (click)="validate()" />
+  </div>
+</div>

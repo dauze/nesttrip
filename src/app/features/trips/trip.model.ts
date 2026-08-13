@@ -23,6 +23,8 @@ export interface Trip {
   placeId?: string;
   /** Réf photo Google Places du lieu (destination), récupérée automatiquement à la création — voir `GooglePhotoService.getPhotoUrl$` pour la résoudre en URL affichable. */
   photoRef?: string;
+  /** Villes additionnelles (multi-destination, ROADMAP.md "### UI") — simples noms saisis par l'utilisateur (`app-multi-city-field`), sans coordonnées propres côté client. Renseignable en mode manuel ET IA ; en mode IA `full_plan`, la génération les géocode elle-même côté serveur (voir `TripAiPreferences.cities`, alimenté depuis ce champ à la soumission). Absent ou vide = voyage mono-destination. */
+  additionalCities?: string[];
   /** Paliers de distance (vol d'oiseau, km) + mode associé pour la sélection auto du mode de trajet affiché entre activités — voir `selectTravelMode`. */
   travelTiers?: TravelTiers;
   /** Override manuel du mode de trajet pour une paire de lieux donnée (clé = `buildPlacePairKey`) — écrase la sélection auto (`selectTravelMode`) tant qu'il existe pour cette paire. Absence de clé = automatique. `transit` (transports en commun) n'est disponible qu'ici, jamais comme mode auto des 3 paliers — voir `TravelMode`. */

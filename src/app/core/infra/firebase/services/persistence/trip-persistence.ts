@@ -25,6 +25,10 @@ export class TripPersistenceService {
     return updateDoc(doc(this.db, 'trips', tripId), { travelModeOverrides: overrides });
   }
 
+  updateTripAdditionalCities(tripId: string, cities: string[]): Promise<void> {
+    return updateDoc(doc(this.db, 'trips', tripId), { additionalCities: cities });
+  }
+
   removeTrip(tripId: string): Promise<void> {
     return deleteDoc(doc(this.db, 'trips', tripId));
   }

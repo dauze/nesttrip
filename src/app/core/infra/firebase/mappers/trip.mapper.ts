@@ -30,15 +30,16 @@ export function tripFromFb(data: TripFirebase): Trip {
   };
 }
 
-/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`photoRef`/`travelTiers`/`travelModeOverrides` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/logisticToFb. */
+/** Firestore n'accepte aucune valeur `undefined` : `placeId`/`photoRef`/`travelTiers`/`travelModeOverrides`/`additionalCities` (optionnels, pas encore renseignés à la création) sont omis plutôt qu'écrits à `undefined` — même règle que activityToFb/logisticToFb. */
 export function tripToFb(data: Trip): TripFirebase {
-  const { placeId, photoRef, travelTiers, travelModeOverrides, ...rest } = data;
+  const { placeId, photoRef, travelTiers, travelModeOverrides, additionalCities, ...rest } = data;
   return {
     ...rest,
     ...(placeId ? { placeId } : {}),
     ...(photoRef ? { photoRef } : {}),
     ...(travelTiers ? { travelTiers } : {}),
     ...(travelModeOverrides ? { travelModeOverrides } : {}),
+    ...(additionalCities && additionalCities.length > 0 ? { additionalCities } : {}),
     days: Object.fromEntries(
       data.days.map((d) => [
         String(d.id.getTime()),

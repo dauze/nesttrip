@@ -31,6 +31,7 @@ export interface TripFirebase {
   notes: Notes;
   placeId?: string;
   photoRef?: string;
+  additionalCities?: string[];
   travelTiers?: {
     tier1Mode: 'walk' | 'bike' | 'car';
     tier1MaxKm: number;

@@ -16,6 +16,10 @@ import {
   TravelTiersDialogData,
 } from '../trip-detail/trip-header/travel-tiers-dialog/travel-tiers-dialog.component';
 import {
+  MultiCityDialogComponent,
+  MultiCityDialogData,
+} from './multi-city-dialog/multi-city-dialog.component';
+import {
   CollaboratorsDialogComponent,
   CollaboratorsDialogData,
 } from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
@@ -64,6 +68,11 @@ export class TripSettingsSectionComponent {
   protected readonly title = computed(() => this.tripFacade.getTripTitle(this.tripId())());
   protected readonly dateRange = computed(() => this.tripFacade.getTripDateRange(this.tripId())());
   protected readonly tiers = computed(() => this.tripFacade.getTripTravelTiers(this.tripId())());
+  protected readonly additionalCities = computed(() => this.tripFacade.getTripAdditionalCities(this.tripId())());
+  protected readonly additionalCitiesLabel = computed(() => {
+    const cities = this.additionalCities();
+    return cities.length > 0 ? cities.join(', ') : 'Aucune';
+  });
   protected readonly members = computed(() => this.tripFacade.getTripMembers(this.tripId())());
 
   protected readonly currentUserId = computed(() => this.authService.getCurrentUser()?.uid ?? '');
@@ -152,6 +161,22 @@ export class TripSettingsSectionComponent {
     dialogRef.closed.subscribe((result) => {
       if (result === undefined) return;
       this.tripFacade.updateTripTravelTiers(this.tripId(), result);
+    });
+  }
+
+  protected openMultiCityDialog(): void {
+    const dialogRef = this.dialogService.open<string[] | undefined, MultiCityDialogData>(
+      MultiCityDialogComponent,
+      {
+        data: { initialCities: this.additionalCities() },
+        panelClass: 'app-wide-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+      },
+    );
+
+    dialogRef.closed.subscribe((result) => {
+      if (result === undefined) return;
+      this.tripFacade.updateTripAdditionalCities(this.tripId(), result);
     });
   }
 

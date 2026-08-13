@@ -105,6 +105,10 @@ export class TripFacade {
     this.store.updateTripTravelTiers(tripId, tiers);
   }
 
+  updateTripAdditionalCities(tripId: string, cities: string[]): void {
+    this.store.updateTripAdditionalCities(tripId, cities);
+  }
+
   setTravelModeOverride(tripId: string, placePairKey: string, mode: TravelMode | null): void {
     this.store.setTravelModeOverride(tripId, placePairKey, mode);
   }
@@ -242,6 +246,8 @@ export class TripFacade {
   getTripTravelTiers = this.store.getTripTravelTiers.bind(this.store);
   /** Overrides manuels de mode de trajet du trip (clé = paire de lieux) — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTravelModeOverrides). */
   getTravelModeOverrides = this.store.getTravelModeOverrides.bind(this.store);
+  /** Villes additionnelles (multi-destination) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripAdditionalCities). */
+  getTripAdditionalCities = this.store.getTripAdditionalCities.bind(this.store);
   /** Titre du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTitle). */
   getTripTitle = this.store.getTripTitle.bind(this.store);
   /** Plage de dates (1er jour, dernier jour) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore.getTripDateRange). */
@@ -626,25 +632,30 @@ export class TripFacade {
     const currentTripTitleShadow = this.store._tripTitle()[trip.id];
     const currentTripTiersShadow = this.store._tripTravelTiers()[trip.id];
     const currentTripModeOverridesShadow = this.store._tripTravelModeOverrides()[trip.id];
+    const currentTripAdditionalCitiesShadow = this.store._tripAdditionalCities()[trip.id];
 
     let primitivesChanged = false;
     let titleShadowChanged = false;
     let tiersShadowChanged = false;
     let modeOverridesShadowChanged = false;
+    let additionalCitiesShadowChanged = false;
 
     if (!isTripFieldPending && currentTrip) {
       const effectiveTitle = currentTripTitleShadow ?? currentTrip.title;
       const effectiveTiers = currentTripTiersShadow ?? currentTrip.travelTiers;
       const effectiveModeOverrides = currentTripModeOverridesShadow ?? currentTrip.travelModeOverrides;
+      const effectiveAdditionalCities = currentTripAdditionalCitiesShadow ?? currentTrip.additionalCities;
       const titleReallyChanged = effectiveTitle !== trip.title;
       // Objet (pas primitif) : comparaison structurelle, comme `structurallyEqual` côté TripStore.
       const tiersReallyChanged = JSON.stringify(effectiveTiers) !== JSON.stringify(trip.travelTiers);
       const modeOverridesReallyChanged = JSON.stringify(effectiveModeOverrides) !== JSON.stringify(trip.travelModeOverrides);
+      const additionalCitiesReallyChanged = JSON.stringify(effectiveAdditionalCities) !== JSON.stringify(trip.additionalCities);
 
       primitivesChanged =
         titleReallyChanged ||
         tiersReallyChanged ||
         modeOverridesReallyChanged ||
+        additionalCitiesReallyChanged ||
         currentTrip.ville !== trip.ville ||
         currentTrip.ownerId !== trip.ownerId ||
         currentTrip.placeId !== trip.placeId;
@@ -652,6 +663,7 @@ export class TripFacade {
       titleShadowChanged = titleReallyChanged && currentTripTitleShadow !== undefined;
       tiersShadowChanged = tiersReallyChanged && currentTripTiersShadow !== undefined;
       modeOverridesShadowChanged = modeOverridesReallyChanged && currentTripModeOverridesShadow !== undefined;
+      additionalCitiesShadowChanged = additionalCitiesReallyChanged && currentTripAdditionalCitiesShadow !== undefined;
     }
 
     // À PARTIR D'ICI : chaque écriture de signal est CONDITIONNELLE, comparée
@@ -693,6 +705,7 @@ export class TripFacade {
           placeId: trip.placeId,
           travelTiers: trip.travelTiers,
           travelModeOverrides: trip.travelModeOverrides,
+          additionalCities: trip.additionalCities,
         },
       }));
     }
@@ -718,6 +731,13 @@ export class TripFacade {
     }
     if (modeOverridesShadowChanged) {
       this.store._tripTravelModeOverrides.update((map) => {
+        const copy = { ...map };
+        delete copy[trip.id];
+        return copy;
+      });
+    }
+    if (additionalCitiesShadowChanged) {
+      this.store._tripAdditionalCities.update((map) => {
         const copy = { ...map };
         delete copy[trip.id];
         return copy;

@@ -190,6 +190,12 @@ export class TripStore {
    */
   readonly _tripTravelModeOverrides = signal<Record<string, Record<string, TravelMode>>>({});
   /**
+   * @internal — villes additionnelles (multi-destination) par trip, séparées
+   * de `_trips` pour la même raison que `_tripTitle` ci-dessus — voir
+   * `getTripAdditionalCities`.
+   */
+  readonly _tripAdditionalCities = signal<Record<string, string[]>>({});
+  /**
    * @internal — mêmes id de trip que `_tripTitle` avec une écriture
    * Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression confirmée
    * par retour utilisateur : "toute la page se réactualise" à chaque édition
@@ -376,6 +382,7 @@ export class TripStore {
   private readonly allPoolActivitiesByTrip = new Map<string, Signal<PoolActivity[]>>();
   private readonly tripTravelTiersByTrip = new Map<string, Signal<TravelTiers>>();
   private readonly tripTravelModeOverridesByTrip = new Map<string, Signal<Record<string, TravelMode>>>();
+  private readonly tripAdditionalCitiesByTrip = new Map<string, Signal<string[]>>();
   private readonly tripTitleByTrip = new Map<string, Signal<string>>();
   private readonly tripDateRangeByTrip = new Map<string, Signal<[Date, Date] | undefined>>();
 
@@ -431,6 +438,20 @@ export class TripStore {
       );
     }
     return this.tripTravelModeOverridesByTrip.get(tripId)!;
+  }
+
+  /** Villes additionnelles (multi-destination) du trip — voir `_tripAdditionalCities` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.additionalCities` (valeur d'hydratation) puis `[]` (voyage mono-destination). */
+  getTripAdditionalCities(tripId: string): Signal<string[]> {
+    if (!this.tripAdditionalCitiesByTrip.has(tripId)) {
+      this.tripAdditionalCitiesByTrip.set(
+        tripId,
+        computed(
+          () => this._tripAdditionalCities()[tripId] ?? this._trips()[tripId]?.additionalCities ?? [],
+          { equal: (a, b) => this.structurallyEqual(a, b) },
+        ),
+      );
+    }
+    return this.tripAdditionalCitiesByTrip.get(tripId)!;
   }
 
   /** Titre du trip — voir `_tripTitle` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.title` (valeur d'hydratation) tant qu'aucun renommage n'a eu lieu. */
@@ -930,6 +951,21 @@ export class TripStore {
     this.tripPersistenceService.updateTripTravelTiers(tripId, tiers)
       .catch((err) => {
         console.error('[TripStore] Erreur update paliers trajet trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
+  }
+
+  updateTripAdditionalCities(tripId: string, cities: string[]): void {
+    if (!this._trips()[tripId]) return;
+
+    // 1. Signal dédié (voir `_tripAdditionalCities`), pas `_trips`.
+    this._tripAdditionalCities.update((map) => ({ ...map, [tripId]: cities }));
+    this.markTripFieldPending(tripId);
+
+    // 2. Persistance Firestore
+    this.tripPersistenceService.updateTripAdditionalCities(tripId, cities)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update villes additionnelles trip Firestore :', err);
       })
       .finally(() => this.clearTripFieldPending(tripId));
   }

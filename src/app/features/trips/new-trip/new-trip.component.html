@@ -95,6 +95,11 @@
           }
         </div>
 
+        <!-- Plusieurs destinations ? (ROADMAP.md "### UI" : avant le choix manuel/IA, toujours saisissable) -->
+        @if (showPlanningModeCard()) {
+          <app-multi-city-field [(cities)]="additionalCities" />
+        }
+
         <!-- Mode manuel / IA -->
         @if (showPlanningModeCard()) {
           <div class="flex flex-column gap-2">

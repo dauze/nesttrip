@@ -27,6 +27,7 @@ import {
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
 import { SelectButtonComponent } from '@app/shared/components/select-button/select-button.component';
 import { MessageComponent } from '@app/shared/components/message/message.component';
+import { MultiCityFieldComponent } from '@app/shared/components/multi-city-field/multi-city-field.component';
 import { AiTripPreferencesComponent } from './ai-trip-preferences/ai-trip-preferences.component';
 import { PLANNING_MODE_OPTIONS, PlanningMode, TripAiPreferences, createDefaultAiPreferences } from './trip-ai-preferences.model';
 import { TripGeneration } from './trip-generation.model';
@@ -39,7 +40,7 @@ import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip
   imports: [
     ReactiveFormsModule, InputTextDirective, DatePickerComponent, ButtonComponent,
     CardComponent, AutoCompleteComponent, SelectButtonComponent, AiTripPreferencesComponent,
-    MessageComponent,
+    MessageComponent, MultiCityFieldComponent,
   ],
   templateUrl: 'new-trip.component.html',
   styleUrl: 'new-trip.component.scss',
@@ -75,6 +76,8 @@ export class NewTripComponent {
   protected readonly planningModeOptions = PLANNING_MODE_OPTIONS;
   readonly planningMode = signal<PlanningMode>('manual');
   readonly aiPreferences = signal<TripAiPreferences>(createDefaultAiPreferences());
+  /** Plusieurs destinations ? (ROADMAP.md "### UI") — saisissable en mode manuel ET IA, persisté sur `Trip.additionalCities` ; en mode IA, reversé dans `TripAiPreferences.cities`/`.multiCity` à la soumission (voir `onSubmit`), la Cloud Function de génération les géocode elle-même. */
+  readonly additionalCities = signal<string[]>([]);
 
   /** `SelectButtonComponent.valueChange` type toujours `T | undefined` — en pratique toujours défini, un clic sélectionne forcément une des 2 options. */
   protected onPlanningModeChange(mode: PlanningMode | undefined): void {
@@ -300,6 +303,7 @@ export class NewTripComponent {
       ville: this.form.value.ville ?? '',
       placeId: this.form.value.placeId ?? '',
       ...(this.photoRef() ? { photoRef: this.photoRef() } : {}),
+      ...(this.additionalCities().length > 0 ? { additionalCities: this.additionalCities() } : {}),
       days: this.buildDays(dateDebut, dateFin),
       activities: [],
       dayActivityInstances: [],
@@ -356,11 +360,16 @@ export class NewTripComponent {
 
     this.tripFacade.saveTrip(trip);
 
+    const cities = this.additionalCities();
+
     const now = new Date();
     const job: TripGeneration = {
       tripId: trip.id,
       status: 'generating',
-      preferences: this.aiPreferences(),
+      // `cities`/`multiCity` du champ "plusieurs destinations ?", hoisté hors
+      // de ce panneau (ROADMAP.md "### UI") — plus édités dans
+      // AiTripPreferencesComponent, reversés ici depuis `additionalCities`.
+      preferences: { ...this.aiPreferences(), multiCity: cities.length > 0, cities },
       destination: { ville: trip.ville, placeId: trip.placeId ?? '', latitude: location.latitude, longitude: location.longitude },
       tripDayDates: trip.days.map((d) => d.id.getTime()),
       candidates: [],

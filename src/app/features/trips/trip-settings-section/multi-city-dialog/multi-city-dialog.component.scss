@@ -1,0 +1,28 @@
+// Même dimensionnement que travel-tiers-dialog.component.scss (`.app-wide-dialog-panel`, field-edit-dialogs.scss).
+:host {
+  display: block;
+}
+
+.multi-city-dialog__row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem;
+  background: var(--nt-overlay-background);
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}
+
+.multi-city-dialog__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--nt-text-color);
+}
+
+.multi-city-dialog__body {
+  padding: 1rem 0.75rem;
+}
+
+.multi-city-dialog__footer {
+  padding: 0.5rem;
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+}

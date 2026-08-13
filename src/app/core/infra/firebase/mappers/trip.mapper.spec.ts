@@ -46,6 +46,17 @@ describe('tripToFb', () => {
 
     expect(tripFb.photoRef).toBe('places/xyz/photos/abc');
   });
+
+  it('omet additionalCities quand absent ou vide', () => {
+    expect('additionalCities' in tripToFb(baseTrip())).toBe(false);
+    expect('additionalCities' in tripToFb({ ...baseTrip(), additionalCities: [] })).toBe(false);
+  });
+
+  it('conserve additionalCities quand présent', () => {
+    const tripFb = tripToFb({ ...baseTrip(), additionalCities: ['Lyon', 'Marseille'] });
+
+    expect(tripFb.additionalCities).toEqual(['Lyon', 'Marseille']);
+  });
 });
 
 describe('tripFromFb', () => {
