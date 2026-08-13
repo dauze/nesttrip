@@ -19,7 +19,7 @@
         [attr.aria-expanded]="!collapsed()"
         aria-label="Afficher/masquer"
         (click)="toggle()">
-        <i class="app-panel__chevron"></i>
+        <i class="pi" [class.pi-plus]="collapsed()" [class.pi-minus]="!collapsed()"></i>
       </button>
     }
   </div>
