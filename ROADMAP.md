@@ -58,7 +58,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### UX / Interactions
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
-- Rajouter les transports en commun comme moyen de transports
  
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)
