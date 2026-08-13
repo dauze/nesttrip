@@ -50,10 +50,22 @@
   }
 }
 
+// Badge plein (carré arrondi) + flèche coudée blanche — référence visuelle
+// fournie par l'utilisateur (retour utilisateur 2026-08-13, 2e passe) : mon
+// 1er essai (pointillé + pin, trait fin) ne correspondait pas à ce qui était
+// demandé.
 .day-distance-gap-chip__route-icon {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 1.1rem;
+  height: 1.1rem;
   flex: none;
+}
+
+.day-distance-gap-chip__route-icon-bg {
+  fill: var(--nt-primary-color);
+}
+
+.day-distance-gap-chip__route-icon-arrow {
+  stroke: var(--nt-primary-contrast-color);
 }
 
 .day-distance-gap-rail__transport-cta {

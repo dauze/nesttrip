@@ -27,8 +27,8 @@
 <div
   #content
   class="app-panel__content"
-  [class.app-panel__content--instant]="instant() || dragProgress() !== null"
-  [style.max-height]="dragProgress() !== null ? dragMaxHeightPx() + 'px' : (collapsed() ? '0px' : (maxHeightPx() ? maxHeightPx() + 'px' : 'none'))">
+  [class.app-panel__content--instant]="instant() || dragPullPx() !== null"
+  [style.max-height]="dragPullPx() !== null ? dragMaxHeightPx() + 'px' : (collapsed() ? '0px' : (maxHeightPx() ? maxHeightPx() + 'px' : 'none'))">
   <div class="app-panel__content-inner">
     <ng-content />
   </div>

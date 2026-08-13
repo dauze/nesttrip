@@ -43,6 +43,36 @@
   min-height: 0;
 }
 
+// Le composant OUVERT par `DialogService.open()` (`ExpensesTableDialogComponent`,
+// `ConfirmDialogComponent`, `CollaboratorsDialogComponent`, `TimePickerClockComponent`...)
+// est le fils DIRECT de `cdk-dialog-container` ci-dessus — sélecteur global
+// (pas de `::ng-deep`/spécifique à un composant) car SEULE une règle globale
+// peut atteindre CET élément précis quel que soit le composant ouvert : son
+// host porte l'attribut `_ngcontent-*` de CE composant précis, jamais celui
+// d'un autre. Même correctif que `dialog-frame.component.scss`/
+// `field-edit-dialogs.scss` (tiroirs "champ dédié"), UN CRAN AU-DESSUS :
+// tant que CE niveau (`:host { display:block }` par défaut, aucun composant
+// ouvert via `app-dialog-frame` ne redéfinit son propre host) restait un
+// simple bloc sans `min-height:0`/`flex:1 1 auto`, la chaîne de rétrécissement
+// flex s'arrêtait NET ici, avant même d'atteindre `<app-dialog-frame>` (déjà
+// corrigé, lui, mais insuffisant seul) — un contenu plus long que l'écran
+// débordait donc toujours silencieusement, coupé par l'`overflow:hidden` du
+// panneau SANS jamais faire apparaître le moindre ascenseur (retour
+// utilisateur persistant malgré le 1er correctif, ROADMAP.md).
+// Spécificité (2 classes + 1 type + 1 universel) volontairement plus élevée
+// que n'importe quel `:host {...}` scopé (1 attribut, donc 1 seule classe de
+// spécificité) : gagne systématiquement même sur un composant qui redéfinirait
+// SON PROPRE `display`/`flex-direction` (aucun effet de bord réel, les
+// valeurs pilotées ici sont déjà celles qu'un tel composant voudrait de toute
+// façon pour s'insérer correctement dans cette chaîne).
+.cdk-overlay-pane.app-dialog-panel > cdk-dialog-container > * {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
 // Centre le panneau dans l'espace RÉELLEMENT visible plutôt que la pleine
 // hauteur d'écran (défaut CDK) : `--nt-visual-viewport-height` (voir
 // VisualViewportService) suit l'ouverture du clavier virtuel mobile, ce que

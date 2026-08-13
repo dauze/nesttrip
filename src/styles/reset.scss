@@ -24,6 +24,21 @@
 // focus voulu.
 html {
   -webkit-tap-highlight-color: transparent;
+  // Neutralise le "tirer pour actualiser" NATIF du navigateur (partout,
+  // accueil/nouveau voyage ET trip-detail) au profit du geste custom
+  // (`PullToRefreshDirective`, animation façon Google) — retour utilisateur
+  // explicite : "j'ai que le refresh de Google" (le natif gagnait
+  // systématiquement la course face au JS, `preventDefault()` sur les
+  // pointer events ne suffit pas à lui seul à l'empêcher). Une décision
+  // ANTÉRIEURE (voir plus bas, `html.trip-detail-active`) avait justement
+  // évité de rendre `<html>` non-scrollable pour PRÉSERVER ce geste natif
+  // sur trip-detail, faute d'alternative custom à l'époque — ce correctif la
+  // renverse maintenant qu'une vraie alternative existe partout.
+  // `contain` (pas `none`) : bloque uniquement le CHAÎNAGE vers le
+  // comportement natif du navigateur une fois `<html>` à sa limite de
+  // scroll, sans supprimer le rebond visuel local (iOS) que "none" aurait
+  // aussi désactivé.
+  overscroll-behavior-y: contain;
 }
 
 :root {

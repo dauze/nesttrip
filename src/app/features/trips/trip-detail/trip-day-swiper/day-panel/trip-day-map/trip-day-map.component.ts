@@ -13,10 +13,16 @@ import { haversineDistanceMeters } from '@app/shared/utils/geo.util';
 /** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
 const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
 
-/** Distance de tirage (px) pour une ouverture complète de la carte (voir `onGrabberPointerMove`) — au-delà, la prévisualisation reste plafonnée à 100%. */
-const DRAG_OPEN_DISTANCE_PX = 130;
-/** Fraction de tirage minimale au relâchement pour VALIDER l'ouverture (sinon la carte se referme, voir `onGrabberPointerUp`) — cohérent avec les seuils "geste vs tap" déjà utilisés ailleurs (`LongPressDirective`), mais exprimé en fraction plutôt qu'en px puisque la distance totale dépend de la hauteur réelle de la carte. */
-const DRAG_OPEN_COMMIT_THRESHOLD = 0.35;
+/**
+ * Tirage minimal (px) au relâchement pour VALIDER une bascule (ouverture
+ * DEPUIS repliée, fermeture DEPUIS dépliée) — sinon la carte revient à son
+ * état de départ. Seuil FIXE (pas une fraction de la hauteur du contenu,
+ * ancienne approche) : la carte suit le doigt AU PIXEL PRÈS
+ * (`PanelComponent.dragPullPx`), donc rien à faire dépendre de sa hauteur
+ * réelle ici — cohérent avec les seuils "geste vs tap" déjà utilisés
+ * ailleurs (`LongPressDirective`).
+ */
+const DRAG_COMMIT_PX = 60;
 
 @Component({
   selector: 'app-trip-day-map',
@@ -76,20 +82,26 @@ export class TripDayMapComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   /**
-   * Geste de tirage vers le bas sur `.map-panel__grabber` (footer togglable,
-   * voir trip-day-map.component.html) — en plus du clic déjà géré par
-   * `PanelComponent.toggle()`, ouvre la carte en suivant le doigt (retour
-   * utilisateur, ROADMAP.md). N'ouvre QUE (jamais ne referme par tirage,
-   * "vers le bas" — le clic reste seul responsable de la fermeture) et
-   * uniquement quand actuellement repliée (`onGrabberPointerDown`).
-   * `dragOpenProgress` (0-1, `null` = pas de drag en cours) pilote
-   * `PanelComponent.dragProgress` : ce composant ne mesure jamais lui-même la
-   * hauteur du contenu, seul `PanelComponent` (propriétaire de `#content`)
-   * sait le faire — voir sa doc.
+   * Geste de tirage BIDIRECTIONNEL sur `.map-panel__grabber` (footer
+   * togglable, voir trip-day-map.component.html) — en plus du clic déjà géré
+   * par `PanelComponent.toggle()` : tirer vers le BAS ouvre la carte repliée
+   * en suivant le doigt, tirer vers le HAUT referme la carte dépliée, tout
+   * aussi symétriquement (retour utilisateur explicite : le geste de
+   * fermeture manquait à la 1ère version, "vers le bas" uniquement).
+   * `dragPullPx` (delta signé en px depuis le point de départ, `null` = pas
+   * de drag en cours) pilote directement `PanelComponent.dragPullPx` : ce
+   * composant ne mesure jamais lui-même la hauteur du contenu ni ne clampe
+   * quoi que ce soit selon le sens, seul `PanelComponent` (propriétaire de
+   * `#content`, connaît l'état de départ ET la hauteur réelle) sait le
+   * faire — voir sa doc. Track AU PIXEL PRÈS (pas de mapping distance
+   * arbitraire -> fraction, ancienne approche qui faisait glisser le
+   * panneau plus vite que le doigt — retour utilisateur).
    */
-  protected readonly dragOpenProgress = signal<number | null>(null);
+  protected readonly dragPullPx = signal<number | null>(null);
   private dragPointerId: number | null = null;
   private dragStartY = 0;
+  /** État de la carte AU DÉBUT du geste courant — détermine quel sens (ouverture ou fermeture) peut être validé au relâchement, voir `onGrabberPointerUp`. Stable pendant tout le geste : `collapsed` lui-même ne change qu'au commit, jamais en cours de route. */
+  private collapsedAtDragStart = false;
   /** Vrai dès que le tirage a dépassé un mouvement négligeable — sert à avaler le `click` de fin de geste (voir `onGrabberClickCapture`) pour ne pas déclencher EN PLUS le toggle normal du bouton footer. */
   private dragMoved = false;
   private readonly grabberFooter = viewChild<ElementRef<HTMLElement>>('grabberFooter');
@@ -122,38 +134,43 @@ export class TripDayMapComponent {
     this.setupMapEffects();
   }
 
-  /** Démarre le suivi UNIQUEMENT si la carte est actuellement repliée — dépliée, la poignée garde son comportement de clic normal (`PanelComponent.toggle()`), aucun tirage dédié à la fermeture ici (voir la doc du champ). */
+  /** Démarre le suivi dans TOUS les cas (repliée OU dépliée) — le sens qui compte au relâchement dépend de l'état capturé ici, voir `onGrabberPointerUp`. */
   protected onGrabberPointerDown(event: PointerEvent): void {
-    if (!this.collapsed()) return;
     this.dragPointerId = event.pointerId;
     this.dragStartY = event.clientY;
     this.dragMoved = false;
-    this.dragOpenProgress.set(0);
+    this.collapsedAtDragStart = this.collapsed();
+    this.dragPullPx.set(0);
   }
 
   private readonly onGrabberPointerMove = (event: PointerEvent): void => {
     if (event.pointerId !== this.dragPointerId) return;
     const delta = event.clientY - this.dragStartY;
-    if (delta <= 0) {
-      // Remonte au-dessus du point de départ : pas de tirage vers le haut ici, la prévisualisation reste fermée.
-      this.dragOpenProgress.set(0);
-      return;
-    }
-    if (delta > 4) this.dragMoved = true;
-    this.dragOpenProgress.set(Math.min(1, delta / DRAG_OPEN_DISTANCE_PX));
+    if (Math.abs(delta) > 4) this.dragMoved = true;
+    // Delta BRUT, signé, sans clamp ici : `PanelComponent.dragPullPx` fait
+    // déjà tout le travail de bornage selon l'état de départ (voir sa doc)
+    // — un delta "dans le mauvais sens" (tirer vers le haut alors que
+    // repliée, ou vers le bas alors que dépliée) y est simplement absorbé
+    // sans effet visuel, pas besoin de le filtrer nous-mêmes ici.
+    this.dragPullPx.set(delta);
   };
 
   private readonly onGrabberPointerUp = (event: PointerEvent): void => {
     if (event.pointerId !== this.dragPointerId) return;
-    const progress = this.dragOpenProgress() ?? 0;
+    const delta = this.dragPullPx() ?? 0;
     this.dragPointerId = null;
     // Repasse à `null` (pas de valeur figée) : `PanelComponent` reprend la
     // main via `collapsed()` et sa propre transition CSS anime le reste du
-    // trajet (ouverture validée) ou le retour à 0 (annulée) — voir sa doc.
-    this.dragOpenProgress.set(null);
-    if (progress >= DRAG_OPEN_COMMIT_THRESHOLD) {
+    // trajet (bascule validée) ou le retour à l'état de départ (annulée) —
+    // voir sa doc.
+    this.dragPullPx.set(null);
+
+    if (this.collapsedAtDragStart && delta >= DRAG_COMMIT_PX) {
       this.collapsed.set(false);
       this.onCollapsedToggled({ collapsed: false });
+    } else if (!this.collapsedAtDragStart && delta <= -DRAG_COMMIT_PX) {
+      this.collapsed.set(true);
+      this.onCollapsedToggled({ collapsed: true });
     }
   };
 
