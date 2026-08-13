@@ -47,14 +47,18 @@
 
 // Repas : PrimeIcons n'a aucun glyphe assiette/couverts (même raison que le
 // train ci-dessus, voir ROADMAP.md "### UI") — remplace l'ancien `pi pi-star`
-// (sans rapport visuel avec le type) sur `ActivityType.REPAS`.
+// (sans rapport visuel avec le type) sur `ActivityType.REPAS`. Fourchette et
+// couteau PARALLÈLES de part et d'autre d'une assiette (cercle) centrale —
+// pas le pictogramme "couverts croisés en X" utilisé dans une 1re version
+// (retour utilisateur 2026-08-13, "je les veut parallèle avec une assiette
+// au milieu").
 .nt-icon-meal {
   display: inline-block;
   width: 1em;
   height: 1em;
   vertical-align: -0.125em;
   background-color: currentColor;
-  $nt-icon-meal-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.1 13.34l2.83-2.83L3.91 3.5a4.008 4.008 0 0 0 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z'/%3E%3C/svg%3E");
+  $nt-icon-meal-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3V8M4.6 3V8M6.2 3V8M3 8H6.2M4.6 8V21' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='5.2' fill='none' stroke='black' stroke-width='1.5'/%3E%3Cpath d='M17.6 3h3.6l-1 8.5h-1.6z' fill='black'/%3E%3Cpath d='M19.4 11.5v9.5' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   mask-image: $nt-icon-meal-svg;
   mask-repeat: no-repeat;
   mask-position: center;

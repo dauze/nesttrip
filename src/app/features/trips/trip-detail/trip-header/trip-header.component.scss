@@ -16,9 +16,14 @@
 // Icône décorative (voir la doc du composant) : purement visuelle, aucun
 // `(click)` propre — c'est le `(click)` sur `.trip-header__row` (bubbling)
 // qui ouvre le menu, quel que soit l'endroit cliqué dans la carte.
+// "En gras" (retour utilisateur 2026-08-13) : PrimeIcons est une police à
+// graisse UNIQUE, `font-weight` seul y est sans effet — `-webkit-text-stroke`
+// simule l'épaississement en traçant un contour de la même couleur que le
+// glyphe par-dessus son remplissage.
 .trip-header__settings-icon {
   color: var(--nt-text-muted-color);
   font-size: 1rem;
+  -webkit-text-stroke: 0.035em currentColor;
 }
 
 // Même style que `.app-menu-panel__group-label` (menu.component.scss) :

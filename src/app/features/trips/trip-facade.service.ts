@@ -109,6 +109,10 @@ export class TripFacade {
     this.store.updateTripAdditionalCities(tripId, cities);
   }
 
+  updateTripDestination(tripId: string, destination: { ville: string; placeId: string; photoRef?: string }): void {
+    this.store.updateTripDestination(tripId, destination);
+  }
+
   setTravelModeOverride(tripId: string, placePairKey: string, mode: TravelMode | null): void {
     this.store.setTravelModeOverride(tripId, placePairKey, mode);
   }
@@ -248,6 +252,8 @@ export class TripFacade {
   getTravelModeOverrides = this.store.getTravelModeOverrides.bind(this.store);
   /** Villes additionnelles (multi-destination) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripAdditionalCities). */
   getTripAdditionalCities = this.store.getTripAdditionalCities.bind(this.store);
+  /** Destination principale (ville/placeId/photoRef) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripDestination). */
+  getTripDestination = this.store.getTripDestination.bind(this.store);
   /** Titre du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore._tripTitle). */
   getTripTitle = this.store.getTripTitle.bind(this.store);
   /** Plage de dates (1er jour, dernier jour) du trip — signal dédié, indépendant de `activeTrip()` (voir TripStore.getTripDateRange). */
@@ -633,29 +639,34 @@ export class TripFacade {
     const currentTripTiersShadow = this.store._tripTravelTiers()[trip.id];
     const currentTripModeOverridesShadow = this.store._tripTravelModeOverrides()[trip.id];
     const currentTripAdditionalCitiesShadow = this.store._tripAdditionalCities()[trip.id];
+    const currentTripDestinationShadow = this.store._tripDestination()[trip.id];
 
     let primitivesChanged = false;
     let titleShadowChanged = false;
     let tiersShadowChanged = false;
     let modeOverridesShadowChanged = false;
     let additionalCitiesShadowChanged = false;
+    let destinationShadowChanged = false;
 
     if (!isTripFieldPending && currentTrip) {
       const effectiveTitle = currentTripTitleShadow ?? currentTrip.title;
       const effectiveTiers = currentTripTiersShadow ?? currentTrip.travelTiers;
       const effectiveModeOverrides = currentTripModeOverridesShadow ?? currentTrip.travelModeOverrides;
       const effectiveAdditionalCities = currentTripAdditionalCitiesShadow ?? currentTrip.additionalCities;
+      const effectiveDestination = currentTripDestinationShadow ?? { ville: currentTrip.ville, placeId: currentTrip.placeId, photoRef: currentTrip.photoRef };
       const titleReallyChanged = effectiveTitle !== trip.title;
       // Objet (pas primitif) : comparaison structurelle, comme `structurallyEqual` côté TripStore.
       const tiersReallyChanged = JSON.stringify(effectiveTiers) !== JSON.stringify(trip.travelTiers);
       const modeOverridesReallyChanged = JSON.stringify(effectiveModeOverrides) !== JSON.stringify(trip.travelModeOverrides);
       const additionalCitiesReallyChanged = JSON.stringify(effectiveAdditionalCities) !== JSON.stringify(trip.additionalCities);
+      const destinationReallyChanged = JSON.stringify(effectiveDestination) !== JSON.stringify({ ville: trip.ville, placeId: trip.placeId, photoRef: trip.photoRef });
 
       primitivesChanged =
         titleReallyChanged ||
         tiersReallyChanged ||
         modeOverridesReallyChanged ||
         additionalCitiesReallyChanged ||
+        destinationReallyChanged ||
         currentTrip.ville !== trip.ville ||
         currentTrip.ownerId !== trip.ownerId ||
         currentTrip.placeId !== trip.placeId;
@@ -664,6 +675,7 @@ export class TripFacade {
       tiersShadowChanged = tiersReallyChanged && currentTripTiersShadow !== undefined;
       modeOverridesShadowChanged = modeOverridesReallyChanged && currentTripModeOverridesShadow !== undefined;
       additionalCitiesShadowChanged = additionalCitiesReallyChanged && currentTripAdditionalCitiesShadow !== undefined;
+      destinationShadowChanged = destinationReallyChanged && currentTripDestinationShadow !== undefined;
     }
 
     // À PARTIR D'ICI : chaque écriture de signal est CONDITIONNELLE, comparée
@@ -703,6 +715,7 @@ export class TripFacade {
           ville: trip.ville,
           ownerId: trip.ownerId,
           placeId: trip.placeId,
+          photoRef: trip.photoRef,
           travelTiers: trip.travelTiers,
           travelModeOverrides: trip.travelModeOverrides,
           additionalCities: trip.additionalCities,
@@ -738,6 +751,13 @@ export class TripFacade {
     }
     if (additionalCitiesShadowChanged) {
       this.store._tripAdditionalCities.update((map) => {
+        const copy = { ...map };
+        delete copy[trip.id];
+        return copy;
+      });
+    }
+    if (destinationShadowChanged) {
+      this.store._tripDestination.update((map) => {
         const copy = { ...map };
         delete copy[trip.id];
         return copy;

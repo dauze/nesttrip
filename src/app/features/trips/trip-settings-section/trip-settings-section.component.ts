@@ -3,14 +3,20 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DialogRef } from '@angular/cdk/dialog';
 import { format } from 'date-fns';
-import { finalize } from 'rxjs';
+import { filter, finalize, take } from 'rxjs';
 import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
+import { GooglePlaceService } from '@app/core/services/google-place.service';
 import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+import {
+  TitleEditDialogComponent,
+  TitleEditDialogData,
+  TitleEditDialogResult,
+} from '@app/shared/components/activity-card/activity-header/title-edit-dialog/title-edit-dialog.component';
 import {
   TravelTiersDialogComponent,
   TravelTiersDialogData,
@@ -60,12 +66,14 @@ export class TripSettingsSectionComponent {
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly authService = inject(AuthService);
   private readonly userProfileService = inject(UserProfileService);
+  private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly router = inject(Router);
   protected readonly tripFacade = inject(TripFacade);
 
   readonly tripId = input.required<string>();
 
   protected readonly title = computed(() => this.tripFacade.getTripTitle(this.tripId())());
+  protected readonly destination = computed(() => this.tripFacade.getTripDestination(this.tripId())());
   protected readonly dateRange = computed(() => this.tripFacade.getTripDateRange(this.tripId())());
   protected readonly tiers = computed(() => this.tripFacade.getTripTravelTiers(this.tripId())());
   protected readonly additionalCities = computed(() => this.tripFacade.getTripAdditionalCities(this.tripId())());
@@ -142,6 +150,48 @@ export class TripSettingsSectionComponent {
       if (!trimmed || trimmed === this.title()) return;
       this.tripFacade.updateTripTitle(this.tripId(), trimmed);
     });
+  }
+
+  /**
+   * Changer la destination PRINCIPALE (`Trip.ville`/`placeId`/`photoRef`,
+   * ROADMAP.md "### UI" — retour utilisateur 2026-08-13 : "il faut la
+   * modification de la destination principale"). Réutilise
+   * `TitleEditDialogComponent` (recherche Google + texte libre) exactement
+   * comme `MultiCityFieldComponent.onCityTriggerClick` — seul le résultat
+   * `type === 'place'` est exploitable ici : la destination principale a
+   * BESOIN d'un `placeId` réel (photo de couverture, carte du jour sans
+   * activité, voir `TripDayMapComponent`), contrairement au texte libre
+   * accepté pour une ville additionnelle (simple string affiché à l'IA).
+   */
+  protected async openDestinationDialog(): Promise<void> {
+    const dialogRef = this.dialogService.open<TitleEditDialogResult | undefined, TitleEditDialogData>(
+      TitleEditDialogComponent,
+      {
+        data: { initialTitle: '', title: 'Destination principale', placeholder: 'Rechercher une ville...' },
+        panelClass: 'app-wide-dialog-panel',
+        viewContainerRef: this.viewContainerRef,
+        autoFocus: '.title-edit-dialog__input',
+      },
+    );
+    const result = await new Promise<TitleEditDialogResult | undefined>((resolve) => {
+      const sub = dialogRef.closed.subscribe((value) => {
+        sub.unsubscribe();
+        resolve(value);
+      });
+    });
+    if (!result || result.type !== 'place') return;
+
+    const place = result.place;
+    this.googlePlaceService.getPlacePhotos$(place.placeId)
+      .pipe(
+        // On attend un état terminal (succès ou erreur), jamais "loading"/"idle" — même pattern que NewTripComponent.onSelect.
+        filter((state) => state.status === 'success' || state.status === 'error'),
+        take(1),
+      )
+      .subscribe((state) => {
+        const photoRef = state.status === 'success' ? state.data?.photos?.[0]?.name : undefined;
+        this.tripFacade.updateTripDestination(this.tripId(), { ville: place.name, placeId: place.placeId, photoRef });
+      });
   }
 
   protected openDatePicker(): void {

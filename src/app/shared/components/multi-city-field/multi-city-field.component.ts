@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ViewContainerRef, afterNextRender, computed, inject, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewContainerRef, afterNextRender, computed, inject, input, model, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
@@ -40,7 +40,20 @@ export class MultiCityFieldComponent {
 
   readonly cities = model.required<string[]>();
 
-  /** Dépli initial : ouvert d'emblée si des villes sont déjà présentes (contexte édition) — posé une seule fois via `afterNextRender` (voir constructeur), pas en initialiseur de champ ni en constructeur direct (`cities` est un `model.required`, pas encore garanti résolu à ce stade, voir NG8118). */
+  /**
+   * `false` dans `MultiCityDialogComponent` (settings d'un trip existant,
+   * ROADMAP.md "### UI" — retour utilisateur 2026-08-13 : "pour les
+   * [destinations] additionnel[les], ne pas passer par la checkbox, si il a
+   * cliqué dessus c'est qu'il veut en rajouter") : l'utilisateur a déjà
+   * explicitement ouvert ce dialogue POUR gérer les destinations
+   * additionnelles, la case "Plusieurs destinations ?" (utile à la création
+   * d'un trip, où la plupart des voyages n'en ont aucune, voir `NewTripComponent`)
+   * n'y a donc plus lieu d'être — la zone d'ajout est alors TOUJOURS dépliée,
+   * sans geste intermédiaire.
+   */
+  readonly showToggle = input(true);
+
+  /** Dépli initial : ouvert d'emblée si des villes sont déjà présentes (contexte édition) — posé une seule fois via `afterNextRender` (voir constructeur), pas en initialiseur de champ ni en constructeur direct (`cities` est un `model.required`, pas encore garanti résolu à ce stade, voir NG8118). Sans objet si `showToggle` est `false` (toujours déplié, voir template). */
   protected readonly expanded = signal(false);
 
   private readonly citySearchTerm = signal('');

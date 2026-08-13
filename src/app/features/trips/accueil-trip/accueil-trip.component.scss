@@ -11,11 +11,34 @@ app-card.accueil-panel {
 // Tuiles trip individuelles : blanches (défaut `--nt-content-background`,
 // plus d'override vers `--nt-content-inset-background` — l'ancienne teinte
 // se confondait avec le fond de page, ROADMAP.md "### UI") + un box-shadow
-// plus marqué que le défaut `app-card` (`--nt-shadow-xs`, à peine
-// perceptible) pour qu'elles se détachent nettement du panel plus foncé
-// qui les contient.
+// nettement plus marqué que le défaut `app-card` (`--nt-shadow-xs`, à peine
+// perceptible) pour qu'elles se détachent du panel plus foncé qui les
+// contient (retour utilisateur du 2026-08-13 : `--nt-shadow-sm` restait trop
+// discret, `--nt-shadow-md` un cran au-dessus).
+//
+// `overflow: hidden` : fait respecter le rayon de la carte à TOUT son
+// contenu, y compris la photo bord-à-bord (`.trip-select-row__thumb`) — plus
+// fiable qu'un `border-radius` dupliqué sur la photo elle-même (qui devrait
+// alors matcher EXACTEMENT le rayon de la carte à chaque changement de
+// jeton) : le clip par l'ancêtre garantit un raccord toujours parfait, seule
+// source de vérité `--nt-content-border-radius` posée une fois sur la carte
+// (`card.component.scss`).
+//
+// `.app-card__body { padding: 0 }` : la photo doit toucher les bords
+// haut/bas/gauche de la carte (ROADMAP.md "### UI", "supprimer le padding
+// entre la photo et les bords") — remplace le padding par défaut d'`app-card`
+// (0.5rem, card.component.scss) par un espacement posé directement sur
+// `.trip-select-row` (marges ciblées, voir plus bas) plutôt qu'une marge
+// négative sur un enfant profondément imbriqué (fragile : constaté ne pas
+// bien se propager à travers `align-self: stretch` sur plusieurs niveaux de
+// flex imbriqués, cause probable du bug initial).
 app-card.card {
-  box-shadow: var(--nt-shadow-sm);
+  overflow: hidden;
+  box-shadow: var(--nt-shadow-md);
+
+  .app-card__body {
+    padding: 0;
+  }
 }
 
 // Couleur de sélection primary plutôt que rouge (ROADMAP.md "### UI", "ce
@@ -33,36 +56,77 @@ app-card.card {
   background-color: color-mix(in srgb, var(--nt-primary-color) 7%, transparent);
 }
 
-// Photo bord-à-bord (ROADMAP.md "### UI", "supprimer le padding entre la
-// photo et les bords") : marges négatives annulant le padding du corps de
-// la carte (`app-card__body`, 0.5rem, card.component.scss) sur les 3 côtés
-// SAUF la droite (qui continue vers le texte, avec son gap normal) +
-// `align-self: stretch` pour occuper toute la hauteur réelle de la rangée
-// (pas seulement les 4rem fixes) et vraiment toucher le haut/bas de la
-// carte, quelle que soit sa hauteur. Coins arrondis UNIQUEMENT à gauche
-// (ceux qui touchent réellement le bord arrondi de la carte) — à droite,
-// coin carré (bord "intérieur", contre le texte) : sans quoi une valeur de
-// border-radius symétrique laisserait deviner un coin arrondi flottant au
-// milieu de la carte, sans rapport avec son propre contour.
-.trip-select-row__thumb {
-  width: 4rem;
-  // `min-height` (pas `height`) : garde le gabarit actuel de 4rem comme
-  // PLANCHER (aucune régression si la rangée ne grandit jamais au-delà),
-  // `align-self: stretch` grandit au-delà si la rangée est un jour plus
-  // haute (ex. titre sur 2 lignes) — sans dépendre d'un changement de
-  // `align-items` sur `.trip-select-row__title` (utilitaire PrimeFlex
-  // `!important`, pas la peine de le combattre).
+// Une seule rangée flex à plat (checkbox / photo / infos / flèche, tous
+// enfants DIRECTS) — plus de `<span>` intermédiaire autour de photo+infos+
+// flèche (ancienne structure) : un `align-self: stretch` posé sur un enfant
+// imbriqué à 2 niveaux dépend de la hauteur du niveau intermédiaire, qui
+// elle-même dépendait d'un `min-height` sur un enfant PLUS profond pour se
+// dimensionner correctement — comportement de calcul de hauteur non fiable
+// entre navigateurs (cause probable du bug initial, photo ne bord-à-bord
+// nulle part). En restant à un seul niveau, `align-self: stretch` sur la
+// photo (ci-dessous) se réfère directement à CETTE rangée, dont la hauteur
+// réelle est simplement le max de ses enfants (photo `min-height: 4rem` +
+// tous les autres, `align-self: center`) — plus aucune ambiguïté.
+//
+// `gap` (pas de padding sur la rangée elle-même) : l'espacement entre
+// checkbox/photo/infos/flèche vient uniquement du `gap`, qui ne s'applique
+// jamais autour d'un enfant `display: none` (checkbox masquée sur mobile,
+// voir selection-mode.scss) — contrairement à un `padding`/`margin` fixe,
+// ça ne laisserait donc jamais un vide résiduel avant la photo quand la
+// checkbox est cachée.
+.trip-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   min-height: 4rem;
-  align-self: stretch;
-  object-fit: cover;
-  margin: -0.5rem 0 -0.5rem -0.5rem;
-  border-radius: var(--nt-content-border-radius) 0 0 var(--nt-content-border-radius);
+  cursor: pointer;
 }
 
 .trip-select-row:focus,
 .trip-select-row:focus-visible {
-  .trip-select-row__title,
+  .trip-select-row__body,
   .trip-select-row__arrow {
     color: var(--nt-primary-color);
   }
+}
+
+.trip-select-row__checkbox {
+  flex-shrink: 0;
+  // Seul inset explicite du bord GAUCHE réel de la carte (le padding par
+  // défaut d'`app-card__body` est retiré ci-dessus) — pertinent seulement
+  // quand la checkbox est effectivement affichée (PC, toujours visible).
+  margin-left: 0.5rem;
+}
+
+// Photo bord-à-bord (ROADMAP.md "### UI", "supprimer le padding entre la
+// photo et les bords") : AUCUNE marge (touche directement le bord gauche/
+// haut/bas réel de la carte, padding d'`app-card__body` déjà retiré
+// ci-dessus) + `align-self: stretch` pour occuper toute la hauteur réelle de
+// la rangée (`min-height: 4rem` du parent comme plancher, davantage si la
+// rangée grandit — ex. titre sur 2 lignes). Coin arrondi géré par
+// `overflow: hidden` sur la carte elle-même (voir plus haut), pas ici — la
+// photo n'a donc besoin d'aucun `border-radius` propre.
+.trip-select-row__thumb {
+  flex-shrink: 0;
+  width: 4rem;
+  align-self: stretch;
+  object-fit: cover;
+}
+
+.trip-select-row__thumb--placeholder {
+  background: var(--nt-surface-100);
+}
+
+.trip-select-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.125rem;
+}
+
+// Dernier enfant de la rangée : seul inset explicite du bord DROIT réel de
+// la carte (le `gap` de `.trip-select-row` suffit à espacer les enfants
+// intermédiaires entre eux).
+.trip-select-row__arrow {
+  flex-shrink: 0;
+  margin-right: 0.5rem;
 }

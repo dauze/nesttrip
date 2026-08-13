@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, deleteField, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { FirebaseService } from '../../firebase.service';
 import { Trip, TravelTiers } from '@app/features/trips/trip.model';
 import { tripToFb } from '@core/infra/firebase/mappers/trip.mapper';
@@ -27,6 +27,15 @@ export class TripPersistenceService {
 
   updateTripAdditionalCities(tripId: string, cities: string[]): Promise<void> {
     return updateDoc(doc(this.db, 'trips', tripId), { additionalCities: cities });
+  }
+
+  /** `photoRef` explicitement effacé (`deleteField()`, jamais `undefined` — Firestore le rejette) quand la nouvelle destination n'a retrouvé aucune photo : une ancienne vignette sans rapport avec la nouvelle destination ne doit pas rester. */
+  updateTripDestination(tripId: string, destination: { ville: string; placeId: string; photoRef?: string }): Promise<void> {
+    return updateDoc(doc(this.db, 'trips', tripId), {
+      ville: destination.ville,
+      placeId: destination.placeId,
+      photoRef: destination.photoRef ?? deleteField(),
+    });
   }
 
   removeTrip(tripId: string): Promise<void> {

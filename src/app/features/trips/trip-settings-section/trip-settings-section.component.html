@@ -38,6 +38,14 @@
     </span>
   </button>
 
+  <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openDestinationDialog()">
+    <i class="pi pi-flag-fill trip-settings-row__icon" aria-hidden="true"></i>
+    <span class="trip-settings-row__body flex flex-column">
+      <span class="trip-settings-row__label">Destination principale</span>
+      <span class="trip-settings-row__value">{{ destination().ville }}</span>
+    </span>
+  </button>
+
   <button type="button" class="trip-settings-row flex align-items-center gap-2 w-full" (click)="openMultiCityDialog()">
     <i class="pi pi-map-marker trip-settings-row__icon" aria-hidden="true"></i>
     <span class="trip-settings-row__body flex flex-column">

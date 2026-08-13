@@ -196,6 +196,17 @@ export class TripStore {
    */
   readonly _tripAdditionalCities = signal<Record<string, string[]>>({});
   /**
+   * @internal — destination PRINCIPALE (ville/placeId/photoRef) du trip,
+   * séparée de `_trips` pour la même raison que `_tripTitle` ci-dessus — voir
+   * `getTripDestination`. Retour utilisateur (ROADMAP.md "### UI", 2026-08-13
+   * : "il faut la modification de la destination principale") : contrairement
+   * à `additionalCities` (simples strings, aucune identité Google), changer
+   * la destination principale change aussi `placeId`/`photoRef` (nouvelle
+   * photo de couverture) — les 3 champs sont donc groupés dans UN seul objet
+   * shadow, toujours écrits ensemble par `updateTripDestination`.
+   */
+  readonly _tripDestination = signal<Record<string, { ville: string; placeId: string; photoRef?: string }>>({});
+  /**
    * @internal — mêmes id de trip que `_tripTitle` avec une écriture
    * Firestore encore en vol (ROADMAP.md "Bugs / fixes", régression confirmée
    * par retour utilisateur : "toute la page se réactualise" à chaque édition
@@ -383,6 +394,7 @@ export class TripStore {
   private readonly tripTravelTiersByTrip = new Map<string, Signal<TravelTiers>>();
   private readonly tripTravelModeOverridesByTrip = new Map<string, Signal<Record<string, TravelMode>>>();
   private readonly tripAdditionalCitiesByTrip = new Map<string, Signal<string[]>>();
+  private readonly tripDestinationByTrip = new Map<string, Signal<{ ville: string; placeId: string; photoRef?: string }>>();
   private readonly tripTitleByTrip = new Map<string, Signal<string>>();
   private readonly tripDateRangeByTrip = new Map<string, Signal<[Date, Date] | undefined>>();
 
@@ -452,6 +464,26 @@ export class TripStore {
       );
     }
     return this.tripAdditionalCitiesByTrip.get(tripId)!;
+  }
+
+  /** Destination principale (ville/placeId/photoRef) du trip — voir `_tripDestination` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur les champs `Trip` (valeur d'hydratation) tant qu'aucun changement n'a eu lieu. */
+  getTripDestination(tripId: string): Signal<{ ville: string; placeId: string; photoRef?: string }> {
+    if (!this.tripDestinationByTrip.has(tripId)) {
+      this.tripDestinationByTrip.set(
+        tripId,
+        computed(
+          () => {
+            const trip = this._trips()[tripId];
+            return (
+              this._tripDestination()[tripId] ??
+              { ville: trip?.ville ?? '', placeId: trip?.placeId ?? '', ...(trip?.photoRef ? { photoRef: trip.photoRef } : {}) }
+            );
+          },
+          { equal: (a, b) => this.structurallyEqual(a, b) },
+        ),
+      );
+    }
+    return this.tripDestinationByTrip.get(tripId)!;
   }
 
   /** Titre du trip — voir `_tripTitle` pour pourquoi ce n'est pas lu depuis `activeTrip()`. Retombe sur `trip.title` (valeur d'hydratation) tant qu'aucun renommage n'a eu lieu. */
@@ -966,6 +998,29 @@ export class TripStore {
     this.tripPersistenceService.updateTripAdditionalCities(tripId, cities)
       .catch((err) => {
         console.error('[TripStore] Erreur update villes additionnelles trip Firestore :', err);
+      })
+      .finally(() => this.clearTripFieldPending(tripId));
+  }
+
+  updateTripDestination(tripId: string, destination: { ville: string; placeId: string; photoRef?: string }): void {
+    if (!this._trips()[tripId]) return;
+
+    // 1. Signal dédié (voir `_tripDestination`), pas `_trips`.
+    this._tripDestination.update((map) => ({ ...map, [tripId]: destination }));
+    this.markTripFieldPending(tripId);
+
+    // Miroir léger côté liste (dashboard) — `TripSummary` porte aussi `photoRef`
+    // (vignette accueil, voir `AccueilTripComponent`), même geste que `updateTripTitle`
+    // ci-dessus sur `_tripsResult`. Toujours réécrit (même `undefined`) : une nouvelle
+    // destination sans photo retrouvée doit effacer l'ancienne vignette, pas la garder.
+    this._tripsResult.update((list) =>
+      list?.map((item) => (item.id === tripId ? { ...item, photoRef: destination.photoRef } : item)) ?? []
+    );
+
+    // 2. Persistance Firestore
+    this.tripPersistenceService.updateTripDestination(tripId, destination)
+      .catch((err) => {
+        console.error('[TripStore] Erreur update destination trip Firestore :', err);
       })
       .finally(() => this.clearTripFieldPending(tripId));
   }

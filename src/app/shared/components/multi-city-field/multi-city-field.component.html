@@ -1,10 +1,12 @@
 <div class="flex flex-column gap-2">
-  <button type="button" class="flex align-items-center gap-2 multi-city-field__toggle" (click)="onToggle()">
-    <app-checkbox [checked]="expanded()" />
-    <span class="font-medium">Plusieurs destinations ?</span>
-  </button>
+  @if (showToggle()) {
+    <button type="button" class="flex align-items-center gap-2 multi-city-field__toggle" (click)="onToggle()">
+      <app-checkbox [checked]="expanded()" />
+      <span class="font-medium">Plusieurs destinations ?</span>
+    </button>
+  }
 
-  @if (expanded()) {
+  @if (expanded() || !showToggle()) {
     <div class="flex flex-column gap-2">
       @if (viewport.isMobile()) {
         <button
