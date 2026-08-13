@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, input, model, output, signal, viewChild } from '@angular/core';
 
 export interface PanelToggleEvent {
   collapsed: boolean;
@@ -114,6 +114,36 @@ export class PanelComponent {
    * appelant (défaut `false`).
    */
   readonly noHeader = input(false);
+  /**
+   * Optionnel : pendant un geste de tirage (drag) piloté par l'appelant (ex.
+   * `TripDayMapComponent`, poignée `.map-panel__grabber`) — DELTA BRUT en px
+   * (pas une fraction) depuis l'état de repos AU DÉBUT du geste (0 si
+   * repliée, `scrollHeight` si dépliée), qui prend la main sur `max-height`
+   * le temps du geste ; `null` = pas de drag en cours (comportement normal
+   * piloté par `collapsed()`/`toggle()`, inchangé). En px BRUT (pas une
+   * fraction 0-1) : un mapping "distance de tirage -> pourcentage" côté
+   * appelant (ancienne API `dragProgress`) ne peut QUE deviner la hauteur
+   * réelle du contenu (variable selon l'appelant/le viewport), d'où un
+   * décalage vitesse-du-doigt/vitesse-du-panneau constaté (retour
+   * utilisateur : "le glissement est un petit peu plus rapide que le
+   * doigt") — un pixel tiré = un pixel révélé (jusqu'à la hauteur réelle du
+   * contenu, mesurée ICI) élimine structurellement ce risque. Signé : une
+   * valeur NÉGATIVE réduit une carte DÉJÀ dépliée (repli par tirage vers le
+   * haut) exactement symétriquement à une valeur positive qui déplie une
+   * carte repliée — l'appelant n'a besoin d'aucune logique conditionnelle
+   * selon le sens, seul le clamp final (voir `dragMaxHeightPx`) dépend de
+   * l'état de départ (`collapsed()` au moment du premier rendu du geste,
+   * inchangé tant que l'appelant ne l'a pas lui-même modifié).
+   *
+   * Mesure `scrollHeight` À LA VOLÉE (`dragMaxHeightPx`, pas `maxHeightPx`
+   * qui ne se fige que via `toggle()`) : l'appelant n'a pas accès à
+   * `contentRef` (privé), ce composant reste seul responsable de mesurer sa
+   * propre hauteur de contenu. Transition CSS désactivée tant que non-null
+   * (voir le template, même mécanisme que `instant()`) : la hauteur doit
+   * suivre le doigt à chaque frame, une transition ajouterait un lag perçu
+   * comme un décalage entre le geste et le rendu.
+   */
+  readonly dragPullPx = input<number | null>(null);
 
   readonly beforeToggle = output<PanelToggleEvent>();
   readonly afterToggle = output<PanelToggleEvent>();
@@ -122,6 +152,22 @@ export class PanelComponent {
 
   /** Plafond figé le temps d'une transition déclenchée par `toggle()` ; `null` = pas de plafond (état au repos une fois dépliée). */
   protected readonly maxHeightPx = signal<number | null>(null);
+
+  /**
+   * Voir la doc de `dragPullPx` — hauteur cible (px) pour le delta de drag
+   * courant : part de 0 (repliée) ou `scrollHeight` (dépliée) SELON L'ÉTAT
+   * AU DÉBUT DU GESTE (`collapsed()`, stable pendant tout son déroulé côté
+   * appelant), plus le delta signé, borné à `[0, scrollHeight]` — ni repli
+   * ni dépli au-delà de ce que le contenu permet réellement.
+   */
+  protected readonly dragMaxHeightPx = computed(() => {
+    const px = this.dragPullPx();
+    if (px === null) return null;
+    const el = this.contentRef()?.nativeElement;
+    const max = el?.scrollHeight ?? 0;
+    const base = this.collapsed() ? 0 : max;
+    return Math.round(Math.min(max, Math.max(0, base + px)));
+  });
 
   /**
    * Clic (ou Entrée/Espace, le contenu étant focusable quand toggleable)

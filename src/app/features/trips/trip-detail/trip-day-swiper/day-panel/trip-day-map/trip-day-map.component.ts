@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
@@ -12,6 +12,17 @@ import { haversineDistanceMeters } from '@app/shared/utils/geo.util';
 
 /** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
 const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
+
+/**
+ * Tirage minimal (px) au relâchement pour VALIDER une bascule (ouverture
+ * DEPUIS repliée, fermeture DEPUIS dépliée) — sinon la carte revient à son
+ * état de départ. Seuil FIXE (pas une fraction de la hauteur du contenu,
+ * ancienne approche) : la carte suit le doigt AU PIXEL PRÈS
+ * (`PanelComponent.dragPullPx`), donc rien à faire dépendre de sa hauteur
+ * réelle ici — cohérent avec les seuils "geste vs tap" déjà utilisés
+ * ailleurs (`LongPressDirective`).
+ */
+const DRAG_COMMIT_PX = 60;
 
 @Component({
   selector: 'app-trip-day-map',
@@ -68,6 +79,117 @@ export class TripDayMapComponent {
   readonly activitySelected = output<DayMapPoint>();
   private mapRef = viewChild(GoogleMap);
   private readonly themeService = inject(ThemeService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /**
+   * Geste de tirage BIDIRECTIONNEL sur `.map-panel__grabber` (footer
+   * togglable, voir trip-day-map.component.html) — en plus du clic déjà géré
+   * par `PanelComponent.toggle()` : tirer vers le BAS ouvre la carte repliée
+   * en suivant le doigt, tirer vers le HAUT referme la carte dépliée, tout
+   * aussi symétriquement (retour utilisateur explicite : le geste de
+   * fermeture manquait à la 1ère version, "vers le bas" uniquement).
+   * `dragPullPx` (delta signé en px depuis le point de départ, `null` = pas
+   * de drag en cours) pilote directement `PanelComponent.dragPullPx` : ce
+   * composant ne mesure jamais lui-même la hauteur du contenu ni ne clampe
+   * quoi que ce soit selon le sens, seul `PanelComponent` (propriétaire de
+   * `#content`, connaît l'état de départ ET la hauteur réelle) sait le
+   * faire — voir sa doc. Track AU PIXEL PRÈS (pas de mapping distance
+   * arbitraire -> fraction, ancienne approche qui faisait glisser le
+   * panneau plus vite que le doigt — retour utilisateur).
+   */
+  protected readonly dragPullPx = signal<number | null>(null);
+  private dragPointerId: number | null = null;
+  private dragStartY = 0;
+  /** État de la carte AU DÉBUT du geste courant — détermine quel sens (ouverture ou fermeture) peut être validé au relâchement, voir `onGrabberPointerUp`. Stable pendant tout le geste : `collapsed` lui-même ne change qu'au commit, jamais en cours de route. */
+  private collapsedAtDragStart = false;
+  /** Vrai dès que le tirage a dépassé un mouvement négligeable — sert à avaler le `click` de fin de geste (voir `onGrabberClickCapture`) pour ne pas déclencher EN PLUS le toggle normal du bouton footer. */
+  private dragMoved = false;
+  private readonly grabberFooter = viewChild<ElementRef<HTMLElement>>('grabberFooter');
+
+  constructor() {
+    afterNextRender(() => {
+      document.addEventListener('pointermove', this.onGrabberPointerMove);
+      document.addEventListener('pointerup', this.onGrabberPointerUp);
+      document.addEventListener('pointercancel', this.onGrabberPointerUp);
+
+      // Écouteur natif posé impérativement (PAS un `(click)` de template) :
+      // ce n'est pas un nouveau contrôle interactif pour l'utilisateur (le
+      // vrai bouton accessible/focusable reste `<button class="app-panel__footer-toggle">`,
+      // posé par `PanelComponent` — voir sa doc), juste un mécanisme technique
+      // de désambiguïsation tap/drag qui doit s'exécuter AVANT que ce click
+      // n'atteigne ce bouton (`capture: true`) — passer par le template
+      // déclenchait à tort les règles a11y `click-events-have-key-events`/
+      // `interactive-supports-focus` sur un simple `<div>` de contenu projeté.
+      const footerEl = this.grabberFooter()?.nativeElement;
+      footerEl?.addEventListener('click', this.onGrabberClickCapture, { capture: true });
+
+      this.destroyRef.onDestroy(() => {
+        document.removeEventListener('pointermove', this.onGrabberPointerMove);
+        document.removeEventListener('pointerup', this.onGrabberPointerUp);
+        document.removeEventListener('pointercancel', this.onGrabberPointerUp);
+        footerEl?.removeEventListener('click', this.onGrabberClickCapture, { capture: true });
+      });
+    });
+
+    this.setupMapEffects();
+  }
+
+  /** Démarre le suivi dans TOUS les cas (repliée OU dépliée) — le sens qui compte au relâchement dépend de l'état capturé ici, voir `onGrabberPointerUp`. */
+  protected onGrabberPointerDown(event: PointerEvent): void {
+    this.dragPointerId = event.pointerId;
+    this.dragStartY = event.clientY;
+    this.dragMoved = false;
+    this.collapsedAtDragStart = this.collapsed();
+    this.dragPullPx.set(0);
+  }
+
+  private readonly onGrabberPointerMove = (event: PointerEvent): void => {
+    if (event.pointerId !== this.dragPointerId) return;
+    const delta = event.clientY - this.dragStartY;
+    if (Math.abs(delta) > 4) this.dragMoved = true;
+    // Delta BRUT, signé, sans clamp ici : `PanelComponent.dragPullPx` fait
+    // déjà tout le travail de bornage selon l'état de départ (voir sa doc)
+    // — un delta "dans le mauvais sens" (tirer vers le haut alors que
+    // repliée, ou vers le bas alors que dépliée) y est simplement absorbé
+    // sans effet visuel, pas besoin de le filtrer nous-mêmes ici.
+    this.dragPullPx.set(delta);
+  };
+
+  private readonly onGrabberPointerUp = (event: PointerEvent): void => {
+    if (event.pointerId !== this.dragPointerId) return;
+    const delta = this.dragPullPx() ?? 0;
+    this.dragPointerId = null;
+    // Repasse à `null` (pas de valeur figée) : `PanelComponent` reprend la
+    // main via `collapsed()` et sa propre transition CSS anime le reste du
+    // trajet (bascule validée) ou le retour à l'état de départ (annulée) —
+    // voir sa doc.
+    this.dragPullPx.set(null);
+
+    if (this.collapsedAtDragStart && delta >= DRAG_COMMIT_PX) {
+      this.collapsed.set(false);
+      this.onCollapsedToggled({ collapsed: false });
+    } else if (!this.collapsedAtDragStart && delta <= -DRAG_COMMIT_PX) {
+      this.collapsed.set(true);
+      this.onCollapsedToggled({ collapsed: true });
+    }
+  };
+
+  /**
+   * Posé en phase de CAPTURE sur `.map-panel__footer-icons` (voir le
+   * constructeur), donc évalué avant le `(click)` du `<button>` de
+   * `PanelComponent` qui l'englobe : avale le click de fin de geste quand un
+   * vrai tirage a eu lieu, pour ne pas déclencher EN PLUS
+   * `PanelComponent.toggle()` (qui refermerait aussitôt une ouverture par
+   * tirage tout juste validée). Un simple tap (jamais `dragMoved`) laisse le
+   * click continuer normalement vers ce toggle.
+   */
+  private readonly onGrabberClickCapture = (event: MouseEvent): void => {
+    if (this.dragMoved) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.dragMoved = false;
+  };
 
   // Suit ThemeService (mode clair/sombre/système choisi dans le menu
   // réglages, voir sa doc) plutôt qu'un matchMedia local : un seul point de
@@ -121,7 +243,7 @@ export class TripDayMapComponent {
   /** Coordonnées de la destination du trip (résolues depuis `Trip.placeId` par `TripDaySwiperComponent`, seul appelant) — centre par défaut affiché quand le jour/contexte courant n'a aucune activité géolocalisée, à la place de Paris (ROADMAP.md "### UI", "la carte doit être centrée sur le placeid du trip"). `null` tant que non résolu ou si le trip n'a pas de destination : repli sur `PARIS_FALLBACK_CENTER`. */
   readonly defaultCenter = signal<google.maps.LatLngLiteral | null>(null);
 
-  constructor() {
+  private setupMapEffects(): void {
     effect(() => {
       const pts = this.points();
 

@@ -1,9 +1,10 @@
 <app-panel
-    class="map-panel"
+    class="map-panel pull-to-refresh-exclude"
     [toggleable]="mapHost.currentOwner() !== 'general'"
     [footerToggle]="mapHost.currentOwner() !== 'general'"
     [bare]="mapHost.currentOwner() === 'general'"
     [(collapsed)]="collapsed"
+    [dragPullPx]="dragPullPx()"
     (afterToggle)="onCollapsedToggled($event)"
     [fillHeight]="useSplitHeight()">
     <div class="flex flex-column gap-2 swiper-no-swiping map-container"
@@ -37,7 +38,11 @@
   </div>
 
   @if (mapHost.currentOwner() !== 'general') {
-    <div panelFooter class="map-panel__footer-icons flex flex-column align-items-center">
+    <div
+      #grabberFooter
+      panelFooter
+      class="map-panel__footer-icons flex flex-column align-items-center"
+      (pointerdown)="onGrabberPointerDown($event)">
       <i class="pi pi-map"></i>
       <span class="map-panel__grabber"></span>
     </div>

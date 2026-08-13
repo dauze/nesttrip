@@ -147,6 +147,11 @@
   --nt-overlay-popover-border-radius: var(--nt-radius-md);
   --nt-overlay-popover-shadow: 0 0.25rem 0.375rem -0.0625rem rgba(0, 0, 0, 0.1), 0 0.125rem 0.25rem -0.125rem rgba(0, 0, 0, 0.1);
   --nt-mask-background: rgba(0, 0, 0, 0.4);
+  // Padding uniforme des popups (header ET contenu, dialog-frame.component.scss
+  // + field-edit-dialogs.scss) — un seul token pour garantir la même respiration
+  // partout (retour utilisateur, ROADMAP.md : header/contenu trop collés aux
+  // bords à 0.5rem).
+  --nt-overlay-modal-padding: 1rem;
 
   // Champs de formulaire
   --nt-form-field-background: var(--nt-surface-0);

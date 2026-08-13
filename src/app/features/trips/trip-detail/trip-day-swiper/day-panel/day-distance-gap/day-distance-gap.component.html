@@ -43,13 +43,14 @@
           </div>
         </button>
       </app-chip>
-      <app-chip icon="pi pi-external-link" [removable]="false" class="text-sm cursor-pointer">
+      <app-chip [removable]="false" class="text-sm cursor-pointer">
         <a
           class="day-distance-gap-chip__main flex align-items-center gap-1 text-xs no-underline white-space-nowrap"
           [href]="mapsUrl()"
           target="_blank"
           rel="noopener"
           [attr.aria-label]="loading() ? 'Ouvrir l\'itinéraire dans Google Maps' : ariaLabel()">
+          <i class="pi pi-directions day-distance-gap-chip__route-icon" aria-hidden="true"></i>
           @if (loading()) {
             <app-skeleton width="4.5rem" height="0.65rem" borderRadius="var(--nt-radius-pill)" />
           } @else {

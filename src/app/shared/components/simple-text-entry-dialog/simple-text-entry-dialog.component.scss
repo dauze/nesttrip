@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: var(--nt-overlay-modal-padding);
   background: var(--nt-overlay-background);
   border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
@@ -23,7 +23,7 @@
 
 .simple-text-entry-dialog__input-row {
   flex-shrink: 0;
-  padding: 0.5rem;
+  padding: var(--nt-overlay-modal-padding);
 }
 
 .simple-text-entry-dialog__input {
@@ -43,6 +43,6 @@
 }
 
 .simple-text-entry-dialog__footer {
-  padding: 0.5rem;
+  padding: var(--nt-overlay-modal-padding);
   border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }

@@ -4,18 +4,37 @@
 // l'empêche de rétrécir sous la largeur intrinsèque de son contenu, ce qui
 // pouvait produire un dépassement horizontal (ascenseur) le temps que la
 // largeur du panneau se stabilise à l'ouverture.
+//
+// `min-height: 0` / `flex: 1 1 auto` (host ET `.dialog-frame`) : même
+// raisonnement que `min-width`, sur l'axe vertical cette fois — sans ça, le
+// défaut `min-height: auto` d'un flex item l'empêche de rétrécir sous la
+// hauteur intrinsèque de SON CONTENU, quelle que soit la hauteur réellement
+// disponible dans le panneau CDK (plafonnée par `max-height`,
+// dialog.scss/.app-dialog-panel). Un contenu plus long que l'écran (ex.
+// `ExpensesTableDialogComponent` avec beaucoup de lignes) débordait alors
+// silencieusement, coupé net par l'`overflow: hidden` du panneau — AUCUN
+// scroll ne prenait le relais malgré le `overflow-y: auto` déjà posé sur
+// `.dialog-frame__content` ci-dessous, puisque cet ascenseur ne voit jamais
+// l'espace se réduire (retour utilisateur, ROADMAP.md). Même chaîne
+// `flex: 1 1 auto; min-height: 0` que celle déjà appliquée aux tiroirs
+// "champ dédié" (voir field-edit-dialogs.scss/notes-edit-dialog.component.scss
+// etc.), qui n'ont jamais ce problème.
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
 }
 
 .dialog-frame {
+  flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
 }
 
 .dialog-frame__header {
-  padding: 0.5rem;
+  padding: var(--nt-overlay-modal-padding);
   border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
 
@@ -44,7 +63,7 @@
 }
 
 .dialog-frame__content {
-  padding: 0.5rem;
+  padding: var(--nt-overlay-modal-padding);
   overflow-y: auto;
   // Explicite (pas juste "visible" par défaut) : sans ça, la spec CSS calcule
   // overflow-x comme `auto` dès que overflow-y ne vaut pas `visible`, ce qui
@@ -56,7 +75,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-  padding: 0 0.5rem 0.5rem 0.5rem;
+  padding: 0 var(--nt-overlay-modal-padding) var(--nt-overlay-modal-padding) var(--nt-overlay-modal-padding);
 
   &:empty {
     display: none;

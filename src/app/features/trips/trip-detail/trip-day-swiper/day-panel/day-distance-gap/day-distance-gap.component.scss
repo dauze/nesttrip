@@ -50,6 +50,16 @@
   }
 }
 
+// `pi-directions` (PrimeIcons) : même glyphe que "Moyen de transport"
+// ailleurs dans ce composant/`TripSettingsSectionComponent` (retour
+// utilisateur 2026-08-13, 3e passe — un SVG maison, même conforme à une
+// référence visuelle, réinventait un glyphe qui existait déjà tel quel dans
+// l'app). Taille alignée sur `.day-distance-gap-chip__mode-icon` (icônes de
+// mode de transport juste à côté).
+.day-distance-gap-chip__route-icon {
+  font-size: 0.85em;
+}
+
 .day-distance-gap-rail__transport-cta {
   position: relative;
   z-index: 1;
