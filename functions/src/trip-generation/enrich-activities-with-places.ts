@@ -93,6 +93,7 @@ async function resolveActivity(
     ...(planned.timeOfDay ? { timeOfDay: planned.timeOfDay } : {}),
     ...(planned.suggestedStartMinutes !== undefined ? { suggestedStartMinutes: planned.suggestedStartMinutes } : {}),
     ...(planned.notes ? { notes: planned.notes } : {}),
+    ...(planned.bookingStatus === 'to_book' ? { bookingStatus: planned.bookingStatus, bookingLeadDays: planned.bookingLeadDays } : {}),
   };
 }
 
@@ -156,6 +157,7 @@ async function resolveLodging(
     city: planned.city,
     reason: planned.reason,
     excluded: false,
+    ...(planned.bookingStatus === 'to_book' ? { bookingStatus: planned.bookingStatus, bookingLeadDays: planned.bookingLeadDays } : {}),
   };
 }
 

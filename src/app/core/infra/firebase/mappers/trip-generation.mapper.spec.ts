@@ -161,7 +161,7 @@ describe('trip-generation.mapper', () => {
           },
         ],
         transportSegments: [
-          { id: 't1', fromCity: 'Rome', toCity: 'Florence', distanceKm: 230, estimatedLabel: '~2h estimées (route/train)' },
+          { id: 't1', fromCity: 'Rome', toCity: 'Florence', distanceKm: 230, estimatedLabel: '~2h estimées (route/train)', mode: 'road' },
         ],
         generalNotes: [
           { id: 'note-0', title: 'À emporter', type: 'TODO', points: ['Adaptateur', 'Passeport'], excluded: false, relatedCandidateId: 'c1' },

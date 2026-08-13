@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { GeneratedActivityCandidate, Pace, TimeOfDay, TripAiPreferences } from './trip-generation.dto';
 
 const TIME_OF_DAYS: TimeOfDay[] = ['morning', 'afternoon', 'evening', 'night'];
+const BOOKING_STATUSES: Array<'to_book' | 'not_needed'> = ['to_book', 'not_needed'];
 
 /** Même calibrage que le stub (voir select-activities-stub.ts) — cohérence du nombre de suggestions entre les deux chemins (LLM / fallback). */
 const ACTIVITIES_PER_DAY: Record<Pace, number> = { relaxed: 2, balanced: 3, intense: 4 };
@@ -32,6 +33,8 @@ const RESPONSE_SCHEMA = {
       timeOfDay: { type: Type.STRING, enum: TIME_OF_DAYS },
       notes: { type: Type.STRING },
       reason: { type: Type.STRING },
+      bookingStatus: { type: Type.STRING, enum: BOOKING_STATUSES },
+      bookingLeadDays: { type: Type.INTEGER },
     },
     // `duration`/`price`/`timeOfDay`/`notes` volontairement absents d'ici : un item qui les omet ne doit jamais disparaître de la sélection (retombe sur un défaut au parsing), seul un candidateId/day invalide fait `continue`.
     required: ['candidateId', 'reason'],
@@ -59,6 +62,7 @@ function buildPrompt(
     'Pour chaque activité choisie, indique aussi "duration" (durée réaliste en minutes pour une visite, ex. 60 à 180) et "price" (estimation du prix moyen par personne en euros, 0 si gratuit ou inconnu).',
     'Pour chaque activité choisie, indique aussi "timeOfDay" (morning/afternoon/evening/night) : le moment RÉEL où ce lieu (d\'après son titre/adresse/type) a du sens et est ouvert — ex. un bar de nuit/une boîte de nuit → evening ou night, jamais morning/afternoon ; un musée → morning/afternoon ; un dîner → evening.',
     'Pour chaque activité choisie, indique aussi si utile "notes" : une remarque PRATIQUE courte (ex. "Réserver à l\'avance", "Espèces uniquement") — vide si rien à signaler.',
+    'Pour chaque activité choisie, renseigne "bookingStatus" à "to_book" UNIQUEMENT si une réservation à l\'avance est réellement nécessaire (concert, resto couru, visite à horaire/quota limité) — sinon "not_needed". Si "to_book", renseigne aussi "bookingLeadDays" (entier, jours conseillés à l\'avance).',
     '',
     'Candidats disponibles (JSON) :',
     JSON.stringify(candidates),
@@ -122,7 +126,7 @@ export async function selectActivitiesLlm(
     },
   });
 
-  const raw = JSON.parse(response.text ?? '[]') as { candidateId: string; day?: number; duration?: number; price?: number; timeOfDay?: string; notes?: string; reason: string }[];
+  const raw = JSON.parse(response.text ?? '[]') as { candidateId: string; day?: number; duration?: number; price?: number; timeOfDay?: string; notes?: string; reason: string; bookingStatus?: string; bookingLeadDays?: number }[];
 
   const byId = new Map(candidates.map((c) => [c.candidateId, c]));
   const seen = new Set<string>();
@@ -143,6 +147,10 @@ export async function selectActivitiesLlm(
       estimatedPriceEur: Number.isFinite(item.price) && item.price! >= 0 ? item.price! : DEFAULT_PRICE_EUR,
       ...(TIME_OF_DAYS.includes(item.timeOfDay as TimeOfDay) ? { timeOfDay: item.timeOfDay as TimeOfDay } : {}),
       ...(item.notes?.trim() ? { notes: item.notes.trim() } : {}),
+      // 'to_book' n'a de sens qu'accompagné d'un délai positif — sinon retombe sur l'absence de statut (not_needed).
+      ...(item.bookingStatus === 'to_book' && Number.isInteger(item.bookingLeadDays) && item.bookingLeadDays! >= 0
+        ? { bookingStatus: 'to_book' as const, bookingLeadDays: item.bookingLeadDays! }
+        : {}),
     });
     if (selected.length >= targetSize) break;
   }

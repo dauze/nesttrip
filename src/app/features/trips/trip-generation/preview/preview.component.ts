@@ -9,9 +9,10 @@ import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate, GeneratedTransportSegment, NoteType, TimeOfDay, TripGeneration } from '@app/features/trips/new-trip/trip-generation.model';
 import { Interest } from '@app/features/trips/new-trip/trip-ai-preferences.model';
-import { DayActivityInstance, PoolActivity } from '@app/shared/components/activity-card/activity.model';
+import { Booking, DayActivityInstance, PoolActivity } from '@app/shared/components/activity-card/activity.model';
 import { minutesToTime, timeToMinutes } from '@app/shared/components/activity-card/activity-time.util';
 import { Logistic } from '@core/models/logistic.dto';
+import { PlaceSummary } from '@core/models/place.dto';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { NotesType } from '@core/enums/notes.type';
@@ -273,7 +274,7 @@ export class PreviewComponent {
           endTime: schedule.endTime,
           ...(schedule.endDayOffset ? { endDayOffset: schedule.endDayOffset } : {}),
           price: { amount: item.estimatedPriceEur ?? 0, currency: 'EUR' },
-          booking: { status: BookingStatus.NOT_NEEDED },
+          booking: this.resolveBooking(item, new Date(job.tripDayDates[day])),
           notes: item.notes ?? '',
         };
         cursorMinutes = schedule.startMinutes + schedule.duration + GAP_MINUTES;
@@ -292,7 +293,10 @@ export class PreviewComponent {
         type: INTEREST_TO_ACTIVITY_TYPE[item.interest],
         duration: item.estimatedDurationMinutes ?? DEFAULT_DURATION_MINUTES,
         price: { amount: item.estimatedPriceEur ?? 0, currency: 'EUR' },
-        booking: { status: BookingStatus.NOT_NEEDED },
+        // Mode activities_only : pas de jour assigné, donc pas de date de référence pour calculer
+        // une deadline — le statut "à réserver" reste appliqué (jugement du LLM toujours utile),
+        // simplement sans deadline chiffrée (voir resolveBooking).
+        booking: this.resolveBooking(item, undefined),
         notes: item.notes ?? '',
       };
       candidateIdToInstanceId.set(item.candidateId, instance.id);
@@ -318,7 +322,7 @@ export class PreviewComponent {
 
     for (const item of this.lodgingItems()) {
       if (item.excluded) continue;
-      this.tripFacade.createLogistic(this.tripId, this.buildLodgingLogistic(item));
+      this.tripFacade.createLogistic(this.tripId, this.buildLodgingLogistic(item, job));
     }
 
     for (const segment of this.transportSegments()) {
@@ -356,7 +360,10 @@ export class PreviewComponent {
       startTime: minutesToTime(startMinutes),
       endTime: minutesToTime(endMinutesAbs),
       duration,
-      endDayOffset: endMinutesAbs >= 1440 ? 1 : 0,
+      // J+1/J+2/... (pas juste un booléen J+1, ROADMAP.md "IA", "si une activité dépasse 00h00,
+      // l'ia doit renseigner l'info J+1, J+2") : une activité de nuit très longue (ex. suggestedStartMinutes
+      // tard + duration élevée) peut déborder de plus d'une journée complète.
+      endDayOffset: Math.floor(endMinutesAbs / 1440),
     };
   }
 
@@ -374,15 +381,51 @@ export class PreviewComponent {
     };
   }
 
-  private buildLodgingLogistic(item: GeneratedLodgingCandidate): Logistic {
+  /**
+   * Statut réservation + deadline (ROADMAP.md "IA", "idem pour les logements
+   * et les transports") : `bookingLeadDays` exprime un nombre de jours avant
+   * `referenceDate` (date de l'activité/d'arrivée au logement) — absent (mode
+   * `activities_only`, pas de jour assigné) ⇒ statut conservé sans deadline
+   * chiffrée plutôt que rétrogradé en `NOT_NEEDED` (le jugement du LLM reste
+   * exploitable même sans date).
+   */
+  private resolveBooking(item: { bookingStatus?: 'to_book' | 'not_needed'; bookingLeadDays?: number }, referenceDate: Date | undefined): Booking {
+    if (item.bookingStatus !== 'to_book') return { status: BookingStatus.NOT_NEEDED };
+    if (referenceDate === undefined || item.bookingLeadDays === undefined) return { status: BookingStatus.TO_BOOK };
+    const deadline = new Date(referenceDate);
+    deadline.setDate(deadline.getDate() - item.bookingLeadDays);
+    return { status: BookingStatus.TO_BOOK, deadline };
+  }
+
+  /**
+   * Dates de séjour du logement (ROADMAP.md "IA", "dates début/fin pour les
+   * logements générés") — dérivées de l'intervalle COMPLET du voyage
+   * (`job.tripDayDates`), pas d'un sous-intervalle par ville : aucun signal
+   * fiable côté client ne relie une activité à sa ville
+   * (`GeneratedActivityCandidate` ne porte pas ce champ, voir
+   * `enrich-activities-with-places.ts` qui ne le propage pas depuis
+   * `PlannedActivity.city`). Limitation connue en mode `full_plan`
+   * multi-villes (chaque logement reçoit alors la même plage, celle du
+   * voyage entier) — acceptée pour cette passe plutôt que de deviner un
+   * découpage par ville non fiable.
+   */
+  private resolveLodgingDates(job: TripGeneration): { start?: Date; end?: Date } {
+    if (job.tripDayDates.length === 0) return {};
+    return { start: new Date(job.tripDayDates[0]), end: new Date(job.tripDayDates[job.tripDayDates.length - 1]) };
+  }
+
+  private buildLodgingLogistic(item: GeneratedLodgingCandidate, job: TripGeneration): Logistic {
+    const { start, end } = this.resolveLodgingDates(job);
     return {
       id: crypto.randomUUID(),
       type: 'logement',
       title: item.title,
       files: [],
       links: [],
-      booking: { status: BookingStatus.NOT_NEEDED },
+      booking: this.resolveBooking(item, start),
       notes: `Suggéré par IA — ${item.city}`,
+      ...(start ? { startDateTime: start } : {}),
+      ...(end ? { endDateTime: end } : {}),
       place: {
         placeId: item.placeId,
         name: item.title,
@@ -393,15 +436,52 @@ export class PreviewComponent {
     };
   }
 
-  /** Type `'train'` par défaut (pas de mode réel connu — estimation générique, voir §6) : `departurePlace`/`arrivalPlace` restent absents, aucune coordonnée de ville disponible à ce stade (voir `GeneratedTransportSegment`). */
+  private buildCityPlace(name: string, placeId: string, latitude: number | undefined, longitude: number | undefined): PlaceSummary {
+    return { placeId, name, address: '', latitude: latitude ?? 0, longitude: longitude ?? 0 };
+  }
+
+  /**
+   * `segment.mode` (voir `transport-estimate.ts` côté serveur) pilote le type
+   * de logistique créée : location de voiture pour un trajet routier
+   * (ROADMAP.md "IA", "conseiller location de voiture comme transport...
+   * renseigner toutes les zones" — `pickupPlace`/`dropoffPlace` renseignés
+   * depuis les coordonnées/placeId de ville déjà résolus côté serveur), vol
+   * pour un trajet long-courrier (`departureAirport`/`arrivalAirport`
+   * volontairement laissés vides — une ville n'est pas un aéroport, pas de
+   * donnée fiable à y mettre ici).
+   *
+   * Statut réservation toujours `TO_BOOK` (ROADMAP.md "IA", "idem pour...
+   * les transports") : contrairement aux activités/logements, ce chemin est
+   * déterministe (estimation de distance, pas un jugement LLM propre à ce
+   * segment) — un trajet long-courrier ou une location de voiture nécessite
+   * quasi systématiquement une réservation à l'avance ; pas de deadline
+   * chiffrée faute de date propre à un segment de trajet.
+   */
   private buildTransportLogistic(segment: GeneratedTransportSegment): Logistic {
+    const title = `Trajet estimé ${segment.fromCity} → ${segment.toCity}`;
+    const booking: Booking = { status: BookingStatus.TO_BOOK };
+
+    if (segment.mode === 'road') {
+      return {
+        id: crypto.randomUUID(),
+        type: 'carRental',
+        title,
+        files: [],
+        links: [],
+        booking,
+        notes: segment.estimatedLabel,
+        ...(segment.fromPlaceId ? { pickupPlace: this.buildCityPlace(segment.fromCity, segment.fromPlaceId, segment.fromLatitude, segment.fromLongitude) } : {}),
+        ...(segment.toPlaceId ? { dropoffPlace: this.buildCityPlace(segment.toCity, segment.toPlaceId, segment.toLatitude, segment.toLongitude) } : {}),
+      };
+    }
+
     return {
       id: crypto.randomUUID(),
-      type: 'train',
-      title: `Trajet estimé ${segment.fromCity} → ${segment.toCity}`,
+      type: 'flight',
+      title,
       files: [],
       links: [],
-      booking: { status: BookingStatus.NOT_NEEDED },
+      booking,
       notes: segment.estimatedLabel,
     };
   }

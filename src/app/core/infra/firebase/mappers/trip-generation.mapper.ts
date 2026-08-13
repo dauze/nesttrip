@@ -31,6 +31,8 @@ function candidateToFb(c: GeneratedActivityCandidate): GeneratedActivityCandidat
     ...(c.timeOfDay !== undefined ? { timeOfDay: c.timeOfDay } : {}),
     ...(c.suggestedStartMinutes !== undefined ? { suggestedStartMinutes: c.suggestedStartMinutes } : {}),
     ...(c.notes !== undefined ? { notes: c.notes } : {}),
+    ...(c.bookingStatus !== undefined ? { bookingStatus: c.bookingStatus } : {}),
+    ...(c.bookingLeadDays !== undefined ? { bookingLeadDays: c.bookingLeadDays } : {}),
   };
 }
 
@@ -51,6 +53,8 @@ function lodgingToFb(c: GeneratedLodgingCandidate): GeneratedLodgingCandidateFir
     ...(c.latitude !== undefined ? { latitude: c.latitude } : {}),
     ...(c.longitude !== undefined ? { longitude: c.longitude } : {}),
     ...(c.rating !== undefined ? { rating: c.rating } : {}),
+    ...(c.bookingStatus !== undefined ? { bookingStatus: c.bookingStatus } : {}),
+    ...(c.bookingLeadDays !== undefined ? { bookingLeadDays: c.bookingLeadDays } : {}),
   };
 }
 

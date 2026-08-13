@@ -13,6 +13,7 @@ const DEFAULT_PRICE_EUR = 0;
 
 const INTERESTS: Interest[] = ['museums', 'nature', 'sport', 'food', 'nightlife', 'shopping', 'relaxation', 'offbeat'];
 const TIME_OF_DAYS: TimeOfDay[] = ['morning', 'afternoon', 'evening', 'night'];
+const BOOKING_STATUSES: Array<'to_book' | 'not_needed'> = ['to_book', 'not_needed'];
 
 /** Sortie du chemin primaire (le LLM invente le plan, avant enrichissement Google Places — voir enrich-activities-with-places.ts). Pas encore de placeId/adresse/coordonnées/photos : c'est justement le rôle de l'étape suivante. */
 export interface PlannedActivity {
@@ -31,6 +32,10 @@ export interface PlannedActivity {
   suggestedStartMinutes?: number;
   /** Remarque pratique courte (réservation à l'avance, espèces uniquement, tenue exigée...) — distinct de `reason` (justification du choix, affichée différemment). Va dans DayActivityInstance.notes à la validation. */
   notes?: string;
+  /** Réservation à l'avance jugée nécessaire par le LLM (concert, resto couru, visite à horaire...) — voir buildResponseSchema pour la forme ENUM/INTEGER. Absent = 'not_needed' (comportement historique). */
+  bookingStatus?: 'to_book' | 'not_needed';
+  /** Délai conseillé avant la date de l'activité pour réserver, en jours — n'a de sens que si bookingStatus = 'to_book'. */
+  bookingLeadDays?: number;
 }
 
 /** Note générale de voyage générée par le LLM (packing list, choses à ne pas oublier...) — devient un `Item` du système de notes existant à la validation (voir notes.model.ts côté client), optionnellement lié à une activité précise via `relatedActivityIndex` (résolu dans CE fichier, voir planTripLlm, avant tout risque de dérive de titre à l'enrichissement Google). */
@@ -47,6 +52,10 @@ export interface PlannedLodging {
   city: string;
   title: string;
   reason: string;
+  /** Réservation à l'avance jugée nécessaire par le LLM — même forme que PlannedActivity, voir buildResponseSchema. Absent = 'not_needed'. */
+  bookingStatus?: 'to_book' | 'not_needed';
+  /** Délai conseillé avant la date d'arrivée pour réserver, en jours — n'a de sens que si bookingStatus = 'to_book'. */
+  bookingLeadDays?: number;
 }
 
 /**
@@ -112,6 +121,10 @@ function buildResponseSchema(cityNames: string[]) {
             suggestedStartMinute: { type: Type.INTEGER },
             notes: { type: Type.STRING },
             reason: { type: Type.STRING },
+            // ENUM + INTEGER, même famille que timeOfDay/suggestedStartHour — jamais un STRING
+            // de date/délai libre (voir la doc de fonction ci-dessus).
+            bookingStatus: { type: Type.STRING, enum: BOOKING_STATUSES },
+            bookingLeadDays: { type: Type.INTEGER },
           },
           // Seuls title/reason sont requis : tout le reste (day, durée, prix, intérêt,
           // ville, moment de la journée, horaire suggéré, remarque) retombe sur un défaut/une
@@ -129,6 +142,8 @@ function buildResponseSchema(cityNames: string[]) {
             city: { type: Type.STRING, enum: cityNames },
             title: { type: Type.STRING },
             reason: { type: Type.STRING },
+            bookingStatus: { type: Type.STRING, enum: BOOKING_STATUSES },
+            bookingLeadDays: { type: Type.INTEGER },
           },
           required: ['title', 'reason'],
         },
@@ -244,6 +259,13 @@ function buildPrompt(
   );
   sections.push('Pour chaque activité, indique aussi "price" (estimation du prix moyen par personne en euros, 0 si gratuit), une courte "reason" affichable à l\'utilisateur (une phrase, ex. "Un marché local peu fréquenté par les touristes"), et si utile "notes" : une remarque PRATIQUE courte et concrète (ex. "Réserver à l\'avance, souvent complet", "Paiement en espèces uniquement", "Tenue correcte exigée") — différent de "reason" (qui justifie le choix). Laisse "notes" vide s\'il n\'y a rien de particulier à signaler.');
 
+  sections.push(
+    [
+      'Pour chaque activité (et pour le logement le cas échéant), renseigne "bookingStatus" à "to_book" UNIQUEMENT si une réservation à l\'avance est réellement nécessaire ou fortement recommandée pour ce lieu précis (ex. concert, restaurant très couru, visite guidée, attraction à horaire/quota limité, hébergement) — sinon "not_needed" (cas par défaut : la grande majorité des activités de plein air, musées peu fréquentés, promenades...).',
+      'Si "bookingStatus" vaut "to_book", renseigne aussi "bookingLeadDays" : le nombre de jours À L\'AVANCE (entier) qu\'il est raisonnable de conseiller pour réserver ce type de lieu (ex. 1 pour un restaurant prisé, 30 pour un logement en haute saison, 60 pour un concert) — reste réaliste et ne devine pas si tu n\'es pas confiant, dans ce cas laisse "bookingStatus" à "not_needed".',
+    ].join(' '),
+  );
+
   if (wantLodging) {
     sections.push(
       [
@@ -256,7 +278,7 @@ function buildPrompt(
 
   sections.push(
     [
-      'Dans "generalNotes", propose 1 à 4 notes générales de voyage RÉELLEMENT spécifiques à ce voyage précis (destination, saison, activités choisies, texte libre) — jamais une liste générique de conseils touristiques passe-partout. Pour chacune : "title" court, "type" "TODO" (liste à cocher, ex. "À emporter") ou "INFO" (une information importante à garder en tête), "points" (2 à 6 lignes courtes).',
+      'Dans "generalNotes", propose 2 à 6 notes générales de voyage RÉELLEMENT spécifiques à ce voyage précis (destination, saison, activités choisies, texte libre) — jamais une liste générique de conseils touristiques passe-partout. Couvre, quand c\'est pertinent pour CETTE destination, des catégories comme : informations pratiques sur la destination (monnaie locale, langue, prises électriques, visa/formalités si applicable, décalage horaire), conseils à savoir AVANT de partir (santé/vaccins si pertinent, transport depuis l\'aéroport, applications utiles), et tenue vestimentaire/coutumes locales (codes vestimentaires dans les lieux religieux, coutumes à respecter, tenue adaptée au climat) — n\'invente rien que tu ne connais pas avec certitude pour cette destination précise, une catégorie non pertinente ou incertaine est simplement omise plutôt que remplie par un conseil générique. Pour chacune : "title" court, "type" "TODO" (liste à cocher, ex. "À emporter") ou "INFO" (une information importante à garder en tête), "points" (2 à 6 lignes courtes).',
       'Si une note concerne précisément une des activités proposées ci-dessus (ex. rappel de réservation, équipement nécessaire pour cette activité), recopie EXACTEMENT son "title" tel que tu l\'as toi-même écrit dans "relatedActivityTitle" — sinon laisse ce champ vide.',
     ].join(' '),
   );
@@ -278,12 +300,16 @@ interface RawPlannedActivity {
   suggestedStartMinute?: number;
   notes?: string;
   reason?: string;
+  bookingStatus?: string;
+  bookingLeadDays?: number;
 }
 
 interface RawPlannedLodging {
   city?: string;
   title?: string;
   reason?: string;
+  bookingStatus?: string;
+  bookingLeadDays?: number;
 }
 
 interface RawPlannedGeneralNote {
@@ -332,6 +358,13 @@ function resolveNotes(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+/** 'to_book' n'a de sens qu'accompagné d'un délai positif — sinon retombe sur 'not_needed' (jamais un statut "to_book" sans délai exploitable). */
+function resolveBooking(item: { bookingStatus?: string; bookingLeadDays?: number }): { bookingStatus?: 'to_book' | 'not_needed'; bookingLeadDays?: number } {
+  if (item.bookingStatus !== 'to_book') return {};
+  const leadDays = Number.isInteger(item.bookingLeadDays) && item.bookingLeadDays! >= 0 ? item.bookingLeadDays! : undefined;
+  return leadDays !== undefined ? { bookingStatus: 'to_book', bookingLeadDays: leadDays } : {};
+}
+
 function resolveCity(name: string | undefined, cities: GeocodedCity[]): string {
   const primary = cities[0].ville;
   if (!name) return primary;
@@ -377,9 +410,10 @@ export async function planTripLlm(
       responseMimeType: 'application/json',
       responseSchema: buildResponseSchema(cityNames),
       // 12000 → 20000 (2026-08-12) : plus de champs par activité (suggestedStartHour/Minute,
-      // notes) + MEAL_SLOTS_PER_DAY en plus par jour + nouveau tableau generalNotes — à
-      // reconfirmer en conditions réelles comme les précédents changements de schéma de ce fichier.
-      maxOutputTokens: 20000,
+      // notes) + MEAL_SLOTS_PER_DAY en plus par jour + nouveau tableau generalNotes.
+      // 20000 → 22000 (2026-08-13) : bookingStatus/bookingLeadDays ajoutés par activité/logement —
+      // à reconfirmer en conditions réelles comme les précédents changements de schéma de ce fichier.
+      maxOutputTokens: 22000,
     },
   });
 
@@ -416,6 +450,7 @@ export async function planTripLlm(
       ...(resolveStartMinutes(item) !== undefined ? { suggestedStartMinutes: resolveStartMinutes(item) } : {}),
       ...(resolveNotes(item.notes) ? { notes: resolveNotes(item.notes) } : {}),
       reason: item.reason?.trim() || `Choisi pour ton intérêt ${interest}`,
+      ...resolveBooking(item),
     });
   });
 
@@ -442,7 +477,7 @@ export async function planTripLlm(
       const city = resolveCity(item.city, cities);
       if (seenLodgingCities.has(city)) continue;
       seenLodgingCities.add(city);
-      lodging.push({ city, title, reason: item.reason?.trim() || `Logement à ${city}` });
+      lodging.push({ city, title, reason: item.reason?.trim() || `Logement à ${city}`, ...resolveBooking(item) });
     }
   }
 

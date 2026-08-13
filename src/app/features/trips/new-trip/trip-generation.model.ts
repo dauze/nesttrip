@@ -48,6 +48,10 @@ export interface GeneratedActivityCandidate {
   suggestedStartMinutes?: number;
   /** Remarque pratique courte (réservation, espèces uniquement, tenue exigée...) — distinct de `reason`. Va dans DayActivityInstance.notes à la validation. */
   notes?: string;
+  /** Réservation à l'avance jugée nécessaire par le LLM — absent/'not_needed' = comportement historique (booking NOT_NEEDED à la validation, voir PreviewComponent). */
+  bookingStatus?: 'to_book' | 'not_needed';
+  /** Délai conseillé avant la date de l'activité pour réserver, en jours — n'a de sens que si bookingStatus = 'to_book'. */
+  bookingLeadDays?: number;
 }
 
 export type NoteType = 'TODO' | 'INFO';
@@ -76,6 +80,10 @@ export interface GeneratedLodgingCandidate {
   city: string;
   reason: string;
   excluded: boolean;
+  /** Réservation à l'avance jugée nécessaire par le LLM — absent/'not_needed' = comportement historique. */
+  bookingStatus?: 'to_book' | 'not_needed';
+  /** Délai conseillé avant la date d'arrivée pour réserver, en jours — n'a de sens que si bookingStatus = 'to_book'. */
+  bookingLeadDays?: number;
 }
 
 /**
@@ -91,6 +99,14 @@ export interface GeneratedTransportSegment {
   toCity: string;
   distanceKm: number;
   estimatedLabel: string;
+  /** 'flight' si long-courrier, 'road' sinon (voir functions/src/trip-generation/transport-estimate.ts) — pilote le type de logistique créée à la validation (vol vs location de voiture, voir PreviewComponent.buildTransportLogistic). */
+  mode: 'flight' | 'road';
+  fromPlaceId?: string;
+  fromLatitude?: number;
+  fromLongitude?: number;
+  toPlaceId?: string;
+  toLatitude?: number;
+  toLongitude?: number;
 }
 
 export interface TripGeneration {

@@ -30,6 +30,8 @@ export interface GeneratedActivityCandidateFirebase {
   timeOfDay?: TimeOfDay;
   suggestedStartMinutes?: number;
   notes?: string;
+  bookingStatus?: 'to_book' | 'not_needed';
+  bookingLeadDays?: number;
 }
 
 export interface GeneratedLodgingCandidateFirebase {
@@ -44,6 +46,8 @@ export interface GeneratedLodgingCandidateFirebase {
   city: string;
   reason: string;
   excluded: boolean;
+  bookingStatus?: 'to_book' | 'not_needed';
+  bookingLeadDays?: number;
 }
 
 export interface GeneratedTransportSegmentFirebase {
@@ -52,6 +56,13 @@ export interface GeneratedTransportSegmentFirebase {
   toCity: string;
   distanceKm: number;
   estimatedLabel: string;
+  mode: 'flight' | 'road';
+  fromPlaceId?: string;
+  fromLatitude?: number;
+  fromLongitude?: number;
+  toPlaceId?: string;
+  toLatitude?: number;
+  toLongitude?: number;
 }
 
 export interface GeneratedGeneralNoteFirebase {

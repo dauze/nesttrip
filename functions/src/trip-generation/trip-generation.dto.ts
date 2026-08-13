@@ -47,6 +47,10 @@ export interface GeneratedActivityCandidate {
   suggestedStartMinutes?: number;
   /** Remarque pratique courte (réservation, espèces uniquement, tenue exigée...) — va dans DayActivityInstance.notes à la validation. */
   notes?: string;
+  /** Réservation à l'avance jugée nécessaire par le LLM (concert, resto couru, visite à horaire...) — absent/'not_needed' = comportement historique (PreviewComponent applique NOT_NEEDED). */
+  bookingStatus?: 'to_book' | 'not_needed';
+  /** Délai conseillé avant la date de l'activité pour réserver, en jours — n'a de sens que si bookingStatus = 'to_book'. */
+  bookingLeadDays?: number;
 }
 
 export type NoteType = 'TODO' | 'INFO';
@@ -74,6 +78,10 @@ export interface GeneratedLodgingCandidate {
   city: string;
   reason: string;
   excluded: boolean;
+  /** Réservation à l'avance jugée nécessaire par le LLM — absent/'not_needed' = comportement historique. */
+  bookingStatus?: 'to_book' | 'not_needed';
+  /** Délai conseillé avant la date d'arrivée pour réserver, en jours — n'a de sens que si bookingStatus = 'to_book'. */
+  bookingLeadDays?: number;
 }
 
 export interface GeneratedTransportSegment {
@@ -82,6 +90,14 @@ export interface GeneratedTransportSegment {
   toCity: string;
   distanceKm: number;
   estimatedLabel: string;
+  /** 'flight' si long-courrier (voir transport-estimate.ts isLongHaul), 'road' sinon — pilote le type de logistique créée côté client (vol vs location de voiture). */
+  mode: 'flight' | 'road';
+  fromPlaceId?: string;
+  fromLatitude?: number;
+  fromLongitude?: number;
+  toPlaceId?: string;
+  toLatitude?: number;
+  toLongitude?: number;
 }
 
 export interface TripGenerationDoc {

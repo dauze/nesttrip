@@ -1,3 +1,4 @@
+import { GeocodedCity } from './geocode-city';
 import { GeneratedTransportSegment } from './trip-generation.dto';
 
 const EARTH_RADIUS_KM = 6371;
@@ -22,10 +23,7 @@ function haversineDistanceKm(a: { latitude: number; longitude: number }, b: { la
  * arrêts/correspondances inclus) ; au-delà : vol (~2h incompressibles
  * comptées, embarquement compris).
  */
-export function estimateTransportSegment(
-  fromCity: { ville: string; latitude: number; longitude: number },
-  toCity: { ville: string; latitude: number; longitude: number },
-): GeneratedTransportSegment {
+export function estimateTransportSegment(fromCity: GeocodedCity, toCity: GeocodedCity): GeneratedTransportSegment {
   const distanceKm = Math.round(haversineDistanceKm(fromCity, toCity));
   const isLongHaul = distanceKm > 400;
   const hours = isLongHaul ? 2 + distanceKm / 800 : 0.5 + distanceKm / 80;
@@ -38,5 +36,14 @@ export function estimateTransportSegment(
     toCity: toCity.ville,
     distanceKm,
     estimatedLabel: `~${roundedHours}h estimées (${mode}) — estimation automatique, pas une recherche réelle`,
+    // Pilote le type de logistique côté client (vol vs location de voiture, voir preview.component.ts) —
+    // seuil identique à `isLongHaul` ci-dessus, pas de logique dupliquée.
+    mode: isLongHaul ? 'flight' : 'road',
+    fromPlaceId: fromCity.placeId,
+    fromLatitude: fromCity.latitude,
+    fromLongitude: fromCity.longitude,
+    toPlaceId: toCity.placeId,
+    toLatitude: toCity.latitude,
+    toLongitude: toCity.longitude,
   };
 }

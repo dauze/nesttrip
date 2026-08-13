@@ -9,14 +9,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
 - Stockage des fichiers en local si possible (A affiner)
 
-### IA 
-- Il faut que tu améliores la génération de parcours par IA : Il a le champs "Statut" avec "a reserver", "sans réservation", "réservé" qui doit être renseigné par l'iA si celle-ci pense qu'il faut réserver. Une deadline est alors à positionner, du temps qu'elle pense qu'il faut pour réserver en avance : par exemple, si on doit reserver une semaine en avance, alors il faut mettre une deadline une semaine avant la date positionné. Idem pour les logements et les transports.
-- Il faut améliorer le traitement si jamais on a besoin d'une location de voiture, le conseiller via un transport ajouté (renseigner tpute les zones 
-- Renseigner les date de début et de fin pour les logements 
-- Certains item peuvent etre généré de manières generale sans les assigner à une activité, par exemple les infos sur une destination, les tutor avant de venir, les infos à savoir sur les costumes, etc
-- Si une activité depasse 00h00, l'ia doit renseigner l'info "J+1", "J+2"
-- De manière générale, l'ia doit renseigner absolument toutes les données qu'ils y a sur les activités, logements et transports, infos, etc. Refaire un scan complet pour vérifier qu'aucune infos n'est mise en dur durant le process de création de trip à partir de generation trip
-
 ### UI spécifique Desktop (A affiner)
 - Vue calendrier (A affiner)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
