@@ -65,3 +65,13 @@
   color: var(--nt-text-muted-color);
   margin-top: 0.125rem;
 }
+
+// Ancre neutre (voir template, cas `hasMapPoints()` faux) — même traitement
+// que `.map-anchor` de `TripDaySwiperComponent`.
+.map-anchor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}

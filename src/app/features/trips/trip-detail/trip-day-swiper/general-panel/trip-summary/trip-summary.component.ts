@@ -79,6 +79,7 @@ export class TripSummaryComponent {
   private readonly currencyConversionService = inject(CurrencyConversionService);
 
   private readonly mapContainerRef = viewChild<ElementRef<HTMLElement>>('mapContainer');
+  private readonly mapParkAnchorRef = viewChild<ElementRef<HTMLElement>>('mapParkAnchor');
 
   readonly tripId = input.required<string>();
   /** Slide "Résumé" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
@@ -326,6 +327,22 @@ export class TripSummaryComponent {
       this.mapClickSub = map.activitySelected.subscribe((point) => {
         if (point.dayId) this.dayActivityFocusService.requestFocus(point.dayId, point.activityId);
       });
+    });
+
+    // Cas `hasMapPoints()` faux (trip sans activité géolocalisée) : `#mapContainer`
+    // n'existe pas (voir template, branche `@else`), donc l'effect ci-dessus ne
+    // peut jamais réclamer la carte pour ce contexte — sans reparcage explicite
+    // ici, elle restait affichée là où le dernier jour actif l'avait laissée
+    // (`.day-fixed-map`, ROADMAP.md "Bugs / fixes" : "la map reste, à tort" en
+    // arrivant sur Résumé depuis un jour). Réactif à `hasMapPoints()` en plus
+    // d'`active()` : gère aussi le cas où le dernier point du trip est retiré
+    // pendant que Résumé est déjà affiché.
+    effect(() => {
+      if (!this.active() || this.hasMapPoints()) return;
+      const anchor = this.mapParkAnchorRef()?.nativeElement;
+      if (!anchor) return;
+
+      this.mapHost.park(anchor);
     });
 
     // `map.points` synchronisé à chaque changement de `generalMapPoints()` —

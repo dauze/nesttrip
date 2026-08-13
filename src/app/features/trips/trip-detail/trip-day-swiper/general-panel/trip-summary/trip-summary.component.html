@@ -12,6 +12,12 @@
         <app-skeleton height="250px" width="100%" borderRadius="3px" />
       }
     </app-card>
+  } @else {
+    <!-- Ancre neutre toujours montée (voir TripSummaryComponent constructor) : sans
+         `hasMapPoints()`, `#mapContainer` ci-dessus n'existe pas et la carte partagée
+         resterait sinon affichée là où le dernier jour actif l'avait laissée
+         (`.day-fixed-map`) au lieu de se reparquer en arrivant sur Résumé. -->
+    <div #mapParkAnchor class="map-anchor"></div>
   }
 
   @if (hasTasks()) {
