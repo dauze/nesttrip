@@ -26,6 +26,7 @@ import {
   SimpleTextEntryDialogData,
 } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
 import { SelectButtonComponent } from '@app/shared/components/select-button/select-button.component';
+import { MessageComponent } from '@app/shared/components/message/message.component';
 import { AiTripPreferencesComponent } from './ai-trip-preferences/ai-trip-preferences.component';
 import { PLANNING_MODE_OPTIONS, PlanningMode, TripAiPreferences, createDefaultAiPreferences } from './trip-ai-preferences.model';
 import { TripGeneration } from './trip-generation.model';
@@ -38,6 +39,7 @@ import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip
   imports: [
     ReactiveFormsModule, InputTextDirective, DatePickerComponent, ButtonComponent,
     CardComponent, AutoCompleteComponent, SelectButtonComponent, AiTripPreferencesComponent,
+    MessageComponent,
   ],
   templateUrl: 'new-trip.component.html',
   styleUrl: 'new-trip.component.scss',

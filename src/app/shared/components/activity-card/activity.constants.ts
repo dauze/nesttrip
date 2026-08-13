@@ -14,7 +14,7 @@ export interface BookingStatusMeta {
 }
 
 export const ACTIVITY_TYPE_META: Record<ActivityType, ActivityTypeMeta> = {
-  [ActivityType.REPAS]: {label: 'Repas', icon: 'pi pi-star', colorVar: '--nt-activity-repas'},
+  [ActivityType.REPAS]: {label: 'Repas', icon: 'nt-icon-meal', colorVar: '--nt-activity-repas'},
   [ActivityType.TRANSPORT]: {label: 'Transport', icon: 'pi pi-car', colorVar: '--nt-activity-transport'},
   [ActivityType.HEBERGEMENT]: {label: 'Hébergement', icon: 'pi pi-home', colorVar: '--nt-activity-hebergement'},
   [ActivityType.VISITE]: {label: 'Visite', icon: 'pi pi-map-marker', colorVar: '--nt-activity-visite'},

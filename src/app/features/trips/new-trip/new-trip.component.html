@@ -106,6 +106,10 @@
           </div>
 
           @if (planningMode() === 'ai') {
+            <app-message
+              severity="warn"
+              text="La génération par IA peut contenir des informations fausses ou approximatives (horaires, prix, lieux) — pense à les vérifier avant ton départ." />
+
             <app-ai-trip-preferences [(preferences)]="aiPreferences" />
 
             @if (aiSubmitError(); as error) {
