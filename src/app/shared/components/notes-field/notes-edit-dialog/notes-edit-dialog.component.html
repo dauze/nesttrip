@@ -18,9 +18,13 @@
     [value]="value()"
     [placeholder]="data.placeholder"
     [attr.maxlength]="maxLength"
-    (input)="onInput($any($event.target).value)"></textarea>
+    (input)="onInput($any($event.target).value)"
+    (beforeinput)="onBeforeInput($event)"></textarea>
 
-  <div class="notes-edit-dialog__counter flex-shrink-0" [class.notes-edit-dialog__counter--limit]="value().length >= maxLength">
+  <div
+    class="notes-edit-dialog__counter flex-shrink-0"
+    [class.notes-edit-dialog__counter--limit]="value().length >= maxLength"
+    [class.notes-edit-dialog__counter--shake]="shake()">
     {{ value().length }}/{{ maxLength }}
   </div>
 

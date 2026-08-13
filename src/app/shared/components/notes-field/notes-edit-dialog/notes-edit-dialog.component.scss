@@ -87,6 +87,21 @@
   font-weight: 600;
 }
 
+// "Check" visuel à chaque tentative de saisie au-delà de `maxLength` (voir
+// NotesEditDialogComponent.onBeforeInput) — petit shake horizontal, se
+// rejoue à chaque tentative même répétée (classe retirée puis reposée en JS).
+@keyframes notes-edit-dialog-counter-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-0.2rem); }
+  40% { transform: translateX(0.2rem); }
+  60% { transform: translateX(-0.15rem); }
+  80% { transform: translateX(0.15rem); }
+}
+
+.notes-edit-dialog__counter--shake {
+  animation: notes-edit-dialog-counter-shake 0.4s ease-in-out;
+}
+
 .notes-edit-dialog__footer {
   padding: 0.5rem;
   border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);

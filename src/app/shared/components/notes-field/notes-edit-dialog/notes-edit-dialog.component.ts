@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
@@ -45,11 +45,20 @@ export class NotesEditDialogComponent implements AfterViewInit {
   private readonly dialogRef = inject(DialogRef<void>);
   protected readonly data = inject<NotesEditDialogData>(DIALOG_DATA);
   protected readonly viewport = inject(ViewportService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly textareaRef = viewChild.required<ElementRef<HTMLTextAreaElement>>('textareaEl');
 
   protected readonly value = signal(this.data.initialValue ?? '');
   protected readonly maxLength = MAX_NOTES_LENGTH;
+
+  /** Anime brièvement le compteur (`.notes-edit-dialog__counter--shake`) à chaque tentative de saisie au-delà de `maxLength` — voir `onBeforeInput`. */
+  protected readonly shake = signal(false);
+  private shakeTimeout?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => clearTimeout(this.shakeTimeout));
+  }
 
   ngAfterViewInit(): void {
     const textarea = this.textareaRef().nativeElement;
@@ -60,6 +69,26 @@ export class NotesEditDialogComponent implements AfterViewInit {
 
   protected onInput(text: string): void {
     this.value.set(text);
+  }
+
+  /**
+   * `maxlength` sur le `<textarea>` bloque déjà nativement toute saisie
+   * au-delà de la limite (aucun `(input)` ne se déclenche pour une frappe
+   * bloquée, rien à animer depuis là) — `beforeinput` capture l'INTENTION
+   * d'insérer (clavier, IME, coller...) avant que le navigateur ne
+   * l'ignore, seul moyen de savoir qu'une frappe vient d'être refusée pour
+   * déclencher le "check" visuel demandé (ROADMAP.md "### UI").
+   */
+  protected onBeforeInput(event: InputEvent): void {
+    if (!event.inputType?.startsWith('insert')) return;
+    if (this.value().length < this.maxLength) return;
+
+    clearTimeout(this.shakeTimeout);
+    this.shake.set(false);
+    requestAnimationFrame(() => {
+      this.shake.set(true);
+      this.shakeTimeout = setTimeout(() => this.shake.set(false), 400);
+    });
   }
 
   protected cancel(): void {
