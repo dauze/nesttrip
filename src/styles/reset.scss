@@ -66,6 +66,12 @@ body {
   margin: 0 0 0;
   color: var(--nt-text-color);
   background-color: var(--nt-page-background);
+  // Même correctif que `html` ci-dessus, posé aussi ici : recommandation
+  // officielle pour désactiver de façon fiable le "tirer pour actualiser"
+  // natif du navigateur (`html, body` ensemble, pas l'un sans l'autre) —
+  // `<html>` seul s'est révélé insuffisant en pratique (retour utilisateur,
+  // toujours le geste natif malgré ce 1er correctif).
+  overscroll-behavior-y: contain;
 }
 
 // Anneau de focus clavier/clic thémé (`--nt-focus-ring-*`, tokens.scss),

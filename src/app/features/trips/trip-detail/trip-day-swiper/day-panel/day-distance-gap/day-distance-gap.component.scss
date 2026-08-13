@@ -50,22 +50,14 @@
   }
 }
 
-// Badge plein (carré arrondi) + flèche coudée blanche — référence visuelle
-// fournie par l'utilisateur (retour utilisateur 2026-08-13, 2e passe) : mon
-// 1er essai (pointillé + pin, trait fin) ne correspondait pas à ce qui était
-// demandé.
+// `pi-directions` (PrimeIcons) : même glyphe que "Moyen de transport"
+// ailleurs dans ce composant/`TripSettingsSectionComponent` (retour
+// utilisateur 2026-08-13, 3e passe — un SVG maison, même conforme à une
+// référence visuelle, réinventait un glyphe qui existait déjà tel quel dans
+// l'app). Taille alignée sur `.day-distance-gap-chip__mode-icon` (icônes de
+// mode de transport juste à côté).
 .day-distance-gap-chip__route-icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex: none;
-}
-
-.day-distance-gap-chip__route-icon-bg {
-  fill: var(--nt-primary-color);
-}
-
-.day-distance-gap-chip__route-icon-arrow {
-  stroke: var(--nt-primary-contrast-color);
+  font-size: 0.85em;
 }
 
 .day-distance-gap-rail__transport-cta {

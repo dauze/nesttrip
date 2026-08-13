@@ -50,16 +50,7 @@
           target="_blank"
           rel="noopener"
           [attr.aria-label]="loading() ? 'Ouvrir l\'itinéraire dans Google Maps' : ariaLabel()">
-          <svg class="day-distance-gap-chip__route-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <rect class="day-distance-gap-chip__route-icon-bg" x="1" y="1" width="22" height="22" rx="7" />
-            <path
-              class="day-distance-gap-chip__route-icon-arrow"
-              d="M8 16v-5a3 3 0 0 1 3-3h5m0 0-3-3m3 3-3 3"
-              fill="none"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
+          <i class="pi pi-directions day-distance-gap-chip__route-icon" aria-hidden="true"></i>
           @if (loading()) {
             <app-skeleton width="4.5rem" height="0.65rem" borderRadius="var(--nt-radius-pill)" />
           } @else {

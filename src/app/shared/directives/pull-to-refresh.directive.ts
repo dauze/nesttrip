@@ -88,11 +88,23 @@ export class PullToRefreshDirective {
   private readonly onPointerDown = (event: PointerEvent): void => {
     if (this.refreshing()) return;
 
+    const target = event.target as HTMLElement;
+    // Zone avec son PROPRE geste vertical concurrent (ex. `.map-panel`,
+    // poignée de tirage de `TripDayMapComponent`) : jamais de candidat PTR
+    // depuis là, sous peine de collision entre les deux gestes — l'un des
+    // deux "gagnait" de façon imprévisible selon l'ordre d'écoute (retour
+    // utilisateur : le geste semblait "lié à la carte" plutôt que disponible
+    // partout). Convention dédiée (pas `.drag-handle` — déjà un sens
+    // DIFFÉRENT dans `PanelComponent.onHeaderContentClick`, poser cette
+    // classe sur tout `.map-panel` aurait aussi cassé son propre clic de
+    // bascule).
+    if (target.closest('.pull-to-refresh-exclude')) return;
+
     // Conteneur de scroll PERTINENT pour ce point de départ précis : le jour
     // actif (`swiper-slide`) si le geste démarre dans trip-detail, sinon la
     // page (voir la doc de classe — les deux sont couverts par une seule
     // instance de cette directive).
-    const slide = getScrollContainer(event.target as HTMLElement);
+    const slide = getScrollContainer(target);
     const scrollTop = slide ? slide.scrollTop : Math.max(window.scrollY, this.elementRef.nativeElement.scrollTop);
     if (scrollTop > 0) return;
 
