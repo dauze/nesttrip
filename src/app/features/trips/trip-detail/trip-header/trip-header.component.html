@@ -3,9 +3,22 @@
     class="trip-header__row flex align-items-center justify-content-between gap-2"
     role="button"
     tabindex="0"
-    (click)="onHeaderClick()"
+    aria-label="Paramètres du voyage"
+    (click)="onHeaderClick($event)"
   >
     <span class="text-sm flex-shrink-0">{{ dateRangeLabel() }}</span>
-    <ng-content select="[trip-actions]" />
+    <div class="flex align-items-center gap-2 flex-shrink-0">
+      <ng-content select="[trip-actions]" />
+      <i class="pi pi-sliders-h trip-header__settings-icon" aria-hidden="true"></i>
+    </div>
   </div>
 </app-card>
+
+<app-menu #settingsMenu>
+  <div menuTop class="app-menu-theme-picker flex flex-column">
+    <div class="app-menu-theme-picker__label">Voyage</div>
+    @if (settingsOpened()) {
+      <app-trip-settings-section [tripId]="tripId()" />
+    }
+  </div>
+</app-menu>

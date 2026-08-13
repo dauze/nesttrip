@@ -1,12 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-import { AppSettingsMenuService } from '@app/core/services/app-settings-menu.service';
+import { ViewportService } from '@core/services/viewport.service';
 import { TripHeaderComponent } from './trip-header.component';
 
 describe('TripHeaderComponent', () => {
   beforeEach(() => {
+    // `TripHeaderComponent` monte désormais son propre `app-menu` local (voir
+    // ROADMAP.md "### UI", drawer "Voyage" séparé) — `MenuComponent` injecte
+    // `ViewportService`, non stubbée par défaut dans ce bac à sable de test
+    // (`window.matchMedia` indisponible), même pattern que
+    // `time-picker-dialog.component.spec.ts`.
     TestBed.configureTestingModule({
       imports: [TripHeaderComponent],
-      providers: [AppSettingsMenuService],
+      providers: [
+        { provide: ViewportService, useValue: { isMobile: () => false } },
+      ],
     });
   });
 

@@ -8,9 +8,8 @@ import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.com
 import { SelectComponent } from '@app/shared/components/select/select.component';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { AuthService } from '@core/services/auth.service';
-import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, filter, map, merge, startWith } from 'rxjs';
-import { AppSettingsMenuService } from '@app/core/services/app-settings-menu.service';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
@@ -28,13 +27,12 @@ import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
 import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
 import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
-import { TripSettingsSectionComponent } from './trip-settings-section/trip-settings-section.component';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule, TripSettingsSectionComponent],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
@@ -57,7 +55,6 @@ import { TripSettingsSectionComponent } from './trip-settings-section/trip-setti
     UserProfileService,
     OnboardingTourService,
     FlightStatusRefreshService,
-    AppSettingsMenuService,
   ],
   templateUrl: 'trips.component.html',
   styleUrl: 'trips.component.scss',
@@ -71,7 +68,6 @@ export class TripsComponent {
   protected readonly themeService = inject(ThemeService);
   protected readonly userProfileService = inject(UserProfileService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly appSettingsMenuService = inject(AppSettingsMenuService);
 
   protected readonly themeOptions: SelectButtonOption<ThemeMode>[] = [
     { label: '', value: 'light', icon: 'pi pi-sun' },
@@ -84,8 +80,6 @@ export class TripsComponent {
   protected readonly currencyControl = new FormControl<string>('EUR', { nonNullable: true });
 
   private readonly toolbarRef = viewChild<ElementRef<HTMLElement>>('toolbarRef');
-  private readonly settingsMenuRef = viewChild<MenuComponent>('menu');
-  private readonly settingsBtnRef = viewChild('settingsBtnRef', { read: ElementRef<HTMLElement> });
 
   constructor() {
     effect(() => {
@@ -96,18 +90,6 @@ export class TripsComponent {
       if (currency !== this.userProfileService.defaultCurrency()) {
         this.userProfileService.setDefaultCurrency(currency);
       }
-    });
-
-    // Ouverture/fermeture du menu réglages depuis un déclencheur hors de ce
-    // template (le header voyage épuré, monté seulement dans l'onglet Résumé)
-    // — voir AppSettingsMenuService. `toggleAt` : même méthode publique déjà
-    // utilisée pour les déclencheurs hors template de MenuComponent (voir sa doc).
-    this.appSettingsMenuService.openRequests$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      const btn = this.settingsBtnRef()?.nativeElement;
-      if (btn) this.settingsMenuRef()?.toggleAt(btn);
-    });
-    this.appSettingsMenuService.closeRequests$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.settingsMenuRef()?.close();
     });
 
     afterNextRender(() => {

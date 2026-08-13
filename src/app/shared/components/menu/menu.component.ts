@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, TemplateRef, ViewContainerRef, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, TemplateRef, ViewContainerRef, inject, input, signal, viewChild } from '@angular/core';
 import { ConnectedPosition, Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { ViewportService } from '@core/services/viewport.service';
@@ -39,7 +39,7 @@ const DESKTOP_POSITIONS: ConnectedPosition[] = [
   templateUrl: './menu.component.html',
   styleUrl: './menu.component.scss',
 })
-export class MenuComponent {
+export class MenuComponent implements OnDestroy {
   private readonly overlay = inject(Overlay);
   private readonly viewContainerRef = inject(ViewContainerRef);
   protected readonly viewport = inject(ViewportService);
@@ -93,7 +93,7 @@ export class MenuComponent {
     this.isOpen.set(true);
   }
 
-  /** Public (pas seulement interne) : voir `AppSettingsMenuService.requestClose` (`TripsComponent`), qui ferme le menu depuis un déclencheur hors de ce composant (ex. suppression du voyage courant). */
+  /** Public (pas seulement interne) : des appelants peuvent avoir besoin de fermer le menu depuis une action déclenchée ailleurs (ex. un déclencheur externe via `toggleAt`). */
   close(): void {
     this.overlayRef?.dispose();
     this.overlayRef = undefined;
@@ -102,6 +102,18 @@ export class MenuComponent {
 
   protected runCommand(item: AppMenuItem): void {
     item.command?.();
+    this.close();
+  }
+
+  /**
+   * L'overlay CDK est attaché à `OverlayContainer` (racine du document), pas
+   * à l'arbre de vue de ce composant : sans ce nettoyage, une instance de
+   * `app-menu` montée dans un composant qui peut être détruit alors que le
+   * menu est ouvert (ex. header de trip, détruit par une navigation router
+   * pendant que son propre menu local est affiché) laisserait l'overlay
+   * orphelin à l'écran au lieu de se fermer.
+   */
+  ngOnDestroy(): void {
     this.close();
   }
 }

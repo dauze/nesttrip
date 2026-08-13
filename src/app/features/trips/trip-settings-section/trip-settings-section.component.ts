@@ -25,7 +25,6 @@ import {
 } from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
 import { AuthService } from '@app/core/services/auth.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
-import { AppSettingsMenuService } from '@app/core/services/app-settings-menu.service';
 import { TripFacade } from '../trip-facade.service';
 import { Day, TravelTiers } from '../trip.model';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
@@ -35,14 +34,16 @@ const MODE_LABEL: Record<TravelTiers['tier1Mode'], string> = { walk: 'Marche', b
 const MODE_ICON: Record<TravelTiers['tier1Mode'], string> = { walk: 'nt-icon-walk', bike: 'nt-icon-bike', car: 'pi pi-car' };
 
 /**
- * Section "Voyage" du menu réglages (roue crantée, voir `TripsComponent`) —
- * regroupe TOUTE l'édition du voyage courant (titre, dates, participants,
- * paliers de trajet, suppression), reprise à l'identique de l'ancien
- * `TripHeaderComponent`/`TripCollaboratorsComponent`/`TripSummaryComponent`
- * (ROADMAP.md, "Le trip header doit évoluer") mais déplacée ici pour rester
- * utilisable depuis N'IMPORTE QUEL onglet d'un voyage : le menu réglages est
- * un élément global de la toolbar (`TripsComponent`), alors que
- * `TripHeaderComponent` n'est monté que dans l'onglet Résumé.
+ * Section "Voyage" : regroupe TOUTE l'édition du voyage courant (titre,
+ * dates, participants, paliers de trajet, destinations additionnelles,
+ * suppression). Projetée dans le drawer local de `TripHeaderComponent`
+ * (`app-menu`, monté uniquement dans l'onglet Résumé — ROADMAP.md "### UI",
+ * 2026-08-13, remplace la section "Voyage" du menu réglages global de la
+ * roue crantée) : contrairement à ce précédent emplacement, ce composant
+ * n'a plus besoin d'être utilisable depuis N'IMPORTE QUEL onglet, ni de
+ * fermer un menu ailleurs dans l'arbre à la suppression du trip (la
+ * navigation vers `/trips` détruit ce composant et son drawer parent
+ * directement, voir `MenuComponent.ngOnDestroy`).
  */
 @Component({
   selector: 'app-trip-settings-section',
@@ -59,7 +60,6 @@ export class TripSettingsSectionComponent {
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly authService = inject(AuthService);
   private readonly userProfileService = inject(UserProfileService);
-  private readonly appSettingsMenuService = inject(AppSettingsMenuService);
   private readonly router = inject(Router);
   protected readonly tripFacade = inject(TripFacade);
 
@@ -208,7 +208,6 @@ export class TripSettingsSectionComponent {
       rejectLabel: 'Non',
       accept: () => {
         this.tripFacade.removeTrip(this.tripId());
-        this.appSettingsMenuService.requestClose();
         this.router.navigate(['/trips']);
       },
     });
