@@ -27,7 +27,8 @@ import { GooglePlaceService } from '@core/services/google-place.service';
 import { ViewportService } from '@core/services/viewport.service';
 import { PlaceSummary } from '@core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
-import { BOOKING_STATUS_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
+import { BOOKING_STATUS_OPTIONS, currencySymbolFor } from '@app/shared/components/activity-card/activity.constants';
+import { UserProfileService } from '@core/services/user-profile.service';
 import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META, LOGISTIC_TYPE_OPTIONS, CURRENCY_OPTIONS } from '../../logistic.constants';
 import { FlightFieldsComponent } from '../../logistic-form/flight-fields/flight-fields.component';
@@ -93,6 +94,7 @@ export class LogisticDetailsComponent {
   private readonly flightLookupApi = inject(FlightLookupApiService);
   private readonly googlePlaceService = inject(GooglePlaceService);
   private readonly viewport = inject(ViewportService);
+  private readonly userProfileService = inject(UserProfileService);
 
   readonly tripId = input.required<string>();
   readonly logistic = input.required<Logistic>();
@@ -107,6 +109,9 @@ export class LogisticDetailsComponent {
 
   readonly typeOptions = LOGISTIC_TYPE_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
+
+  /** Symbole affiché dans le libellé "Prix" (ROADMAP.md "### UI") — devise de l'utilisateur, pas un euro fixe. */
+  readonly priceLabelSymbol = computed(() => currencySymbolFor(this.userProfileService.defaultCurrency()));
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
 
   readonly form = this.fb.group({

@@ -76,7 +76,7 @@
       <div class="col-6 p-0 min-w-0 overflow-hidden">
         <div class="flex flex-column gap-1 w-full min-w-0">
           <label for="price-amount" class="nt-text-muted text-sm flex align-items-center gap-1">
-            <i class="pi pi-euro text-sm"></i>Prix
+            <span class="price-label-symbol" aria-hidden="true">{{ priceLabelSymbol() }}</span>Prix
           </label>
           <app-price-field #priceField inputId="price-amount" [currencyOptions]="currencyOptions" formControlName="price" class="w-max min-w-0" />
         </div>

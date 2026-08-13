@@ -4,6 +4,19 @@
 // Interactions") — lecture seule ici (le réglage vit dans le dialog "Heure
 // de fin", voir TimePickerClockComponent) : simple rappel cliquable qui
 // ramène sur ce même dialog.
+// Symbole de devise dans le libellé "Prix" (ROADMAP.md "### UI") : remplace
+// l'ancienne icône `pi pi-euro` fixe — un symbole texte (€/$/£/Fr/...) plutôt
+// qu'une icône, PrimeIcons n'ayant pas de glyphe pour chaque devise
+// supportée. Largeur fixe sur le cas 1 caractère le plus courant (€/$/£/¥)
+// pour ne pas faire sauter "Prix" latéralement selon la devise ; les
+// symboles plus longs (Fr/د.إ) débordent proprement, `min-width` seulement.
+.price-label-symbol {
+  display: inline-block;
+  min-width: 0.9em;
+  font-weight: 600;
+  text-align: center;
+}
+
 .end-day-offset-badge {
   padding: 0.15rem 0.6rem;
   border: none;

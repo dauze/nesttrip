@@ -9,3 +9,12 @@
 .logistic-details__date-label {
   min-height: 2.25rem;
 }
+
+// Symbole de devise dans le libellé "Prix" (ROADMAP.md "### UI", même règle
+// que ActivityFormComponent) : remplace l'ancienne icône `pi pi-euro` fixe.
+.price-label-symbol {
+  display: inline-block;
+  min-width: 0.9em;
+  font-weight: 600;
+  text-align: center;
+}

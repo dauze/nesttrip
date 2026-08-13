@@ -16,7 +16,8 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
-import { ACTIVITY_TYPE_META, ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS } from '../activity.constants';
+import { ACTIVITY_TYPE_META, ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS, currencySymbolFor } from '../activity.constants';
+import { UserProfileService } from '@app/core/services/user-profile.service';
 import { resolveEndDayOffset } from '../activity-time.util';
 import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
 import { DialogService } from '@app/shared/services/dialog.service';
@@ -44,6 +45,7 @@ export class ActivityFormComponent {
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly notesFocusService = inject(NotesFocusService);
   private readonly viewport = inject(ViewportService);
+  private readonly userProfileService = inject(UserProfileService);
 
   readonly tripId = input.required<string>();
   /** Toujours renseigné : ce composant n'est monté qu'en contexte jour (jamais dans le pool général). */
@@ -53,6 +55,9 @@ export class ActivityFormComponent {
   readonly activityTypeOptions = ACTIVITY_TYPE_OPTIONS;
   readonly bookingStatusOptions = BOOKING_STATUS_OPTIONS;
   readonly currencyOptions = CURRENCY_OPTIONS;
+
+  /** Symbole affiché dans le libellé "Prix" (ROADMAP.md "### UI") — devise de l'utilisateur, pas un euro fixe. */
+  readonly priceLabelSymbol = computed(() => currencySymbolFor(this.userProfileService.defaultCurrency()));
 
   readonly form = this.fb.group({
     type: this.fb.nonNullable.control<ActivityType>(ActivityType.ACTIVITE),

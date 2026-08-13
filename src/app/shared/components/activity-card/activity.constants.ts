@@ -46,6 +46,11 @@ export const CURRENCY_OPTIONS = [
   { label: 'د.إ AED', value: 'AED' },
 ];
 
+/** Symbole d'une devise supportée (1er token du libellé de `CURRENCY_OPTIONS`, ex. "€" pour "EUR") — repli sur le code lui-même si inconnu. Même règle d'extraction que `TripSummaryComponent.currencySymbol`. */
+export function currencySymbolFor(currency: string): string {
+  return CURRENCY_OPTIONS.find(o => o.value === currency)?.label.split(' ')[0] ?? currency;
+}
+
 /**
  * Hébergement/Transport exclus des choix proposés à la création/édition
  * (désormais couverts par les réservations transverses — hôtel/vol/location,
