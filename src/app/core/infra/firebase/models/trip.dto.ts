@@ -38,5 +38,5 @@ export interface TripFirebase {
     tier2MaxKm: number;
     tier3Mode: 'walk' | 'bike' | 'car';
   };
-  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car'>;
+  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car' | 'transit'>;
 }

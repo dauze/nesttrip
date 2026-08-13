@@ -25,8 +25,8 @@ export interface Trip {
   photoRef?: string;
   /** Paliers de distance (vol d'oiseau, km) + mode associé pour la sélection auto du mode de trajet affiché entre activités — voir `selectTravelMode`. */
   travelTiers?: TravelTiers;
-  /** Override manuel du mode de trajet pour une paire de lieux donnée (clé = `buildPlacePairKey`) — écrase la sélection auto (`selectTravelMode`) tant qu'il existe pour cette paire. Absence de clé = automatique. */
-  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car'>;
+  /** Override manuel du mode de trajet pour une paire de lieux donnée (clé = `buildPlacePairKey`) — écrase la sélection auto (`selectTravelMode`) tant qu'il existe pour cette paire. Absence de clé = automatique. `transit` (transports en commun) n'est disponible qu'ici, jamais comme mode auto des 3 paliers — voir `TravelMode`. */
+  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car' | 'transit'>;
 }
 
 /**

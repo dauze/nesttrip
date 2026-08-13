@@ -21,13 +21,18 @@ const GOOGLE_MAPS_TRAVEL_MODE: Record<TravelMode, string> = {
   walk: 'walking',
   bike: 'bicycling',
   car: 'driving',
+  transit: 'transit',
 };
+
+/** Libellé partagé par les 3 usages du mode (aria-labels + libellé de la pastille) — un seul point de vérité plutôt que 3 objets littéraux dupliqués. */
+const MODE_LABEL: Record<TravelMode, string> = { walk: 'Marche', bike: 'Vélo', car: 'Voiture', transit: 'Transports en commun' };
 
 const MODE_MENU_ENTRIES: { mode: TravelMode | null; label: string }[] = [
   { mode: null, label: 'Automatique' },
-  { mode: 'walk', label: 'Marche' },
-  { mode: 'bike', label: 'Vélo' },
-  { mode: 'car', label: 'Voiture' },
+  { mode: 'walk', label: MODE_LABEL.walk },
+  { mode: 'bike', label: MODE_LABEL.bike },
+  { mode: 'car', label: MODE_LABEL.car },
+  { mode: 'transit', label: MODE_LABEL.transit },
 ];
 
 /** Types logistiques pertinents pour un long trajet (exclut logement/autre) — voir `onTransportCtaClick`. */
@@ -138,18 +143,13 @@ export class DayDistanceGapComponent {
   protected readonly ariaLabel = computed(() => {
     const distance = this.distanceLabel();
     const minutes = this.durationMinutes();
-    const modeLabel = { walk: 'à pied', bike: 'à vélo', car: 'en voiture' }[this.mode()];
+    const modeLabel = { walk: 'à pied', bike: 'à vélo', car: 'en voiture', transit: 'en transports en commun' }[this.mode()];
     return `${distance} ${modeLabel}, environ ${minutes} min — ouvrir l'itinéraire`;
   });
 
-  protected readonly pictogramAriaLabel = computed(() => {
-    const modeLabel = { walk: 'Marche', bike: 'Vélo', car: 'Voiture' }[this.mode()];
-    return `Mode de trajet : ${modeLabel} — changer`;
-  });
+  protected readonly pictogramAriaLabel = computed(() => `Mode de trajet : ${MODE_LABEL[this.mode()]} — changer`);
 
-    protected readonly modeLibelle = computed(() => {
-    return { walk: 'Marche', bike: 'Vélo', car: 'Voiture' }[this.mode()];
-  });
+  protected readonly modeLibelle = computed(() => MODE_LABEL[this.mode()]);
 
   protected readonly mapsUrl = computed(() => {
     const origin = this.origin();

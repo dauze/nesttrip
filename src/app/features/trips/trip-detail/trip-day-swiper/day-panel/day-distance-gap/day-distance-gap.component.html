@@ -33,8 +33,10 @@
                   <path d="M9.5 9l3 4.5h4" />
                 </g>
               </svg>
-            } @else {
+            } @else if (mode() === 'car') {
               <i class="pi pi-car day-distance-gap-chip__mode-icon" aria-hidden="true"></i>
+            } @else {
+              <i class="pi nt-icon-train day-distance-gap-chip__mode-icon" aria-hidden="true"></i>
             }
             {{ modeLibelle() }}
             <i class="pi pi-chevron-down" aria-hidden="true"></i>

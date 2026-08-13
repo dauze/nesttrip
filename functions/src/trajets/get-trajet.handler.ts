@@ -12,12 +12,13 @@ export interface TrajetResult {
   durationSeconds: number;
 }
 
-type TravelMode = 'walk' | 'bike' | 'car';
+type TravelMode = 'walk' | 'bike' | 'car' | 'transit';
 
 const GOOGLE_TRAVEL_MODE: Record<TravelMode, string> = {
   walk: 'WALK',
   bike: 'BICYCLE',
   car: 'DRIVE',
+  transit: 'TRANSIT',
 };
 
 /** Convertit le format JSON `google.protobuf.Duration` ("1234s") de la Routes API en secondes. */
@@ -31,10 +32,11 @@ function parseDurationSeconds(duration: string | undefined): number {
  * copies doivent rester identiques, pas de module partagé entre les deux
  * projets TypeScript). `walk`/`bike` : les 2 placeId triés avant d'être
  * joints (trajet quasi symétrique, divise par ~2 le volume stocké/calculé).
- * `car` : ordre origine→destination conservé (trajet asymétrique, trafic).
+ * `car`/`transit` : ordre origine→destination conservé (trajet asymétrique —
+ * trafic pour `car`, réseau/horaires de transport en commun pour `transit`).
  */
 function buildRouteId(originPlaceId: string, destinationPlaceId: string, mode: TravelMode): string {
-  if (mode === 'car') return `${originPlaceId}_${destinationPlaceId}_${mode}`;
+  if (mode === 'car' || mode === 'transit') return `${originPlaceId}_${destinationPlaceId}_${mode}`;
   const [a, b] = [originPlaceId, destinationPlaceId].sort();
   return `${a}_${b}_${mode}`;
 }
@@ -48,8 +50,8 @@ export async function getTrajetHandler(req: Request, res: Response, apiKey: stri
     res.status(400).json({ error: 'Paramètres origin/destination (placeId) requis' });
     return;
   }
-  if (mode !== 'walk' && mode !== 'bike' && mode !== 'car') {
-    res.status(400).json({ error: 'Paramètre mode requis (walk|bike|car)' });
+  if (mode !== 'walk' && mode !== 'bike' && mode !== 'car' && mode !== 'transit') {
+    res.status(400).json({ error: 'Paramètre mode requis (walk|bike|car|transit)' });
     return;
   }
 

@@ -1,6 +1,7 @@
 import { TravelTiers } from '@app/features/trips/trip.model';
 
-export type TravelMode = 'walk' | 'bike' | 'car';
+/** `transit` (transports en commun, ROADMAP.md "UX / Interactions") n'est jamais choisi par `selectTravelMode` ci-dessous (les 3 paliers restent walk/bike/car, voir `TravelTiers`) — uniquement disponible en override manuel d'une paire de lieux, voir `DayDistanceGapComponent`. */
+export type TravelMode = 'walk' | 'bike' | 'car' | 'transit';
 
 /**
  * Sélection auto du mode de trajet affiché entre 2 activités, à partir de la
