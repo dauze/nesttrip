@@ -1,4 +1,4 @@
-import { SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { SelectButtonOption } from '@app/shared/components/form-fields/select-button/select-button.component';
 
 /**
  * Contrat local des préférences IA (Lot 1, front-only — voir

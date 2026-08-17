@@ -4,24 +4,24 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, tap } from 'rxjs/operators';
 
-import { SelectComponent } from '@app/shared/components/select/select.component';
-import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { NotesFieldComponent } from '@app/shared/components/notes-field/notes-field.component';
-import { PriceFieldComponent } from '@app/shared/components/price-field/price-field.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ChipComponent } from '@app/shared/components/chip/chip.component';
+import { SelectComponent } from '@app/shared/components/form-fields/select/select.component';
+import { DatePickerComponent } from '@app/shared/components/form-fields/date-picker/date-picker.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
+import { NotesFieldComponent } from '@app/shared/components/form-fields/notes-field/notes-field.component';
+import { PriceFieldComponent } from '@app/shared/components/form-fields/price-field/price-field.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { ChipComponent } from '@app/shared/components/feedback/chip/chip.component';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { BookingStatus } from '@core/enums/booking.status';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_META, ACTIVITY_TYPE_OPTIONS, BOOKING_STATUS_OPTIONS, CURRENCY_OPTIONS, currencySymbolFor } from '../activity.constants';
-import { UserProfileService } from '@app/core/services/user-profile.service';
+import { UserProfileService } from '@app/core/services/business/user-profile.service';
 import { resolveEndDayOffset } from '../activity-time.util';
-import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
+import { TimePickerDialogComponent } from '@app/shared/components/form-fields/time-picker-dialog/time-picker-dialog.component';
 import { DialogService } from '@app/shared/services/dialog.service';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
 import { LinkListDialogComponent, LinkListDialogData, LinkListDialogResult } from './link-list-dialog/link-list-dialog.component';
 

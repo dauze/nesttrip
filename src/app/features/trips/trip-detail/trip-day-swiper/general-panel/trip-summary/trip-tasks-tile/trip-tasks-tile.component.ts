@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { CardComponent } from '@app/shared/components/card/card.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';

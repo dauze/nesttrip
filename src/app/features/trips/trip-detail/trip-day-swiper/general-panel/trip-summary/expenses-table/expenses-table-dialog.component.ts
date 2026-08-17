@@ -4,26 +4,26 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
-import { DialogFrameComponent } from '@app/shared/components/dialog-frame/dialog-frame.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
-import { MessageComponent } from '@app/shared/components/message/message.component';
-import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
+import { DialogFrameComponent } from '@app/shared/components/overlays/dialog-frame/dialog-frame.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
+import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
+import { DatePickerComponent } from '@app/shared/components/form-fields/date-picker/date-picker.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
 import { LongPressDirective } from '@app/shared/directives/long-press.directive';
 import { SelectableItemRef, SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { UserProfileService } from '@app/core/services/user-profile.service';
-import { CurrencyConversionService, ConvertedAmount } from '@app/core/services/currency-conversion.service';
+import { UserProfileService } from '@app/core/services/business/user-profile.service';
+import { CurrencyConversionService, ConvertedAmount } from '@app/core/services/api/currency-conversion.service';
 import { LoadingState } from '@app/core/models/place.dto';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 import { Expense } from '@app/core/models/expense.dto';
-import { PriceEditDialogComponent, PriceEditDialogData } from '@app/shared/components/price-field/price-edit-dialog/price-edit-dialog.component';
-import { SimpleTextEntryDialogComponent, SimpleTextEntryDialogData } from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+import { PriceEditDialogComponent, PriceEditDialogData } from '@app/shared/components/form-fields/price-field/price-edit-dialog/price-edit-dialog.component';
+import { SimpleTextEntryDialogComponent, SimpleTextEntryDialogData } from '@app/shared/components/overlays/simple-text-entry-dialog/simple-text-entry-dialog.component';
 import { resolveFrozenEur } from './expense-currency.util';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 
 export interface ExpensesTableDialogData {
   tripId: string;

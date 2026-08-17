@@ -1,18 +1,19 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, linkedSignal, viewChild } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { PanelComponent } from '@app/shared/components/layout/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
 import { LongPressDirective } from '@app/shared/directives/long-press.directive';
 import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { PlaceSummary } from '@core/models/place.dto';
+import { LogisticDateTimeField } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META } from '../logistic.constants';
 import { LogisticHeaderComponent } from './logistic-header/logistic-header.component';
 import { LogisticDetailsComponent } from './logistic-details/logistic-details.component';
-import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';
-import { TagComponent } from '@app/shared/components/tag/tag.component';
+import { FilesFieldComponent, FileRef } from '@app/shared/components/form-fields/files-field/files-field.component';
+import { TagComponent } from '@app/shared/components/feedback/tag/tag.component';
 
 /** Laisse le temps à l'animation de dépli du panneau de se terminer avant de lancer le chaînage guidé (voir `startGuidedEntry`) — sinon les panneaux/dialogs CDK s'ancrent à un élément encore en cours de transition (`max-height`). Même valeur que `PANEL_COLLAPSE_DELAY_MS` dans ActivityCardComponent. */
 const PANEL_EXPAND_DELAY_MS = 300;
@@ -116,7 +117,7 @@ export class LogisticCardComponent {
   }
 
   /** Clic sur une date/heure du header (voir LogisticHeaderComponent.dateTimeClicked, ROADMAP.md "UX / Interactions") : déplie la carte puis ouvre le picker correspondant du form. */
-  onDateTimeClicked(field: 'startDate' | 'startTime' | 'endDate' | 'endTime'): void {
+  onDateTimeClicked(field: LogisticDateTimeField): void {
     this.collapsed.set(false);
     setTimeout(() => {
       const details = this.detailsComponent();

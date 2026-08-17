@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, EMPTY, of } from 'rxjs';
-import { AuthService } from '@core/services/auth.service';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { CardComponent } from '@app/shared/components/card/card.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
+import { AuthService } from '@core/services/business/auth.service';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
-import { PasswordComponent } from '@app/shared/components/password/password.component';
-import { MessageComponent } from '@app/shared/components/message/message.component';
+import { PasswordComponent } from '@app/shared/components/form-fields/password/password.component';
+import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
 
 @Component({
   selector: 'app-login',

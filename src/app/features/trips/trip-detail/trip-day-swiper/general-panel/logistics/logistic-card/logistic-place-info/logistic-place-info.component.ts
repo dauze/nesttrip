@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { CommonModule } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { distinctUntilChanged, of, switchMap } from 'rxjs';
-import { TagComponent } from '@app/shared/components/tag/tag.component';
-import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { GooglePlaceService } from '@core/services/google-place.service';
+import { TagComponent } from '@app/shared/components/feedback/tag/tag.component';
+import { PanelComponent, PanelToggleEvent } from '@app/shared/components/layout/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
+import { GooglePlaceService } from '@core/services/api/google-place.service';
 import { LoadingState, PlaceDetails, PlaceSummary } from '@core/models/place.dto';
 import { buildSearchUrl } from '@app/shared/utils/google-maps-url.util';
 

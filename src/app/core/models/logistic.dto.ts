@@ -3,6 +3,9 @@ import { Booking } from '@app/shared/components/activity-card/activity.model';
 
 export type LogisticType = 'logement' | 'flight' | 'carRental' | 'train' | 'other';
 
+/** Champ date/heure d'une réservation cliqué (voir `LogisticHeaderComponent.dateTimeClicked`/`LogisticCardComponent.onDateTimeClicked`). */
+export type LogisticDateTimeField = 'startDate' | 'startTime' | 'endDate' | 'endTime';
+
 export interface LogisticFile {
   url: string;
   name: string;

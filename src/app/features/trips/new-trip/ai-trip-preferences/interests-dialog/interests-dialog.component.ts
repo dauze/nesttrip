@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
 import { INTEREST_OPTIONS, Interest } from '../../trip-ai-preferences.model';
 
 export interface InterestsDialogData {

@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CardComponent } from '@app/shared/components/card/card.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { ProgressSpinnerComponent } from '@app/shared/components/feedback/progress-spinner/progress-spinner.component';
 import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip-generation-repository';
 
 /**

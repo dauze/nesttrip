@@ -1,24 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
 import { TripTab } from '../../trip-tab.model';
-
-interface MonthGroup {
-  label: string;
-  tabs: TripTab[];
-}
-
-// Mêmes valeurs que `ActivityDayDispatchOverlayComponent` (calendrier du
-// drag-and-drop, voir ROADMAP.md "UX / Interactions") : même montée/descente
-// CSS 0 -> 50vh depuis le bas de l'écran, demandée explicitement par
-// l'utilisateur pour ce déclencheur "double-clic sur Jour N" — seule la
-// mécanique de bulle qui suit le doigt (propre à un VRAI geste de drag) n'est
-// pas reprise ici, voir la doc de ROADMAP.md pour le détail de la décision.
-const EXPAND_DURATION_BASE_MS = 300;
-const EXPAND_DURATION_PX_FACTOR_MS = 0.7;
-const EXPAND_DURATION_MIN_MS = 300;
-const EXPAND_DURATION_MAX_MS = 650;
-/** Doit rester synchronisé avec `max-height: 50vh` sur `.day-picker-sheet--expanded .day-picker-sheet__sheet` (scss). */
-const EXPANDED_HEIGHT_VH_RATIO = 0.5;
+import { DayMonthGroup, computeExpandDurationMs, groupByMonth } from '@app/shared/utils/day-grid-sheet.util';
 
 /**
  * Calendrier "jours du voyage" affiché en sheet montant depuis le bas de
@@ -47,7 +30,7 @@ export class DayPickerSheetComponent {
   /** Durée (ms) de la montée/descente — calculée à l'ouverture à partir de la distance réelle parcourue (0 -> 50vh), voir `open()`. */
   protected readonly expandDurationMs = signal(700);
 
-  protected readonly monthGroups = computed<MonthGroup[]>(() => this.groupByMonth(this.tabs()));
+  protected readonly monthGroups = computed<DayMonthGroup<TripTab>[]>(() => groupByMonth(this.tabs(), (tab) => new Date(tab.id)));
 
   private closeTimer?: ReturnType<typeof setTimeout>;
 
@@ -55,11 +38,7 @@ export class DayPickerSheetComponent {
   open(): void {
     if (this.isVisible()) return;
 
-    const expandedHeightPx = window.innerHeight * EXPANDED_HEIGHT_VH_RATIO;
-    const duration = EXPAND_DURATION_BASE_MS + expandedHeightPx * EXPAND_DURATION_PX_FACTOR_MS;
-    this.expandDurationMs.set(
-      Math.round(Math.min(EXPAND_DURATION_MAX_MS, Math.max(EXPAND_DURATION_MIN_MS, duration))),
-    );
+    this.expandDurationMs.set(computeExpandDurationMs(window.innerHeight));
 
     this.isVisible.set(true);
 
@@ -92,18 +71,4 @@ export class DayPickerSheetComponent {
     this.daySelected.emit(new Date(tab.id));
     this.close();
   }
-
-  private groupByMonth(tabs: TripTab[]): MonthGroup[] {
-    const groups = new Map<string, TripTab[]>();
-    for (const tab of tabs) {
-      const year = new Date(tab.id).getFullYear();
-      const label = capitalize(`${tab.monthFull ?? tab.month ?? ''} ${year}`.trim());
-      groups.set(label, [...(groups.get(label) ?? []), tab]);
-    }
-    return [...groups.entries()].map(([label, groupTabs]) => ({ label, tabs: groupTabs }));
-  }
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

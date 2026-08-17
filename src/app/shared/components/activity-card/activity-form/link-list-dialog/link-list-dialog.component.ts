@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 
 export interface LinkListDialogData {

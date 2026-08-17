@@ -2,12 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { SelectComponent, SelectOption } from '@app/shared/components/select/select.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { SelectComponent, SelectOption } from '@app/shared/components/form-fields/select/select.component';
 import { PaliersTrajetSliderComponent } from './paliers-trajet-slider/paliers-trajet-slider.component';
 import { TravelTiers } from '@app/features/trips/trip.model';
 import { TravelMode } from '@app/features/trips/trip-detail/trip-day-swiper/day-panel/day-distance-gap/travel-mode.util';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 
 export interface TravelTiersDialogData {
   initialValue: TravelTiers;

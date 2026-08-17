@@ -1,12 +1,12 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
 import { extractPlaceName } from '@app/shared/utils/place-name.util';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 
 export interface TitleEditDialogData {
   initialTitle: string;

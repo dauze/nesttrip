@@ -12,8 +12,8 @@ import { LogisticPersistenceService } from '@app/core/infra/firebase/services/pe
 import { TripPersistenceService } from '@app/core/infra/firebase/services/persistence/trip-persistence';
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
-import { CollaborationService } from '@app/core/services/collaboration.service';
-import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
+import { CollaborationService } from '@app/core/services/api/collaboration.service';
+import { CurrencyConversionService } from '@app/core/services/api/currency-conversion.service';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { NotesType } from '@core/enums/notes.type';

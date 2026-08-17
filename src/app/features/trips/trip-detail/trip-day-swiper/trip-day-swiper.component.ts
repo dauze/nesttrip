@@ -22,11 +22,11 @@ import { LogisticsListComponent } from './general-panel/logistics/logistics-list
 import { NotesComponent } from './general-panel/notes/notes.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
-import { SwiperLockService } from '@app/core/services/swiper-lock.service';
+import { SwiperLockService } from '@app/core/services/ui/swiper-lock.service';
 import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.component';
-import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
-import { TripChromeService } from '@app/core/services/trip-chrome.service';
-import { TripDestinationLocationService } from '@app/core/services/trip-destination-location.service';
+import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.service';
+import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
+import { TripDestinationLocationService } from '@app/core/services/business/trip-destination-location.service';
 import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 
 @Component({

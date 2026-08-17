@@ -2,12 +2,13 @@ import { BookingStatus } from '@core/enums/booking.status';
 import { FlightStatus, Logistic } from '@core/models/logistic.dto';
 import { FlightStatusFirebase, LogisticFirebase } from '../models/logistic.dto';
 import { bookingFromFb, bookingToFb, priceFromFb, priceToFb } from './activity.mapper';
+import { dateFromFb, dateToFb, omitUndefined } from './mapper.util';
 
 function flightStatusFromFb(s: FlightStatusFirebase): FlightStatus {
   return {
     ...s,
-    actualDepartureTime: s.actualDepartureTime ? new Date(Number(s.actualDepartureTime)) : undefined,
-    actualArrivalTime: s.actualArrivalTime ? new Date(Number(s.actualArrivalTime)) : undefined,
+    actualDepartureTime: dateFromFb(s.actualDepartureTime),
+    actualArrivalTime: dateFromFb(s.actualArrivalTime),
   };
 }
 
@@ -23,8 +24,8 @@ export function logisticFromFb(r: LogisticFirebase): Logistic {
   const base = {
     id: r.id,
     title: r.title,
-    startDateTime: r.startDateTime ? new Date(Number(r.startDateTime)) : undefined,
-    endDateTime: r.endDateTime ? new Date(Number(r.endDateTime)) : undefined,
+    startDateTime: dateFromFb(r.startDateTime),
+    endDateTime: dateFromFb(r.endDateTime),
     referenceNumber: r.referenceNumber,
     notes: r.notes ?? '',
     files: r.files ?? [],
@@ -62,7 +63,14 @@ export function logisticFromFb(r: LogisticFirebase): Logistic {
   }
 }
 
-/** Firestore n'accepte aucune valeur `undefined` (même imbriquée) : les champs optionnels absents sont omis plutôt qu'écrits à `undefined`. */
+/**
+ * Firestore n'accepte aucune valeur `undefined` (même imbriquée) : les champs optionnels absents
+ * sont omis plutôt qu'écrits à `undefined` (voir `omitUndefined`). Champs texte libres
+ * (`referenceNumber`/`airline`/`flightNumber`/`company`) : garde `truthy` explicite plutôt que
+ * `omitUndefined`, comportement d'origine conservé à l'identique — une chaîne vide reste omise
+ * (pas juste `undefined`), contrairement aux champs `PlaceSummary`/numériques où les deux
+ * checks sont équivalents.
+ */
 export function logisticToFb(r: Logistic): LogisticFirebase {
   const base = {
     id: r.id,
@@ -71,46 +79,41 @@ export function logisticToFb(r: Logistic): LogisticFirebase {
     files: r.files ?? [],
     links: r.links ?? [],
     booking: bookingToFb(r.booking),
-    ...(r.startDateTime ? { startDateTime: String(r.startDateTime.getTime()) } : {}),
-    ...(r.endDateTime ? { endDateTime: String(r.endDateTime.getTime()) } : {}),
+    startDateTime: dateToFb(r.startDateTime),
+    endDateTime: dateToFb(r.endDateTime),
+    price: r.price ? priceToFb(r.price) : undefined,
     ...(r.referenceNumber ? { referenceNumber: r.referenceNumber } : {}),
-    ...(r.price ? { price: priceToFb(r.price) } : {}),
   };
 
   switch (r.type) {
     case 'logement':
-      return { ...base, type: 'logement', ...(r.place ? { place: r.place } : {}) };
+      return omitUndefined({ ...base, type: 'logement', place: r.place }) as LogisticFirebase;
     case 'flight':
       return {
-        ...base,
-        type: 'flight',
+        ...omitUndefined({
+          ...base,
+          type: 'flight',
+          departureAirport: r.departureAirport,
+          arrivalAirport: r.arrivalAirport,
+          status: r.status ? flightStatusToFb(r.status) : undefined,
+          statusFetchedAt: dateToFb(r.statusFetchedAt),
+        }),
         ...(r.airline ? { airline: r.airline } : {}),
         ...(r.flightNumber ? { flightNumber: r.flightNumber } : {}),
-        ...(r.departureAirport ? { departureAirport: r.departureAirport } : {}),
-        ...(r.arrivalAirport ? { arrivalAirport: r.arrivalAirport } : {}),
-        ...(r.status ? { status: flightStatusToFb(r.status) } : {}),
-        ...(r.statusFetchedAt ? { statusFetchedAt: String(r.statusFetchedAt.getTime()) } : {}),
-      };
+      } as LogisticFirebase;
     case 'carRental':
       return {
-        ...base,
-        type: 'carRental',
+        ...omitUndefined({ ...base, type: 'carRental', pickupPlace: r.pickupPlace, dropoffPlace: r.dropoffPlace }),
         ...(r.company ? { company: r.company } : {}),
-        ...(r.pickupPlace ? { pickupPlace: r.pickupPlace } : {}),
-        ...(r.dropoffPlace ? { dropoffPlace: r.dropoffPlace } : {}),
-      };
+      } as LogisticFirebase;
     case 'train':
-      return {
+      return omitUndefined({
         ...base,
         type: 'train',
-        ...(r.departurePlace ? { departurePlace: r.departurePlace } : {}),
-        ...(r.arrivalPlace ? { arrivalPlace: r.arrivalPlace } : {}),
-      };
+        departurePlace: r.departurePlace,
+        arrivalPlace: r.arrivalPlace,
+      }) as LogisticFirebase;
     case 'other':
-      return {
-        ...base,
-        type: 'other',
-        ...(r.place ? { place: r.place } : {}),
-      };
+      return omitUndefined({ ...base, type: 'other', place: r.place }) as LogisticFirebase;
   }
 }

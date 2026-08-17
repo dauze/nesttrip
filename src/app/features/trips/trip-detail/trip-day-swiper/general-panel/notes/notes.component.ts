@@ -2,28 +2,29 @@ import {Component, DestroyRef, ViewContainerRef, inject, input, ChangeDetectionS
 import { NotesFocusService } from '@app/features/trips/trip-detail/notes-focus.service';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { PanelComponent } from '@app/shared/components/layout/panel/panel.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ChipComponent } from '@app/shared/components/chip/chip.component';
-import { FieldsetComponent } from '@app/shared/components/fieldset/fieldset.component';
-import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { ChipComponent } from '@app/shared/components/feedback/chip/chip.component';
+import { FieldsetComponent } from '@app/shared/components/layout/fieldset/fieldset.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
 import { LongPressDirective } from '@app/shared/directives/long-press.directive';
 import { SelectableItemRef } from '@app/shared/services/selection-mode.service';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Notes, Item, Point} from './notes.model';
-import { MessageComponent } from '@app/shared/components/message/message.component';
+import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { Activity } from '@app/shared/components/activity-card/activity.model';
 import { NotesType } from '@app/core/enums/notes.type';
-import { CardComponent } from '@app/shared/components/card/card.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { LinkActivityDialogComponent, LinkActivityDialogData, LinkActivityDialogResult } from './link-activity-dialog/link-activity-dialog.component';
 
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { pollUntilReady } from '@app/shared/utils/poll-until-ready.util';
+import { mergePointBackward, mergePointForward, newPoint as newPointUtil, removePointAt, reorderPoints, splitPointAt, toggleCheckedPoint } from './notes-points.util';
 
 /** Titre OU texte d'un élément quelconque de la liste (voir ROADMAP.md "UX / Interactions"). */
 function matchesSearch(item: Item, term: string): boolean {
@@ -177,13 +178,13 @@ export class NotesComponent {
   }
 
   addPoint(item: Item): void {
-    const elements = [...item.elements, this.newPoint()];
+    const elements = [...item.elements, newPointUtil()];
     this.updateElements(item, elements);
     this.focusRow(item.id, elements.length - 1, 0);
   }
 
   removePoint(item: Item, index: number): void {
-    this.updateElements(item, item.elements.filter((_, i) => i !== index));
+    this.updateElements(item, removePointAt(item.elements, index));
   }
 
   toggleType(item: Item): void {
@@ -201,26 +202,16 @@ export class NotesComponent {
   }
 
   toggleCheck(item: Item, index: number): void {
-    const point = item.elements[index];
-    const updated = { ...point, checked: !point.checked };
-    const rest = item.elements.filter((_, i) => i !== index);
-    // checked → fin de liste, unchecked → début
-    const elements = updated.checked ? [...rest, updated] : [updated, ...rest];
-    this.updateElements(item, elements);
+    this.updateElements(item, toggleCheckedPoint(item.elements, index));
   }
 
   onEnterRow(item: Item, index: number, event: KeyboardEvent): void {
     event.preventDefault();
     const el = event.target as HTMLTextAreaElement;
     const cursor = el.selectionStart ?? 0;
-    const before = item.elements[index].text.substring(0, cursor);
-    const after  = item.elements[index].text.substring(cursor);
-    el.value = before;
+    el.value = item.elements[index].text.substring(0, cursor);
 
-    const elements = [...item.elements];
-    elements[index] = { ...elements[index], text: before };
-    elements.splice(index + 1, 0, this.newPoint(after, item.elements[index].checked));
-    this.updateElements(item, elements);
+    this.updateElements(item, splitPointAt(item.elements, index, cursor));
     this.focusRow(item.id, index + 1, 0);
   }
 
@@ -238,18 +229,13 @@ export class NotesComponent {
     if ((el.selectionStart ?? 0) !== 0 || index === 0) return;
     event.preventDefault();
 
-    const upper = item.elements[index - 1].text;
-    const merged = upper + item.elements[index].text;
-    const cursor = upper.length;
+    const { elements, mergedText, cursor } = mergePointBackward(item.elements, index);
 
     const upperEl = document.querySelector<HTMLTextAreaElement>(
       `textarea[data-item-id="${item.id}"][data-index="${index - 1}"]`
     );
-    if (upperEl) { upperEl.value = merged; upperEl.focus(); upperEl.setSelectionRange(cursor, cursor); }
+    if (upperEl) { upperEl.value = mergedText; upperEl.focus(); upperEl.setSelectionRange(cursor, cursor); }
 
-    const elements = item.elements
-      .map((p, i) => i === index - 1 ? { ...p, text: merged } : p)
-      .filter((_, i) => i !== index);
     this.updateElements(item, elements);
   }
 
@@ -259,7 +245,7 @@ export class NotesComponent {
 
     if (el.value.length === 0 && points.length > 1) {
       event.preventDefault();
-      const elements = points.filter((_, i) => i !== index);
+      const elements = removePointAt(points, index);
       this.updateElements(item, elements);
       setTimeout(() => this.focusRow(item.id, Math.min(index, elements.length - 1), 0), 0);
       return;
@@ -268,12 +254,9 @@ export class NotesComponent {
     const cursor = el.selectionStart ?? 0;
     if (cursor === el.value.length && index < points.length - 1) {
       event.preventDefault();
-      const merged = points[index].text + points[index + 1].text;
-      el.value = merged;
+      const { elements, mergedText } = mergePointForward(points, index);
+      el.value = mergedText;
       el.setSelectionRange(cursor, cursor);
-      const elements = points
-        .map((p, i) => i === index ? { ...p, text: merged } : p)
-        .filter((_, i) => i !== index + 1);
       this.updateElements(item, elements);
     }
   }
@@ -292,18 +275,7 @@ export class NotesComponent {
   }
 
   onDropPoint(item: Item, event: CdkDragDrop<Point[]>): void {
-    if (item.type !== NotesType.TODO) {
-      const elements = [...item.elements];
-      moveItemInArray(elements, event.previousIndex, event.currentIndex);
-      this.updateElements(item, elements);
-      return;
-    }
-
-    // Les indices du drag event sont relatifs aux unchecked uniquement
-    const unchecked = item.elements.filter(p => !p.checked);
-    const checked   = item.elements.filter(p => p.checked);
-    moveItemInArray(unchecked, event.previousIndex, event.currentIndex);
-    this.updateElements(item, [...unchecked, ...checked]);
+    this.updateElements(item, reorderPoints(item.elements, item.type, event.previousIndex, event.currentIndex));
   }
 
   focusRow(itemId: string, index: number, cursor: number): void {
@@ -316,10 +288,6 @@ export class NotesComponent {
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
-  private newPoint(text = '', checked = false): Point {
-    return { id: crypto.randomUUID(), text, checked };
-  }
-
   private updateElements(item: Item, elements: Point[]): void {
     this.tripFacade.updateItem(this.tripId(), item.id, { elements });
   }

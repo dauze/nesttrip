@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TagComponent } from '@app/shared/components/tag/tag.component';
-import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/panel.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
+import { TagComponent } from '@app/shared/components/feedback/tag/tag.component';
+import { PanelComponent, PanelToggleEvent } from '@app/shared/components/layout/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
 
 import { Activity } from '../activity.model';
 import { timeToMinutes } from '../activity-time.util';

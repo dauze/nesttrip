@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { LogisticFocusService } from '@app/features/trips/trip-detail/logistic-focus.service';
-import { DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
+import { DraggedActivityInfo } from '@app/core/services/business/activity-dispatch.service';
 import { LOGISTIC_TYPE_META } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/logistic.constants';
 import { FlightStatusBadgeComponent } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/flight-status-badge/flight-status-badge.component';
 import { LogisticDayOccurrence } from '../day-logistic-banner/logistic-day-occurrence';
-import { DraggableDayRow } from '../draggable-day-row';
+import { ReorderableDayRow } from '../reorderable-day-row';
 
-/** Clé stable d'une occurrence logistique dans la timeline unifiée (voir DraggableDayRow) — une réservation peut jouer plusieurs rôles le même jour (ex. Check-in ET Check-out d'un aller-retour). */
+/** Clé stable d'une occurrence logistique dans la timeline unifiée (voir ReorderableDayRow) — une réservation peut jouer plusieurs rôles le même jour (ex. Check-in ET Check-out d'un aller-retour). */
 export function logisticRowId(occurrence: LogisticDayOccurrence): string {
   return `${occurrence.logistic.id}:${occurrence.role}`;
 }
@@ -19,7 +19,7 @@ export function logisticRowId(occurrence: LogisticDayOccurrence): string {
  * `DayLogisticBannerComponent`. Le tap navigue vers l'onglet Logistique pour
  * éditer (écrans de gestion non fusionnés, comportement inchangé).
  *
- * Implémente `DraggableDayRow` : `DayReorderService` pilote désormais une
+ * Implémente `ReorderableDayRow` : `DayReorderService` pilote désormais une
  * liste UNIFIÉE activités + logistique (retour utilisateur explicite —
  * "Activité et transport/logement doivent être dans la même pile pour le
  * drag and drop") — la poignée émet `dragHandleDown` exactement comme
@@ -39,7 +39,7 @@ export function logisticRowId(occurrence: LogisticDayOccurrence): string {
   styleUrl: './day-logistic-entry.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DayLogisticEntryComponent implements DraggableDayRow {
+export class DayLogisticEntryComponent implements ReorderableDayRow {
   private readonly logisticFocusService = inject(LogisticFocusService);
   private readonly elRef = inject(ElementRef<HTMLElement>);
 
@@ -84,7 +84,7 @@ export class DayLogisticEntryComponent implements DraggableDayRow {
     this.dragHandleDown.emit({ x: ev.clientX, y: ev.clientY, pointerId: ev.pointerId, rowId: this.rowId });
   }
 
-  // ─── DraggableDayRow — voir la doc de classe : la géométrie/collapse est pilotée depuis DayReorderService, mêmes mécanismes qu'ActivityCardComponent ───
+  // ─── ReorderableDayRow — voir la doc de classe : la géométrie/collapse est pilotée depuis DayReorderService, mêmes mécanismes qu'ActivityCardComponent ───
 
   collapseInstantly(): void {
     // No-op : rien à replier sur une ligne logistique.

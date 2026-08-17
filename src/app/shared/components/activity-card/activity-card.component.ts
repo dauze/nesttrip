@@ -3,30 +3,30 @@ import {
   input, linkedSignal, output, signal, viewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
+import { PanelComponent } from '@app/shared/components/layout/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, distinctUntilChanged, filter, map, of, switchMap, take } from 'rxjs';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
 // Remplacement des anciens modèles par PlaceDetails
 import { LoadingState, PlaceSummary, PlaceDetails, PlacePhotoRef } from '@app/core/models/place.dto';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { ACTIVITY_TYPE_META } from './activity.constants';
-import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/activity-dispatch.service';
-import { SwiperLockService } from '@app/core/services/swiper-lock.service';
+import { ActivityDispatchService, DraggedActivityInfo } from '@app/core/services/business/activity-dispatch.service';
+import { SwiperLockService } from '@app/core/services/ui/swiper-lock.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
-import { ViewportService } from '@app/core/services/viewport.service';
-import { UserProfileService } from '@app/core/services/user-profile.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
+import { UserProfileService } from '@app/core/services/business/user-profile.service';
 import { OnboardingTourService } from '@app/core/onboarding/onboarding-tour.service';
 import { DRAG_HINT_ANCHOR_ID, DRAG_HINT_STEP_ID, DRAG_HINT_TOUR } from '@app/core/onboarding/onboarding-sequences';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
-import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';
+import { FilesFieldComponent, FileRef } from '@app/shared/components/form-fields/files-field/files-field.component';
 import { ActivityFormComponent } from './activity-form/activity-form.component';
 import { ActivityGoogleInfoComponent } from './activity-google-info/activity-google-info.component';
-import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
 import { LongPressDirective } from '@app/shared/directives/long-press.directive';
 import { OnboardingAnchorDirective } from '@app/shared/directives/onboarding-anchor.directive';
@@ -156,12 +156,12 @@ export class ActivityCardComponent {
    * DayPanelComponent prend alors intégralement la main sur le geste
    * (collapse, suivi du pointeur, réordonnancement). Voir `startDispatchGesture`.
    * `rowId` (pas `activityId`) : DayReorderService pilote une liste unifiée
-   * activités + logistique (voir DraggableDayRow), même émetteur générique
+   * activités + logistique (voir ReorderableDayRow), même émetteur générique
    * pour les deux composants.
    */
   readonly dragHandleDown = output<{ x: number; y: number; pointerId: number; rowId: string }>();
 
-  /** Voir `DraggableDayRow` — DayReorderService pilote une liste unifiée activités + logistique. */
+  /** Voir `ReorderableDayRow` — DayReorderService pilote une liste unifiée activités + logistique. */
   get rowId(): string {
     return this.activityId();
   }

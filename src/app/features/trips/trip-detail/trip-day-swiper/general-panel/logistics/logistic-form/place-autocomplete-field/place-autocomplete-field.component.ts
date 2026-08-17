@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, output, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
+import { AutoCompleteComponent } from '@app/shared/components/form-fields/autocomplete/autocomplete.component';
 import {
   TitleEditDialogComponent,
   TitleEditDialogData,
   TitleEditDialogResult,
 } from '@app/shared/components/activity-card/activity-header/title-edit-dialog/title-edit-dialog.component';
 import { DialogService } from '@app/shared/services/dialog.service';
-import { ViewportService } from '@core/services/viewport.service';
-import { GooglePlaceService } from '@core/services/google-place.service';
+import { ViewportService } from '@core/services/ui/viewport.service';
+import { GooglePlaceService } from '@core/services/api/google-place.service';
 import { LoadingState, PlaceSummary } from '@core/models/place.dto';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { extractPlaceName } from '@app/shared/utils/place-name.util';

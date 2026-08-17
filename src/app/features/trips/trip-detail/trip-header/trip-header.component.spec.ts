@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ViewportService } from '@core/services/viewport.service';
+import { ViewportService } from '@core/services/ui/viewport.service';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { TripMember } from '@app/features/trips/trip.model';
 import { TripHeaderComponent } from './trip-header.component';

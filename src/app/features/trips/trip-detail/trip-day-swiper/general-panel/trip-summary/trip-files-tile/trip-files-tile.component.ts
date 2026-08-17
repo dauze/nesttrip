@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { CardComponent } from '@app/shared/components/card/card.component';
-import { ChipComponent } from '@app/shared/components/chip/chip.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { ChipComponent } from '@app/shared/components/feedback/chip/chip.component';
 import { fileIcon, openFile } from '@app/shared/utils/file-icon';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { Activity } from '@app/shared/components/activity-card/activity.model';

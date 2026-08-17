@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, effect, inject, input, output, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
-import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 
 @Component({
   selector: 'app-trip-tabs-nav',

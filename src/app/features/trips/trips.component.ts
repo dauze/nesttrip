@@ -2,31 +2,32 @@ import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, injec
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { Location } from '@angular/common';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { ToolbarComponent } from '@app/shared/components/toolbar/toolbar.component';
-import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.component';
-import { SelectComponent } from '@app/shared/components/select/select.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { ToolbarComponent } from '@app/shared/components/layout/toolbar/toolbar.component';
+import { AppMenuItem, MenuComponent } from '@app/shared/components/overlays/menu/menu.component';
+import { SelectComponent } from '@app/shared/components/form-fields/select/select.component';
 import { CURRENCY_OPTIONS } from '@app/shared/components/activity-card/activity.constants';
-import { AuthService } from '@core/services/auth.service';
+import { AuthService } from '@core/services/business/auth.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, filter, map, merge, startWith } from 'rxjs';
 import { FirebaseTripRepository } from '@app/core/infra/firebase/services/firebase-trip-repository';
 import { TripRepository } from '@app/core/infra/firebase/services/trip-repository';
 import { TripFacade } from './trip-facade.service';
-import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 import { TripDataSource } from '@app/core/infra/firebase/services/trip-data-source';
-import { FileService } from '@app/core/services/file.service';
-import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
-import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
-import { GooglePhotoService } from '@app/core/services/google-photo.service';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
-import { UserProfileService } from '@app/core/services/user-profile.service';
+import { FileRepository } from '@app/core/infra/firebase/services/file-repository';
+import { FirebaseFileRepository } from '@app/core/infra/firebase/services/firebase-file-repository';
+import { ActivityDispatchService } from '@app/core/services/business/activity-dispatch.service';
+import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
+import { GooglePhotoService } from '@app/core/services/api/google-photo.service';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
+import { PhotoViewerService } from '@app/core/services/ui/photo-viewer.service';
+import { UserProfileService } from '@app/core/services/business/user-profile.service';
 import { OnboardingTourService } from '@app/core/onboarding/onboarding-tour.service';
-import { ThemeMode, ThemeService } from '@app/core/services/theme.service';
-import { FlightStatusRefreshService } from '@app/core/services/flight-status-refresh.service';
-import { SaveStatusBarComponent } from '@app/shared/components/save-status-bar/save-status-bar.component';
-import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/select-button/select-button.component';
+import { ThemeMode, ThemeService } from '@app/core/services/ui/theme.service';
+import { FlightStatusRefreshService } from '@app/core/services/business/flight-status-refresh.service';
+import { SaveStatusBarComponent } from '@app/shared/components/feedback/save-status-bar/save-status-bar.component';
+import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/form-fields/select-button/select-button.component';
 import { TripCollaboratorsComponent } from './trip-detail/trip-collaborators/trip-collaborators.component';
 
 @Component({
@@ -46,7 +47,8 @@ import { TripCollaboratorsComponent } from './trip-detail/trip-collaborators/tri
     TripFacade,
     { provide: TripRepository, useExisting: FirebaseTripRepository },
     TripDataSource,
-    FileService,
+    FirebaseFileRepository,
+    { provide: FileRepository, useExisting: FirebaseFileRepository },
     ActivityDispatchService,
     TripChromeService,
     GoogleMapPanelService,

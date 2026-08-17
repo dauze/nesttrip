@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { distinctUntilChanged, switchMap } from 'rxjs';
-import { TravelDistanceService } from '@app/core/services/travel-distance.service';
+import { TravelDistanceService } from '@app/core/services/api/travel-distance.service';
 import { LoadingState } from '@core/models/place.dto';
 import { WalkingRoute } from '@core/models/travel-route.dto';
 import { TravelPoint } from '../day-logistic-banner/day-timeline-distance';
 import { DurationPipe } from '@app/shared/pipes/duration.pipe';
-import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
-import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.component';
+import { SkeletonComponent } from '@app/shared/components/feedback/skeleton/skeleton.component';
+import { AppMenuItem, MenuComponent } from '@app/shared/components/overlays/menu/menu.component';
 import { formatDistanceMeters } from './travel-format.util';
 import { selectTravelMode, buildPlacePairKey, TravelMode } from './travel-mode.util';
 import { haversineDistanceMeters } from '@app/shared/utils/geo.util';
@@ -16,7 +16,7 @@ import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayLogisticQuickAddService } from '@app/features/trips/trip-detail/day-logistic-quick-add.service';
 import { LOGISTIC_TYPE_META } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/logistic.constants';
 import { LogisticType } from '@core/models/logistic.dto';
-import { ChipComponent } from '@app/shared/components/chip/chip.component';
+import { ChipComponent } from '@app/shared/components/feedback/chip/chip.component';
 
 const GOOGLE_MAPS_TRAVEL_MODE: Record<TravelMode, GoogleMapsTravelMode> = {
   walk: 'walking',

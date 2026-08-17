@@ -4,13 +4,14 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, firstValueFrom, tap } from 'rxjs';
 
-import { SelectComponent } from '@app/shared/components/select/select.component';
-import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
-import { TimePickerDialogComponent } from '@app/shared/components/time-picker-dialog/time-picker-dialog.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
-import { NotesFieldComponent } from '@app/shared/components/notes-field/notes-field.component';
-import { PriceFieldComponent } from '@app/shared/components/price-field/price-field.component';
+import { SelectComponent } from '@app/shared/components/form-fields/select/select.component';
+import { DatePickerComponent } from '@app/shared/components/form-fields/date-picker/date-picker.component';
+import { TimePickerDialogComponent } from '@app/shared/components/form-fields/time-picker-dialog/time-picker-dialog.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
+import { NotesFieldComponent } from '@app/shared/components/form-fields/notes-field/notes-field.component';
+import { PriceFieldComponent } from '@app/shared/components/form-fields/price-field/price-field.component';
 import { DialogService } from '@app/shared/services/dialog.service';
+import { awaitOnce } from '@app/shared/utils/await-once.util';
 import {
   TitleEditDialogComponent,
   TitleEditDialogData,
@@ -19,16 +20,16 @@ import {
 import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
-} from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+} from '@app/shared/components/overlays/simple-text-entry-dialog/simple-text-entry-dialog.component';
 
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { FlightLookupApiService } from '@core/services/flight-lookup-api.service';
-import { GooglePlaceService } from '@core/services/google-place.service';
-import { ViewportService } from '@core/services/viewport.service';
+import { FlightLookupApiService } from '@core/services/api/flight-lookup-api.service';
+import { GooglePlaceService } from '@core/services/api/google-place.service';
+import { ViewportService } from '@core/services/ui/viewport.service';
 import { PlaceSummary } from '@core/models/place.dto';
 import { BookingStatus } from '@core/enums/booking.status';
 import { BOOKING_STATUS_OPTIONS, currencySymbolFor } from '@app/shared/components/activity-card/activity.constants';
-import { UserProfileService } from '@core/services/user-profile.service';
+import { UserProfileService } from '@core/services/business/user-profile.service';
 import { Logistic, LogisticType } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META, LOGISTIC_TYPE_OPTIONS, CURRENCY_OPTIONS } from '../../logistic.constants';
 import { FlightFieldsComponent } from '../../logistic-form/flight-fields/flight-fields.component';
@@ -38,7 +39,7 @@ import { GenericFieldsComponent } from '../../logistic-form/generic-fields/gener
 import { FlightStatusBadgeComponent } from '../../flight-status-badge/flight-status-badge.component';
 import { LogisticPlaceInfoComponent } from '../logistic-place-info/logistic-place-info.component';
 
-interface SelectedPlaces {
+export interface SelectedPlaces {
   place?: PlaceSummary;
   departureAirport?: PlaceSummary;
   arrivalAirport?: PlaceSummary;
@@ -48,7 +49,7 @@ interface SelectedPlaces {
   arrivalPlace?: PlaceSummary;
 }
 
-function initialPlacesFrom(logistic: Logistic): SelectedPlaces {
+export function initialPlacesFrom(logistic: Logistic): SelectedPlaces {
   switch (logistic.type) {
     case 'logement':
     case 'other':
@@ -421,7 +422,7 @@ export class LogisticDetailsComponent {
     this.form.patchValue({ flightNumber });
 
     this.startDatePicker().openPanel();
-    const startSelection = await this.awaitOnce(this.startDatePicker().selected);
+    const startSelection = await awaitOnce(this.startDatePicker().selected, this.destroyRef);
     const departureDate = Array.isArray(startSelection) ? startSelection[0] : startSelection;
 
     try {
@@ -554,14 +555,14 @@ export class LogisticDetailsComponent {
 
   private async guidedBooking(): Promise<boolean> {
     this.bookingSelect().openPanel();
-    const { selected } = await this.awaitOnce(this.bookingSelect().closed);
+    const { selected } = await awaitOnce(this.bookingSelect().closed, this.destroyRef);
     return selected;
   }
 
   /** Date (pas de signal d'annulation propre — le chaînage reste simplement en attente si l'utilisateur abandonne, voir la doc de `awaitOnce`) puis heure ; renvoie `false` si l'heure est annulée. */
   private async guidedDateTime(datePicker: DatePickerComponent, timePicker: TimePickerDialogComponent): Promise<boolean> {
     datePicker.openPanel();
-    await this.awaitOnce(datePicker.selected);
+    await awaitOnce(datePicker.selected, this.destroyRef);
     return this.guidedTime(timePicker);
   }
 
@@ -584,7 +585,7 @@ export class LogisticDetailsComponent {
   private async guidedTime(timePicker: TimePickerDialogComponent): Promise<boolean> {
     if (!this.viewport.isMobile()) return true;
     timePicker.openDialog();
-    const time = await this.awaitOnce(timePicker.closed);
+    const time = await awaitOnce(timePicker.closed, this.destroyRef);
     return !!time;
   }
 
@@ -602,7 +603,7 @@ export class LogisticDetailsComponent {
         autoFocus: '.title-edit-dialog__input',
       },
     );
-    return this.awaitOnce(dialogRef.closed);
+    return awaitOnce(dialogRef.closed, this.destroyRef);
   }
 
   private openTextDialog(data: SimpleTextEntryDialogData): Promise<string | undefined> {
@@ -616,7 +617,7 @@ export class LogisticDetailsComponent {
         autoFocus: '.simple-text-entry-dialog__input',
       },
     );
-    return this.awaitOnce(dialogRef.closed);
+    return awaitOnce(dialogRef.closed, this.destroyRef);
   }
 
   /**
@@ -671,22 +672,4 @@ export class LogisticDetailsComponent {
     return { placeId: '', name, address: '', latitude: 0, longitude: 0 };
   }
 
-  /**
-   * Adapte un `output()`/une `Observable` (CDK `DialogRef.closed`) en
-   * `Promise` pour permettre le chaînage `async`/`await` des cinématiques
-   * ci-dessus — sécurisé contre la destruction du composant en plein
-   * chaînage (désabonnement automatique). Si la source n'émet jamais (ex.
-   * `DatePickerComponent.selected` sur annulation, qui n'a pas de signal
-   * d'annulation dédié), la promesse reste simplement en attente : le
-   * chaînage s'arrête là, sans erreur.
-   */
-  private awaitOnce<T>(source: { subscribe(next: (value: T) => void): { unsubscribe(): void } }): Promise<T> {
-    return new Promise((resolve) => {
-      const subscription = source.subscribe((value) => {
-        subscription.unsubscribe();
-        resolve(value);
-      });
-      this.destroyRef.onDestroy(() => subscription.unsubscribe());
-    });
-  }
 }

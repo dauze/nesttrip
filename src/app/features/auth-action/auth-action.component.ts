@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, EMPTY } from 'rxjs';
-import { AuthService } from '@core/services/auth.service';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { CardComponent } from '@app/shared/components/card/card.component';
-import { PasswordComponent } from '@app/shared/components/password/password.component';
-import { MessageComponent } from '@app/shared/components/message/message.component';
+import { AuthService } from '@core/services/business/auth.service';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { PasswordComponent } from '@app/shared/components/form-fields/password/password.component';
+import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
 
 type ActionState = 'loading' | 'reset-form' | 'reset-done' | 'verify-done' | 'error';
 

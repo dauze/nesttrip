@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CoachMarkSequence, IMMEDIATE_TOUR_ID, OnboardingTourService } from './onboarding-tour.service';
-import { UserProfileService } from '@core/services/user-profile.service';
+import { UserProfileService } from '@core/services/business/user-profile.service';
 
 function makeSequence(id: string, stepIds: string[]): CoachMarkSequence {
   return { id, steps: stepIds.map((stepId) => ({ id: stepId, anchorIds: [], text: stepId })) };

@@ -1,17 +1,17 @@
 import { ChangeDetectorRef, Injectable, OnDestroy, inject } from '@angular/core';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
-import { SwiperLockService } from '@app/core/services/swiper-lock.service';
-import { GoogleMapPanelService } from '@app/core/services/google-map-panel.service';
-import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { SwiperLockService } from '@app/core/services/ui/swiper-lock.service';
+import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
+import { ActivityDispatchService } from '@app/core/services/business/activity-dispatch.service';
 import { DayScrollSyncService } from './day-scroll-sync.service';
-import { DraggableDayRow } from './draggable-day-row';
+import { ReorderableDayRow } from './reorderable-day-row';
 
-interface CardOffset { card: DraggableDayRow; top: number; height: number }
+interface CardOffset { card: ReorderableDayRow; top: number; height: number }
 
 /** État d'un réordonnancement manuel en cours dans un jour — voir DayReorderService.onDragHandleDown. */
 interface DayDragState {
   readonly pointerId: number;
-  readonly card: DraggableDayRow;
+  readonly card: ReorderableDayRow;
   readonly rowId: string;
   readonly fromIndex: number;
   targetIndex: number;
@@ -62,8 +62,8 @@ interface DayDragState {
 }
 
 export interface DayReorderConfig {
-  /** Liste UNIFIÉE activités + occurrences logistiques "frontière" (voir DraggableDayRow), dans l'ordre visuel — les échos ne sont jamais inclus (jamais draguables). */
-  getCards: () => readonly DraggableDayRow[];
+  /** Liste UNIFIÉE activités + occurrences logistiques "frontière" (voir ReorderableDayRow), dans l'ordre visuel — les échos ne sont jamais inclus (jamais draguables). */
+  getCards: () => readonly ReorderableDayRow[];
   getTripId: () => string;
   getDayId: () => Date;
   getSlideEl: () => HTMLElement | null;
@@ -85,7 +85,7 @@ export interface DayReorderConfig {
  * (voir `ActivityDispatchService.dayEscalated`).
  *
  * Pilote une liste UNIFIÉE de lignes (activités + occurrences logistiques
- * "frontière", voir `DraggableDayRow` — retour utilisateur explicite,
+ * "frontière", voir `ReorderableDayRow` — retour utilisateur explicite,
  * ROADMAP.md "Activités" : "Activité et transport/logement doivent être dans
  * la même pile pour le drag and drop"). Seules les activités persistent
  * réellement une nouvelle position (`reorderActivities`) : `handleDragPointerUp`

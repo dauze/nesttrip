@@ -20,16 +20,16 @@ import { insertDistanceGaps, TimelineEntryWithGap } from './day-logistic-banner/
 import { DayDistanceGapComponent } from './day-distance-gap/day-distance-gap.component';
 import { LogisticDayOccurrence } from './day-logistic-banner/logistic-day-occurrence';
 import { Activity, ActivityEcho } from '@app/shared/components/activity-card/activity.model';
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
+import { PanelComponent } from '@app/shared/components/layout/panel/panel.component';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { ActivityEchoCardComponent } from '@app/shared/components/activity-card/activity-echo-card/activity-echo-card.component';
 import { DayLogisticEntryComponent, logisticRowId } from './day-logistic-entry/day-logistic-entry.component';
-import { DraggableDayRow } from './draggable-day-row';
-import { MessageComponent } from '@app/shared/components/message/message.component';
+import { ReorderableDayRow } from './reorderable-day-row';
+import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayMapPoint } from '@app/core/models/day-map-point';
-import { TripDayMapHostService } from '@app/core/services/trip-day-map-host.service';
-import { ActivityDispatchService } from '@app/core/services/activity-dispatch.service';
+import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.service';
+import { ActivityDispatchService } from '@app/core/services/business/activity-dispatch.service';
 import { getScrollContainer } from '@app/shared/utils/scroll-container';
 import { DayScrollSyncService } from './day-scroll-sync.service';
 import { DayReorderService } from './day-reorder.service';
@@ -37,8 +37,8 @@ import { DayActivityCreationService } from './day-activity-creation.service';
 import { NewActivityDraftComponent } from './new-activity-draft/new-activity-draft.component';
 import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-creation-target.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
-import { ViewportService } from '@app/core/services/viewport.service';
-import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
+import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 @Component({
@@ -326,7 +326,7 @@ export class DayPanelComponent {
 
   /**
    * Liste UNIFIÉE (activités + occurrences logistiques "frontière", voir
-   * `DraggableDayRow`) consommée par `DayReorderService` — retour utilisateur
+   * `ReorderableDayRow`) consommée par `DayReorderService` — retour utilisateur
    * explicite, ROADMAP.md "Activités" : "Activité et transport/logement
    * doivent être dans la même pile pour le drag and drop". Parcourt
    * `timelineEntries()` (déjà dans le bon ordre visuel) et résout chaque
@@ -336,11 +336,11 @@ export class DayPanelComponent {
    * `DayScrollSyncService` (suivi caméra, `dayMapPoints` ne connaît que les
    * vraies activités) et `DayActivityCreationService`.
    */
-  private getRows(): DraggableDayRow[] {
-    const activityById = new Map(this.activityCards().map(c => [c.activityId(), c as DraggableDayRow]));
-    const logisticById = new Map(this.logisticEntries().map(e => [e.rowId, e as DraggableDayRow]));
+  private getRows(): ReorderableDayRow[] {
+    const activityById = new Map(this.activityCards().map(c => [c.activityId(), c as ReorderableDayRow]));
+    const logisticById = new Map(this.logisticEntries().map(e => [e.rowId, e as ReorderableDayRow]));
 
-    const rows: DraggableDayRow[] = [];
+    const rows: ReorderableDayRow[] = [];
     for (const entry of this.timelineEntries()) {
       if (entry.kind === 'activity') {
         const row = activityById.get(entry.activity.id);
@@ -355,7 +355,7 @@ export class DayPanelComponent {
   }
 
   /** Même principe que `getFreshCardOffsets`, sur la liste unifiée `getRows()` — dédié à `DayReorderService` uniquement. */
-  private getFreshRowOffsets(): { card: DraggableDayRow; top: number; height: number }[] {
+  private getFreshRowOffsets(): { card: ReorderableDayRow; top: number; height: number }[] {
     const rows = this.getRows();
     const slideEl = this.getSlideEl();
     const slideTop = slideEl?.getBoundingClientRect().top ?? 0;

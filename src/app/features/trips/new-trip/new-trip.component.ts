@@ -4,17 +4,18 @@ import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { filter, take } from 'rxjs';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
-import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { CardComponent } from '@app/shared/components/card/card.component';
+import { DatePickerComponent } from '@app/shared/components/form-fields/date-picker/date-picker.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { awaitOnce } from '@app/shared/utils/await-once.util';
 import { Trip, Day } from '../trip.model';
 import { Notes } from '../trip-detail/trip-day-swiper/general-panel/notes/notes.model';
-import { AuthService } from '@app/core/services/auth.service';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
+import { AuthService } from '@app/core/services/business/auth.service';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
+import { AutoCompleteComponent } from '@app/shared/components/form-fields/autocomplete/autocomplete.component';
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { TripFacade } from '../trip-facade.service';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { DialogService } from '@app/shared/services/dialog.service';
 import {
   TitleEditDialogComponent,
@@ -24,10 +25,10 @@ import {
 import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
-} from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
-import { SelectButtonComponent } from '@app/shared/components/select-button/select-button.component';
-import { MessageComponent } from '@app/shared/components/message/message.component';
-import { MultiCityFieldComponent } from '@app/shared/components/multi-city-field/multi-city-field.component';
+} from '@app/shared/components/overlays/simple-text-entry-dialog/simple-text-entry-dialog.component';
+import { SelectButtonComponent } from '@app/shared/components/form-fields/select-button/select-button.component';
+import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
+import { MultiCityFieldComponent } from '@app/shared/components/form-fields/multi-city-field/multi-city-field.component';
 import { AiTripPreferencesComponent } from './ai-trip-preferences/ai-trip-preferences.component';
 import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 import { PLANNING_MODE_OPTIONS, PlanningMode, TripAiPreferences, createDefaultAiPreferences } from './trip-ai-preferences.model';
@@ -163,7 +164,7 @@ export class NewTripComponent {
     const datePicker = this.datePickerRef();
     if (!datePicker) return;
     datePicker.openPanel();
-    const range = await this.awaitOnce(datePicker.selected);
+    const range = await awaitOnce(datePicker.selected, this.destroyRef);
     if (!Array.isArray(range)) return;
     this.form.controls.dates.setValue(range);
   }
@@ -196,7 +197,7 @@ export class NewTripComponent {
         autoFocus: '.title-edit-dialog__input',
       },
     );
-    return this.awaitOnce(dialogRef.closed);
+    return awaitOnce(dialogRef.closed, this.destroyRef);
   }
 
   /** Tiroir mobile "Nom du voyage" — champ texte simple (pas de recherche Google, voir ROADMAP.md). */
@@ -219,7 +220,7 @@ export class NewTripComponent {
         autoFocus: '.simple-text-entry-dialog__input',
       },
     );
-    return this.awaitOnce(dialogRef.closed);
+    return awaitOnce(dialogRef.closed, this.destroyRef);
   }
 
   /** Réédition ponctuelle du champ Ville (retap du déclencheur mobile, hors chaînage initial) — voir template. */
@@ -236,17 +237,6 @@ export class NewTripComponent {
   protected applyNomResult(text: string): void {
     this.form.controls.title.setValue(text);
     this.titleManuallyEdited = true;
-  }
-
-  /** Adapte un `output()`/une `Observable` (CDK `DialogRef.closed`) en `Promise` pour le chaînage `async`/`await` ci-dessus — même pattern que `LogisticDetailsComponent.awaitOnce`. */
-  private awaitOnce<T>(source: { subscribe(next: (value: T) => void): { unsubscribe(): void } }): Promise<T> {
-    return new Promise((resolve) => {
-      const subscription = source.subscribe((value) => {
-        subscription.unsubscribe();
-        resolve(value);
-      });
-      this.destroyRef.onDestroy(() => subscription.unsubscribe());
-    });
   }
 
   readonly placesWithPhotos = computed(() => {

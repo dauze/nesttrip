@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CardComponent } from '@app/shared/components/card/card.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { CheckboxComponent } from '@app/shared/components/checkbox/checkbox.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
 import { TripGenerationRepository } from '@app/core/infra/firebase/services/trip-generation-repository';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate, GeneratedTransportSegment, NoteType, TimeOfDay, TripGeneration } from '@app/features/trips/new-trip/trip-generation.model';

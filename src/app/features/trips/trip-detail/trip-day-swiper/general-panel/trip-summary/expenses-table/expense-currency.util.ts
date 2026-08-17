@@ -1,5 +1,5 @@
 import { Observable, filter, map, of, take } from 'rxjs';
-import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
+import { CurrencyConversionService } from '@app/core/services/api/currency-conversion.service';
 
 /**
  * Taux figé dès la saisie (pas de statut réservé/à réserver pour une

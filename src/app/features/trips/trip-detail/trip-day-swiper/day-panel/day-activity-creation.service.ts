@@ -7,7 +7,7 @@ import {
   TitleEditDialogResult,
 } from '@app/shared/components/activity-card/activity-header/title-edit-dialog/title-edit-dialog.component';
 import { DialogService } from '@app/shared/services/dialog.service';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { PlaceSummary } from '@app/core/models/place.dto';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';

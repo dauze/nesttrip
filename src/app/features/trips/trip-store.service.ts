@@ -17,10 +17,10 @@ import { TripPersistenceService } from '@app/core/infra/firebase/services/persis
 import { DayPersistenceService } from '@app/core/infra/firebase/services/persistence/day-persistence.service';
 import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 import { NotesPersistenceService } from '@app/core/infra/firebase/services/persistence/notes-persistence.service';
-import { CollaborationService } from '@app/core/services/collaboration.service';
+import { CollaborationService } from '@app/core/services/api/collaboration.service';
 import { insertChronologically } from './day-activity-order.util';
 import { suggestedCurrencyForCountry } from '@app/core/utils/country-currency.util';
-import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
+import { CurrencyConversionService } from '@app/core/services/api/currency-conversion.service';
 import { Observable, filter, map, of, take, tap } from 'rxjs';
 
 type TripEntities = Record<string, Trip>;

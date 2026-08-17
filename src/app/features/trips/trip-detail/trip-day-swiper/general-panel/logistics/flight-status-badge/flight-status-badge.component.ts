@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
-import { TagComponent, TagSeverity } from '@app/shared/components/tag/tag.component';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { FlightStatusRefreshService, getRefreshPhase, REFRESH_INTERVAL_MS } from '@core/services/flight-status-refresh.service';
-import { FlightLogistic } from '@core/models/logistic.dto';
+import { TagComponent, TagSeverity } from '@app/shared/components/feedback/tag/tag.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { FlightStatusRefreshService, getRefreshPhase, REFRESH_INTERVAL_MS } from '@core/services/business/flight-status-refresh.service';
+import { FlightLogistic, FlightStatus } from '@core/models/logistic.dto';
 
 const MANUAL_REFRESH_COOLDOWN_S = 60;
 
@@ -11,17 +11,21 @@ interface BadgeMeta {
   severity: TagSeverity;
 }
 
+/** Libellé/sévérité par état — sauf `delayed`, seul état avec un libellé conditionnel (voir `badgeMetaFor`). */
+const BADGE_META_BY_STATE: Record<Exclude<FlightStatus['state'], 'delayed'>, BadgeMeta> = {
+  cancelled: { label: 'Annulé', severity: 'danger' },
+  landed: { label: 'Arrivé', severity: 'success' },
+  onTime: { label: 'À l\'heure', severity: 'success' },
+  scheduled: { label: 'Prévu', severity: 'secondary' },
+};
+
 function badgeMetaFor(flight: FlightLogistic): BadgeMeta {
   const status = flight.status;
   if (!status) return { label: 'Pas encore de données', severity: 'secondary' };
-
-  switch (status.state) {
-    case 'cancelled': return { label: 'Annulé', severity: 'danger' };
-    case 'delayed': return { label: status.delayMinutes ? `Retardé (+${status.delayMinutes} min)` : 'Retardé', severity: 'warn' };
-    case 'landed': return { label: 'Arrivé', severity: 'success' };
-    case 'onTime': return { label: 'À l\'heure', severity: 'success' };
-    case 'scheduled': return { label: 'Prévu', severity: 'secondary' };
+  if (status.state === 'delayed') {
+    return { label: status.delayMinutes ? `Retardé (+${status.delayMinutes} min)` : 'Retardé', severity: 'warn' };
   }
+  return BADGE_META_BY_STATE[status.state];
 }
 
 /**

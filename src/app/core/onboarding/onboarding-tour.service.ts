@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { UserProfileService } from '@core/services/user-profile.service';
+import { UserProfileService } from '@core/services/business/user-profile.service';
 
 /** Id de séquence de la vague immédiate (voir `onboarding-sequences.ts`) — sert de repère ici pour poser `hasSeenOnboarding` dès sa fin (spec, étape 3). */
 export const IMMEDIATE_TOUR_ID = 'immediate-tour';

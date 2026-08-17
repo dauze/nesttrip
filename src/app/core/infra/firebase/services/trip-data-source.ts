@@ -6,7 +6,7 @@ import { FirebaseService } from '@core/infra/firebase/firebase.service';
 import { TripFirebase } from '@app/core/infra/firebase/models/trip.dto';
 import { tripFromFb } from '@app/core/infra/firebase/mappers/trip.mapper';
 import { Trip, TripSummary } from '@app/features/trips/trip.model';
-import { AuthService } from '@app/core/services/auth.service';
+import { AuthService } from '@app/core/services/business/auth.service';
 import { TripRepository } from './trip-repository';
 
 @Injectable()

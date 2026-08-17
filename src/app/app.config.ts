@@ -14,9 +14,9 @@ import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/ht
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import localeFr from '@angular/common/locales/fr';
 import { registerLocaleData } from '@angular/common';
-import { GoogleMapsLoaderService } from './core/services/google-maps-loader.service';
-import { ThemeService } from './core/services/theme.service';
-import { VisualViewportService } from './core/services/visual-viewport.service';
+import { GoogleMapsLoaderService } from './core/services/api/google-maps-loader.service';
+import { ThemeService } from './core/services/ui/theme.service';
+import { VisualViewportService } from './core/services/ui/visual-viewport.service';
 import { onViewTransitionCreated } from './core/navigation/route-transition';
 import { UserProfileRepository } from './core/infra/firebase/services/user-profile-repository';
 import { FirebaseUserProfileRepository } from './core/infra/firebase/services/firebase-user-profile-repository';

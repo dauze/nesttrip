@@ -1,19 +1,19 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms'; // Import de ReactiveForms
-import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
+import { AutoCompleteComponent } from '@app/shared/components/form-fields/autocomplete/autocomplete.component';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_META } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
 import { extractPlaceName } from '@app/shared/utils/place-name.util';
-import { GooglePhotoService } from '@app/core/services/google-photo.service';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
-import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
+import { GooglePhotoService } from '@app/core/services/api/google-photo.service';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
+import { PhotoViewerService } from '@app/core/services/ui/photo-viewer.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
-import { TagComponent } from '@app/shared/components/tag/tag.component';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { TagComponent } from '@app/shared/components/feedback/tag/tag.component';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { TitleEditDialogComponent, TitleEditDialogData, TitleEditDialogResult } from './title-edit-dialog/title-edit-dialog.component';
 

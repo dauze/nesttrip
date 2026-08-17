@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { format } from 'date-fns';
-import { CardComponent } from '@app/shared/components/card/card.component';
-import { MenuComponent } from '@app/shared/components/menu/menu.component';
+import { CardComponent } from '@app/shared/components/layout/card/card.component';
+import { MenuComponent } from '@app/shared/components/overlays/menu/menu.component';
 import { TripSettingsSectionComponent } from '@app/features/trips/trip-settings-section/trip-settings-section.component';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 

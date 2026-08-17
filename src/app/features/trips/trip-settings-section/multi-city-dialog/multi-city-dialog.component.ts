@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { MultiCityFieldComponent } from '@app/shared/components/multi-city-field/multi-city-field.component';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { MultiCityFieldComponent } from '@app/shared/components/form-fields/multi-city-field/multi-city-field.component';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 
 export interface MultiCityDialogData {
   initialCities: string[];

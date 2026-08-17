@@ -1,5 +1,5 @@
 import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { SkeletonComponent } from '@app/shared/components/skeleton/skeleton.component';
+import { SkeletonComponent } from '@app/shared/components/feedback/skeleton/skeleton.component';
 import { CommonModule } from '@angular/common';
 
 @Component({

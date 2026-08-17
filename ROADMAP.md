@@ -57,49 +57,20 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### Qualité / process
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
-- Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là (reporté le 2026-08-07, 73 fichiers d'imports impactés — pas prioritaire pour l'instant)
-- Profiter de anfgular 22 et éviter les async function ! 
+- Profiter de angular 22 et éviter les async function : 15 fonctions identifiées (cinématiques guidées `NewTripComponent`/`LogisticDetailsComponent`/`MultiCityFieldComponent`/`TripSettingsSectionComponent`), l'adaptateur Observable→Promise dupliqué (`awaitOnce`) a été factorisé le 2026-08-17, mais la conversion des 15 fonctions elles-mêmes en chaînage RxJS (`concatMap`) est un chantier à part — c'est une réécriture de logique, pas une extraction pure, à faire dans une session dédiée avec vérification live (pas juste lint/tsc/tests).
 - Définir des spec pour tout le code pour les parcours utilisateurs (et donc mettre des tests e2e qui couvrirait les différentes spec)
-- Faire une code review de fond pour voir si il y a pas de simplification, audit de sécurité, tests, etc 
-
-- Remarques de revue de code faite par moi à prendre en compte : 
-  - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
-  - html : pas de redondance ? 
-  - typescript uniforme ? Signal bien géré, observable aussi ?
-  - Problème d'incohérence : il y a 2 composants pour la liste sur mobile, un avec le check et un avec la ligne en surbrillance, il faudrait les fusionner pour en avoir qu'une seule
-  - Pour tous les composants de base qui sont dans shared comme bouton, select, chip, etc : vérifier que tous les composants du commun se basent la dessus et ne réinvente pas les boutons, chip, select, etc, il ne faut pas redéfinir à chaque fois les éléments, Pour rappel, les composant dans le dossier feature ne doivent quasiment pas avoir de scss car le scss du théme doit être défini dans les fichiers du theme et exploité par les composant commun du shared. les composant de feature sont que des composants qui utilisent les composants de shared sans redéfinir de thème. Role des composant de shared : définir des composant dumbs réutilisable qui implémente le thème. Role des components de feature : utiliser les components de thème et implémenter les logiques par écran. seul du scss de règle de placement doit être définit dans les components de feature via des classes dse layout utilities dans le html directement
-  - Fusionner app-menu et app-select qui sont les même, non ? 
-- Déplacer travel-tier-dialog, il n'a plus rien à faire ici
-- #dragPortal le mecanisme du portal pour la carte n'a plus lieu d'être car elle est completement sorti du swiper, il faudrait l'enlever
-- Préparer le modele de données pour viser une intégration dans une BDD SQL à postériori
-- DayPersistenceService et TripPersistenceService n'extends pas  DebounceWriter<string, ExpenseUpdate>, pourquoi ? 
-- day-activity-instance.mapper.ts : faire le nettoyage recommandé
-- logistic.mapper.ts on peut variabiliser et factoriser
-- trip.dto.ts on peut externaliser le type walk, etc
-- das core/services : séparer les services en fonction du type, mettre les services d'appels d'api ensemble, et mettre les services associé à la gestion du l'ui ensemble, et mettre les services busines enssemble
-- formatDateParam doit être sorti dans un utils car utilisé à plusieurs endroit 
-- mettre le onboarding-sequences.ts à un endroit approprié, ce n'est pas un service
-- merger les utils currency-conversion.util et locale-currency.util qui traitent tout les 2 des currency
-- DayPickerSheetComponent devrait être dans le shared et n'est pas duppliqué de ActivityDayDispatchOverlayComponent ? factorisation potentiel possible
-- MobileTripNavComponent Aussi devrait être dans shared, c'est des composant techniqsues bas niveau qui ne constinue pas un feature mais répodent à une problématique technique 
-- Sortir les  MODE_MENU_ENTRIES et GOOGLE_MAPS_TRAVEL_MODE de DayDistanceGapComponent pour les utiliser partout : faire du refactor coté ts aussi. `https://www.google.com/maps/dir/?${params.toString()} ne doit pas être ici mais dans un service dédié
-- Les utils associé je sais pas trop si il faut les laisser là ou pas, conseille moi 
-- NewActivityDraftComponent c'est quoi ça ? C'est pas un composant qui ressemble déjà à un composant dans shared et a migrer ? genre app-place-autocomplete-field
-- TimelineComponent il y a trop de scss, il faut utiliser les class de layout-utilities et surtout ne pas mettre de valeurs en dure ! utiliser le thème 
-- TripDayMapComponent même remarque que pour TimelineComponent et il est un peu long, on ne peut pas sortir des méthodes pour en mettre dans un utils ? 
-- DayActivityCreationConfig n'a rien a faire là 
-- DaypanelComponent : la map, la gérer plus simplement, et ne plus faire d'interpolation, c'était utile avant mais plus maintenant comme elle n'est plus dans le swiper. Il y a beacoup de commentaire dans les scss, garder l'explication des data, pas des explications de features
-- day-reorder.service.ts, day-scrollsync ne doivent pas être la ou alors mieux rangé
-- DraggableDayRow doit être renommé et déplacé 
-- les services de core avec les repos, il faudrait pas plutôt faire des interface plutôt que des abstract class et faire des extends ? 
-- FlightStatusBadgeComponent : badgeMetaFor doit être une constante plutîot 
-- initialPlacesFrom de LogisticDetailsComponent idem
-- LogisticHeaderComponent le scss a trop de valeur en dur et pas assez de primeflex. 'startDate' | 'startTime' | 'endDate' | 'endTime' créer une type réutilisable non ? C'est utilisé à d'autres endroit il me semble 
-- Logistic place info : pas appelé d'url direct, c'éer un service : `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${place.placeId}`;
-- LogisticCardComponent le scss a voir si il n'est pas simplifiable 
-- LinkActivityDialogComponent trop de scss en dur
-- NotesComponent on peut pas un peut factoriser le front ? 
-Remarque générale, pas assez d'externalisation des type avec des réécriture à plusieurs endroit, il faut factoriser 
+- 2 composants pour la liste sur mobile, un avec le check (`MenuComponent`) et un avec la ligne en surbrillance (`SelectComponent`) : confirmé par l'audit du 2026-08-17 (`day-distance-gap.component.ts`, sélecteur de mode de trajet, hack `icon: override === mode ? 'pi-check' : undefined` faute de notion de sélection native sur `MenuComponent`) — soit `AppMenuItem` gagne un `selected?: boolean` rendu nativement, soit tout picker à choix unique passe par `SelectComponent`.
+- `app-menu`/`app-select` : ne pas fusionner (contrats différents, CVA vs commande) mais extraire la plomberie CDK overlay commune (~40 lignes dupliquées, position desktop/mobile/backdrop) dans un service partagé, probablement aussi consommé par `AutoCompleteComponent`.
+- Préparer le modèle de données pour une intégration SQL à postériori : ajouter une colonne `position` explicite sur `DayActivityInstance` (au lieu de dépendre de l'ordre dans le tableau `activityIds`) et documenter le mapping "1 doc Firestore dénormalisé ↔ N tables SQL" quelque part (CLAUDE.md ou doc dédiée).
+- TimelineComponent : encore du scss en dur non tokenisé (`gap: 0.625rem` hors échelle, badge icône 1.75rem jamais tokenisé) — pas traité dans le lot du 2026-08-17.
+- DaypanelComponent : `day-panel.component.scss` a 66% de commentaires narratifs (historique de décisions produit) plutôt que des explications de données — à déplacer vers ROADMAP.md/CHANGELOG. La simplification de la gestion de la carte (interpolation devenue inutile) n'a pas été auditée en détail.
+- LogisticHeaderComponent : scss encore en dur (tailles d'icône non alignées sur l'échelle) — pas traité dans le lot du 2026-08-17 (le type `LogisticDateTimeField` dupliqué, lui, a été factorisé).
+- LogisticCardComponent : duplication du pattern "bordure d'accent" (`0.4rem`/`0.9rem`) avec `activity-card.component.scss` — tokens partagés à créer.
+- LinkActivityDialogComponent : fichier le moins tokenisé du lot (16 `var(--nt-*)` mais 11 valeurs rem orphelines, 3 tailles de police différentes non alignées sur l'échelle).
+- LogisticDetailsComponent (693 lignes) : les 5 méthodes `guidedXxx` (cinématiques guidées vol/logement/location/train/autre) ne sont volontairement pas extraites dans un service dédié — évalué le 2026-08-17, jugé trop couplé (viewChild des pickers, form, dialogs) pour une extraction sûre sans risque de régression comportementale ; à refaire en session dédiée avec vérification live, pas en lecture de code seule.
+- `activity-type-rings.component.scss` (275 lignes) : pire ratio valeurs-en-dur/tokens du dossier `features/`, repéré par l'audit du 2026-08-17 mais pas encore examiné en détail (une partie du scss peut être structurellement nécessaire, géométrie SVG de cercles).
+- CSP (Content-Security-Policy) complète pour le hosting : les headers de base (`X-Content-Type-Options`/`X-Frame-Options`/`Referrer-Policy`) sont en place depuis le 2026-08-17, mais pas de CSP — demande de lister tous les domaines autorisés (Maps, Fonts, Firebase, backend maison) et une vraie vérification live avant prod pour ne pas casser l'app.
+- NotesComponent : le focus/curseur (`document.querySelector` impératif au clavier) n'a pas été extrait dans une directive dédiée — évalué le 2026-08-17, laissé tel quel (seules les fonctions pures de manipulation de tableau ont été extraites, voir `notes-points.util.ts`) : la partie DOM restante nécessiterait une vérification live du clavier/curseur pour être touchée sans risque.
 
 
 ### Industrialisation (non prioritaire)

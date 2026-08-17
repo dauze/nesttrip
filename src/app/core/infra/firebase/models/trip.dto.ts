@@ -7,6 +7,13 @@ import {ExpenseFirebase} from './expense.dto';
 
 export type TripRoleFireBase = 'owner' | 'editor';
 
+/**
+ * Sous-ensemble du type domaine `TravelMode` (`day-distance-gap/travel-mode.util.ts`) sans
+ * `'transit'` (jamais un mode de palier) — redéfini localement plutôt qu'importé : ce DTO
+ * (`core/infra/firebase`) ne doit pas dépendre d'un type de `features/`, voir CLAUDE.md.
+ */
+export type TravelTierModeFirebase = 'walk' | 'bike' | 'car';
+
 export interface TripMember {
   role: TripRoleFireBase;
   email: string;
@@ -33,11 +40,11 @@ export interface TripFirebase {
   photoRef?: string;
   additionalCities?: string[];
   travelTiers?: {
-    tier1Mode: 'walk' | 'bike' | 'car';
+    tier1Mode: TravelTierModeFirebase;
     tier1MaxKm: number;
-    tier2Mode: 'walk' | 'bike' | 'car';
+    tier2Mode: TravelTierModeFirebase;
     tier2MaxKm: number;
-    tier3Mode: 'walk' | 'bike' | 'car';
+    tier3Mode: TravelTierModeFirebase;
   };
-  travelModeOverrides?: Record<string, 'walk' | 'bike' | 'car' | 'transit'>;
+  travelModeOverrides?: Record<string, TravelTierModeFirebase | 'transit'>;
 }

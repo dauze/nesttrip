@@ -1,5 +1,5 @@
 import { Directive, DestroyRef, ElementRef, afterNextRender, computed, inject, input } from '@angular/core';
-import { ViewportService } from '@app/core/services/viewport.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { SelectableItemRef, SelectionModeService, selectableItemKey } from '@app/shared/services/selection-mode.service';
 
 /**

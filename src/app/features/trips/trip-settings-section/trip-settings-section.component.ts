@@ -1,17 +1,17 @@
-import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ViewContainerRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DialogRef } from '@angular/cdk/dialog';
 import { format } from 'date-fns';
 import { filter, finalize, firstValueFrom, take } from 'rxjs';
-import { DatePickerComponent } from '@app/shared/components/date-picker/date-picker.component';
+import { DatePickerComponent } from '@app/shared/components/form-fields/date-picker/date-picker.component';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
 import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
-} from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+} from '@app/shared/components/overlays/simple-text-entry-dialog/simple-text-entry-dialog.component';
 import {
   TitleEditDialogComponent,
   TitleEditDialogData,
@@ -28,12 +28,13 @@ import {
 import {
   CollaboratorsDialogComponent,
   CollaboratorsDialogData,
-} from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
-import { AuthService } from '@app/core/services/auth.service';
-import { UserProfileService } from '@app/core/services/user-profile.service';
+} from '@app/shared/components/overlays/collaborators-dialog/collaborators-dialog.component';
+import { AuthService } from '@app/core/services/business/auth.service';
+import { UserProfileService } from '@app/core/services/business/user-profile.service';
 import { TripFacade } from '../trip-facade.service';
 import { Day, TravelTiers } from '../trip.model';
-import { ButtonComponent } from '@app/shared/components/button/button.component';
+import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
+import { awaitOnce } from '@app/shared/utils/await-once.util';
 
 const MODE_LABEL: Record<TravelTiers['tier1Mode'], string> = { walk: 'Marche', bike: 'Vélo', car: 'Voiture' };
 /** Voir la doc équivalente historique dans `TripHeaderComponent` (avant ce déplacement) : `nt-icon-*` maison pour marche/vélo (aucun glyphe PrimeIcons adéquat), `pi-car` pour voiture. */
@@ -64,6 +65,7 @@ export class TripSettingsSectionComponent {
   private readonly dialogService = inject(DialogService);
   private readonly confirmDialogService = inject(ConfirmDialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly authService = inject(AuthService);
   private readonly userProfileService = inject(UserProfileService);
   private readonly googlePlaceService = inject(GooglePlaceService);
@@ -180,12 +182,7 @@ export class TripSettingsSectionComponent {
         autoFocus: '.title-edit-dialog__input',
       },
     );
-    const result = await new Promise<TitleEditDialogResult | undefined>((resolve) => {
-      const sub = dialogRef.closed.subscribe((value) => {
-        sub.unsubscribe();
-        resolve(value);
-      });
-    });
+    const result = await awaitOnce(dialogRef.closed, this.destroyRef);
     if (!result || result.type !== 'place') return undefined;
 
     const place = result.place;

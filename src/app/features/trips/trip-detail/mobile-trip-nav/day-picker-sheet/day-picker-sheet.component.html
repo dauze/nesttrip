@@ -17,7 +17,7 @@
         <div class="day-picker-sheet__month">
           <div class="day-picker-sheet__month-label nt-bg-content font-semibold text-sm">{{ group.label }}</div>
           <div class="flex flex-wrap gap-2 mb-2">
-            @for (tab of group.tabs; track tab.id; let di = $index) {
+            @for (tab of group.items; track tab.id; let di = $index) {
               <app-button
                 [rounded]="true"
                 [text]="true"

@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, afterNextRender, computed, inject, 
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
-import { GooglePlaceService } from '@app/core/services/google-place.service';
+import { AutoCompleteComponent } from '@app/shared/components/form-fields/autocomplete/autocomplete.component';
+import { GooglePlaceService } from '@app/core/services/api/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 import { extractPlaceName } from '@app/shared/utils/place-name.util';
 

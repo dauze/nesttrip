@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, model } from '@angular/core';
-import { SelectButtonComponent } from '@app/shared/components/select-button/select-button.component';
+import { SelectButtonComponent } from '@app/shared/components/form-fields/select-button/select-button.component';
 import { TextareaDirective } from '@app/shared/directives/textarea.directive';
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
 import { DialogService } from '@app/shared/services/dialog.service';

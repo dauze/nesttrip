@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { DialogService } from '@app/shared/services/dialog.service';
-import { ConfirmDialogComponent, ConfirmDialogData } from '@app/shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '@app/shared/components/overlays/confirm-dialog/confirm-dialog.component';
 
 export interface ConfirmOptions extends ConfirmDialogData {
   accept?: () => void;

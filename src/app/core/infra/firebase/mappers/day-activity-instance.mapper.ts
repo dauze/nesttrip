@@ -42,6 +42,7 @@ export function dayActivityInstanceFromFb(a: DayActivityInstanceFirebase): DayAc
   };
 }
 
+/** Firestore n'accepte aucune valeur `undefined` (même imbriquée) — `startTime`/`endTime` sont écrits à `''` plutôt qu'omis (le composant horaire distingue "jamais renseigné" de "vide", contrairement aux champs optionnels d'`activityToFb`/`logisticToFb`) ; `endDayOffset` reste `undefined` intentionnellement, voir son commentaire ci-dessous. */
 export function dayActivityInstanceToFb(a: DayActivityInstance): DayActivityInstanceFirebase {
   return {
     ...a,

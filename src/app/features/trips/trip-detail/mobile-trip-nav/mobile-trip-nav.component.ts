@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
-import { TripChromeService } from '@app/core/services/trip-chrome.service';
+import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 import { DayPickerSheetComponent } from './day-picker-sheet/day-picker-sheet.component';
 import { OnboardingAnchorDirective } from '@app/shared/directives/onboarding-anchor.directive';
 

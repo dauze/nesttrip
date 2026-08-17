@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Logistic } from '@core/models/logistic.dto';
+import { Logistic, LogisticDateTimeField } from '@core/models/logistic.dto';
 import { LOGISTIC_TYPE_META } from '../../logistic.constants';
 import { DialogService } from '@app/shared/services/dialog.service';
 import { PlaceSummary } from '@core/models/place.dto';
@@ -12,7 +12,7 @@ import {
 import {
   SimpleTextEntryDialogComponent,
   SimpleTextEntryDialogData,
-} from '@app/shared/components/simple-text-entry-dialog/simple-text-entry-dialog.component';
+} from '@app/shared/components/overlays/simple-text-entry-dialog/simple-text-entry-dialog.component';
 
 /**
  * Header d'une carte réservation : icône du type + titre. Titre toujours en
@@ -46,7 +46,7 @@ export class LogisticHeaderComponent {
   /** Émis uniquement quand le titre d'un logement est édité via une vraie sélection Google (voir le dialog ci-dessus). */
   readonly placeSelected = output<PlaceSummary>();
   /** Clic sur une date/heure (voir ROADMAP.md "UX / Interactions") : `LogisticCardComponent` déplie la carte et ouvre le picker correspondant du form. */
-  readonly dateTimeClicked = output<'startDate' | 'startTime' | 'endDate' | 'endTime'>();
+  readonly dateTimeClicked = output<LogisticDateTimeField>();
 
   readonly typeMeta = LOGISTIC_TYPE_META;
   readonly isLogement = computed(() => this.logistic().type === 'logement');
@@ -123,7 +123,7 @@ export class LogisticHeaderComponent {
   }
 
   /** `stopPropagation` : même besoin que le crayon ci-dessus — sans ça, le clic remonterait au header et déplierait/replierait le panneau au lieu d'ouvrir le picker. */
-  onDateTimeClick(event: Event, field: 'startDate' | 'startTime' | 'endDate' | 'endTime'): void {
+  onDateTimeClick(event: Event, field: LogisticDateTimeField): void {
     event.stopPropagation();
     this.dateTimeClicked.emit(field);
   }

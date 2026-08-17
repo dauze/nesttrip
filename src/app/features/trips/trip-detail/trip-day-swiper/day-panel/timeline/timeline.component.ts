@@ -4,8 +4,8 @@ import { LogisticDayOccurrence } from '../day-logistic-banner/logistic-day-occur
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { PanelComponent } from '@app/shared/components/panel/panel.component';
-import { DividerComponent } from '@app/shared/components/divider/divider.component';
+import { PanelComponent } from '@app/shared/components/layout/panel/panel.component';
+import { DividerComponent } from '@app/shared/components/layout/divider/divider.component';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { LOGISTIC_TYPE_META } from '../../general-panel/logistics/logistic.constants';
 

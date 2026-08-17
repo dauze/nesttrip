@@ -1,16 +1,16 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, signal } from '@angular/core';
 import { DialogRef } from '@angular/cdk/dialog';
 import { finalize } from 'rxjs';
-import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
-import { AvatarGroupComponent } from '@app/shared/components/avatar-group/avatar-group.component';
+import { AvatarComponent } from '@app/shared/components/avatar/avatar/avatar.component';
+import { AvatarGroupComponent } from '@app/shared/components/avatar/avatar-group/avatar-group.component';
 import { TooltipDirective } from '@app/shared/directives/tooltip.directive';
 import { DialogService } from '@app/shared/services/dialog.service';
-import { AuthService } from '@app/core/services/auth.service';
-import { UserProfileService } from '@app/core/services/user-profile.service';
+import { AuthService } from '@app/core/services/business/auth.service';
+import { UserProfileService } from '@app/core/services/business/user-profile.service';
 import {
   CollaboratorsDialogComponent,
   CollaboratorsDialogData,
-} from '@app/shared/components/collaborators-dialog/collaborators-dialog.component';
+} from '@app/shared/components/overlays/collaborators-dialog/collaborators-dialog.component';
 import { TripFacade } from '../../trip-facade.service';
 import { getInitials } from '@app/shared/utils/get-initials';
 
