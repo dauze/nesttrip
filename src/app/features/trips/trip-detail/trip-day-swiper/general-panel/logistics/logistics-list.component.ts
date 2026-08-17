@@ -17,6 +17,7 @@ import { LOGISTIC_TYPE_META, LogisticTypeMeta } from './logistic.constants';
 import { LogisticCardComponent } from './logistic-card/logistic-card.component';
 import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 import { getScrollContainer, smoothScrollTo } from '@app/shared/utils/scroll-container';
+import { pollUntilReady } from '@app/shared/utils/poll-until-ready.util';
 
 type SortMode = 'type' | 'chrono';
 const SORT_MODES: SortMode[] = ['type', 'chrono'];
@@ -170,26 +171,24 @@ export class LogisticsListComponent {
    * retour se déclencherait aussitôt la carte créée, avant même que
    * l'utilisateur ait pu la voir.
    */
-  private focusCardWhenReady(logisticId: string, token: number, startGuided: boolean, originDayId?: string, attemptsLeft = 15): void {
-    const card = this.logisticCards().find((c) => c.logisticId() === logisticId);
-    if (!card) {
-      if (attemptsLeft <= 0) return;
-      requestAnimationFrame(() => this.focusCardWhenReady(logisticId, token, startGuided, originDayId, attemptsLeft - 1));
-      return;
-    }
-
-    this.logisticFocusService.clear(token);
-    card.collapsed.set(false);
-    // Deux rAF avant de scroller (ROADMAP.md "Bugs / fixes", même correctif
-    // que `DayReorderService` pour le même symptôme) : `collapsed.set(false)`
-    // ne déplie pas la carte de façon synchrone (transition CSS + rendu
-    // Angular) — sans cette attente, on mesurerait encore la géométrie
-    // "carte repliée", pas sa position finale une fois dépliée.
-    requestAnimationFrame(() => requestAnimationFrame(() => this.scrollCardToVisibleCenter(card.element)));
-    if (startGuided) {
-      const done = card.startGuidedEntry();
-      if (originDayId && this.viewport.isMobile()) done.then(() => this.dayActivityFocusService.requestFocus(originDayId));
-    }
+  private focusCardWhenReady(logisticId: string, token: number, startGuided: boolean, originDayId?: string): void {
+    pollUntilReady(
+      () => this.logisticCards().find((c) => c.logisticId() === logisticId),
+      (card) => {
+        this.logisticFocusService.clear(token);
+        card.collapsed.set(false);
+        // Deux rAF avant de scroller (ROADMAP.md "Bugs / fixes", même correctif
+        // que `DayReorderService` pour le même symptôme) : `collapsed.set(false)`
+        // ne déplie pas la carte de façon synchrone (transition CSS + rendu
+        // Angular) — sans cette attente, on mesurerait encore la géométrie
+        // "carte repliée", pas sa position finale une fois dépliée.
+        requestAnimationFrame(() => requestAnimationFrame(() => this.scrollCardToVisibleCenter(card.element)));
+        if (startGuided) {
+          const done = card.startGuidedEntry();
+          if (originDayId && this.viewport.isMobile()) done.then(() => this.dayActivityFocusService.requestFocus(originDayId));
+        }
+      },
+    );
   }
 
   /**

@@ -5,6 +5,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
 import { MAX_TITLE_LENGTH } from '@app/shared/utils/input-limits';
+import { extractPlaceName } from '@app/shared/utils/place-name.util';
 import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface TitleEditDialogData {
@@ -87,20 +88,12 @@ export class TitleEditDialogComponent implements AfterViewInit {
   }
 
   protected displayName(place: PlaceSummary): string {
-    return this.extractPlaceName(place?.name);
-  }
-
-  private extractPlaceName(name: unknown): string {
-    if (typeof name === 'string') return name;
-    if (name && typeof name === 'object' && typeof (name as { text?: unknown }).text === 'string') {
-      return (name as { text: string }).text;
-    }
-    return '';
+    return extractPlaceName(place?.name);
   }
 
   protected selectPlace(raw: PlaceSummary): void {
     if (!raw?.placeId) return;
-    const place: PlaceSummary = { ...raw, name: this.extractPlaceName(raw.name) };
+    const place: PlaceSummary = { ...raw, name: extractPlaceName(raw.name) };
     this.dialogRef.close({ type: 'place', place });
   }
 

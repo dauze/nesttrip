@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '@environments/environment';
+import { formatDateParam } from '@core/utils/date-param.util';
 
 export interface FlightLookupResult {
   airline?: string;
@@ -17,13 +18,6 @@ interface FlightLookupApiResponse {
   arrivalAirportName?: string;
   scheduledDepartureTime?: string;
   scheduledArrivalTime?: string;
-}
-
-function formatDateParam(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 /**

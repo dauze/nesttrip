@@ -11,13 +11,14 @@ import { AppMenuItem, MenuComponent } from '@app/shared/components/menu/menu.com
 import { formatDistanceMeters } from './travel-format.util';
 import { selectTravelMode, buildPlacePairKey, TravelMode } from './travel-mode.util';
 import { haversineDistanceMeters } from '@app/shared/utils/geo.util';
+import { buildDirectionsUrl, GoogleMapsTravelMode } from '@app/shared/utils/google-maps-url.util';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { DayLogisticQuickAddService } from '@app/features/trips/trip-detail/day-logistic-quick-add.service';
 import { LOGISTIC_TYPE_META } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/logistics/logistic.constants';
 import { LogisticType } from '@core/models/logistic.dto';
 import { ChipComponent } from '@app/shared/components/chip/chip.component';
 
-const GOOGLE_MAPS_TRAVEL_MODE: Record<TravelMode, string> = {
+const GOOGLE_MAPS_TRAVEL_MODE: Record<TravelMode, GoogleMapsTravelMode> = {
   walk: 'walking',
   bike: 'bicycling',
   car: 'driving',
@@ -151,19 +152,9 @@ export class DayDistanceGapComponent {
 
   protected readonly modeLibelle = computed(() => MODE_LABEL[this.mode()]);
 
-  protected readonly mapsUrl = computed(() => {
-    const origin = this.origin();
-    const destination = this.destination();
-    const params = new URLSearchParams({
-      api: '1',
-      origin: `${origin.latitude},${origin.longitude}`,
-      origin_place_id: origin.placeId,
-      destination: `${destination.latitude},${destination.longitude}`,
-      destination_place_id: destination.placeId,
-      travelmode: GOOGLE_MAPS_TRAVEL_MODE[this.mode()],
-    });
-    return `https://www.google.com/maps/dir/?${params.toString()}`;
-  });
+  protected readonly mapsUrl = computed(() =>
+    buildDirectionsUrl(this.origin(), this.destination(), GOOGLE_MAPS_TRAVEL_MODE[this.mode()]),
+  );
 
   protected readonly showTransportCta = computed(() => (this.route()?.distanceMeters ?? 0) > TRANSPORT_CTA_DISTANCE_METERS);
 

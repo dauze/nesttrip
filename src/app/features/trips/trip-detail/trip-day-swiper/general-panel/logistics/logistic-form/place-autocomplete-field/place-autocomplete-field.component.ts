@@ -12,6 +12,7 @@ import { ViewportService } from '@core/services/viewport.service';
 import { GooglePlaceService } from '@core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@core/models/place.dto';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
+import { extractPlaceName } from '@app/shared/utils/place-name.util';
 
 /**
  * Champ d'autocomplete Google Places réutilisé par les formulaires de détail
@@ -70,12 +71,12 @@ export class PlaceAutocompleteFieldComponent {
 
   onSelect(raw: PlaceSummary): void {
     if (!raw?.placeId) return;
-    const place: PlaceSummary = { ...raw, name: this.extractPlaceName(raw.name) };
+    const place: PlaceSummary = { ...raw, name: extractPlaceName(raw.name) };
     this.displayControl.setValue(place.name);
     this.placeSelected.emit(place);
   }
 
-  displayName = (place: { name: unknown }): string => this.extractPlaceName(place?.name);
+  displayName = (place: { name: unknown }): string => extractPlaceName(place?.name);
 
   /** Mobile uniquement (voir le template) : ouvre le tiroir plein écran de recherche au clic/tap sur le texte, en lieu de l'autocomplete inline. */
   openMobileDialog(event: Event): void {
@@ -103,13 +104,5 @@ export class PlaceAutocompleteFieldComponent {
       // choix Google, jamais sur une simple frappe de texte).
       this.displayControl.setValue(result.text.trim());
     });
-  }
-
-  private extractPlaceName(name: unknown): string {
-    if (typeof name === 'string') return name;
-    if (name && typeof name === 'object' && typeof (name as { text?: unknown }).text === 'string') {
-      return (name as { text: string }).text;
-    }
-    return '';
   }
 }

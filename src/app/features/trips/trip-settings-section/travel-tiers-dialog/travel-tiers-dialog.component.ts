@@ -6,7 +6,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { SelectComponent, SelectOption } from '@app/shared/components/select/select.component';
 import { PaliersTrajetSliderComponent } from './paliers-trajet-slider/paliers-trajet-slider.component';
 import { TravelTiers } from '@app/features/trips/trip.model';
-import { TravelMode } from '../../trip-day-swiper/day-panel/day-distance-gap/travel-mode.util';
+import { TravelMode } from '@app/features/trips/trip-detail/trip-day-swiper/day-panel/day-distance-gap/travel-mode.util';
 import { ViewportService } from '@app/core/services/viewport.service';
 
 export interface TravelTiersDialogData {

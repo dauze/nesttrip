@@ -19,8 +19,8 @@ import { SwiperLockService } from '@app/core/services/swiper-lock.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { ViewportService } from '@app/core/services/viewport.service';
 import { UserProfileService } from '@app/core/services/user-profile.service';
-import { OnboardingTourService } from '@app/core/services/onboarding-tour.service';
-import { DRAG_HINT_ANCHOR_ID, DRAG_HINT_STEP_ID, DRAG_HINT_TOUR } from '@app/core/services/onboarding-sequences';
+import { OnboardingTourService } from '@app/core/onboarding/onboarding-tour.service';
+import { DRAG_HINT_ANCHOR_ID, DRAG_HINT_STEP_ID, DRAG_HINT_TOUR } from '@app/core/onboarding/onboarding-sequences';
 
 import { ActivityHeaderComponent } from './activity-header/activity-header.component';
 import { FilesFieldComponent, FileRef } from '@app/shared/components/files-field/files-field.component';

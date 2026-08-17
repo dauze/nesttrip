@@ -20,7 +20,7 @@ import {
 import {
   TravelTiersDialogComponent,
   TravelTiersDialogData,
-} from '../trip-detail/trip-header/travel-tiers-dialog/travel-tiers-dialog.component';
+} from './travel-tiers-dialog/travel-tiers-dialog.component';
 import {
   MultiCityDialogComponent,
   MultiCityDialogData,

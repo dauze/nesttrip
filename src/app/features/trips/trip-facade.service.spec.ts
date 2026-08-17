@@ -16,7 +16,9 @@ import { CollaborationService } from '@app/core/services/collaboration.service';
 import { CurrencyConversionService } from '@app/core/services/currency-conversion.service';
 import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
+import { NotesType } from '@core/enums/notes.type';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
+import { Item } from './trip-detail/trip-day-swiper/general-panel/notes/notes.model';
 
 /** Writer débouncé factice : reproduit l'API publique de `DebounceWriter` (voir shared/debounced-writer.ts) sans jamais toucher Firestore — même gabarit que trip-store.service.spec.ts. */
 function fakeWriter() {
@@ -57,6 +59,10 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
 
   function poolActivity(overrides: Partial<PoolActivity> = {}): PoolActivity {
     return { id: 'pool-1', title: 'Tour Eiffel', files: [], photoRefs: [], ...overrides };
+  }
+
+  function noteItem(overrides: Partial<Item> = {}): Item {
+    return { id: 'item-1', title: 'À emporter', type: NotesType.TODO, elements: [], ...overrides };
   }
 
   function instance(overrides: Partial<DayActivityInstance> = {}): DayActivityInstance {
@@ -370,5 +376,53 @@ describe('TripFacade.mergeFromRemote (via loadTrip)', () => {
   it('hasTrip devient vrai une fois le trip hydraté (déjà vrai ici via le beforeEach)', () => {
     expect(facade.hasTrip(tripId)).toBe(true);
     expect(facade.hasTrip('un-autre-trip-jamais-chargé')).toBe(false);
+  });
+
+  describe('Notes (mergeFromRemote, régression "jamais resynchronisées en temps réel")', () => {
+    it('récupère un item de note créé par un autre collaborateur', () => {
+      expect(facade.getNotesItems(tripId)()).toEqual([]);
+
+      tripSubject.next(baseTrip({ notes: { id: 'notes-1', items: [noteItem()] } }));
+
+      expect(facade.getNotesItems(tripId)()).toEqual([noteItem()]);
+    });
+
+    it('retire un item de note supprimé à distance', () => {
+      tripSubject.next(baseTrip({ notes: { id: 'notes-1', items: [noteItem(), noteItem({ id: 'item-2' })] } }));
+      expect(facade.getNotesItems(tripId)().length).toBe(2);
+
+      tripSubject.next(baseTrip({ notes: { id: 'notes-1', items: [noteItem()] } }));
+
+      expect(facade.getNotesItems(tripId)().map((i) => i.id)).toEqual(['item-1']);
+    });
+
+    it("ignore un snapshot distant tant qu'une écriture locale de note est encore en vol (anti-flicker)", () => {
+      tripSubject.next(baseTrip({ notes: { id: 'notes-1', items: [noteItem()] } }));
+
+      // Édition locale optimiste : `createItem` marque tout de suite tripId comme pending
+      // (writer débouncé mocké, jamais "syncing" ici — la protection retombe seulement quand
+      // l'effect() observe `syncing() === false`, ce qui est déjà vrai avec `fakeWriter()` : on
+      // vérifie donc explicitement l'état juste après l'appel, avant tout flush).
+      facade.updateItem(tripId, 'item-1', { title: 'Titre en cours de frappe' });
+      expect(facade.getNotesItems(tripId)()[0].title).toBe('Titre en cours de frappe');
+
+      // Snapshot distant qui ne reflète pas encore cette frappe (round-trip d'une autre
+      // écriture du même document) : ne doit pas faire "reculer" le titre local.
+      tripSubject.next(baseTrip({ notes: { id: 'notes-1', items: [noteItem()] } }));
+
+      expect(facade.getNotesItems(tripId)()[0].title).toBe('Titre en cours de frappe');
+    });
+
+    it("respecte l'ordre distant des notes (champ array Firestore, pas un Record)", () => {
+      tripSubject.next(
+        baseTrip({ notes: { id: 'notes-1', items: [noteItem(), noteItem({ id: 'item-2' })] } }),
+      );
+      expect(facade.getNotesItems(tripId)().map((i) => i.id)).toEqual(['item-1', 'item-2']);
+
+      tripSubject.next(
+        baseTrip({ notes: { id: 'notes-1', items: [noteItem({ id: 'item-2' }), noteItem()] } }),
+      );
+      expect(facade.getNotesItems(tripId)().map((i) => i.id)).toEqual(['item-2', 'item-1']);
+    });
   });
 });

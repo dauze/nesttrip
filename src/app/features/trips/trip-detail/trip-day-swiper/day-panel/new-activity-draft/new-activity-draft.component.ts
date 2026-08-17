@@ -5,6 +5,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { AutoCompleteComponent } from '@app/shared/components/autocomplete/autocomplete.component';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { LoadingState, PlaceSummary } from '@app/core/models/place.dto';
+import { extractPlaceName } from '@app/shared/utils/place-name.util';
 
 export interface NewActivityDraftResult {
   title: string;
@@ -53,7 +54,7 @@ export class NewActivityDraftComponent {
   /** Une seule soumission possible (Entrée/blur/sélection peuvent sinon se chevaucher). */
   private submitted = false;
 
-  displayName = (place: { name: unknown }): string => this.extractPlaceName(place?.name);
+  displayName = (place: { name: unknown }): string => extractPlaceName(place?.name);
 
   constructor() {
     afterNextRender(() => this.autocomplete().focus());
@@ -65,7 +66,7 @@ export class NewActivityDraftComponent {
 
   onSelect(raw: PlaceSummary): void {
     if (!raw?.placeId || this.submitted) return;
-    const place: PlaceSummary = { ...raw, name: this.extractPlaceName(raw.name) };
+    const place: PlaceSummary = { ...raw, name: extractPlaceName(raw.name) };
     this.submit({ title: place.name, place });
   }
 
@@ -92,13 +93,5 @@ export class NewActivityDraftComponent {
     this.submitted = true;
     if (result) this.confirmed.emit(result);
     else this.cancelled.emit();
-  }
-
-  private extractPlaceName(name: unknown): string {
-    if (typeof name === 'string') return name;
-    if (name && typeof name === 'object' && typeof (name as { text?: unknown }).text === 'string') {
-      return (name as { text: string }).text;
-    }
-    return '';
   }
 }

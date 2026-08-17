@@ -3,19 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '@environments/environment';
 import { FlightStatus } from '@core/models/logistic.dto';
+import { formatDateParam } from '@core/utils/date-param.util';
 
 interface FlightStatusApiResponse {
   state: FlightStatus['state'];
   delayMinutes?: number;
   actualDepartureTime?: string;
   actualArrivalTime?: string;
-}
-
-function formatDateParam(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 /** Appelle le proxy maison (jamais AeroDataBox directement côté client, clé API serveur uniquement). */

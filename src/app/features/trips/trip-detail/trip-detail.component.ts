@@ -25,9 +25,9 @@ import { LogisticFocusService } from './logistic-focus.service';
 import { NotesFocusService } from './notes-focus.service';
 import { TripItemDeletionService } from './trip-item-deletion.service';
 import { CoachMarkOverlayComponent } from '@app/shared/components/coach-mark-overlay/coach-mark-overlay.component';
-import { OnboardingTourService } from '@app/core/services/onboarding-tour.service';
+import { OnboardingTourService } from '@app/core/onboarding/onboarding-tour.service';
 import { OnboardingAnchorDirective } from '@app/shared/directives/onboarding-anchor.directive';
-import { ACTIVITIES_INTRO, DAY_NAV_TOUR, IMMEDIATE_TOUR, LOGISTICS_INTRO, NOTES_INTRO } from '@app/core/services/onboarding-sequences';
+import { ACTIVITIES_INTRO, DAY_NAV_TOUR, IMMEDIATE_TOUR, LOGISTICS_INTRO, NOTES_INTRO } from '@app/core/onboarding/onboarding-sequences';
 
 const TRIP_DETAIL_ACTIVE_CLASS = 'trip-detail-active';
 /** Ids des 4 tabs de premier niveau Résumé/Activités/Logistique/Listes (voir `tabs`) — tout le reste de `activeDay()` est un id de jour (ISO). */

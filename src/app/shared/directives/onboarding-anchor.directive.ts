@@ -1,5 +1,5 @@
 import { Directive, ElementRef, effect, inject, input } from '@angular/core';
-import { OnboardingTourService } from '@app/core/services/onboarding-tour.service';
+import { OnboardingTourService } from '@app/core/onboarding/onboarding-tour.service';
 
 /**
  * Enregistre son élément hôte comme cible possible d'un coach mark (voir

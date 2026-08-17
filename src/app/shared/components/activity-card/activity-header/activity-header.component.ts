@@ -7,6 +7,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Activity } from '../activity.model';
 import { ACTIVITY_TYPE_META } from '../activity.constants';
 import { runOnceReady } from '@app/shared/utils/run-once-ready';
+import { extractPlaceName } from '@app/shared/utils/place-name.util';
 import { GooglePhotoService } from '@app/core/services/google-photo.service';
 import { GooglePlaceService } from '@app/core/services/google-place.service';
 import { PhotoViewerService } from '@app/core/services/photo-viewer.service';
@@ -84,31 +85,19 @@ export class ActivityHeaderComponent {
   onSelect(raw: PlaceSummary): void {
     if (!raw?.placeId) return;
 
-    const place: PlaceSummary = { ...raw, name: this.extractPlaceName(raw.name) };
+    const place: PlaceSummary = { ...raw, name: extractPlaceName(raw.name) };
 
-    // En forçant la valeur ici, le FormControl court-circuite le composant 
+    // En forçant la valeur ici, le FormControl court-circuite le composant
     // et lui réinjecte immédiatement la string. Zéro flash global.
     this.titleControl.setValue(place.name);
-    
-    this.placeSelected.emit(place);
-  }
 
-  private extractPlaceName(name: unknown): string {
-    if (typeof name === 'string') return name;
-    if (name && typeof name === 'object' && typeof (name as { text?: unknown }).text === 'string') {
-      return (name as { text: string }).text;
-    }
-    return '';
+    this.placeSelected.emit(place);
   }
 
   // Fonction fléchée (pas une méthode ordinaire) : passée par référence à
   // `[displayWith]` (voir le template), donc appelée plus tard depuis
-  // AutoCompleteComponent SANS son `this` d'origine — une méthode normale
-  // perdrait ce contexte et planterait sur `this.extractPlaceName`, une
-  // fonction fléchée le capture lexicalement une fois pour toutes.
-  displayName = (place: { name: unknown }): string => {
-    return this.extractPlaceName(place?.name);
-  };
+  // AutoCompleteComponent SANS son `this` d'origine.
+  displayName = (place: { name: unknown }): string => extractPlaceName(place?.name);
 
   onTitleBlur(): void {
     const next = this.titleControl.value;

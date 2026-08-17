@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subscription } from 'rxjs';
 import { Day, Trip, TravelTiers } from './trip.model';
 import { PoolActivity, DayActivityInstance } from '@app/shared/components/activity-card/activity.model';
@@ -47,7 +48,7 @@ export class TripFacade {
   readonly activeTripLoading = this.store.activeTripLoading;
 
   constructor() {
-    this.repo.getTrips$().subscribe((trips) => {
+    this.repo.getTrips$().pipe(takeUntilDestroyed()).subscribe((trips) => {
       this.store._tripsResult.set(trips);
     });
   }
@@ -842,5 +843,38 @@ export class TripFacade {
       const nextOrder = [...preserved, ...newIds];
       return arraysEqual(previousOrder, nextOrder) ? map : { ...map, [trip.id]: nextOrder };
     });
+
+    // 6. Notes : contrairement aux blocs ci-dessus (protection par item), `syncNotes`
+    // (TripStore) réécrit tout `notes.items` du trip en une seule écriture débouncée keyée par
+    // tripId (voir `NotesPersistenceService`) — la protection anti-flicker se fait donc au
+    // niveau du TRIP entier (`_pendingTripNotesIds`, même principe que `_pendingTripFieldIds`
+    // pour le titre), pas par id d'item. `notes.items` est un champ ARRAY Firestore (pas un
+    // Record) : l'ordre distant est fiable, réutilisé tel quel (comparé par `arraysEqual` pour
+    // la stabilité de référence), pas besoin du merge d'ordre "préserver + ajouter" utilisé pour
+    // les Records ci-dessus.
+    if (!this.store._pendingTripNotesIds().has(trip.id)) {
+      const currentNotesItems = this.store._notesItems();
+      const newNotesItems = { ...currentNotesItems };
+      for (const item of trip.notes.items) {
+        const current = currentNotesItems[item.id];
+        newNotesItems[item.id] =
+          current && JSON.stringify(current) === JSON.stringify(item) ? current : item;
+      }
+
+      const remoteItemIds = new Set(trip.notes.items.map((i) => i.id));
+      for (const id of this.store._tripNotesItems()[trip.id] ?? []) {
+        if (!remoteItemIds.has(id)) delete newNotesItems[id];
+      }
+
+      if (!recordsShallowEqual(currentNotesItems, newNotesItems)) {
+        this.store._notesItems.set(newNotesItems);
+      }
+
+      const remoteItemIdsList = trip.notes.items.map((i) => i.id);
+      this.store._tripNotesItems.update((map) => {
+        const previousOrder = map[trip.id] ?? [];
+        return arraysEqual(previousOrder, remoteItemIdsList) ? map : { ...map, [trip.id]: remoteItemIdsList };
+      });
+    }
   }
 }

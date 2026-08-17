@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { ButtonComponent } from '@app/shared/components/button/button.component';
-import { OnboardingTourService } from '@app/core/services/onboarding-tour.service';
+import { OnboardingTourService } from '@app/core/onboarding/onboarding-tour.service';
 import { ViewportService } from '@app/core/services/viewport.service';
 
 /** Marge (px) entre la zone découpée et le bord des panneaux grisés qui l'entourent — laisse respirer visuellement l'élément pointé plutôt qu'un cadrage pixel-perfect. */

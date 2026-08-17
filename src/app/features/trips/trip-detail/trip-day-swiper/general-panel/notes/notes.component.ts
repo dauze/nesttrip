@@ -23,6 +23,7 @@ import { DialogService } from '@app/shared/services/dialog.service';
 import { LinkActivityDialogComponent, LinkActivityDialogData, LinkActivityDialogResult } from './link-activity-dialog/link-activity-dialog.component';
 
 import { InputTextDirective } from '@app/shared/directives/input-text.directive';
+import { pollUntilReady } from '@app/shared/utils/poll-until-ready.util';
 
 /** Titre OU texte d'un élément quelconque de la liste (voir ROADMAP.md "UX / Interactions"). */
 function matchesSearch(item: Item, term: string): boolean {
@@ -93,15 +94,12 @@ export class NotesComponent {
     });
   }
 
-  /** Retente sur quelques frames avant d'abandonner silencieusement — même raison que `LogisticsListComponent.focusCardWhenReady` (composant tout juste monté, la carte ciblée peut ne pas encore être dans le DOM). */
-  private focusItemWhenReady(itemId: string, attemptsLeft = 15): void {
-    const el = document.querySelector<HTMLElement>(`[data-title-id="${itemId}"]`);
-    if (!el) {
-      if (attemptsLeft <= 0) return;
-      requestAnimationFrame(() => this.focusItemWhenReady(itemId, attemptsLeft - 1));
-      return;
-    }
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  /** Composant tout juste monté, l'item ciblé peut ne pas encore être dans le DOM — voir `pollUntilReady`. */
+  private focusItemWhenReady(itemId: string): void {
+    pollUntilReady(
+      () => document.querySelector<HTMLElement>(`[data-title-id="${itemId}"]`),
+      (el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    );
   }
 
   /** Vue composée (jour + activité) de l'activité liée à cette liste, ou `undefined` si non liée / si l'activité a depuis été supprimée (voir `Item.linkedActivityInstanceId`, ROADMAP.md "UX / Interactions"). */

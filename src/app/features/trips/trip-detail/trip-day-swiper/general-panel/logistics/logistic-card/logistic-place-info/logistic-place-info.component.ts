@@ -7,6 +7,7 @@ import { PanelComponent, PanelToggleEvent } from '@app/shared/components/panel/p
 import { DividerComponent } from '@app/shared/components/divider/divider.component';
 import { GooglePlaceService } from '@core/services/google-place.service';
 import { LoadingState, PlaceDetails, PlaceSummary } from '@core/models/place.dto';
+import { buildSearchUrl } from '@app/shared/utils/google-maps-url.util';
 
 const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
@@ -70,9 +71,7 @@ export class LogisticPlaceInfoComponent {
 
   readonly mapsUrl = computed(() => {
     const place = this.place();
-    if (!place?.placeId) return null;
-    const query = encodeURIComponent(place.address || place.name);
-    return `https://www.google.com/maps/search/?api=1&query=${query}&query_place_id=${place.placeId}`;
+    return place?.placeId ? buildSearchUrl(place) : null;
   });
 
   readonly todayDayName = computed(() => DAY_NAMES[(this.referenceDate() ?? new Date()).getDay()]);

@@ -99,6 +99,16 @@ export class TripStore {
         this._pendingExpenseIds.set(new Set());
       }
     });
+
+    // Même mécanisme anti-flicker, granularité TRIP entier (pas par item comme les autres
+    // ci-dessus) : `syncNotes` réécrit TOUT le tableau `notes.items` du trip en un seul
+    // `queueUpdate` keyé par tripId (voir `NotesPersistenceService`), donc rien à protéger
+    // au niveau d'un item individuel.
+    effect(() => {
+      if (!this.notesPersistenceService.syncing()) {
+        this._pendingTripNotesIds.set(new Set());
+      }
+    });
   }
 
   /**
@@ -166,6 +176,13 @@ export class TripStore {
   readonly _notesItems = signal<Record<string, Item>>({});
   /** @internal */
   readonly _tripNotesItems = signal<Record<string, string[]>>({});
+  /**
+   * @internal — tripIds dont les notes ont une écriture Firestore encore en vol. Granularité
+   * TRIP (pas par item comme `_pendingActivityIds`/`_pendingLogisticIds`/`_pendingExpenseIds`) :
+   * `syncNotes` réécrit tout `notes.items` d'un coup, `TripFacade.mergeFromRemote` doit donc
+   * ignorer TOUTES les notes de ce trip tant qu'il est dans ce set — voir `markTripNotesPending`.
+   */
+  readonly _pendingTripNotesIds = signal<Set<string>>(new Set());
   /** @internal */
  readonly _tripsResult = signal<TripSummary[] | undefined>(undefined);
   /**
@@ -1490,7 +1507,16 @@ export class TripStore {
     const items = this._notesItems();
 
     const list = ids.map((id) => items[id]);
+    this.markTripNotesPending(tripId);
     this.notesPersistenceService.queueUpdate(tripId, list);
+  }
+
+  private markTripNotesPending(id: string): void {
+    this._pendingTripNotesIds.update((s) => {
+      const copy = new Set(s);
+      copy.add(id);
+      return copy;
+    });
   }
     // ── Commandes — Day ────────────────────────────────────────────────
 
