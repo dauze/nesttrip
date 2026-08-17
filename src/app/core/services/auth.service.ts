@@ -101,9 +101,8 @@ export class AuthService {
         // les autres écritures ponctuelles de ce doc (`UserProfileService`) :
         // le compte Auth existe déjà à ce stade, un raté ici ne doit pas
         // bloquer la suite.
-        this.userProfileRepository.createUserProfile(credential.user.uid, credential.user.email ?? email, displayName).catch((e) =>
-        {
-          console.log(e)
+        this.userProfileRepository.createUserProfile(credential.user.uid, credential.user.email ?? email, displayName).catch((e) => {
+          console.error('[AuthService] Erreur lors de la création du profil utilisateur :', e);
         });
         // Pas de navigation : un compte fraîchement créé n'est jamais vérifié
         // (voir la doc de `loginWithEmail` ci-dessus) — reste sur l'écran de

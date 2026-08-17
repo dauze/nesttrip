@@ -55,12 +55,14 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire) 
 
-### Qualité / process (Non prioritaire, la cvode review est à faire à la fin !)
+### Qualité / process
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
 - Il faudrait faire des dossier pour les composants dans shared, il y a trop d'élément à plat là (reporté le 2026-08-07, 73 fichiers d'imports impactés — pas prioritaire pour l'instant)
 - Profiter de anfgular 22 et éviter les async function ! 
 - Définir des spec pour tout le code pour les parcours utilisateurs (et donc mettre des tests e2e qui couvrirait les différentes spec)
-- Faire une code review de fond avec Fable pour voir si il y a pas de simplification, audit de sécurité, tests, etc : (Non prioritaire, à faire par fable)
+- Faire une code review de fond pour voir si il y a pas de simplification, audit de sécurité, tests, etc 
+
+- Remarques de revue de code faite par moi à prendre en compte : 
   - CSS : j'ai pas l'impression que tout utilise les variable et que tout soit bien variabilité : par exemple il y a des 0.5rem et des 0.25rem. Et pour le mode desktop vs mobile, il devrait y avoir un attibut global qui est allimenté soit par 0.25 si mobile, soit 0.5 si desktop et utilisé partout non c'est pas possible ? Ce ne serait pas plus simple ?
   - html : pas de redondance ? 
   - typescript uniforme ? Signal bien géré, observable aussi ?

@@ -7,7 +7,6 @@ const envConfigFile = `export const environment = {
   apiUrl: '${process.env.apiUrl}',
   googleMapsApiKey: '${process.env.googleMapsApiKey}',
   googleMapsMapId: '${process.env.googleMapsMapId}',
-  flightsApiKey: '${process.env.flightsApiKey}',
   firebase: {
     apiKey: "${process.env.apiKey}",
     authDomain: "${process.env.authDomain}",

@@ -2,8 +2,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Miroir de `authGuard` (src/app/core/guards/auth.guard.ts) : un compte dont l'email
+    // n'est pas vérifié est traité comme non connecté côté client, l'app ne le laisse même
+    // pas atteindre /trips — sans cette fonction, rien côté serveur n'empêchait un tel compte
+    // de lire/écrire directement via le SDK en contournant le guard.
+    function isVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
     match /trips/{tripId} {
-      allow read, write: if request.auth != null;
+      // Accès restreint aux membres du trip (voir TripFirebase.members, Record<uid, TripMember>
+      // rempli par NewTripComponent à la création puis exclusivement par les Cloud Functions
+      // add-collaborator/remove-collaborator, Admin SDK — ces rules ne s'appliquent donc jamais
+      // à ces écritures serveur). Avant ce correctif, `allow read, write: if request.auth != null`
+      // laissait n'importe quel compte authentifié lire/modifier/supprimer n'importe quel trip.
+      allow read: if isVerified() && resource.data.members[request.auth.uid] != null;
+
+      allow create: if isVerified()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.members[request.auth.uid].role == 'owner';
+
+      // `members`/`ownerId` ne sont jamais modifiés par le client après création (voir
+      // CollaborationService, qui passe par les Cloud Functions ci-dessus) : on l'interdit
+      // explicitement pour empêcher une auto-promotion/éviction via un appel SDK direct.
+      allow update: if isVerified()
+        && resource.data.members[request.auth.uid] != null
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['members', 'ownerId']);
+
+      allow delete: if isVerified()
+        && resource.data.members[request.auth.uid].role == 'owner';
     }
 
     match /users/{uid} {

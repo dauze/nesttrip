@@ -5,7 +5,7 @@ import { ButtonComponent } from '@app/shared/components/button/button.component'
 import { ProgressSpinnerComponent } from '@app/shared/components/progress-spinner/progress-spinner.component';
 import { FileService } from '@core/services/file.service';
 import { fileIcon as fileIconFor, openFile as openFileUrl } from '@app/shared/utils/file-icon';
-import { MAX_FILE_SIZE_BYTES } from '@app/shared/utils/input-limits';
+import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE_BYTES } from '@app/shared/utils/input-limits';
 import { ConfirmDialogService } from '@app/shared/services/confirm-dialog.service';
 
 export interface FileRef {
@@ -63,7 +63,22 @@ export class FilesFieldComponent {
         continue;
       }
 
-      const path = `${this.storagePathPrefix()}/${file.name}`;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (!ext || !ALLOWED_FILE_EXTENSIONS.includes(ext)) {
+        this.confirmDialogService.confirm({
+          header: 'Type de fichier non supporté',
+          message: `"${file.name}" n'est pas un type de fichier accepté (${ALLOWED_FILE_EXTENSIONS.join(', ')}).`,
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'OK',
+          singleButton: true,
+        });
+        continue;
+      }
+
+      // Retire tout séparateur de chemin du nom de fichier : sans ça un nom malveillant
+      // pourrait créer des sous-dossiers imprévus sous le préfixe du trip (audit de sécurité).
+      const safeName = file.name.replace(/[/\\]/g, '_');
+      const path = `${this.storagePathPrefix()}/${safeName}`;
       this.uploadingFiles.update((s) => new Set(s).add(file.name));
 
       this.fileService.uploadFile(file, path).pipe(

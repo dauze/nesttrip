@@ -5,8 +5,14 @@ rules_version = '2';
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+    // Tous les fichiers de l'app vivent sous trips/{tripId}/... (voir
+    // ActivityCardComponent.filesStoragePathPrefix / LogisticCardComponent.filesStoragePathPrefix) —
+    // accès restreint aux membres du trip via le doc Firestore correspondant. Avant ce correctif,
+    // `allow read, write: if request.auth != null` sur {allPaths=**} laissait n'importe quel compte
+    // authentifié lire/écraser/supprimer les fichiers de n'importe quel trip.
+    match /trips/{tripId}/{allPaths=**} {
+      allow read, write: if request.auth != null
+        && firestore.get(/databases/(default)/documents/trips/$(tripId)).data.members[request.auth.uid] != null;
     }
   }
 }

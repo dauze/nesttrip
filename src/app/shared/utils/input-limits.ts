@@ -6,3 +6,7 @@ export const MAX_NOTES_LENGTH = 5000;
 
 /** Taille max d'un fichier uploadé (photos, PDF...) — ROADMAP.md "Qualité / process". */
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
+/** Extensions autorisées à l'upload (voir `FilesFieldComponent`) — ROADMAP.md "Qualité / process", audit de sécurité :
+ * empêche l'hébergement de contenu arbitraire (HTML/SVG...) sous une URL Storage liée à un trip. */
+export const ALLOWED_FILE_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx'];

@@ -26,6 +26,7 @@
       type="file"
       multiple
       hidden
+      accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
       (change)="onFileSelect($event)" />
     <app-button
       [label]="files().length > 0 ? '' : 'Ajouter'"
