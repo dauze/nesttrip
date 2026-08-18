@@ -9,8 +9,11 @@
 .timeline-row {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.25rem 0;
+  // Aligné sur --nt-space-2 (0.5rem, hors échelle avant, audit du
+  // 2026-08-17) — même gap qu'un autre badge+texte du même dossier
+  // (day-distance-gap.component.scss).
+  gap: var(--nt-space-2);
+  padding: var(--nt-space-1) 0;
 }
 
 .timeline-time {
@@ -29,8 +32,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: var(--nt-icon-badge-size);
+  height: var(--nt-icon-badge-size);
   border-radius: 50%;
   background: color-mix(in srgb, var(--timeline-badge-color) 16%, transparent);
   color: var(--timeline-badge-color);

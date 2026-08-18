@@ -22,8 +22,8 @@
   // type — visible même repliée, oublié par le premier correctif, voir
   // ROADMAP.md "Bugs / fixes", "plus grand padding entre le border left et
   // le logo").
-  --nt-panel-content-padding-left: 0.9rem;
-  --nt-panel-header-padding-left: 0.9rem;
+  --nt-panel-content-padding-left: var(--nt-accent-bar-padding);
+  --nt-panel-header-padding-left: var(--nt-accent-bar-padding);
 
   @starting-style {
     opacity: 0;
@@ -37,7 +37,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 0.4rem;
+  width: var(--nt-accent-bar-width);
   border-radius: var(--nt-content-border-radius) 0 0 var(--nt-content-border-radius);
   background: linear-gradient(
     180deg,

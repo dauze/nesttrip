@@ -205,6 +205,15 @@
   // d'où cette 3e valeur dédiée, plus nettement plus épaisse.
   --nt-border-width-group: 0.1875rem;
 
+  // Barre d'accent en dégradé sur le bord gauche des cartes premium
+  // (ActivityCardComponent `.trip::before`, LogisticCardComponent
+  // `.reservation::before`) — même largeur et même padding de compensation
+  // dupliqués à l'identique dans les deux composants (audit du 2026-08-17,
+  // ROADMAP.md "Qualité / process"), factorisés ici pour n'avoir qu'un seul
+  // endroit à faire évoluer.
+  --nt-accent-bar-width: 0.4rem;
+  --nt-accent-bar-padding: 0.9rem;
+
   // Bordure fine dédiée au contenu jour/général (cartes/panels) une fois la
   // toolbar débarrassée de la sienne (voir ROADMAP.md "### UI", "toolbar
   // n'aura plus de border, tu peux réduire de moitié le border de tous les
@@ -231,6 +240,11 @@
   --nt-icon-size-sm: 0.875rem;
   --nt-icon-size-md: 1rem;
   --nt-icon-size-lg: 1.25rem;
+  // Pastille ronde contenant une icône (badge coloré, bouton icône) — valeur
+  // dupliquée en dur dans plusieurs composants (TimelineComponent
+  // `.timeline-badge`, LogisticHeaderComponent `.logistic-header__pencil`),
+  // repérée par l'audit du 2026-08-17 (ROADMAP.md "Qualité / process").
+  --nt-icon-badge-size: 1.75rem;
 
   // Grille d'espacement unique — alias des valeurs déjà utilisées par les
   // utilitaires `.gap-*`/`.p-*` (layout-utilities.scss) et par
