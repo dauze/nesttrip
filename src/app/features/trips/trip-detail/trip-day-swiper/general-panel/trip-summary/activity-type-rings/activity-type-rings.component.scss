@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--nt-space-3);
 }
 
 // Mode interactif (dépenses, ROADMAP.md "### UI" : "les données associées au
@@ -122,7 +122,7 @@
 .rings-chart__interactive-legend {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--nt-space-2);
   list-style: none;
   padding: 0;
   margin: 0;
@@ -138,7 +138,7 @@
   display: grid;
   grid-template-columns: auto auto 1fr auto auto;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--nt-space-2);
   font-size: 0.8125rem;
   cursor: pointer;
   border-radius: var(--nt-radius-sm);
@@ -182,7 +182,7 @@
   .rings-chart__interactive-legend {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem 0.75rem;
+    gap: var(--nt-space-2) var(--nt-space-3);
   }
 
   .rings-chart__interactive-legend-item {
@@ -230,7 +230,7 @@
   justify-content: center;
   text-align: center;
   pointer-events: none;
-  padding: 0 0.5rem;
+  padding: 0 var(--nt-space-2);
 }
 
 // Zone de clic invisible au milieu de l'arc rempli (le trait de l'anneau
