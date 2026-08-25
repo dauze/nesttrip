@@ -121,6 +121,13 @@
   // gardent cette valeur par défaut.
   --nt-content-border-width: var(--nt-border-width-hairline);
 
+  // Bordure gauche en dégradé "couleur d'identité" (type d'activité/logistique) des cartes
+  // `.trip`/`.reservation` (activity-card.component.scss/logistic-card.component.scss) — même
+  // largeur et même compensation de padding aux 2 endroits, jusqu'ici dupliquées en dur
+  // (ROADMAP.md "Qualité / process", audit du 2026-08-17).
+  --nt-card-accent-bar-width: 0.4rem;
+  --nt-card-accent-content-padding-left: 0.9rem;
+
   // Fond du CONTENU imbriqué dans une carte/panel (ex. la ligne voyage dans
   // sa tuile d'accueil) — distinct de `--nt-content-background` (la carte/le
   // panel lui-même) pour matérialiser une légère différence de teinte entre
@@ -231,6 +238,10 @@
   --nt-icon-size-sm: 0.875rem;
   --nt-icon-size-md: 1rem;
   --nt-icon-size-lg: 1.25rem;
+  // Petit contrôle carré icône seule (crayon, badge, flèche...) — même valeur reprise en dur dans
+  // 4 fichiers (timeline, logistic-header, activity-header, time-picker-clock), jusqu'ici jamais
+  // tokenisée (ROADMAP.md "Qualité / process", audit du 2026-08-17).
+  --nt-icon-button-size: 1.75rem;
 
   // Grille d'espacement unique — alias des valeurs déjà utilisées par les
   // utilitaires `.gap-*`/`.p-*` (layout-utilities.scss) et par

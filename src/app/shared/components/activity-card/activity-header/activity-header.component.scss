@@ -51,7 +51,7 @@ img {
 // Mobile uniquement (voir template) : titre statique + crayon, à la place de
 // l'`app-autocomplete` toujours éditable en direct utilisée sur desktop.
 .activity-header__title-mobile {
-  min-height: 1.75rem;
+  min-height: var(--nt-icon-button-size, 1.75rem);
 }
 
 .activity-header__title-text {
@@ -59,8 +59,8 @@ img {
 }
 
 .activity-header__pencil {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: var(--nt-icon-button-size, 1.75rem);
+  height: var(--nt-icon-button-size, 1.75rem);
   padding: 0;
   border: none;
   border-radius: var(--nt-radius-sm);
