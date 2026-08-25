@@ -5,7 +5,7 @@
 
 .expenses-table__row {
   padding: 0.5rem;
-  border-radius: var(--nt-border-radius-sm, 0.25rem);
+  border-radius: var(--nt-radius-sm);
 }
 
 // Ligne issue d'une activité/logement/transport (voir src/specs/devise.md 3.5) :
@@ -32,7 +32,7 @@
   font: inherit;
   padding: 0;
   cursor: pointer;
-  border-radius: var(--nt-border-radius-sm, 0.25rem);
+  border-radius: var(--nt-radius-sm);
 
   &:hover:not(:disabled) {
     background: var(--nt-bg-subtle);

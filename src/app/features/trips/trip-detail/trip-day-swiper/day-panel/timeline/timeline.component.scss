@@ -9,6 +9,10 @@
 .timeline-row {
   display: flex;
   align-items: center;
+  // `gap: 0.625rem` hors échelle mais valeur unique non dupliquée ailleurs —
+  // laissé en dur volontairement (ROADMAP.md "Qualité / process", audit du
+  // 2026-08-17) : l'aligner sur --nt-space-2 (0.5rem) changerait le rendu
+  // (delta visuel réel de 2px), pas fait sans vérification visuelle.
   gap: 0.625rem;
   padding: 0.25rem 0;
 }
