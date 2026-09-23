@@ -1,0 +1,12 @@
+<div
+  class="trip-general-desktop-root"
+  [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
+  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
+  [style.--sticky-top-offset.px]="chromeService.stickyContentTop()">
+  <app-trip-summary class="trip-general-desktop-col trip-general-desktop-col--summary" [tripId]="trip().id" [active]="active()" [fillWidth]="true" />
+  <app-trip-activities class="trip-general-desktop-col trip-general-desktop-col--activities" [tripId]="trip().id" [fillWidth]="true" />
+  <div class="trip-general-desktop-col trip-general-desktop-col--side">
+    <app-logistics-list [tripId]="trip().id" [fillWidth]="true" />
+    <app-notes [notes]="trip().notes" [tripId]="trip().id" [fillWidth]="true" />
+  </div>
+</div>

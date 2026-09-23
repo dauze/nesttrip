@@ -15,6 +15,14 @@
   margin-inline: auto;
 }
 
+// Colonne de droite du layout 3 colonnes desktop (empilée avec Logistique,
+// voir TripGeneralDesktopComponent, ROADMAP.md "UI Desktop") : plus de
+// plafond/centrage, remplit sa colonne de grille.
+:host(.app-notes--fill-width) .notes-root {
+  max-width: none;
+  margin-inline: 0;
+}
+
 // Recherche (voir ROADMAP.md "UX / Interactions") — même anatomie que
 // `.trip-activities__search` (TripActivitiesComponent).
 .notes-search {

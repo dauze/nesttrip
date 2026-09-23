@@ -42,7 +42,11 @@ function matchesSearch(item: Item, term: string): boolean {
   ],
   templateUrl: './notes.component.html',
   styleUrl: './notes.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  // Empilée avec Logistique dans la colonne de droite du layout 3 colonnes
+  // desktop (TripGeneralDesktopComponent, ROADMAP.md "UI Desktop") — même
+  // idiome que PanelComponent.bare.
+  host: { '[class.app-notes--fill-width]': 'fillWidth()' },
 })
 export class NotesComponent {
   private readonly tripFacade = inject(TripFacade);
@@ -55,6 +59,8 @@ export class NotesComponent {
 
   readonly notes = input.required<Notes>();
   readonly tripId = input.required<string>();
+  /** `true` uniquement depuis TripGeneralDesktopComponent (colonne du layout 3 colonnes desktop) — désactive le plafond de largeur/centrage, voir le SCSS. `false` (défaut) pour l'usage historique en slide swiper mobile, colonne unique centrée. */
+  readonly fillWidth = input(false);
   readonly NotesType = NotesType;
   readonly items = computed(() => this.tripFacade.getNotesItems(this.tripId())());
   readonly activePointId = signal<string | null>(null);

@@ -55,6 +55,9 @@ function matchesSearch(title: string, address: string | undefined, term: string)
   styleUrl: './trip-activities.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [TripActivitiesCreationService],
+  // Colonne centrale du layout 3 colonnes desktop (TripGeneralDesktopComponent,
+  // ROADMAP.md "UI Desktop") : même idiome que PanelComponent.bare.
+  host: { '[class.app-trip-activities--fill-width]': 'fillWidth()' },
 })
 export class TripActivitiesComponent {
   private readonly tripFacade = inject(TripFacade);
@@ -69,6 +72,8 @@ export class TripActivitiesComponent {
   private readonly activityCards = viewChildren(ActivityCardComponent);
 
   readonly tripId = input.required<string>();
+  /** `true` uniquement depuis TripGeneralDesktopComponent (colonne du layout 3 colonnes desktop) — désactive le plafond de largeur/centrage, voir le SCSS. `false` (défaut) pour l'usage historique en slide swiper mobile, colonne unique centrée. */
+  readonly fillWidth = input(false);
 
   // Restaure le tri depuis l'URL (?sort=...) au montage — voir onSortModeChange,
   // qui l'y écrit à chaque changement (voir ROADMAP.md).

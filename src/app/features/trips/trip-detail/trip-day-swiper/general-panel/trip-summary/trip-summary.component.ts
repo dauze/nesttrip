@@ -63,6 +63,10 @@ const MAX_EXPENSE_ENTRIES = 5;
   // à chaque va-et-vient sur ce tab, voir le `@if (visitedDays().has('summary'))`
   // de TripDaySwiperComponent) — même portée que TripActivitiesComponent avant elle.
   providers: [GeneralMapCinematicService],
+  // Colonne "Résumé" du layout 3 colonnes desktop (TripGeneralDesktopComponent,
+  // ROADMAP.md "UI Desktop") : même idiome que PanelComponent.bare (host class
+  // + sélecteur dans le SCSS du composant, pas de ::ng-deep/:host-context).
+  host: { '[class.app-trip-summary--fill-width]': 'fillWidth()' },
 })
 export class TripSummaryComponent {
   private readonly route = inject(ActivatedRoute);
@@ -83,6 +87,8 @@ export class TripSummaryComponent {
   readonly tripId = input.required<string>();
   /** Slide "Résumé" active (voir TripDaySwiperComponent) : ce contexte ne possède la carte partagée que dans ce cas — voir TripDayMapHostService. */
   readonly active = input(false);
+  /** `true` uniquement depuis TripGeneralDesktopComponent (colonne du layout 3 colonnes desktop) — désactive le plafond de largeur/centrage, voir le SCSS. `false` (défaut) pour l'usage historique en slide swiper mobile, colonne unique centrée. */
+  readonly fillWidth = input(false);
 
   /**
    * Même pattern/correctif que `tripTitle` ci-dessus — voir sa doc. Signal
@@ -299,7 +305,17 @@ export class TripSummaryComponent {
   private mapClickSub?: { unsubscribe: () => void };
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.mapClickSub?.unsubscribe());
+    this.destroyRef.onDestroy(() => {
+      this.mapClickSub?.unsubscribe();
+      // Sécurité resize desktop<->mobile (ROADMAP.md "UI Desktop") : cette
+      // instance et celle de TripGeneralDesktopComponent/du swiper mobile sont
+      // mutuellement exclusives par device (voir leurs gardes respectives),
+      // donc "j'étais active à la destruction" signifie sans ambiguïté "je
+      // possède actuellement le noeud DOM de la carte partagée" — la reparquer
+      // avant de disparaître évite de l'orpheliner (détachée du document avec
+      // le conteneur qui la portait).
+      if (this.active()) this.mapHost.parkToDefault();
+    });
 
     // Quand ce contexte devient actif (slide Résumé), on récupère l'instance
     // UNIQUE de la carte et on la déplace physiquement dans notre conteneur —

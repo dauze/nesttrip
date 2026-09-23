@@ -1,0 +1,37 @@
+// `display:block` du host : voir la règle globale dans styles/reset.scss.
+
+// Même anatomie que `.tab-content-wrapper`/`swiper-slide`
+// (trip-day-swiper.component.scss) : ce composant est basculé avec le swiper
+// via `[hidden]` (jamais un `@if`), donc doit se comporter comme "un slide de
+// plus" — son propre scrollport isolé en `position:fixed` plein écran (le
+// body/html de trip-detail a `overflow:hidden`, voir reset.scss, tout le
+// scroll se fait slide par slide). Même réduction de bordure que le contenu
+// jour/général (`--nt-content-border-width`, ROADMAP.md "### UI").
+.trip-general-desktop-root {
+  position: fixed;
+  top: 0;
+  left: var(--nt-space-1);
+  right: var(--nt-space-1);
+  height: 100dvh;
+  overflow-y: auto;
+  --nt-content-border-width: var(--nt-border-width-hair);
+
+  display: grid;
+  grid-template-columns: 19rem 1fr 21rem;
+  align-items: start;
+  gap: var(--nt-layout-gap-split, 0.5rem);
+  padding-top: var(--chrome-top-offset, 0px);
+  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+}
+
+.trip-general-desktop-col {
+  min-width: 0;
+}
+
+// Logistique + Listes empilées dans la même colonne (voir template) : un seul
+// scroll partagé avec les 2 autres colonnes, pas de scrollport propre ici.
+.trip-general-desktop-col--side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-layout-gap-split, 0.5rem);
+}

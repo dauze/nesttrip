@@ -58,6 +58,10 @@ function matchesSearch(title: string, term: string): boolean {
   templateUrl: './logistics-list.component.html',
   styleUrl: './logistics-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Empilée avec Notes dans la colonne de droite du layout 3 colonnes desktop
+  // (TripGeneralDesktopComponent, ROADMAP.md "UI Desktop") : même idiome que
+  // PanelComponent.bare.
+  host: { '[class.app-logistics-list--fill-width]': 'fillWidth()' },
 })
 export class LogisticsListComponent {
   private readonly tripFacade = inject(TripFacade);
@@ -73,6 +77,8 @@ export class LogisticsListComponent {
   private readonly logisticCards = viewChildren(LogisticCardComponent);
 
   readonly tripId = input.required<string>();
+  /** `true` uniquement depuis TripGeneralDesktopComponent (colonne du layout 3 colonnes desktop) — désactive le plafond de largeur/centrage, voir le SCSS. `false` (défaut) pour l'usage historique en slide swiper mobile, colonne unique centrée. */
+  readonly fillWidth = input(false);
 
   // Restaure le tri depuis l'URL (?sort=...) au montage — voir onSortModeChange,
   // qui l'y écrit à chaque changement (même principe que TripActivitiesComponent).

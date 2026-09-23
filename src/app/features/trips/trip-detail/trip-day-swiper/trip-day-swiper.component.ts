@@ -28,6 +28,7 @@ import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.s
 import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 import { TripDestinationLocationService } from '@app/core/services/business/trip-destination-location.service';
 import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 
 @Component({
   selector: 'app-trip-day-swiper',
@@ -35,7 +36,12 @@ import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.d
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent, PullToRefreshDirective],
-  providers: [SwiperLockService, TripDayMapHostService],
+  // TripDayMapHostService fourni par TripDetailComponent (pas ici) : voir sa
+  // doc pour pourquoi — TripGeneralDesktopComponent, frère de ce composant
+  // (pas un descendant), doit résoudre la MÊME instance pour partager la
+  // carte. SwiperLockService reste ici, propre au swiper (ROADMAP.md "UI
+  // Desktop").
+  providers: [SwiperLockService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
 })
@@ -44,6 +50,7 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private readonly injector = inject(Injector);
   protected readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
+  protected readonly viewport = inject(ViewportService);
   private readonly destinationLocationService = inject(TripDestinationLocationService);
   private readonly dayMapRef = viewChild(TripDayMapComponent);
   private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
@@ -102,6 +109,15 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
       if (map) this.mapHost.register(map);
     });
 
+    // Ancre de repli par défaut (voir TripDayMapHostService.parkToDefault) :
+    // ce `.map-anchor` est toujours monté (jamais gardé par un `@if`), donc
+    // toujours disponible pour un appelant qui doit reparquer la carte sans
+    // avoir sa propre ancre sous la main (ex. TripSummaryComponent détruit
+    // pendant qu'il possède la carte, voir sa doc).
+    effect(() => {
+      this.mapHost.registerDefaultAnchor(this.mapAnchorRef()?.nativeElement ?? null);
+    });
+
     // Résout la destination du trip (`placeId`) en coordonnées une seule
     // fois par trip et les pose sur `TripDayMapComponent.defaultCenter` —
     // centre par défaut affiché par la carte partagée quand le jour/contexte
@@ -151,7 +167,14 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     // `.day-fixed-map` gardait le noeud DOM déplacé par le dernier jour
     // visité et restait affiché par-dessus ces onglets au lieu de se fermer
     // (aucun de ces 3 composants n'appelle jamais `moveTo` pour la réclamer).
+    // UNIQUEMENT mobile (`viewport.isMobileChrome()`) : sur desktop, les 4
+    // slides généraux de CE swiper ne montent plus rien (voir le template) et
+    // la propriété de la carte est entièrement déléguée à
+    // TripGeneralDesktopComponent — cet effect fighterait sinon avec lui pour
+    // la carte dès que `activeId()` vaut 'activities'/'logistics'/'notes'.
     effect(() => {
+      if (!this.viewport.isMobileChrome()) return;
+
       const id = this.activeId();
       const anchor = this.mapAnchorRef()?.nativeElement;
       if (!id || !anchor) return;

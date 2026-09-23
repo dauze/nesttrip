@@ -3,15 +3,19 @@
     <div  class="flex flex-column" [class.invisible-content]="!contentReady()">
       <!-- Vrai desktop (pointeur fin, voir ViewportService.isMobileChrome) :
            la barre des jours reste sticky juste sous la toolbar, comme avant
-           (décision produit, voir ROADMAP.md "UI Desktop"). Mobile (portrait
-           OU paysage tactile) : barre morphing bas d'écran, voir
+           (décision produit, voir ROADMAP.md "UI Desktop"). Les 4 tabs
+           Général mobiles y sont regroupés en un seul "Général"
+           (desktopNavTabs/desktopNavActiveId, voir TripDetailComponent) —
+           TripGeneralDesktopComponent ci-dessous les affiche tous les 3 en
+           même temps, plus besoin d'y naviguer un par un. Mobile (portrait OU
+           paysage tactile) : barre morphing bas d'écran INCHANGÉE, voir
            MobileTripNavComponent (ROADMAP.md "UX / Interactions"). -->
       @if (!viewport.isMobileChrome()) {
         <app-trip-tabs-nav
           class="fixed app-trip-tabs-nav-fixed z-5"
           [style.top.px]="chromeService.tabsNavTop()"
-          [tabs]="tabs()"
-          [activeId]="activeDay()"
+          [tabs]="desktopNavTabs()"
+          [activeId]="desktopNavActiveId()"
           (tabSelected)="onTabSelected($event)" />
       } @else {
         <app-mobile-trip-nav
@@ -20,12 +24,27 @@
           (tabSelected)="onTabSelected($event)" />
       }
 
+      <!-- [hidden] (jamais @if) sur les 2 : basculer detruit/recrée sur un
+           simple changement de tab romprait le swiper (visitedDays perdu,
+           tous les jours démontés) ET TripGeneralDesktopComponent (carte
+           Google Maps partagée orpheline si détruit pendant qu'il la
+           possède, voir sa doc). Sur mobile, TripGeneralDesktopComponent
+           n'est jamais monté (@if ci-dessous) : le swiper gère tout, comme
+           avant. -->
       <app-trip-day-swiper
         [trip]="trip"
         [tabs]="tabs()"
         [activeId]="activeDay()"
+        [hidden]="!viewport.isMobileChrome() && isGeneralActive()"
         (activeIdChange)="onSwiperActiveIdChange($event)"
         (ready)="onSwiperReady()" />
+
+      @if (!viewport.isMobileChrome()) {
+        <app-trip-general-desktop
+          [trip]="trip"
+          [active]="isGeneralActive()"
+          [hidden]="!isGeneralActive()" />
+      }
 
       <!-- Ancre synthétique du tour de navigation (voir onboarding-sequences.ts,
            steps ciblant 'content-area') : pas un élément visuel, juste une zone

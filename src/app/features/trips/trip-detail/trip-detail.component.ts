@@ -9,6 +9,8 @@ import { TripDetailSkeletonComponent } from './trip-detail-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
 import { TripTabsNavComponent } from './trip-tabs-nav/trip-tabs-nav.component';
 import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.component';
+import { TripGeneralDesktopComponent } from './trip-general-desktop/trip-general-desktop.component';
+import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.service';
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/overlays/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
@@ -41,6 +43,7 @@ const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
     TripDetailSkeletonComponent,
     TripTabsNavComponent,
     TripDaySwiperComponent,
+    TripGeneralDesktopComponent,
     ActivityDayDispatchOverlayComponent,
     FloatingAddButtonComponent,
     MobileTripNavComponent,
@@ -60,9 +63,13 @@ const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
   // les DayPanelComponent du swiper, pour une sélection persistante d'un
   // onglet à l'autre. DayLogisticQuickAddService/NotesFocusService : même
   // topologie, pour le menu "Ajouter" (voir addMenuItems ci-dessous).
+  // TripDayMapHostService : déplacé ici depuis TripDaySwiperComponent
+  // (ROADMAP.md "UI Desktop") — TripGeneralDesktopComponent, FRÈRE du swiper
+  // (pas un descendant), doit résoudre la MÊME instance pour partager la
+  // carte Google Maps ; ce niveau (ancêtre commun des deux) est le bon.
   providers: [
     TripCreationTargetService, DayActivityFocusService, LogisticFocusService, NotesFocusService,
-    SelectionModeService, TripItemDeletionService, DayLogisticQuickAddService,
+    SelectionModeService, TripItemDeletionService, DayLogisticQuickAddService, TripDayMapHostService,
   ],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {
@@ -117,8 +124,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           return;
         }
         this.fabTarget.requestCreateOnMount('activities');
-        const index = this.tabs().findIndex(t => t.id === 'activities');
-        this.onTabSelected({ id: 'activities', index });
+        this.onTabSelected({ id: 'activities', index: this.desktopNavIndexFor('activities') });
       },
     },
     ...(Object.entries(LOGISTIC_TYPE_META) as [LogisticType, typeof LOGISTIC_TYPE_META[LogisticType]][])
@@ -193,13 +199,36 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     ...this.sortedDays().map(d => this.formatDayTab(d.id)),
   ]);
 
+  /** `true` quand `activeDay()` est un des 4 tabs "Général" (quel que soit le device) — voir `isDesktopGeneral`/`desktopNavTabs` pour leur usage desktop. */
+  protected readonly isGeneralActive = computed(() => GENERAL_TAB_IDS.includes(this.activeDay()));
+  /** Vrai desktop (voir ViewportService.isMobileChrome) ET un des 4 tabs Général : c'est cette condition qui bascule TripDaySwiperComponent/TripGeneralDesktopComponent (voir le template) et le comportement du "+" flottant (voir onFabActivate). */
+  protected readonly isDesktopGeneral = computed(() => !this.viewport.isMobileChrome() && this.isGeneralActive());
+
+  /**
+   * Barre desktop (TripTabsNavComponent) UNIQUEMENT (ROADMAP.md "UI Desktop") :
+   * les 4 tabs Général mobiles deviennent un seul "Général", id `'activities'`
+   * réutilisé comme représentant du groupe (pas de nouvel id `'general'`
+   * fictif, qui casserait tous les `GENERAL_TAB_IDS.includes(...)` existants)
+   * — jours inchangés, juste filtrés depuis `tabs()` pour ne pas dupliquer
+   * `formatDayTab`. MobileTripNavComponent continue de recevoir `tabs()` tel
+   * quel (comportement mobile 100% inchangé).
+   */
+  readonly desktopNavTabs = computed<TripTab[]>(() => [
+    { id: 'activities', label: 'Général' },
+    ...this.tabs().filter(t => !!t.dayNumber),
+  ]);
+  /** Id actif dans `desktopNavTabs()` — `'activities'` (le tab groupé) dès que `isGeneralActive()`, sinon l'id du jour tel quel. */
+  readonly desktopNavActiveId = computed(() => this.isGeneralActive() ? 'activities' : this.activeDay());
+
   /**
    * "+" flottant UNIQUE (voir TripCreationTargetService) : icône/libellé
    * contextuels sur les tabs Activités/Logistique/Listes (création directe,
-   * voir `onFabActivate`), génériques sinon (jour ou Résumé, ouvre le menu
-   * "Ajouter" — voir addMenuItems, ROADMAP.md "UX / Interactions").
+   * voir `onFabActivate`), génériques sinon (jour, Résumé, OU mode Général
+   * desktop — ROADMAP.md "UI Desktop" : les 3 colonnes simultanées n'ont plus
+   * de "l'onglet actif", ouvre le menu combiné "Ajouter" comme sur un jour).
    */
   protected readonly fabIcon = computed(() => {
+    if (this.isDesktopGeneral()) return 'pi pi-plus';
     switch (this.activeDay()) {
       case 'activities': return 'pi pi-map-marker';
       case 'logistics': return 'pi pi-bookmark';
@@ -209,6 +238,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   });
 
   protected readonly fabAriaLabel = computed(() => {
+    if (this.isDesktopGeneral()) return 'Ajouter';
     switch (this.activeDay()) {
       case 'activities': return 'Ajouter une activité';
       case 'logistics': return 'Ajouter un élément logistique';
@@ -222,18 +252,19 @@ export class TripDetailComponent implements OnInit, OnDestroy {
    * affiché (`fabTarget.trigger`, cible enregistrée par ces composants). Sur
    * Logistique : ouvre le menu "Type" (voir `logisticsAddMenuItems`, type
    * connu AVANT création — pas de `fabTarget.trigger` ici, ce tab n'a plus
-   * de cible enregistrée). Sur un jour ET sur Résumé : ouvre le menu
-   * "Ajouter" (voir addMenuItems) ancré sur le bouton lui-même.
+   * de cible enregistrée). Sur un jour, sur Résumé, ET en mode Général
+   * desktop (`isDesktopGeneral`, les 3 colonnes déjà toutes visibles) : ouvre
+   * le menu "Ajouter" (voir addMenuItems) ancré sur le bouton lui-même.
    */
   protected onFabActivate(): void {
     const day = this.activeDay();
-    if (day === 'activities' || day === 'notes') {
+    if (!this.isDesktopGeneral() && (day === 'activities' || day === 'notes')) {
       this.fabTarget.trigger(day);
       return;
     }
     const anchor = this.fabElementRef()?.nativeElement;
     if (!anchor) return;
-    if (day === 'logistics') {
+    if (!this.isDesktopGeneral() && day === 'logistics') {
       this.logisticsAddMenu().toggleAt(anchor);
       return;
     }
@@ -283,7 +314,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       const initialDay = dayFromUrl ?? this.getTodayId(trip);
       this.activeDay.set(initialDay);
 
-      const index = this.tabs().findIndex(t => t.id === initialDay);
+      const index = this.desktopNavIndexFor(initialDay);
       if (index >= 0) {
         setTimeout(() => this.tabsNavRef()?.scrollIntoView(index), 100);
       }
@@ -328,7 +359,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       if (!pending || this.activeDay() === pending.dayId) return;
 
       this.activeDay.set(pending.dayId);
-      const index = this.tabs().findIndex(t => t.id === pending.dayId);
+      const index = this.desktopNavIndexFor(pending.dayId);
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
       this.updateFragment(pending.dayId);
     });
@@ -342,7 +373,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       if (!pending || this.activeDay() === 'logistics') return;
 
       this.activeDay.set('logistics');
-      const index = this.tabs().findIndex(t => t.id === 'logistics');
+      const index = this.desktopNavIndexFor('logistics');
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
       this.updateFragment('logistics');
     });
@@ -357,7 +388,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       if (!pending || this.activeDay() === 'notes') return;
 
       this.activeDay.set('notes');
-      const index = this.tabs().findIndex(t => t.id === 'notes');
+      const index = this.desktopNavIndexFor('notes');
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
       this.updateFragment('notes');
     });
@@ -438,7 +469,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   protected onSwiperActiveIdChange(id: string): void {
     this.activeDay.set(id);
-    const index = this.tabs().findIndex(t => t.id === id);
+    const index = this.desktopNavIndexFor(id);
     if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
     this.updateFragment(id);
   }
@@ -459,6 +490,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const today = new Date().toDateString();
     const day = trip.days.find(d => new Date(d.id).toDateString() === today);
     return day ? day.id.toISOString() : 'summary';
+  }
+
+  /**
+   * Index dans `desktopNavTabs()` — PAS `tabs()` (4 tabs Général séparés) :
+   * `TripTabsNavComponent.scrollIntoView(index)` interroge son PROPRE
+   * `[role="tab"]` rendu, qui sur desktop est `desktopNavTabs()` (voir le
+   * template) depuis que les 4 tabs Général y sont regroupés en un seul
+   * "Général" (ROADMAP.md "UI Desktop"). Utilisé à chaque endroit qui calcule
+   * un index destiné à `tabsNavRef()?.scrollIntoView(...)` — sur mobile,
+   * `tabsNavRef()` résout `undefined` (TripTabsNavComponent n'est pas monté,
+   * voir le template), donc la valeur retournée ici n'a aucun effet.
+   */
+  private desktopNavIndexFor(id: string): number {
+    const navId = GENERAL_TAB_IDS.includes(id) ? 'activities' : id;
+    return this.desktopNavTabs().findIndex(t => t.id === navId);
   }
 
   /**
@@ -521,7 +567,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       if (!dayId || dayId === this.activeDay()) return;
 
       this.activeDay.set(dayId);
-      const index = this.tabs().findIndex(t => t.id === dayId);
+      const index = this.desktopNavIndexFor(dayId);
       if (index >= 0) this.tabsNavRef()?.scrollIntoView(index);
     });
   }

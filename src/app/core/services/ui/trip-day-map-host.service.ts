@@ -36,9 +36,30 @@ export class TripDayMapHostService {
   private readonly _dayFixedContainerHeight = signal(0);
   readonly dayFixedContainerHeight = this._dayFixedContainerHeight.asReadonly();
 
+  /**
+   * Ancre neutre de repli (`.map-anchor` de `TripDaySwiperComponent`, toujours
+   * montée pour toute la durée de vie du trip) — utilisée par `parkToDefault()`
+   * quand un appelant doit reparquer la carte sans avoir sa propre ancre sous
+   * la main (ex. `TripSummaryComponent.destroyRef.onDestroy`, voir sa doc :
+   * l'ancre `#mapParkAnchor` du composant n'existe QUE quand `!hasMapPoints()`,
+   * donc absente au moment précis où on en aurait besoin si le trip a des
+   * points géolocalisés).
+   */
+  private readonly _defaultAnchor = signal<HTMLElement | null>(null);
+
   /** Appelé une seule fois par TripDaySwiperComponent, propriétaire de l'instance. */
   register(component: TripDayMapComponent): void {
     this.mapComponent.set(component);
+  }
+
+  registerDefaultAnchor(el: HTMLElement | null): void {
+    this._defaultAnchor.set(el);
+  }
+
+  /** Reparque vers l'ancre par défaut si elle est enregistrée — voir sa doc. No-op sinon. */
+  parkToDefault(): void {
+    const anchor = this._defaultAnchor();
+    if (anchor) this.park(anchor);
   }
 
   registerDayFixedContainer(el: HTMLElement | null): void {

@@ -12,15 +12,20 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### UI spécifique Desktop (A affiner)
 - Vue calendrier (A affiner)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
-- Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop, pas cool 
-- Le drag and drop 
+- Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop cela déplace automatiquement 
+- Le drag and drop lors du déplacement des activité d'un jour à l'autre, il faut le faire ailleur comme il n'y a pa la bar en ba de l'écran. Sur la bar en haut de l'écran directement ? Comment faire si beaucoup de jour ? Voir avec le skill UX
 - refondre toute la partie générale
-- Le onover sur les bouton juste texte n'est pas beau, il faut pas faire ça avec primary mais un truc plus doux
+- La vuue carte des jours est beaucoup trp dézoomé ! 
+- il faudrait repplier les cartes sur la vue day ? à étudier avec skill ux
+- voir avec le skill UX ou mettre le bouton + ? 
+- il y a un moment ou l'affichage n'est pass bien entre la transition du mobile vers le desktop, quand on arrive après la largeur max de la bottom bar et de la liste de scool, des barres noire aapparaisent sur les coté, il faut trouver un moyen de soit faire la transition plus tôt vers le mode ordi, soit rajouter un mode, à trancher avec le skill ux
+- dans la bar desktop, le border top allumé lorsque l'o est sur un jour doit être un border bottom. Idem sur le bouton général sélecctionné, un bottom et faire qulque chose de plus ux que le même motif que les cartes activités.
+- gérer proprement tous es patting et faire en sorte que la age ne soit pa visible au niveau des écats autour de la bar des jours 
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
 - sur la dialogue de note, mettre le focuse sur les note quand elle s'ouvre
-- mettre les chevrons vers le bas sur le chip des trajet plutot que mettre un inus
+- mettre les chevrons vers le bas sur le chip des trajet plutot que mettre un minus (celui entre les carte des activités de la vue day). Idement pour la liste déroulante de la devise dans le menum paramètres
 
 
 ### Carte
@@ -55,7 +60,10 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 
 ### Bugs / fixes
-- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire) 
+- Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
+- lors du drag and drop des activité sur un day, comme il y a les modes de transport ça fait un d'emplacement vide et on dirait qu'il y a un beug, on peut pas les masquer au drag et faire une annimation ou il se fond et disparaissent donc le carte se rapprochent en même temps que de se fermer ? 
+- Lorsque l'on arrive sur l'écran d'accuei aavec la liste des voyaes, il faut que les photos soient en spinner avant de s'afficher le temps qu'elles se chargent
+- mettre un padding sur la case à cocher et l'icone de drag de chaque ligne dans les listes de case à cocher
 
 ### Qualité / process
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)

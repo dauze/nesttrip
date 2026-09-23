@@ -59,3 +59,12 @@
   flex-direction: column;
   gap: var(--nt-layout-gap-stacked, 0.25rem);
 }
+
+// Colonne centrale du layout 3 colonnes desktop (TripGeneralDesktopComponent,
+// ROADMAP.md "UI Desktop") : plus de plafond/centrage, remplit sa colonne de
+// grille (flux normal, pas de sticky ici contrairement au Résumé — c'est
+// cette colonne qui défile).
+:host(.app-trip-activities--fill-width) .trip-activities-body {
+  max-width: none;
+  margin-inline: 0;
+}
