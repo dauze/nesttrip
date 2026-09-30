@@ -16,8 +16,21 @@
   overflow-y: auto;
   --nt-content-border-width: var(--nt-border-width-hair);
 
+  // Colonnes latérales COMPRESSIBLES via `minmax()` (au lieu de largeurs
+  // fixes `19rem`/`21rem` qui étranglaient la colonne centrale à la
+  // réduction : les 40rem incombressibles + gaps finissaient par dépasser la
+  // largeur dispo, poussant le `1fr` central sous le plancher de sa barre de
+  // recherche et écrasant les cartes d'activité — voir ROADMAP.md "UI
+  // spécifique Desktop"). Même esprit que le `flex: 0 1 32rem` compressible de
+  // day-panel (day-panel.component.scss) : une largeur cible haute, un
+  // plancher bas en-dessous duquel la colonne ne descend pas, la colonne
+  // centrale absorbant le reste. `min-width: 0` sur `.trip-general-desktop-col`
+  // (plus bas) autorise le contenu à se comprimer sans déborder.
   display: grid;
-  grid-template-columns: 19rem 1fr 21rem;
+  grid-template-columns:
+    minmax(14rem, 19rem)
+    minmax(0, 1fr)
+    minmax(15rem, 21rem);
   align-items: start;
   gap: var(--nt-layout-gap-split, 0.5rem);
   padding-top: var(--chrome-top-offset, 0px);

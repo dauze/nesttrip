@@ -140,3 +140,174 @@ app-card.card {
   flex-shrink: 0;
   margin-right: 0.5rem;
 }
+
+// La tuile "Nouvelle aventure" fantôme (ajout via la grille) n'existe QUE sur
+// desktop : masquée par défaut, ré-affichée dans le bloc desktop plus bas. Sur
+// mobile, seul le bouton du footer reste (comportement historique inchangé).
+.trip-add-tile {
+  display: none;
+}
+
+// Le footer contenant le bouton "Nouvelle aventure" : quand la grille de
+// voyages est affichée (`:has(.trip-grid)`), la tuile fantôme fait doublon
+// avec ce bouton sur desktop -> on le masque au-dessus de 768px (retour
+// utilisateur). Aux états vide/nouvel utilisateur (0 voyage), la grille
+// n'est pas rendue, donc `:has(.trip-grid)` est faux et le bouton reste le
+// seul point d'entrée pour créer un voyage, y compris sur desktop.
+@media (min-width: 769px) {
+  .accueil-panel:has(.trip-grid) .accueil-footer {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Layout DESKTOP de "Mes voyages" (ROADMAP.md "UI spécifique Desktop",
+ * décision 2026-09-30) — grille de cartes-vignettes au lieu de lignes
+ * étirées pleine largeur. Strictement au-dessus de 768px (même seuil que
+ * ViewportService.MOBILE_QUERY) : le mobile n'est JAMAIS touché par ce bloc.
+ * ------------------------------------------------------------------- */
+@media (min-width: 769px) {
+  // Passage de l'utilitaire flexbox `.grid` (marges négatives, flex-wrap) à
+  // une vraie grille CSS. `!important` obligatoire : `.grid`
+  // (layout-utilities.scss) pose `display: flex !important` + marges
+  // négatives `!important` — sans le même poids ici, la grille ne prendrait
+  // pas. Colonnes fluides : autant que la largeur le permet, chaque carte
+  // >= 17rem (au-delà elles s'étirent équitablement, `1fr`).
+  .trip-grid.trip-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: var(--nt-space-4) !important;
+    margin: 0 !important;
+  }
+
+  // Chaque tuile voyage : carte verticale (photo en haut, infos en dessous).
+  // On repart de la carte existante mais on annule le box-shadow--md hérité
+  // du mobile (remis en hover pour l'effet d'élévation premium, DESIGN.md).
+  app-card.card {
+    box-shadow: var(--nt-shadow-xs);
+    border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+    transition:
+      transform 0.18s var(--nt-ease-standard),
+      box-shadow 0.18s var(--nt-ease-standard);
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--nt-shadow-lg);
+    }
+  }
+
+  // La rangée flex mobile devient une colonne : photo (média) en haut, corps
+  // en dessous. `align-items: stretch` pour que la photo occupe toute la
+  // largeur de la carte.
+  .trip-select-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-height: 0;
+    position: relative;
+  }
+
+  // Photo en visuel principal, ratio 16:10 pleine largeur (au lieu de la
+  // vignette carrée 4rem du mobile).
+  .trip-select-row__thumb {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    align-self: stretch;
+  }
+
+  // Corps sous la photo, avec un vrai padding (le mobile n'en avait pas, la
+  // photo y était bord-à-bord latéralement).
+  .trip-select-row__body {
+    padding: var(--nt-space-3) var(--nt-space-4) var(--nt-space-4);
+    gap: 0.35rem;
+  }
+
+  // Le chevron ">" n'a pas de sens dans une grille de cartes cliquables —
+  // masqué. Toute la carte reste cliquable.
+  .trip-select-row__arrow {
+    display: none;
+  }
+
+  // Checkbox de sélection en overlay au coin haut-droit (option 1 validée).
+  // Masquée au repos, révélée au survol de la carte OU dès que le mode
+  // sélection est actif (`.nt-selection-mode` posé par SelectableDirective).
+  // Remonte au-dessus de la photo (z-index) et neutralise les insets mobile.
+  .trip-select-row__checkbox {
+    position: absolute;
+    top: var(--nt-space-3);
+    right: var(--nt-space-3);
+    margin: 0;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.15s var(--nt-ease-standard);
+    // Pastille lisible par-dessus n'importe quelle photo.
+    background: var(--nt-content-background);
+    border-radius: var(--nt-radius-pill);
+    padding: 0.2rem;
+    box-shadow: var(--nt-shadow-sm);
+  }
+
+  app-card.card:hover .trip-select-row__checkbox,
+  .nt-selectable.nt-selection-mode .trip-select-row__checkbox {
+    opacity: 1;
+  }
+
+  // Le breakpoint mobile de selection-mode.scss (`max-width: 768px`) masque la
+  // checkbox sous 768px ; au-dessus elle est `inline-flex` par défaut, donc
+  // l'`opacity` ci-dessus suffit à la piloter (pas besoin de toucher
+  // `display`). Chip "En cours" : sorti du flux du titre, posé en overlay sur
+  // la photo (coin haut-gauche), symétrique de la checkbox.
+  .trip-select-row__chip {
+    position: absolute;
+    top: var(--nt-space-3);
+    left: var(--nt-space-3);
+    z-index: 1;
+  }
+
+  // Le titre n'a plus besoin de réserver de la place inline pour le chip
+  // (désormais en overlay) — il peut occuper toute la largeur.
+  .trip-select-row__title {
+    display: block;
+  }
+
+  // Tuile "Nouvelle aventure" fantôme, intégrée à la grille (même gabarit
+  // qu'une carte voyage). Bordure pointillée + halo primary au survol.
+  .trip-add-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nt-space-2);
+    min-height: 12rem;
+    border: var(--nt-border-width-thick) dashed var(--nt-content-border-color);
+    border-radius: var(--nt-content-border-radius);
+    background: var(--nt-content-inset-background);
+    color: var(--nt-text-muted-color);
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    transition:
+      border-color 0.15s var(--nt-ease-standard),
+      color 0.15s var(--nt-ease-standard),
+      box-shadow 0.15s var(--nt-ease-standard);
+
+    &:hover {
+      border-color: var(--nt-primary-color);
+      color: var(--nt-primary-color);
+      box-shadow: var(--nt-shadow-md);
+    }
+  }
+
+  .trip-add-tile__plus {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--nt-radius-pill);
+    background: var(--nt-content-background);
+    box-shadow: var(--nt-shadow-xs);
+    font-size: var(--nt-icon-size-lg);
+  }
+}

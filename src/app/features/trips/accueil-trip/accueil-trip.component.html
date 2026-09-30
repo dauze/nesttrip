@@ -38,7 +38,7 @@
 
     <!-- List -->
     } @else {
-      <div class="grid m-0 gap-2">
+      <div class="grid m-0 gap-2 trip-grid">
         @for (trip of trips(); track trip.id) {
           <app-card
             [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
@@ -65,7 +65,7 @@
               ></app-checkbox>
 
               <!-- Visuel / Avatar -->
-              @if (trip.photoRef && (getPhotoUrl$(trip.photoRef) | async); as photoUrl) {
+              @if (trip.photoRef && (getPhotoUrl$(trip.photoRef, 400) | async); as photoUrl) {
                 <img [src]="photoUrl" alt="" class="trip-select-row__thumb" />
               } @else {
                 <span class="trip-select-row__thumb trip-select-row__thumb--placeholder flex align-items-center justify-content-center">
@@ -78,10 +78,10 @@
                 class="trip-select-row__body flex flex-column"
                 [ngClass]="{ 'nt-text-muted opacity-60': selectionService.active() && user?.uid !== trip.ownerId }"
               >
-                <span class="font-bold">
+                <span class="font-bold trip-select-row__title">
                   {{ trip.title }}
                   @if(isActiveTrip(trip)){
-                    <app-chip >
+                    <app-chip class="trip-select-row__chip">
                       En cours
                     </app-chip>
                   }
@@ -96,10 +96,16 @@
             </div>
           </app-card>
         }
+
+        <!-- Tuile "Nouvelle aventure" fantôme, desktop uniquement (voir SCSS) -->
+        <a class="trip-add-tile" routerLink="/trips/new" aria-label="Nouvelle aventure">
+          <span class="trip-add-tile__plus"><i class="pi pi-plus"></i></span>
+          <span>Nouvelle aventure</span>
+        </a>
       </div>
     }
     <!-- Footer buttons -->
-    <div cardFooter class="nt-footer-actions justify-content-end gap-2">
+    <div cardFooter class="nt-footer-actions accueil-footer justify-content-end gap-2">
       <app-button
         [label]="trips().length === 0 && !userProfileService.hasSeenOnboarding() ? 'Créer nouvelle aventure' : 'Nouvelle aventure'"
         icon="pi pi-plus"

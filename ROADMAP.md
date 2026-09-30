@@ -10,10 +10,12 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Stockage des fichiers en local si possible (A affiner)
 
 ### UI spécifique Desktop (A affiner)
+- **Écran d'accueil "Mes voyages" en grille de cartes sur desktop — décidé avec l'utilisateur le 2026-09-30, EN COURS.** Sur mobile, liste de lignes inchangée. Au-delà de 768px : conteneur centré/borné + grille de cartes-vignettes (`auto-fill, minmax(17rem, 1fr)`), photo Google Places en visuel principal (16:10), chip "En cours" en overlay sur la photo, tuile "Nouvelle aventure" fantôme intégrée à la grille. Sélection/suppression : **option checkbox en overlay au survol de la carte, visible en permanence en mode sélection** (retour utilisateur : option 1 des 3 proposées). Ne toucher au mobile sous aucun prétexte (media query `min-width: 769px` uniquement).
 - Vue calendrier (A affiner)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
 - Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop cela déplace automatiquement 
 - Le drag and drop lors du déplacement des activité d'un jour à l'autre, il faut le faire ailleur comme il n'y a pa la bar en ba de l'écran. Sur la bar en haut de l'écran directement ? Comment faire si beaucoup de jour ? Voir avec le skill UX
+- **Onglet Général desktop, 3 problèmes de layout corrigés — 2026-09-30, EN COURS (à vérifier visuellement).** (1) Grand vide en haut : chaque sous-vue fill-width (trip-summary/trip-activities/logistics-list/notes) gardait son `padding-top: var(--chrome-top-offset)` (pensé pour le scrollport propre du swiper mobile) alors que le scrollport parent `.trip-general-desktop-root` le porte déjà une fois pour les 3 colonnes -> double réservation. Neutralisé par `padding-top: 0` dans chaque règle `:host(.app-*--fill-width)` (mobile inchangé). (2) Bug de largeur des cartes à la réduction : `grid-template-columns: 19rem 1fr 21rem` (latérales fixes non compressibles) -> passées en `minmax(14rem,19rem) minmax(0,1fr) minmax(15rem,21rem)`, même esprit que le `flex:0 1 32rem` compressible de day-panel. (3) Plancher barre de recherche activités abaissé 12rem -> 8rem (débordait la colonne centrale compressée). Reste ouvert : refonte visuelle plus large de la partie générale (hiérarchie, densité) si souhaité.
 - refondre toute la partie générale
 - La vuue carte des jours est beaucoup trp dézoomé ! 
 - il faudrait repplier les cartes sur la vue day ? à étudier avec skill ux

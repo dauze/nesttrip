@@ -7,7 +7,13 @@
 // `top: 50%; translateY(-50%)`, robuste à la hauteur réelle de l'input.
 .trip-activities__search {
   position: relative;
-  min-width: 12rem;
+  // Plancher abaissé de 12rem -> 8rem : à 12rem, dans la colonne centrale
+  // desktop compressée (grille `minmax`), ce champ (dans un flex row
+  // `flex-wrap`) forçait une largeur de ligne supérieure à la colonne et
+  // débordait, écrasant les cartes en dessous (ROADMAP.md "UI spécifique
+  // Desktop"). 8rem reste saisissable ; `flex-wrap` déjà en place fait passer
+  // le champ sur sa propre ligne bien avant d'atteindre ce plancher.
+  min-width: 8rem;
 }
 
 .trip-activities__search-icon {
@@ -63,8 +69,13 @@
 // Colonne centrale du layout 3 colonnes desktop (TripGeneralDesktopComponent,
 // ROADMAP.md "UI Desktop") : plus de plafond/centrage, remplit sa colonne de
 // grille (flux normal, pas de sticky ici contrairement au Résumé — c'est
-// cette colonne qui défile).
+// cette colonne qui défile). `padding-top: 0` : même raison que la colonne
+// Résumé (trip-summary.component.scss) — le scrollport parent
+// (`.trip-general-desktop-root`) porte déjà `padding-top: --chrome-top-offset`
+// une fois pour les 3 colonnes ; le garder ici l'ajoutait une 2e fois (grand
+// vide en haut). Mobile/swiper (scrollport propre) : padding-top conservé.
 :host(.app-trip-activities--fill-width) .trip-activities-body {
   max-width: none;
   margin-inline: 0;
+  padding-top: 0;
 }

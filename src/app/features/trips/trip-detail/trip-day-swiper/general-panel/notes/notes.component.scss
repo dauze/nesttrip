@@ -15,11 +15,15 @@
   margin-inline: auto;
 }
 
-// Colonne de droite du layout 3 colonnes desktop (empilée avec Logistique,
+// Colonne de droite du layout 3 colonnes desktop (empilée SOUS Logistique,
 // voir TripGeneralDesktopComponent, ROADMAP.md "UI Desktop") : plus de
-// plafond/centrage, remplit sa colonne de grille.
+// plafond/centrage, remplit sa colonne de grille. `padding-top: 0` : le
+// scrollport parent porte déjà `--chrome-top-offset` une fois ; ici, empilé
+// sous Logistique, ce padding-top ajoutait en plus un grand vide ENTRE les
+// deux blocs de la colonne. Mobile/swiper (scrollport propre) : conservé.
 :host(.app-notes--fill-width) .notes-root {
   max-width: none;
+  padding-top: 0;
   margin-inline: 0;
 }
 

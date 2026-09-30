@@ -20,9 +20,19 @@
 // grille), et `position: sticky` — même principe que `.sticky-map` de
 // day-panel.component.scss (colonne courte fixe, les colonnes plus hautes
 // défilent à côté dans le même scroll partagé, pas de scrollport propre ici).
+//
+// `padding-top: 0` (annule celui de `.trip-summary-body` plus haut) : en
+// desktop, c'est le SCROLLPORT PARENT (`.trip-general-desktop-root`) qui
+// porte déjà `padding-top: var(--chrome-top-offset)` une fois pour les 3
+// colonnes — le garder ici l'aurait ajouté une SECONDE fois (double espace
+// vide en haut constaté). En mobile/swiper, chaque sous-vue est son propre
+// scrollport et garde donc son padding-top (règle de base ci-dessus, non
+// touchée). Le `top` sticky reste `--sticky-top-offset` : il ne réserve pas
+// d'espace, il fixe juste le point de collage au scroll sous le chrome.
 :host(.app-trip-summary--fill-width) .trip-summary-body {
   max-width: none;
   margin-inline: 0;
+  padding-top: 0;
   position: sticky;
   top: var(--sticky-top-offset, 0px);
 }

@@ -17,8 +17,13 @@
 // Colonne de droite du layout 3 colonnes desktop (empilée avec Notes, voir
 // TripGeneralDesktopComponent, ROADMAP.md "UI Desktop") : plus de
 // plafond/centrage, remplit sa colonne de grille.
+// `padding-top: 0` : le scrollport parent (`.trip-general-desktop-root`) porte
+// déjà `padding-top: --chrome-top-offset` une fois pour les 3 colonnes ; le
+// garder ici l'ajoutait une 2e fois (grand vide en haut de la colonne).
+// Mobile/swiper (scrollport propre) : padding-top conservé (règle de base).
 :host(.app-logistics-list--fill-width) .logistics-list {
   max-width: none;
+  padding-top: 0;
   margin-inline: 0;
 }
 
