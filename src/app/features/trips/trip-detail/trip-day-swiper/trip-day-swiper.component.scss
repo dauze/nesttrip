@@ -61,62 +61,7 @@ swiper-slide {
   filter: blur(var(--slide-blur, 0px));
 }
 
-// Position par défaut avant le premier appendChild du TripDayMapHostService.
-// La carte est ensuite déplacée soit dans .sticky-map du day-panel actif
-// (layout scindé), soit dans .day-fixed-map ci-dessous (layout empilé).
-.map-anchor {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  visibility: hidden;
-}
-
-// Carte "jour" réellement hors du scroll (ROADMAP.md "### UI") : position
-// fixed juste sous la toolbar, MÊME largeur qu'elle (edge-to-edge, pas la
-// colonne de lecture `--nt-content-max-width` utilisée par le contenu) et
-// AUCUN écart avec elle — `top` vaut la hauteur de la toolbar seule, sans le
-// petit gap de respiration utilisé ailleurs (`--chrome-top-offset`), pour
-// qu'elle paraisse vraiment accrochée dessous. Vide (donc 0 hauteur) tant
-// qu'aucun jour n'y a déplacé la carte (Résumé/Activités/..., ou layout
-// scindé où `DayPanelComponent` cible son propre `.sticky-map` à la place) —
-// z-index entre la toolbar et le contenu normal.
-//
-// Coins bas arrondis (`--nt-radius-lg`, même valeur que `.map-panel`,
-// trip-day-map.component.scss) : `overflow:hidden` fait de CE conteneur, pas
-// de `.map-panel` à l'intérieur, le vrai masque de clip visible à l'écran —
-// sans son propre radius ici, ses coins carrés écrasaient l'arrondi du
-// panel enfant, invisible carte repliée (retour utilisateur, 2026-08-06),
-// coïncidence de taille qui ne le laissait apparaître que carte dépliée.
-.day-fixed-map {
-  position: fixed;
-  top: var(--chrome-toolbar-height, 0px);
-  left: 0;
-  right: 0;
-  z-index: var(--z-fixed-map);
-  overflow: hidden;
-  border-bottom-left-radius: var(--nt-radius-lg);
-  border-bottom-right-radius: var(--nt-radius-lg);
-}
-
-// `background`/`box-shadow` UNIQUEMENT quand une carte y est effectivement
-// déplacée (`--active`, voir le binding dans le template sur
-// `mapHost.dayFixedContainerHeight() > 0`) — jamais sur le conteneur vide
-// (Résumé/Activités/Logistique/Listes, ou layout scindé) : un `box-shadow`
-// dessine sa propre ligne même sur un élément haut de 0px, ce qui aurait
-// peint un filet d'ombre sous la toolbar partout, pas seulement sur un jour.
-// Posé ICI (pas seulement sur `.map-panel` à l'intérieur) : garantit la
-// continuité de couleur avec la toolbar en TOUTE circonstance (y compris le
-// bref instant d'une bascule collapse/expand, où la hauteur mesurée de
-// `.map-panel` peut différer d'une frame de celle de ce conteneur) — retour
-// utilisateur, un filet clair/blanc apparaissait entre toolbar et carte en
-// dark mode. Même token d'élévation que le FAB (`--nt-shadow-lg`) : l'un des
-// éléments les plus "au-dessus" de l'app, doit clairement flotter sur le
-// contenu qui défile dessous. `transform` : suit le hide-on-scroll de la
-// toolbar (voir TripDaySwiperComponent, `registerChromeElement`) — sans ça,
-// la carte restait figée pendant que la toolbar se masquait au scroll,
-// laissant un trou (retour utilisateur).
-.day-fixed-map--active {
-  background: var(--nt-content-background);
-  box-shadow: var(--nt-shadow-lg);
-}
+// `.map-anchor` et `.day-fixed-map` déplacés dans trip-detail.component.scss
+// (refonte desktop/mobile option B) : la carte partagée vit désormais dans
+// TripDetailComponent, hors du Swiper, pour survivre à son démontage en
+// desktop.

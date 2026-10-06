@@ -1,0 +1,23 @@
+<!-- Scrollport desktop UNIQUE (option B) : marqué `data-scrollport` pour que
+     `getScrollContainer` le retrouve hors Swiper (DayPanelComponent.getSlideEl,
+     DayReorderService, DayScrollSyncService, FabBottomProximity...). Mêmes
+     custom props que `.tab-content-wrapper` du Swiper (recopiées ici) : le
+     contenu interne (day-panel/general grid) lit `--chrome-top-offset`,
+     `--sticky-top-offset`, etc. exactement comme en slide. Plein viewport
+     `top:0;bottom:0` (le contenu réserve lui-même l'espace du chrome en
+     padding-top / sticky-top, comme en slide) — aucune réservation posée ici,
+     pour ne pas la compter deux fois. -->
+<div
+  class="trip-detail-desktop-root"
+  data-scrollport
+  [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
+  [style.--day-map-chrome-offset.px]="chromeService.contentTopOffset()"
+  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
+  [style.--sticky-top-offset.px]="chromeService.stickyContentTop()"
+  [style.--fixed-map-height.px]="mapHost.dayFixedContainerHeight()">
+  @if (isGeneralActive()) {
+    <app-trip-general-desktop [trip]="trip()" [active]="true" />
+  } @else if (activeDayDate(); as dayDate) {
+    <app-day-panel [dayId]="dayDate" [tripId]="trip().id" [active]="true" />
+  }
+</div>

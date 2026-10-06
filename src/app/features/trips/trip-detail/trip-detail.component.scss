@@ -46,3 +46,50 @@
   right: 0;
   pointer-events: none;
 }
+
+// --- Carte partagée (remontée ici depuis trip-day-swiper.component.scss par
+// la refonte desktop/mobile option B) : l'instance de carte vit désormais
+// dans trip-detail, hors du Swiper, pour survivre à son démontage en
+// desktop. Ces deux conteneurs doivent donc être stylés ici (styles
+// component-scoped : ceux du Swiper ne s'appliquent plus quand il est
+// démonté). ---
+
+// Position par défaut avant le premier appendChild de TripDayMapHostService
+// (ancre neutre de repli) — la carte est ensuite déplacée dans `.sticky-map`
+// du day-panel actif (layout scindé), `.day-fixed-map` (layout empilé) ou
+// le conteneur 'general' (vue Général).
+.map-anchor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+// Carte "jour" réellement hors du scroll (layout empilé/mobile) : position
+// fixed juste sous la toolbar, MÊME largeur qu'elle (edge-to-edge). Vide
+// (0 hauteur) tant qu'aucun jour n'y a déplacé la carte (Résumé/Activités/...,
+// ou layout scindé où DayPanelComponent cible son propre `.sticky-map`).
+// Coins bas arrondis : `overflow:hidden` fait de CE conteneur le vrai masque
+// de clip visible (sans ça, ses coins carrés écrasaient l'arrondi du panel
+// enfant).
+.day-fixed-map {
+  position: fixed;
+  top: var(--chrome-toolbar-height, 0px);
+  left: 0;
+  right: 0;
+  z-index: var(--z-fixed-map);
+  overflow: hidden;
+  border-bottom-left-radius: var(--nt-radius-lg);
+  border-bottom-right-radius: var(--nt-radius-lg);
+}
+
+// `background`/`box-shadow` UNIQUEMENT quand une carte y est effectivement
+// déplacée (`--active`) — jamais sur le conteneur vide : un `box-shadow`
+// dessine sa ligne même sur un élément de 0px de haut. `transform` : suit le
+// hide-on-scroll de la toolbar (registerChromeElement), sans quoi la carte
+// resterait figée pendant que la toolbar se masque, laissant un trou.
+.day-fixed-map--active {
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-lg);
+}

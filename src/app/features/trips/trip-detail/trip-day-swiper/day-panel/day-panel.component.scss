@@ -250,4 +250,126 @@
     // cohérente même avant que le chrome ne finisse de se masquer.
     height: calc(100dvh - var(--chrome-top-offset, 0px) - 1.5rem);
   }
+
+  // --- Escamotage de la colonne carte (option B, retour utilisateur
+  // 2026-09-30, ROADMAP.md "UI spécifique Desktop") : contrôles rendus
+  // UNIQUEMENT ici (`@media` scindé) via `@if (viewport.isSplitLayout())`
+  // dans le template — jamais sur mobile. ---
+
+  // Bouton "Réduire la carte" (chevron en haut de la colonne carte, état
+  // déplié) : fin, discret, pleine largeur de la colonne, au-dessus de la
+  // timeline. S'appuie sur les tokens de panel pour rester cohérent avec le
+  // reste du contenu jour.
+  .day-panel-map-collapse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nt-space-2, 0.5rem);
+    width: 100%;
+    padding: var(--nt-space-2, 0.5rem);
+    border: var(--nt-content-border-width) solid var(--nt-content-border-color);
+    border-radius: var(--nt-content-border-radius, 0.5rem);
+    background: var(--nt-content-background);
+    color: var(--nt-text-muted-color);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+
+    i {
+      font-size: var(--nt-icon-size-sm, 0.875rem);
+    }
+
+    &:hover {
+      color: var(--nt-text-color);
+      border-color: var(--nt-form-field-hover-border-color);
+    }
+  }
+
+  // Rail vertical "Afficher la carte" (état escamoté) : masqué tant que la
+  // carte est dépliée (seul le bouton "Réduire" est visible). Devient le seul
+  // contenu de la colonne carte une fois escamotée (voir plus bas).
+  .day-panel-map-rail {
+    display: none;
+  }
+
+  // === État ESCAMOTÉ : `.day-panel-body--map-collapsed` (posé par
+  // DayPanelComponent.mapCollapsedSplit, partagé avec la poignée mobile via
+  // GoogleMapPanelService). La colonne carte se réduit à un rail fin
+  // cliquable, la colonne activités récupère la largeur et passe en grille
+  // multi-colonnes. ===
+  .day-panel-body--map-collapsed {
+    .day-panel-map-group {
+      // Rail étroit à hauteur de contenu (pas `1 1 auto`) : la carte ne doit
+      // plus manger d'espace. `align-self: stretch` NON voulu — on garde le
+      // rail court, collé en haut.
+      flex: 0 0 auto;
+      align-self: flex-start;
+    }
+
+    // Tout le contenu "carte dépliée" disparaît : la timeline (vue
+    // d'ensemble), la carte elle-même (plus de hauteur figée = plus de bloc
+    // blanc résiduel, le bug d'origine) et le bouton "Réduire".
+    .day-panel-timeline,
+    .sticky-map,
+    .day-panel-map-collapse {
+      display: none;
+    }
+
+    // Le rail prend le relais : capsule verticale cliquable pour rouvrir.
+    .day-panel-map-rail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--nt-space-2, 0.5rem);
+      width: 2.5rem;
+      padding: var(--nt-space-3, 0.75rem) 0;
+      position: sticky;
+      top: var(--sticky-top-offset, 0px);
+      border: var(--nt-content-border-width) solid var(--nt-content-border-color);
+      border-radius: var(--nt-content-border-radius, 0.5rem);
+      background: var(--nt-content-background);
+      color: var(--nt-text-muted-color);
+      cursor: pointer;
+      transition: color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+
+      i {
+        font-size: var(--nt-icon-size-md, 1rem);
+      }
+
+      &:hover {
+        color: var(--nt-primary-color);
+        border-color: var(--nt-form-field-hover-border-color);
+      }
+    }
+
+    // La colonne activités récupère toute la largeur et passe en GRILLE
+    // multi-colonnes (retour utilisateur : "replier la carte doit servir à un
+    // plus bel affichage, plusieurs activités au lieu d'une"). `auto-fill` +
+    // `minmax(28rem, 1fr)` : 2 à 3 colonnes selon la largeur réelle. Plus de
+    // plafond `32rem`.
+    .day-panel-activities-group {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+}
+
+// Grille des activités quand la carte est escamotée (retour utilisateur
+// 2026-09-30 : "replier la carte doit servir à un plus bel affichage,
+// plusieurs activités au lieu d'une"). `#activityList` (voir
+// day-panel.component.html) est le conteneur direct des cartes, à l'intérieur
+// de `.activities-column` (app-panel sans header). En vue jour, les cartes
+// sont toutes rendues `[initCollapsed]="false"` (dépliées) : `minmax(28rem, 1fr)`
+// garantit qu'une carte dépliée (grille de champs interne à 2 colonnes) reste
+// lisible dans une cellule ; `auto-fill` en pose 2 à 3 par rangée selon la
+// largeur libérée par la carte escamotée. Même breakpoint que le reste du
+// layout scindé.
+@media (orientation: landscape) and (min-width: 700px) {
+  .day-panel-body--map-collapsed #activityList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+    gap: var(--nt-layout-gap-split, 0.5rem);
+    align-items: start;
+  }
 }

@@ -134,6 +134,8 @@ html.trip-detail-active body {
 // (swiper-slide, flex...). Centralisé ici plutôt que répété en `:host` dans
 // chacun de ces composants.
 app-trip-day-swiper,
+app-trip-detail-desktop,
+app-trip-general-desktop,
 app-trip-tabs-nav,
 app-mobile-trip-nav,
 app-day-picker-sheet,
@@ -145,6 +147,12 @@ app-logistics-list,
 app-notes {
   display: block;
 }
+
+// Note (refonte desktop/mobile option B) : l'ancienne règle
+// `app-trip-general-desktop:not([hidden])` a disparu — ce composant n'est
+// plus basculé par `[hidden]` à côté du Swiper mais rendu via un `@if` dans
+// TripDetailDesktopComponent (soit monté, soit absent du DOM). Un simple
+// `display:block` (ci-dessus) suffit donc, plus aucun état `[hidden]` à gérer.
 
 // L'ancienne règle ici était `swiper-container, swiper-slide, .swiper-wrapper
 // { overflow-x: 0 visible !important; }` : `overflow-x` n'accepte qu'UNE

@@ -1,25 +1,23 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { TripSummaryComponent } from '../trip-day-swiper/general-panel/trip-summary/trip-summary.component';
 import { TripActivitiesComponent } from '../trip-day-swiper/general-panel/trip-activities/trip-activities.component';
 import { LogisticsListComponent } from '../trip-day-swiper/general-panel/logistics/logistics-list.component';
 import { NotesComponent } from '../trip-day-swiper/general-panel/notes/notes.component';
-import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 
 /**
- * Desktop UNIQUEMENT (voir ViewportService.isMobileChrome, gate posée par
- * TripDetailComponent) : refonte "Général" (ROADMAP.md "UI Desktop") — les 4
- * onglets mobiles Résumé/Activités/Logements & Transports/Listes, montrés un
- * par un via TripDaySwiperComponent, deviennent 3 colonnes simultanées dans
- * ce composant frère du swiper (jamais un descendant — un `swiper-slide`
- * ancêtre a un `transform` permanent qui casserait tout `position:fixed/sticky`
- * interne, même raisonnement que ActivityDayDispatchOverlayComponent).
+ * Desktop UNIQUEMENT (voir ViewportService.isMobileChrome) : vue "Général"
+ * (ROADMAP.md "UI spécifique Desktop") — les 4 onglets mobiles Résumé/
+ * Activités/Logements & Transports/Listes, montrés un par un via le Swiper
+ * mobile, deviennent 3 colonnes simultanées.
  *
- * Monté une seule fois et jamais détruit tant que `!isMobileChrome()` (voir
- * `[hidden]` dans trip-detail.component.html, jamais un `@if` séparé pour
- * basculer jour/général) : `TripSummaryComponent` ci-dessous possède la carte
- * Google Maps partagée pendant qu'il est `active` — le détruire pendant qu'il
- * la possède l'orphelinerait (voir sa doc `destroyRef.onDestroy`).
+ * Refonte desktop/mobile (option B) : ce composant n'est plus un scrollport
+ * `position:fixed` basculé par `[hidden]` à côté du Swiper — il est désormais
+ * un simple CONTENU en flux normal rendu DANS le scrollport desktop unique
+ * (`TripDetailDesktopComponent`), via un `@if (isGeneralActive())`. Le
+ * scrollport parent, et le fait que Général et vue Jour ne sont jamais rendus
+ * simultanément, garantissent qu'un seul propriétaire réclame la carte
+ * partagée à la fois (ici `TripSummaryComponent` tant qu'`active`).
  *
  * Les 4 composants réels sont réutilisés tels quels (jamais réimplémentés),
  * juste rendus avec `[fillWidth]="true"` pour remplir leur colonne de grille
@@ -34,16 +32,14 @@ import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TripGeneralDesktopComponent {
-  protected readonly chromeService = inject(TripChromeService);
-
   readonly trip = input.required<Trip>();
   /**
    * Reflète si CE composant est celui actuellement montré (par opposition à
-   * un jour, affiché par le swiper caché à côté) — jamais codé en dur à
-   * `true` : transmis tel quel à `TripSummaryComponent.active`, dont les
-   * effects réactifs (pas seulement au montage) doivent savoir se taire
-   * pendant qu'un jour est affiché, sous peine de voler la carte partagée à
-   * ce jour dès qu'un signal dont ils dépendent change.
+   * la vue Jour) — transmis tel quel à `TripSummaryComponent.active`, dont les
+   * effects réactifs doivent savoir se taire quand ce n'est pas le cas, sous
+   * peine de voler la carte partagée. Rendu via `@if` dans
+   * TripDetailDesktopComponent : vaut donc toujours `true` quand ce composant
+   * est effectivement monté, mais gardé en input pour rester explicite.
    */
   readonly active = input(false);
 }

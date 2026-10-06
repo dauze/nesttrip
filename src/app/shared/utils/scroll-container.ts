@@ -3,9 +3,18 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Conteneur de scroll isolé d'un slide : le `swiper-slide` ancêtre le plus proche. */
+/**
+ * Conteneur de scroll isolé le plus proche. En mobile, chaque jour est un
+ * `swiper-slide` (son propre scrollport). En desktop, le Swiper n'est plus
+ * monté (voir TripDetailComponent / l'option B de la refonte desktop) : la
+ * vue Jour est rendue dans un scrollport unique marqué `[data-scrollport]`
+ * (voir TripDetailDesktopComponent) — on y retombe quand aucun `swiper-slide`
+ * n'est présent. Tous les consommateurs (DayScrollSyncService,
+ * DayReorderService, FabBottomProximityDirective, LogisticsListComponent)
+ * passent par ici, donc fonctionnent sans changement dans les deux mondes.
+ */
 export function getScrollContainer(el: HTMLElement): HTMLElement | null {
-  return el.closest('swiper-slide');
+  return el.closest('swiper-slide') ?? el.closest<HTMLElement>('[data-scrollport]');
 }
 
 /**

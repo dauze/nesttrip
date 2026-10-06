@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NestTrip — Maquette vue Jour desktop</title>
+<style>
+  :root {
+    --nt-primary-50:#ECF6F5; --nt-primary-100:#D0EAE7; --nt-primary-500:#2A7871; --nt-primary-600:#21615B;
+    --nt-primary-color:var(--nt-primary-500);
+    --nt-surface-0:#fff; --nt-surface-50:#f8fafc; --nt-surface-100:#f1f5f9; --nt-surface-200:#e2e8f0;
+    --nt-surface-300:#cbd5e1; --nt-surface-400:#94a3b8; --nt-surface-500:#64748b; --nt-surface-600:#475569;
+    --nt-surface-700:#334155; --nt-surface-800:#1e293b;
+    --nt-text-color:var(--nt-surface-700); --nt-text-muted-color:var(--nt-surface-500);
+    --nt-content-background:var(--nt-surface-0); --nt-content-inset-background:var(--nt-surface-50);
+    --nt-content-border-color:var(--nt-surface-200); --nt-page-background:var(--nt-surface-50);
+    --nt-radius-md:0.5rem; --nt-radius-lg:0.75rem; --nt-radius-xl:1rem; --nt-radius-pill:999px;
+    --nt-shadow-xs:0 .0625rem .125rem rgba(15,23,42,.06);
+    --nt-shadow-sm:0 .125rem .5rem rgba(15,23,42,.08);
+    --nt-shadow-md:0 .375rem 1rem -.125rem rgba(15,23,42,.12);
+    --nt-space-1:.25rem; --nt-space-2:.5rem; --nt-space-3:.75rem; --nt-space-4:1rem;
+    --nt-activity-repas:#F97316; --nt-activity-visite:#F43F5E; --nt-activity-activite:#f79009; --nt-activity-nature:#12b76e;
+    --nt-green-500:#12b76e; --nt-blue-500:#1570ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --nt-surface-0:#fff; --nt-surface-50:#fafafa; --nt-surface-100:#f4f4f5; --nt-surface-200:#e4e4e7;
+      --nt-surface-700:#3f3f46; --nt-surface-800:#27272a;
+      --nt-primary-color:#43A198;
+      --nt-text-color:#fff; --nt-text-muted-color:#a1a1aa;
+      --nt-content-background:#18181b; --nt-content-inset-background:#27272a;
+      --nt-content-border-color:#3f3f46; --nt-page-background:#09090b;
+      --nt-shadow-md:0 .375rem 1rem -.125rem rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--nt-page-background); color:var(--nt-text-color); font-size:15px; line-height:1.4;
+    height:100vh; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .icon { display:inline-block; width:1em; height:1em; vertical-align:-.125em; fill:currentColor; }
+
+  /* chrome */
+  .toolbar {
+    flex:none; display:flex; align-items:center; gap:.75rem; padding:.65rem 1.25rem;
+    background:var(--nt-content-background); z-index:20;
+  }
+  .toolbar .back { color:var(--nt-primary-color); font-size:1.2rem; cursor:pointer; }
+  .toolbar h1 { flex:1; text-align:center; font-size:1.15rem; font-weight:700; }
+  .avatars { display:flex; }
+  .avatars span { width:2rem; height:2rem; border-radius:var(--nt-radius-pill); background:var(--nt-surface-200);
+    color:var(--nt-surface-700); display:grid; place-items:center; font-size:.75rem; font-weight:700;
+    border:2px solid var(--nt-content-background); margin-left:-.5rem; }
+  .gear { color:var(--nt-primary-color); cursor:pointer; font-size:1.1rem; }
+
+  .tabs {
+    flex:none; display:flex; overflow-x:auto; background:var(--nt-content-background);
+    border-bottom:1px solid var(--nt-content-border-color); padding:0 .5rem;
+  }
+  .tab {
+    min-width:3.75rem; padding:.5rem 1.125rem; border:none; background:transparent;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+    color:var(--nt-text-muted-color); font-weight:600; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; line-height:1.15;
+    transition:color .2s ease, border-color .2s ease;
+  }
+  .tab.is-active { color:var(--nt-primary-color); border-bottom-color:var(--nt-primary-color); }
+  .tab .num { font-size:1.15rem; font-weight:700; }
+  .tab .wd,.tab .mo { font-size:.7rem; }
+
+  /* ---- Corps 2 colonnes (carte gauche / timeline+activités droite) ---- */
+  .day-body {
+    flex:1; min-height:0; display:flex; gap:var(--nt-space-3);
+    padding:var(--nt-space-3) var(--nt-space-3) 0; align-items:stretch;
+  }
+
+  /* colonne carte : quand pliée, elle se réduit à sa poignée — plus de bloc blanc */
+  .map-col {
+    flex:1 1 auto; min-width:0; display:flex; flex-direction:column;
+    transition:flex-basis .28s cubic-bezier(.4,0,.2,1), flex-grow .28s cubic-bezier(.4,0,.2,1);
+  }
+  .map-panel {
+    display:flex; flex-direction:column; flex:1; min-height:0;
+    background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-lg); box-shadow:var(--nt-shadow-md); overflow:hidden;
+  }
+  .map-canvas {
+    flex:1; min-height:0; margin:.6rem; border-radius:var(--nt-radius-md); overflow:hidden;
+    position:relative; background:linear-gradient(135deg,#dbe7e5,#c3d6d3 60%,#a9c6c1);
+    transition:opacity .2s ease;
+  }
+  .map-canvas .pin { position:absolute; color:var(--nt-primary-600); font-size:1.6rem; filter:drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+  .map-canvas .expand {
+    position:absolute; top:.6rem; right:.6rem; width:2rem; height:2rem; border-radius:var(--nt-radius-md);
+    background:var(--nt-content-background); box-shadow:var(--nt-shadow-sm); display:grid; place-items:center; color:var(--nt-primary-color);
+  }
+  /* poignée / footer togglable */
+  .map-footer {
+    flex:none; display:flex; flex-direction:column; align-items:center; gap:.15rem;
+    padding:.35rem 0 .5rem; border-top:1px solid var(--nt-content-border-color);
+    color:var(--nt-text-muted-color); cursor:pointer; background:transparent;
+  }
+  .map-footer .grabber { width:4rem; height:.25rem; border-radius:var(--nt-radius-pill); background:var(--nt-text-muted-color); opacity:.5; }
+  .map-footer .lbl { font-size:.8rem; display:flex; align-items:center; gap:.4rem; }
+
+  /* --- ÉTAT REPLIÉ (BUG FIX) --- */
+  /* La colonne carte cesse de prendre l'espace (flex:0 0 auto), le canvas
+     est retiré du flux (height 0) : plus de rectangle blanc plein écran,
+     et la timeline/activités reprennent toute la place. */
+  .day-body.map-collapsed .map-col { flex:0 0 auto; }
+  .day-body.map-collapsed .map-panel { box-shadow:var(--nt-shadow-xs); border-radius:var(--nt-radius-md); }
+  .day-body.map-collapsed .map-canvas { flex:0; height:0; margin:0; opacity:0; }
+  .day-body.map-collapsed .map-footer { border-top:none; }
+  .day-body.map-collapsed .map-footer .lbl::after { content:" · afficher la carte"; }
+
+  /* colonne activités : largeur de lecture confortable + scroll interne */
+  .acts-col {
+    flex:0 1 34rem; min-width:0; display:flex; flex-direction:column; gap:var(--nt-space-3);
+    overflow-y:auto; padding-bottom:5rem;
+  }
+  /* quand la carte est pliée, les activités s'étalent mais restent bornées et centrées */
+  .day-body.map-collapsed .acts-col { flex:1 1 auto; max-width:46rem; margin-inline:auto; }
+
+  /* vue d'ensemble (timeline repliable) — toujours visible EN HAUT de la colonne activités */
+  .overview {
+    background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-lg); box-shadow:var(--nt-shadow-xs); overflow:hidden;
+  }
+  .overview__head {
+    display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; font-weight:700; cursor:pointer;
+  }
+  .overview__head .chev { margin-left:auto; color:var(--nt-text-muted-color); }
+  .overview__body { padding:.25rem 1rem 1rem; }
+  .rail { position:relative; padding-left:1.4rem; }
+  .rail::before { content:""; position:absolute; left:.42rem; top:.4rem; bottom:.4rem; width:2px; background:var(--nt-content-border-color); }
+  .rail-item { position:relative; display:flex; gap:.6rem; align-items:center; padding:.35rem 0; font-size:.86rem; }
+  .rail-item .dot {
+    position:absolute; left:-1.4rem; width:.9rem; height:.9rem; border-radius:50%;
+    background:color-mix(in srgb,var(--c) 16%,transparent); border:2px solid var(--c);
+  }
+  .rail-item .time { color:var(--nt-text-muted-color); font-variant-numeric:tabular-nums; width:3rem; }
+
+  /* activity detail card */
+  .card {
+    position:relative; background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-lg); box-shadow:var(--nt-shadow-xs); overflow:hidden;
+  }
+  .card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:.4rem;
+    background:linear-gradient(to bottom,var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); }
+  .card__head { display:flex; align-items:flex-start; gap:.7rem; padding:.9rem 1rem .7rem 1.1rem; }
+  .card__head .grip { color:var(--nt-surface-400); cursor:grab; margin-top:.2rem; }
+  .card__head .title { flex:1; }
+  .card__head .title h3 { font-size:1.02rem; font-weight:700; }
+  .card__head .meta { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.3rem; font-size:.8rem; color:var(--nt-text-muted-color); }
+  .badge { display:inline-flex; align-items:center; gap:.3rem; padding:.15rem .5rem; border-radius:var(--nt-radius-pill); font-weight:600; font-size:.75rem; }
+  .badge--ia { background:var(--nt-primary-50); color:var(--nt-primary-600); }
+  .card__head .collapse { color:var(--nt-text-muted-color); cursor:pointer; }
+  .card__grid { display:grid; grid-template-columns:1fr 1fr; gap:.1rem 1.2rem; padding:.4rem 1rem 1rem 1.1rem; }
+  .fld { padding:.55rem 0; border-top:1px solid var(--nt-content-border-color); }
+  .fld .k { font-size:.75rem; color:var(--nt-text-muted-color); font-weight:600; display:flex; align-items:center; gap:.35rem; }
+  .fld .v { margin-top:.2rem; font-weight:600; }
+  .fld--full { grid-column:1 / -1; }
+  .fld--repas .v { color:var(--nt-activity-repas); }
+  .notes-box { margin-top:.35rem; padding:.6rem .7rem; border-radius:var(--nt-radius-md); background:var(--nt-content-inset-background); font-weight:400; font-size:.88rem; }
+
+  .fab {
+    position:fixed; right:1.75rem; bottom:1.75rem; width:3.4rem; height:3.4rem;
+    border-radius:var(--nt-radius-pill); background:var(--nt-primary-color); color:#fff;
+    display:grid; place-items:center; box-shadow:var(--nt-shadow-md); font-size:1.5rem; cursor:pointer; z-index:30;
+  }
+  .hint { position:fixed; left:1rem; bottom:.6rem; font-size:.78rem; color:var(--nt-text-muted-color); }
+  .hint b { color:var(--nt-primary-color); cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="back">←</span>
+  <h1>Road trip Paris</h1>
+  <div class="avatars"><span>CB</span><span>ND</span></div>
+  <span class="gear">⚙</span>
+</div>
+
+<div class="tabs">
+  <button class="tab">Général</button>
+  <button class="tab is-active"><span class="wd">Lun.</span><span class="num">24</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Mar.</span><span class="num">25</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Mer.</span><span class="num">26</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Jeu.</span><span class="num">27</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Ven.</span><span class="num">28</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Sam.</span><span class="num">29</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Dim.</span><span class="num">30</span><span class="mo">Août</span></button>
+</div>
+
+<div class="day-body" id="dayBody">
+
+  <!-- COLONNE CARTE (repliable) -->
+  <div class="map-col">
+    <div class="map-panel">
+      <div class="map-canvas">
+        <span class="pin" style="left:30%;top:40%">📍</span>
+        <span class="pin" style="left:55%;top:32%">📍</span>
+        <span class="pin" style="left:47%;top:60%">📍</span>
+        <div class="expand">⤢</div>
+      </div>
+      <button class="map-footer" onclick="toggleMap()">
+        <span class="grabber"></span>
+        <span class="lbl">🗺 <span>Réduire la carte</span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- COLONNE ACTIVITÉS -->
+  <div class="acts-col">
+    <!-- Vue d'ensemble de la journée — toujours visible en haut, jamais sous la carte -->
+    <div class="overview">
+      <div class="overview__head">📋 Vue d'ensemble de la journée <span class="chev">▾</span></div>
+      <div class="overview__body">
+        <div class="rail">
+          <div class="rail-item" style="--c:var(--nt-activity-visite)"><span class="dot"></span><span class="time">10:00</span> Musée du Louvre</div>
+          <div class="rail-item" style="--c:var(--nt-activity-repas)"><span class="dot"></span><span class="time">13:00</span> Bouillon Chartier</div>
+          <div class="rail-item" style="--c:var(--nt-activity-nature)"><span class="dot"></span><span class="time">15:30</span> Jardin du Luxembourg</div>
+          <div class="rail-item" style="--c:var(--nt-activity-activite)"><span class="dot"></span><span class="time">19:30</span> Croisière sur la Seine</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte activité détaillée -->
+    <div class="card" style="--accent:var(--nt-activity-repas)">
+      <div class="card__head">
+        <span class="grip">⋮⋮</span>
+        <div class="title">
+          <h3>Bouillon Chartier Grands Boulevards</h3>
+          <div class="meta">
+            <span>🕐 13:00</span><span>€ 16 EUR</span>
+            <span class="badge badge--ia">✦ Suggéré par IA</span>
+          </div>
+        </div>
+        <span class="collapse">▴</span>
+      </div>
+      <div class="card__grid">
+        <div class="fld fld--repas"><div class="k">🏷 Type</div><div class="v">Repas</div></div>
+        <div class="fld"><div class="k">🔖 Statut</div><div class="v" style="color:var(--nt-green-500)">Réservé</div></div>
+        <div class="fld"><div class="k">📅 Début</div><div class="v">13:00</div></div>
+        <div class="fld"><div class="k">📅 Fin</div><div class="v">14:15</div></div>
+        <div class="fld"><div class="k">🕐 Durée</div><div class="v">1 h 15</div></div>
+        <div class="fld"><div class="k">€ Prix</div><div class="v">16 €</div></div>
+        <div class="fld fld--full"><div class="k">✎ Notes</div>
+          <div class="notes-box">Arriver un peu avant l'ouverture pour éviter l'attente.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--nt-activity-visite)">
+      <div class="card__head">
+        <span class="grip">⋮⋮</span>
+        <div class="title">
+          <h3>Musée du Louvre</h3>
+          <div class="meta"><span>🕐 10:00</span><span>€ 22 EUR</span></div>
+        </div>
+        <span class="collapse">▾</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="hint">Astuce : cliquez sur la poignée sous la carte pour <b onclick="toggleMap()">plier / déplier</b>.</div>
+<div class="fab">＋</div>
+
+<script>
+  function toggleMap(){ document.getElementById('dayBody').classList.toggle('map-collapsed'); }
+</script>
+</body>
+</html>

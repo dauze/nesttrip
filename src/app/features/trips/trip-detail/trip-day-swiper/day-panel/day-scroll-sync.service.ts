@@ -217,6 +217,21 @@ export class DayScrollSyncService implements OnDestroy {
   };
 
   private readonly tick = (): void => {
+    // Un jour inactif n'a aucune raison de piloter la caméra ni d'entretenir
+    // la boucle : `updateMapFromScroll` early-return déjà sur `!isActive()`,
+    // mais la boucle, elle, continuait de se replanifier tant que le scrollTop
+    // bougeait (jour préchargé voisin, ResizeObserver, etc.) — jusqu'à
+    // emballement et déclenchement du garde-fou `MAX_FRAMES_WITHOUT_IDLE`
+    // (retour utilisateur : erreur console "1647 frames sans repos"). On
+    // arrête net ici : la boucle redémarrera proprement via `attachMap`/
+    // `wakeLoop` quand ce jour redeviendra actif.
+    if (!this.config.isActive()) {
+      this.rafLoop = undefined;
+      this.frameBudget = 0;
+      this.idleFrames = 0;
+      return;
+    }
+
     this.frameBudget++;
     if (this.frameBudget > DayScrollSyncService.MAX_FRAMES_WITHOUT_IDLE) {
       console.error(

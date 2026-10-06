@@ -9,8 +9,10 @@ import { TripDetailSkeletonComponent } from './trip-detail-skeleton.component';
 import { TripFacade } from '../trip-facade.service';
 import { TripTabsNavComponent } from './trip-tabs-nav/trip-tabs-nav.component';
 import { TripDaySwiperComponent } from './trip-day-swiper/trip-day-swiper.component';
-import { TripGeneralDesktopComponent } from './trip-general-desktop/trip-general-desktop.component';
+import { TripDetailDesktopComponent } from './trip-detail-desktop/trip-detail-desktop.component';
+import { TripDayMapComponent } from './trip-day-swiper/day-panel/trip-day-map/trip-day-map.component';
 import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.service';
+import { TripDestinationLocationService } from '@app/core/services/business/trip-destination-location.service';
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/overlays/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
@@ -43,7 +45,8 @@ const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
     TripDetailSkeletonComponent,
     TripTabsNavComponent,
     TripDaySwiperComponent,
-    TripGeneralDesktopComponent,
+    TripDetailDesktopComponent,
+    TripDayMapComponent,
     ActivityDayDispatchOverlayComponent,
     FloatingAddButtonComponent,
     MobileTripNavComponent,
@@ -63,10 +66,13 @@ const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
   // les DayPanelComponent du swiper, pour une sélection persistante d'un
   // onglet à l'autre. DayLogisticQuickAddService/NotesFocusService : même
   // topologie, pour le menu "Ajouter" (voir addMenuItems ci-dessous).
-  // TripDayMapHostService : déplacé ici depuis TripDaySwiperComponent
-  // (ROADMAP.md "UI Desktop") — TripGeneralDesktopComponent, FRÈRE du swiper
-  // (pas un descendant), doit résoudre la MÊME instance pour partager la
-  // carte Google Maps ; ce niveau (ancêtre commun des deux) est le bon.
+  // TripDayMapHostService : fourni ici (ancêtre commun) — le Swiper (mobile)
+  // comme TripDetailDesktopComponent (desktop) résolvent la MÊME instance pour
+  // partager la carte Google Maps. Depuis la refonte desktop/mobile (option
+  // B), l'instance de carte ELLE-MÊME (`<app-trip-day-map #dayMap>`) est aussi
+  // déclarée dans CE composant (voir le template + les effects du
+  // constructeur), hors du Swiper : elle doit survivre au démontage du Swiper
+  // en desktop.
   providers: [
     TripCreationTargetService, DayActivityFocusService, LogisticFocusService, NotesFocusService,
     SelectionModeService, TripItemDeletionService, DayLogisticQuickAddService, TripDayMapHostService,
@@ -87,9 +93,22 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly itemDeletionService = inject(TripItemDeletionService);
   private readonly dayLogisticQuickAdd = inject(DayLogisticQuickAddService);
   private readonly onboardingTour = inject(OnboardingTourService);
+  protected readonly mapHost = inject(TripDayMapHostService);
+  private readonly destinationLocationService = inject(TripDestinationLocationService);
 
   private readonly tabsNavRef = viewChild(TripTabsNavComponent);
   private readonly dragPortalRef = viewChild<ElementRef<HTMLElement>>('dragPortal');
+
+  // Carte Google Maps PARTAGÉE remontée au niveau trip-detail (refonte
+  // desktop/mobile, option B — ex-TripDaySwiperComponent) : l'instance unique
+  // doit survivre au démontage du Swiper en desktop (où le Swiper n'est plus
+  // dans le DOM du tout). Déclarée ici, elle est hôte neutre ni mobile ni
+  // desktop — le Swiper (mobile) comme le scrollport desktop ne font plus que
+  // la RÉCLAMER via TripDayMapHostService.moveTo(container, 'day'|'general').
+  private readonly dayMapRef = viewChild(TripDayMapComponent);
+  private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
+  private readonly mapAnchorRef = viewChild<ElementRef<HTMLElement>>('mapAnchor');
+  private dayFixedMapObserver?: ResizeObserver;
   private readonly addMenu = viewChild.required<MenuComponent>('addMenu');
   private readonly logisticsAddMenu = viewChild.required<MenuComponent>('logisticsAddMenu');
   private readonly fabElementRef = viewChild(FloatingAddButtonComponent, { read: ElementRef });
@@ -201,7 +220,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   /** `true` quand `activeDay()` est un des 4 tabs "Général" (quel que soit le device) — voir `isDesktopGeneral`/`desktopNavTabs` pour leur usage desktop. */
   protected readonly isGeneralActive = computed(() => GENERAL_TAB_IDS.includes(this.activeDay()));
-  /** Vrai desktop (voir ViewportService.isMobileChrome) ET un des 4 tabs Général : c'est cette condition qui bascule TripDaySwiperComponent/TripGeneralDesktopComponent (voir le template) et le comportement du "+" flottant (voir onFabActivate). */
+  /** Vrai desktop (voir ViewportService.isMobileChrome) ET un des 4 tabs Général : en desktop, TripDetailDesktopComponent rend alors la grille Général plutôt que la vue Jour ; pilote aussi le comportement du "+" flottant (voir onFabActivate). */
   protected readonly isDesktopGeneral = computed(() => !this.viewport.isMobileChrome() && this.isGeneralActive());
 
   /**
@@ -286,6 +305,61 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     afterNextRender(() => {
       const el = this.dragPortalRef()?.nativeElement;
       if (el) this.dispatchService.registerDragPortal(el);
+    });
+
+    // --- Carte partagée (ex-TripDaySwiperComponent, remontée ici par la
+    // refonte desktop/mobile option B) : l'instance unique est créée une
+    // seule fois avec CE composant et jamais recréée tant que le trip est
+    // ouvert. On l'enregistre dans TripDayMapHostService dès qu'elle est
+    // disponible ; le Swiper (mobile) et le scrollport desktop ne font plus
+    // que la réclamer. ---
+    effect(() => {
+      const map = this.dayMapRef();
+      if (map) this.mapHost.register(map);
+    });
+
+    // Ancre de repli par défaut (`.map-anchor`, toujours montée tant que le
+    // trip est ouvert) : disponible pour un appelant qui doit reparquer la
+    // carte sans avoir sa propre ancre sous la main (ex. TripSummaryComponent
+    // détruit pendant qu'il possède la carte, voir sa doc).
+    effect(() => {
+      this.mapHost.registerDefaultAnchor(this.mapAnchorRef()?.nativeElement ?? null);
+    });
+
+    // Destination du trip (`placeId`) résolue une fois en coordonnées, posée
+    // sur `TripDayMapComponent.defaultCenter` — centre par défaut quand le
+    // contexte courant n'a aucune activité géolocalisée (repli Paris sinon).
+    effect((onCleanup) => {
+      const map = this.dayMapRef();
+      const placeId = this.facade.activeTrip()?.placeId;
+      if (!map || !placeId) return;
+
+      const sub = this.destinationLocationService.getCoordinates$(placeId)
+        .subscribe((coords) => map.defaultCenter.set(coords));
+      onCleanup(() => sub.unsubscribe());
+    });
+
+    // Conteneur fixe "carte jour" (`.day-fixed-map`, layout empilé/mobile) :
+    // enregistré auprès de TripDayMapHostService avec un ResizeObserver qui
+    // alimente `--fixed-map-height` (day-panel.component.scss), et auprès de
+    // `TripChromeService.registerChromeElement` pour suivre le hide-on-scroll
+    // de la toolbar. 0 quand vide (layout scindé/desktop, ou aucun jour actif).
+    effect((onCleanup) => {
+      const el = this.dayFixedMapRef()?.nativeElement;
+      this.mapHost.registerDayFixedContainer(el ?? null);
+      if (!el) return;
+
+      this.dayFixedMapObserver?.disconnect();
+      this.dayFixedMapObserver = new ResizeObserver(() => {
+        this.mapHost.setDayFixedContainerHeight(el.getBoundingClientRect().height);
+      });
+      this.dayFixedMapObserver.observe(el);
+
+      const unregisterChrome = this.chromeService.registerChromeElement(el);
+      onCleanup(() => {
+        this.dayFixedMapObserver?.disconnect();
+        unregisterChrome();
+      });
     });
 
     // Traduit le layout (ViewportService) en mode chrome (voir TripChromeService.ChromeMode) :
@@ -445,6 +519,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.facade.unloadTrip();
     this.clearReadyFallback();
     this.popStateSub?.unsubscribe();
+    this.dayFixedMapObserver?.disconnect();
     document.documentElement.classList.remove(TRIP_DETAIL_ACTIVE_CLASS);
     this.chromeService.reset();
   }

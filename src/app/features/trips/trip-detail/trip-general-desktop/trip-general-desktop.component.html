@@ -1,8 +1,9 @@
-<div
-  class="trip-general-desktop-root"
-  [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
-  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
-  [style.--sticky-top-offset.px]="chromeService.stickyContentTop()">
+<!-- CONTENU en flux normal (refonte option B) : ce composant n'est plus un
+     scrollport `position:fixed` à lui seul — il est rendu DANS le scrollport
+     desktop unique (TripDetailDesktopComponent). Il ne porte donc plus que la
+     grille 3 colonnes et les paddings de réservation du chrome ; le scroll est
+     entièrement assuré par le conteneur parent. -->
+<div class="trip-general-desktop-grid">
   <app-trip-summary class="trip-general-desktop-col trip-general-desktop-col--summary" [tripId]="trip().id" [active]="active()" [fillWidth]="true" />
   <app-trip-activities class="trip-general-desktop-col trip-general-desktop-col--activities" [tripId]="trip().id" [fillWidth]="true" />
   <div class="trip-general-desktop-col trip-general-desktop-col--side">

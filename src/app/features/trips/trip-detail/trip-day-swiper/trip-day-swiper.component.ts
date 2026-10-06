@@ -23,10 +23,8 @@ import { NotesComponent } from './general-panel/notes/notes.component';
 import type { SwiperContainer } from 'swiper/element';
 import { TripTab } from '../trip-tab.model';
 import { SwiperLockService } from '@app/core/services/ui/swiper-lock.service';
-import { TripDayMapComponent } from './day-panel/trip-day-map/trip-day-map.component';
 import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.service';
 import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
-import { TripDestinationLocationService } from '@app/core/services/business/trip-destination-location.service';
 import { PullToRefreshDirective } from '@app/shared/directives/pull-to-refresh.directive';
 import { ViewportService } from '@app/core/services/ui/viewport.service';
 
@@ -35,12 +33,12 @@ import { ViewportService } from '@app/core/services/ui/viewport.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, TripDayMapComponent, PullToRefreshDirective],
-  // TripDayMapHostService fourni par TripDetailComponent (pas ici) : voir sa
-  // doc pour pourquoi — TripGeneralDesktopComponent, frère de ce composant
-  // (pas un descendant), doit résoudre la MÊME instance pour partager la
-  // carte. SwiperLockService reste ici, propre au swiper (ROADMAP.md "UI
-  // Desktop").
+  imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, PullToRefreshDirective],
+  // TripDayMapHostService fourni par TripDetailComponent (pas ici). Depuis la
+  // refonte desktop/mobile (option B), l'instance de carte elle-même est aussi
+  // déclarée dans TripDetailComponent (hors du Swiper) : ce composant n'est
+  // plus monté qu'en mobile et ne fait que RÉCLAMER la carte via le service.
+  // SwiperLockService reste ici, propre au swiper.
   providers: [SwiperLockService],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
@@ -51,11 +49,6 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   protected readonly mapHost = inject(TripDayMapHostService);
   protected readonly chromeService = inject(TripChromeService);
   protected readonly viewport = inject(ViewportService);
-  private readonly destinationLocationService = inject(TripDestinationLocationService);
-  private readonly dayMapRef = viewChild(TripDayMapComponent);
-  private readonly dayFixedMapRef = viewChild<ElementRef<HTMLElement>>('dayFixedMap');
-  private readonly mapAnchorRef = viewChild<ElementRef<HTMLElement>>('mapAnchor');
-  private dayFixedMapObserver?: ResizeObserver;
 
   // --- Synchro chrome (toolbar + header) au fil du scroll du slide actif ---
   // Un `scroll` DOM event seul ne suffit pas : les navigateurs le dispatchent
@@ -101,88 +94,24 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
   private slideEls: HTMLElement[] = [];
 
   constructor() {
-    // L'instance unique de la carte est créée une seule fois avec ce
-    // composant. On l'enregistre dans le service dès qu'elle est disponible :
-    // elle ne sera plus jamais recréée pour toute la durée de vie du trip.
-    effect(() => {
-      const map = this.dayMapRef();
-      if (map) this.mapHost.register(map);
-    });
-
-    // Ancre de repli par défaut (voir TripDayMapHostService.parkToDefault) :
-    // ce `.map-anchor` est toujours monté (jamais gardé par un `@if`), donc
-    // toujours disponible pour un appelant qui doit reparquer la carte sans
-    // avoir sa propre ancre sous la main (ex. TripSummaryComponent détruit
-    // pendant qu'il possède la carte, voir sa doc).
-    effect(() => {
-      this.mapHost.registerDefaultAnchor(this.mapAnchorRef()?.nativeElement ?? null);
-    });
-
-    // Résout la destination du trip (`placeId`) en coordonnées une seule
-    // fois par trip et les pose sur `TripDayMapComponent.defaultCenter` —
-    // centre par défaut affiché par la carte partagée quand le jour/contexte
-    // courant n'a aucune activité géolocalisée, à la place du repli Paris
-    // fixe (ROADMAP.md "### UI"). Pas de `placeId` (trip créé avant son
-    // introduction, ou saisi en texte libre non résolu) : `defaultCenter`
-    // reste `null`, `TripDayMapComponent` retombe alors lui-même sur Paris.
-    effect((onCleanup) => {
-      const map = this.dayMapRef();
-      const placeId = this.trip().placeId;
-      if (!map || !placeId) return;
-
-      const sub = this.destinationLocationService.getCoordinates$(placeId)
-        .subscribe((coords) => map.defaultCenter.set(coords));
-      onCleanup(() => sub.unsubscribe());
-    });
-
-    // Conteneur fixe "carte jour" (voir sa doc dans le template) : enregistré
-    // une seule fois auprès de TripDayMapHostService, avec un ResizeObserver
-    // qui alimente `--fixed-map-height` (day-panel.component.scss) pour que le
-    // contenu scrollable du jour réserve exactement l'espace équivalent —
-    // 0 quand vide (layout scindé, ou aucun jour actif). Enregistré aussi
-    // auprès de `TripChromeService.registerChromeElement` : reçoit ainsi le
-    // MÊME `translateY` que la toolbar au hide-on-scroll (mobile), pour ne
-    // jamais laisser de trou entre les deux quand la toolbar se masque
-    // (retour utilisateur) — les deux glissent comme un seul bloc soudé.
-    effect((onCleanup) => {
-      const el = this.dayFixedMapRef()?.nativeElement;
-      this.mapHost.registerDayFixedContainer(el ?? null);
-      if (!el) return;
-
-      this.dayFixedMapObserver?.disconnect();
-      this.dayFixedMapObserver = new ResizeObserver(() => {
-        this.mapHost.setDayFixedContainerHeight(el.getBoundingClientRect().height);
-      });
-      this.dayFixedMapObserver.observe(el);
-
-      const unregisterChrome = this.chromeService.registerChromeElement(el);
-      onCleanup(() => {
-        this.dayFixedMapObserver?.disconnect();
-        unregisterChrome();
-      });
-    });
-
     // Reparque la carte dès que l'onglet actif n'est ni un jour ni Résumé
     // (Activités/Logistique/Listes, qui n'affichent aucune carte) — sans ça,
     // `.day-fixed-map` gardait le noeud DOM déplacé par le dernier jour
     // visité et restait affiché par-dessus ces onglets au lieu de se fermer
     // (aucun de ces 3 composants n'appelle jamais `moveTo` pour la réclamer).
-    // UNIQUEMENT mobile (`viewport.isMobileChrome()`) : sur desktop, les 4
-    // slides généraux de CE swiper ne montent plus rien (voir le template) et
-    // la propriété de la carte est entièrement déléguée à
-    // TripGeneralDesktopComponent — cet effect fighterait sinon avec lui pour
-    // la carte dès que `activeId()` vaut 'activities'/'logistics'/'notes'.
+    // Mobile UNIQUEMENT (ce composant n'est plus monté qu'en mobile depuis la
+    // refonte option B — voir trip-detail.component.html). Reparque vers
+    // l'ancre neutre de repli (`.map-anchor`, désormais dans trip-detail) via
+    // `parkToDefault()` plutôt qu'une ancre locale, l'instance de carte et son
+    // ancre ayant été remontées hors du Swiper.
     effect(() => {
-      if (!this.viewport.isMobileChrome()) return;
-
       const id = this.activeId();
-      const anchor = this.mapAnchorRef()?.nativeElement;
-      if (!id || !anchor) return;
+      if (!id) return;
 
       const isMapOwningTab = id === 'summary' || this.sortedDays().some(d => d.id.toISOString() === id);
       if (isMapOwningTab) return;
 
-      this.mapHost.park(anchor);
+      this.mapHost.parkToDefault();
     });
 
     // Réactif à `isLocked()` lui-même (pas juste au changement de jour actif,
@@ -261,7 +190,6 @@ export class TripDaySwiperComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('touchmove', this.wakeChromeLoop);
     window.removeEventListener('wheel', this.wakeChromeLoop);
     if (this.chromeRafLoop) cancelAnimationFrame(this.chromeRafLoop);
-    this.dayFixedMapObserver?.disconnect();
   }
 
   private waitForStableLayout(): void {

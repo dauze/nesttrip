@@ -33,8 +33,20 @@
   max-width: none;
   margin-inline: 0;
   padding-top: 0;
-  position: sticky;
-  top: var(--sticky-top-offset, 0px);
+}
+
+// `position: sticky` UNIQUEMENT en layout 3 colonnes (≥ 75rem, même palier que
+// la grille de TripGeneralDesktopComponent) : la colonne Résumé, plus courte,
+// reste visible pendant que les colonnes plus hautes défilent à côté. En
+// dessous de ce palier, la grille replie les colonnes en rangées empilées
+// (retour utilisateur 2026-09-30 : "tout passe en dessous") — un sticky y
+// collerait le Résumé en haut pendant le scroll du reste empilé, comportement
+// indésirable : on le laisse donc en flux normal (scroll de page classique).
+@media (min-width: 75rem) {
+  :host(.app-trip-summary--fill-width) .trip-summary-body {
+    position: sticky;
+    top: var(--sticky-top-offset, 0px);
+  }
 }
 
 .trip-summary-map-container {

@@ -1,40 +1,68 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss.
+//
+// CONTENU en flux normal (refonte option B) : ce composant n'est PLUS un
+// scrollport `position:fixed` à lui seul — il est rendu DANS le scrollport
+// desktop unique (TripDetailDesktopComponent, `[data-scrollport]`). Il ne
+// porte donc que la grille responsive + la réservation du chrome en padding ;
+// sa hauteur = somme réelle de son contenu, le scroll étant assuré par le
+// conteneur parent. (Ancienne version : son propre `.trip-general-desktop-root`
+// fixed + un debug `min-height:200vh` — tous deux retirés.)
 
-// Même anatomie que `.tab-content-wrapper`/`swiper-slide`
-// (trip-day-swiper.component.scss) : ce composant est basculé avec le swiper
-// via `[hidden]` (jamais un `@if`), donc doit se comporter comme "un slide de
-// plus" — son propre scrollport isolé en `position:fixed` plein écran (le
-// body/html de trip-detail a `overflow:hidden`, voir reset.scss, tout le
-// scroll se fait slide par slide). Même réduction de bordure que le contenu
-// jour/général (`--nt-content-border-width`, ROADMAP.md "### UI").
-.trip-general-desktop-root {
-  position: fixed;
-  top: 0;
-  left: var(--nt-space-1);
-  right: var(--nt-space-1);
-  height: 100dvh;
-  overflow-y: auto;
-  --nt-content-border-width: var(--nt-border-width-hair);
-
-  // Colonnes latérales COMPRESSIBLES via `minmax()` (au lieu de largeurs
-  // fixes `19rem`/`21rem` qui étranglaient la colonne centrale à la
-  // réduction : les 40rem incombressibles + gaps finissaient par dépasser la
-  // largeur dispo, poussant le `1fr` central sous le plancher de sa barre de
-  // recherche et écrasant les cartes d'activité — voir ROADMAP.md "UI
-  // spécifique Desktop"). Même esprit que le `flex: 0 1 32rem` compressible de
-  // day-panel (day-panel.component.scss) : une largeur cible haute, un
-  // plancher bas en-dessous duquel la colonne ne descend pas, la colonne
-  // centrale absorbant le reste. `min-width: 0` sur `.trip-general-desktop-col`
-  // (plus bas) autorise le contenu à se comprimer sans déborder.
+// Grille responsive + réservation du chrome.
+.trip-general-desktop-grid {
+  // Grille RESPONSIVE (retour utilisateur 2026-09-30 : "un grid où tout passe
+  // petit à petit en dessous" au lieu d'une scrollbar horizontale) : 1 colonne
+  // empilée en étroit, 2 rangées en moyen, 3 colonnes en grand (voir `@media`).
   display: grid;
-  grid-template-columns:
-    minmax(14rem, 19rem)
-    minmax(0, 1fr)
-    minmax(15rem, 21rem);
+  grid-template-columns: 1fr;
   align-items: start;
   gap: var(--nt-layout-gap-split, 0.5rem);
   padding-top: var(--chrome-top-offset, 0px);
-  padding-bottom: calc(var(--chrome-tabs-nav-height, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
+  // `+ --chrome-top-offset` AUSSI en bas : respiration pour défiler le dernier
+  // contenu au-dessus du bord bas (en desktop `--chrome-tabs-nav-height` vaut
+  // 0, la barre des jours étant en haut). Additionné au reserve mobile.
+  padding-bottom: calc(
+    var(--chrome-tabs-nav-height, 0px) + var(--chrome-top-offset, 0px) + var(--nt-layout-gap-stacked, 0.25rem)
+  );
+}
+
+// Palier MOYEN (≥ 52rem) : 2 colonnes. Résumé à gauche (borné), activités à
+// droite ; la colonne latérale (logistique + listes) passe en pleine largeur
+// sur une 2e rangée, ses deux panels côte à côte pour ne pas gaspiller la
+// hauteur.
+@media (min-width: 52rem) {
+  .trip-general-desktop-grid {
+    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  }
+
+  .trip-general-desktop-col--side {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .trip-general-desktop-col--side > * {
+    flex: 1 1 20rem;
+    min-width: 0;
+  }
+}
+
+// Palier LARGE (≥ 75rem) : les 3 colonnes historiques côte à côte. La colonne
+// latérale reprend sa pile verticale (une seule colonne étroite à droite).
+@media (min-width: 75rem) {
+  .trip-general-desktop-grid {
+    grid-template-columns: minmax(15rem, 19rem) minmax(26rem, 1fr) minmax(16rem, 21rem);
+  }
+
+  .trip-general-desktop-col--side {
+    grid-column: auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .trip-general-desktop-col--side > * {
+    flex: 0 0 auto;
+  }
 }
 
 .trip-general-desktop-col {

@@ -13,7 +13,15 @@
 }
 
 .app-tabs__list {
+  // `overflow-y: hidden` explicite (pas seulement `overflow-x: auto`) : le
+  // `margin-bottom: calc(-1 * hairline)` des onglets (voir `.app-tab`, qui fait
+  // chevaucher leur soulignement actif sur le filet de la barre) les fait
+  // déborder d'~1px vers le bas — avec un `overflow-x: auto` seul, ce dépassement
+  // d'1px suffisait à faire apparaître une scrollbar VERTICALE parasite sur la
+  // barre des jours en desktop (retour utilisateur 2026-09-30). On garde le
+  // scroll horizontal (beaucoup de jours) et on neutralise le vertical.
   overflow-x: auto;
+  overflow-y: hidden;
   background: var(--nt-content-background);
   border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
 }
@@ -28,9 +36,16 @@
   min-width: 3.75rem;
   padding: 0.5rem 1.125rem;
   border: none;
-  // Indicateur du haut (pas du bas, choix déjà fait dans ce projet avant la
-  // migration) : transparent au repos, coloré en primary une fois actif.
-  border-top: var(--nt-border-width-thick) solid transparent;
+  // Indicateur du BAS (retour utilisateur 2026-09-30, ROADMAP.md "UI spécifique
+  // Desktop") : transparent au repos, coloré en primary une fois actif — c'est
+  // l'idiome desktop attendu (onglet souligné) plutôt que le trait du haut
+  // hérité d'avant migration. `margin-bottom` négatif (= -hairline) fait
+  // remonter ce border-bottom PILE sur le `border-bottom` hairline de
+  // `.app-tabs__list` (voir plus haut) : l'onglet actif recouvre le filet de
+  // séparation de la barre au lieu d'empiler deux lignes, pour un soulignement
+  // net et continu avec le bord de la barre.
+  border-bottom: var(--nt-border-width-thick) solid transparent;
+  margin-bottom: calc(-1 * var(--nt-border-width-hairline));
   background: transparent;
   color: var(--nt-text-muted-color);
   font-weight: 600;
@@ -46,7 +61,7 @@
 
 .app-tab.is-active {
   color: var(--nt-primary-color);
-  border-top-color: var(--nt-primary-color);
+  border-bottom-color: var(--nt-primary-color);
 }
 
 // `container-type: inline-size` fait de l'onglet un conteneur de requête CSS

@@ -24,26 +24,53 @@
           (tabSelected)="onTabSelected($event)" />
       }
 
-      <!-- [hidden] (jamais @if) sur les 2 : basculer detruit/recrée sur un
-           simple changement de tab romprait le swiper (visitedDays perdu,
-           tous les jours démontés) ET TripGeneralDesktopComponent (carte
-           Google Maps partagée orpheline si détruit pendant qu'il la
-           possède, voir sa doc). Sur mobile, TripGeneralDesktopComponent
-           n'est jamais monté (@if ci-dessous) : le swiper gère tout, comme
-           avant. -->
-      <app-trip-day-swiper
-        [trip]="trip"
-        [tabs]="tabs()"
-        [activeId]="activeDay()"
-        [hidden]="!viewport.isMobileChrome() && isGeneralActive()"
-        (activeIdChange)="onSwiperActiveIdChange($event)"
-        (ready)="onSwiperReady()" />
+      <!-- Carte Google Maps PARTAGÉE, hôte unique de tout le trip (refonte
+           desktop/mobile, option B) : l'instance est créée une seule fois ici
+           et jamais recréée tant que le trip est ouvert — ni mobile ni desktop
+           ne la possèdent, ils ne font que la RÉCLAMER via
+           TripDayMapHostService. Déclarée hors du Swiper (contrairement à
+           avant) pour qu'elle survive à son démontage en desktop. Toujours
+           montée (jamais un @if) : `.map-anchor` sert d'ancre neutre de repli
+           (voir mapAnchorRef / registerDefaultAnchor). -->
+      <div class="map-anchor" #mapAnchor>
+        <app-trip-day-map #dayMap></app-trip-day-map>
+      </div>
 
-      @if (!viewport.isMobileChrome()) {
-        <app-trip-general-desktop
+      <!-- Conteneur `position:fixed` "carte jour" hors du scroll (layout
+           empilé/mobile UNIQUEMENT — DayPanelComponent y déplace la carte via
+           TripDayMapHostService.dayFixedContainer). En layout scindé (desktop,
+           carte en colonne) ce conteneur reste vide (0 hauteur) :
+           DayPanelComponent cible alors son propre `.sticky-map`. Remonté ici
+           depuis le Swiper avec la carte. -->
+      <div
+        #dayFixedMap
+        class="day-fixed-map"
+        [class.day-fixed-map--active]="mapHost.dayFixedContainerHeight() > 0"
+        [style.--chrome-toolbar-height.px]="chromeService.toolbarHeight()"
+      ></div>
+
+      <!-- Isolation totale des deux modes (option B) :
+           - Mobile : le Swiper est le SEUL rendu (inchangé), slides
+             scrollables, barre des jours en bas. Un vrai `@if` (plus un
+             `[hidden]`) : en desktop il est réellement démonté du DOM, donc
+             plus de slides fantômes qui captent le scroll de l'écran.
+           - Desktop : le Swiper disparaît, TripDetailDesktopComponent rend un
+             scrollport UNIQUE sous la barre des jours — la grille Général OU
+             la vue Jour du jour actif (changement de jour par la barre, plus
+             de swipe horizontal, sans objet à la souris). -->
+      @if (viewport.isMobileChrome()) {
+        <app-trip-day-swiper
           [trip]="trip"
-          [active]="isGeneralActive()"
-          [hidden]="!isGeneralActive()" />
+          [tabs]="tabs()"
+          [activeId]="activeDay()"
+          (activeIdChange)="onSwiperActiveIdChange($event)"
+          (ready)="onSwiperReady()" />
+      } @else {
+        <app-trip-detail-desktop
+          [trip]="trip"
+          [activeDay]="activeDay()"
+          [isGeneralActive]="isGeneralActive()"
+          (ready)="onSwiperReady()" />
       }
 
       <!-- Ancre synthétique du tour de navigation (voir onboarding-sequences.ts,

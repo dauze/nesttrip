@@ -39,6 +39,7 @@ import { TripCreationTargetService } from '@app/features/trips/trip-detail/trip-
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
+import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
 import { FabBottomProximityDirective } from '@app/shared/directives/fab-bottom-proximity.directive';
 
 @Component({
@@ -65,6 +66,7 @@ export class DayPanelComponent {
   private readonly focusService = inject(DayActivityFocusService);
   private readonly viewport = inject(ViewportService);
   private readonly chromeService = inject(TripChromeService);
+  private readonly mapPanelService = inject(GoogleMapPanelService);
   protected readonly scrollSync = inject(DayScrollSyncService);
   protected readonly reorderService = inject(DayReorderService);
   protected readonly creationService = inject(DayActivityCreationService);
@@ -106,6 +108,32 @@ export class DayPanelComponent {
         photoRef: a.photoRefs?.[0],
       }));
   });
+
+  /**
+   * Carte escamotée en layout SCINDÉ uniquement (desktop, retour utilisateur
+   * 2026-09-30, ROADMAP.md "UI spécifique Desktop", option B) : réutilise la
+   * MÊME source de vérité que la poignée mobile de la carte
+   * (`GoogleMapPanelService.isCollapsed`, persistée en préférence utilisateur)
+   * — un seul état de repli partagé entre les deux modes, pas de second flag.
+   * En layout empilé (mobile), ce computed reste `false` : l'escamotage en
+   * rail latéral n'a de sens qu'à côté de la colonne activités ; sur mobile,
+   * `isCollapsed()` continue de piloter la seule poignée du footer de la carte
+   * (mécanique inchangée, `TripDayMapComponent`). Pilote
+   * `.day-panel-body--map-collapsed` (voir le template + le `@media` scindé du
+   * SCSS) : la colonne carte se réduit à un rail cliquable et la colonne
+   * activités récupère la largeur pour passer en grille multi-colonnes.
+   */
+  readonly mapCollapsedSplit = computed(() => this.viewport.isSplitLayout() && this.mapPanelService.isCollapsed());
+
+  /** Bouton chevron "replier" (haut de la colonne carte, layout scindé) — écrit dans la même préférence que la poignée mobile. */
+  protected collapseMap(): void {
+    this.mapPanelService.setCollapse(true);
+  }
+
+  /** Rail latéral "déplier" (colonne carte escamotée, layout scindé). */
+  protected expandMap(): void {
+    this.mapPanelService.setCollapse(false);
+  }
 
   constructor() {
     // 1. Gestionnaire réactif pour mettre à jour les points de la carte.

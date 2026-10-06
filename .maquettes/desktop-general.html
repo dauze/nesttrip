@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NestTrip — Maquette Général desktop</title>
+<style>
+  /* ---- Tokens réels extraits de src/styles/tokens.scss (light) ---- */
+  :root {
+    --nt-primary-50:#ECF6F5; --nt-primary-100:#D0EAE7; --nt-primary-500:#2A7871; --nt-primary-600:#21615B;
+    --nt-primary-color:var(--nt-primary-500);
+    --nt-surface-0:#fff; --nt-surface-50:#f8fafc; --nt-surface-100:#f1f5f9; --nt-surface-200:#e2e8f0;
+    --nt-surface-300:#cbd5e1; --nt-surface-400:#94a3b8; --nt-surface-500:#64748b; --nt-surface-600:#475569;
+    --nt-surface-700:#334155; --nt-surface-800:#1e293b; --nt-surface-900:#0f172a;
+    --nt-text-color:var(--nt-surface-700); --nt-text-muted-color:var(--nt-surface-500);
+    --nt-content-background:var(--nt-surface-0); --nt-content-inset-background:var(--nt-surface-50);
+    --nt-content-border-color:var(--nt-surface-200); --nt-page-background:var(--nt-surface-50);
+    --nt-radius-md:0.5rem; --nt-radius-lg:0.75rem; --nt-radius-xl:1rem; --nt-radius-pill:999px;
+    --nt-shadow-xs:0 .0625rem .125rem rgba(15,23,42,.06);
+    --nt-shadow-sm:0 .125rem .5rem rgba(15,23,42,.08);
+    --nt-shadow-md:0 .375rem 1rem -.125rem rgba(15,23,42,.12);
+    --nt-space-1:.25rem; --nt-space-2:.5rem; --nt-space-3:.75rem; --nt-space-4:1rem; --nt-space-5:1.5rem;
+    --nt-activity-repas:#F97316; --nt-activity-visite:#F43F5E; --nt-activity-activite:#f79009;
+    --nt-activity-nature:#12b76e; --nt-logistic-logement:#8B5CF6;
+    --nt-red-500:#ad1820; --nt-green-500:#12b76e; --nt-yellow-500:#f79009; --nt-blue-500:#1570ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --nt-surface-0:#fff; --nt-surface-50:#fafafa; --nt-surface-100:#f4f4f5; --nt-surface-200:#e4e4e7;
+      --nt-surface-700:#3f3f46; --nt-surface-800:#27272a; --nt-surface-900:#18181b; --nt-surface-950:#09090b;
+      --nt-primary-color:#43A198;
+      --nt-text-color:#fff; --nt-text-muted-color:#a1a1aa;
+      --nt-content-background:#18181b; --nt-content-inset-background:#27272a;
+      --nt-content-border-color:#3f3f46; --nt-page-background:#09090b;
+      --nt-shadow-md:0 .375rem 1rem -.125rem rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--nt-page-background); color:var(--nt-text-color);
+    font-size:15px; line-height:1.4;
+  }
+  .icon { display:inline-block; width:1em; height:1em; vertical-align:-.125em; fill:currentColor; }
+
+  /* ---- Chrome : toolbar + barre des jours (fixes) ---- */
+  .toolbar {
+    position:sticky; top:0; z-index:20; display:flex; align-items:center;
+    gap:var(--nt-space-3); padding:.65rem 1.25rem;
+    background:var(--nt-content-background);
+  }
+  .toolbar .back { color:var(--nt-primary-color); font-size:1.2rem; cursor:pointer; }
+  .toolbar h1 { flex:1; text-align:center; font-size:1.15rem; font-weight:700; }
+  .avatars { display:flex; }
+  .avatars span {
+    width:2rem; height:2rem; border-radius:var(--nt-radius-pill);
+    background:var(--nt-surface-200); color:var(--nt-surface-700);
+    display:grid; place-items:center; font-size:.75rem; font-weight:700;
+    border:2px solid var(--nt-content-background); margin-left:-.5rem;
+  }
+  .gear { color:var(--nt-primary-color); cursor:pointer; font-size:1.1rem; }
+
+  .tabs {
+    position:sticky; top:0; z-index:19; display:flex; overflow-x:auto;
+    background:var(--nt-content-background);
+    border-bottom:1px solid var(--nt-content-border-color);
+    padding:0 .5rem;
+  }
+  .tab {
+    min-width:3.75rem; padding:.5rem 1.125rem; border:none; background:transparent;
+    /* BUG FIX demandé : indicateur en BAS (border-bottom) au lieu du haut */
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+    color:var(--nt-text-muted-color); font-weight:600; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; line-height:1.15;
+    transition:color .2s ease, border-color .2s ease;
+  }
+  .tab.is-active { color:var(--nt-primary-color); border-bottom-color:var(--nt-primary-color); }
+  .tab .num { font-size:1.15rem; font-weight:700; }
+  .tab .wd,.tab .mo { font-size:.7rem; }
+  .tab--general { justify-content:center; }
+
+  /* ---- Grille 3 colonnes ---- */
+  .general-root {
+    display:grid;
+    /* BUG FIX : la colonne centrale a désormais un PLANCHER réel (minmax(26rem,…))
+       au lieu de minmax(0,1fr) — elle ne s'écrase plus. Colonnes latérales
+       légèrement resserrées pour lui laisser la place. */
+    grid-template-columns:
+      minmax(15rem, 19rem)
+      minmax(26rem, 1fr)
+      minmax(16rem, 21rem);
+    align-items:start;
+    gap:var(--nt-space-3);
+    padding:var(--nt-space-4) var(--nt-space-4) 4rem;
+    max-width:110rem; margin-inline:auto;
+    /* scroll normal de la page (voir note plus bas) */
+  }
+  /* En dessous du plancher combiné : la colonne latérale droite passe dessous
+     plutôt que d'écraser (dégradation gracieuse tablette large) */
+  @media (max-width: 78rem) {
+    .general-root { grid-template-columns: minmax(15rem,19rem) minmax(24rem,1fr); }
+    .general-root .col--side { grid-column: 1 / -1; flex-direction:row; }
+    .general-root .col--side > * { flex:1; }
+  }
+  .col { min-width:0; display:flex; flex-direction:column; gap:var(--nt-space-3); }
+  .col--side { }
+
+  /* ---- Cards & panels ---- */
+  .card {
+    background:var(--nt-content-background); border-radius:var(--nt-radius-lg);
+    box-shadow:var(--nt-shadow-xs); overflow:hidden;
+  }
+  .panel {
+    background:var(--nt-content-background); border-radius:var(--nt-radius-lg);
+    border:1px solid var(--nt-content-border-color); box-shadow:var(--nt-shadow-xs);
+  }
+  .panel__head {
+    display:flex; align-items:center; gap:var(--nt-space-2);
+    padding:.85rem 1rem; font-weight:700;
+  }
+  .panel__head .count { color:var(--nt-text-muted-color); font-weight:600; }
+  .panel__head .chev { margin-left:auto; color:var(--nt-text-muted-color); }
+  .panel__body { padding:0 1rem 1rem; display:flex; flex-direction:column; gap:.6rem; }
+
+  /* section title léger */
+  .section-label {
+    font-size:.75rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--nt-text-muted-color); padding:0 .15rem;
+  }
+
+  /* trip header */
+  .trip-head { padding:1rem; }
+  .trip-head h2 { font-size:1.05rem; font-weight:700; margin-bottom:.15rem; }
+  .trip-head .sub { color:var(--nt-text-muted-color); font-size:.85rem; }
+  .trip-head .members { display:flex; gap:.35rem; margin-top:.6rem; flex-wrap:wrap; }
+  .chip {
+    display:inline-flex; align-items:center; gap:.35rem; font-size:.78rem; font-weight:600;
+    padding:.25rem .6rem; border-radius:var(--nt-radius-pill);
+    background:var(--nt-content-inset-background); color:var(--nt-text-color);
+  }
+  .chip--soft { background:var(--nt-primary-50); color:var(--nt-primary-600); }
+
+  .map {
+    height:12rem; margin:0 1rem 1rem; border-radius:var(--nt-radius-md); overflow:hidden;
+    position:relative; background:linear-gradient(135deg,#dbe7e5,#c3d6d3 60%,#a9c6c1);
+  }
+  .map .expand {
+    position:absolute; top:.5rem; right:.5rem; width:2rem; height:2rem; border-radius:var(--nt-radius-md);
+    background:var(--nt-content-background); box-shadow:var(--nt-shadow-sm); display:grid; place-items:center;
+    color:var(--nt-primary-color);
+  }
+  .map .pin { position:absolute; color:var(--nt-primary-600); font-size:1.5rem; filter:drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+
+  /* stats mini-grid */
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; padding:0 1rem 1rem; }
+  .stat {
+    background:var(--nt-content-inset-background); border-radius:var(--nt-radius-md); padding:.7rem .8rem;
+  }
+  .stat .k { font-size:.72rem; color:var(--nt-text-muted-color); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .stat .v { font-size:1.25rem; font-weight:800; margin-top:.15rem; }
+
+  /* réservations */
+  .resa {
+    display:flex; gap:.6rem; align-items:flex-start; padding:.7rem .85rem;
+    border-radius:var(--nt-radius-md); background:color-mix(in srgb,var(--nt-red-500) 8%,var(--nt-content-background));
+    border-left:.3rem solid var(--nt-red-500); font-size:.86rem;
+  }
+  .resa svg { color:var(--nt-red-500); flex:none; margin-top:.1rem; }
+  .resa .date { color:var(--nt-red-500); font-weight:700; }
+
+  /* search / classer par */
+  .toolbar-row { display:flex; gap:.6rem; align-items:center; }
+  .field {
+    display:flex; align-items:center; gap:.5rem; flex:1;
+    padding:.55rem .75rem; border-radius:var(--nt-radius-pill);
+    background:var(--nt-content-inset-background); color:var(--nt-text-muted-color);
+    border:1px solid var(--nt-content-border-color); font-size:.88rem;
+  }
+  .field--pill { background:var(--nt-content-background); }
+  .field svg { flex:none; }
+  .select {
+    display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .9rem;
+    border-radius:var(--nt-radius-pill); background:var(--nt-content-background);
+    border:1px solid var(--nt-content-border-color); color:var(--nt-primary-color);
+    font-weight:600; font-size:.86rem; cursor:pointer;
+  }
+
+  /* group panel (ville) */
+  .group { border:1px solid var(--nt-content-border-color); border-radius:var(--nt-radius-lg); overflow:hidden; }
+  .group__head {
+    display:flex; align-items:center; gap:.5rem; padding:.7rem .9rem; font-weight:700;
+    background:var(--nt-content-inset-background);
+  }
+  .group__head .loc { color:var(--nt-primary-color); }
+  .group__head .n { color:var(--nt-text-muted-color); font-weight:600; }
+  .group__body { padding:.7rem; display:flex; flex-direction:column; gap:.6rem; }
+
+  /* activity card avec barre d'accent dégradé */
+  .act {
+    position:relative; display:flex; align-items:center; gap:.7rem;
+    padding:.7rem .8rem .7rem 1rem; background:var(--nt-content-background);
+    border:1px solid var(--nt-content-border-color); border-radius:var(--nt-radius-md);
+    box-shadow:var(--nt-shadow-xs); overflow:hidden;
+  }
+  .act::before {
+    content:""; position:absolute; left:0; top:0; bottom:0; width:.4rem;
+    background:linear-gradient(to bottom,var(--accent),color-mix(in srgb,var(--accent) 55%,transparent));
+  }
+  .act .grip { color:var(--nt-surface-400); cursor:grab; }
+  .act .ico {
+    width:2.1rem; height:2.1rem; border-radius:var(--nt-radius-md); flex:none;
+    display:grid; place-items:center;
+    background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent);
+  }
+  .act .txt { flex:1; min-width:0; }
+  .act .txt .t { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .act .txt .m { font-size:.78rem; color:var(--nt-text-muted-color); margin-top:.1rem; }
+  .act .add { color:var(--nt-primary-color); cursor:pointer; }
+
+  /* logement card (logistique) */
+  .logi { --accent:var(--nt-logistic-logement); }
+
+  /* budget list item */
+  .listrow {
+    display:flex; align-items:center; gap:.6rem; padding:.6rem .3rem;
+    border-top:1px solid var(--nt-content-border-color);
+  }
+  .listrow:first-of-type { border-top:none; }
+  .listrow .lico { color:var(--nt-primary-color); }
+  .listrow .lt { flex:1; }
+  .listrow .cb { width:1.15rem; height:1.15rem; border-radius:50%; border:2px solid var(--nt-surface-300); flex:none; }
+
+  /* FAB */
+  .fab {
+    position:fixed; right:1.75rem; bottom:1.75rem; width:3.4rem; height:3.4rem;
+    border-radius:var(--nt-radius-pill); background:var(--nt-primary-color); color:#fff;
+    display:grid; place-items:center; box-shadow:var(--nt-shadow-md); font-size:1.5rem; cursor:pointer; z-index:30;
+  }
+
+  .note {
+    max-width:110rem; margin:0 auto; padding:.6rem 1rem 0; color:var(--nt-text-muted-color); font-size:.8rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="back">←</span>
+  <h1>Road trip Paris</h1>
+  <div class="avatars"><span>CB</span><span>ND</span></div>
+  <span class="gear">⚙</span>
+</div>
+
+<div class="tabs">
+  <button class="tab tab--general is-active">Général</button>
+  <button class="tab"><span class="wd">Lun.</span><span class="num">24</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Mar.</span><span class="num">25</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Mer.</span><span class="num">26</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Jeu.</span><span class="num">27</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Ven.</span><span class="num">28</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Sam.</span><span class="num">29</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Dim.</span><span class="num">30</span><span class="mo">Août</span></button>
+</div>
+
+<div class="general-root">
+
+  <!-- COLONNE GAUCHE : résumé + carte + stats + réservations -->
+  <div class="col col--summary">
+    <div class="card">
+      <div class="trip-head">
+        <h2>Paris</h2>
+        <div class="sub">24 → 30 août 2026 · 7 jours</div>
+        <div class="members">
+          <span class="chip">Clémentine Bonin</span>
+          <span class="chip">Nicolas Dauzet</span>
+        </div>
+      </div>
+      <div class="map">
+        <span class="pin" style="left:35%;top:40%">📍</span>
+        <span class="pin" style="left:55%;top:30%">📍</span>
+        <span class="pin" style="left:48%;top:58%">📍</span>
+        <div class="expand">⤢</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Activités</div><div class="v">42</div></div>
+        <div class="stat"><div class="k">Budget</div><div class="v">1 240 €</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">Réservations à faire</div>
+    <div class="card" style="padding:.85rem; display:flex; flex-direction:column; gap:.6rem;">
+      <div class="resa">
+        <svg class="icon" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 4v5l3 2-.8 1.3L9 11V6h2z"/></svg>
+        <div>Hôtel du Printemps Paris<br><span class="date">à réserver avant le 12/08/26</span></div>
+      </div>
+      <div class="resa">
+        <svg class="icon" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 4v5l3 2-.8 1.3L9 11V6h2z"/></svg>
+        <div>Chez Georges<br><span class="date">à réserver avant le 02/09/26</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLONNE MILIEU : activités classées par ville (plancher min-width) -->
+  <div class="col col--activities">
+    <div class="toolbar-row">
+      <span class="select">📅 Par ville ▾</span>
+      <div class="field"><svg class="icon" viewBox="0 0 20 20"><path d="M8 3a5 5 0 013.9 8.1l3.5 3.5-1.4 1.4-3.5-3.5A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"/></svg>Rechercher une activité</div>
+    </div>
+
+    <div class="group">
+      <div class="group__head"><span class="loc">📍</span> Paris <span class="n">(42)</span> <span style="margin-left:auto;color:var(--nt-text-muted-color)">▾</span></div>
+      <div class="group__body">
+        <div class="act" style="--accent:var(--nt-activity-repas)">
+          <span class="grip">⋮⋮</span>
+          <span class="ico">🍽</span>
+          <span class="txt"><div class="t">Bouillon Chartier</div><div class="m">Repas · 13:00 · 16 €</div></span>
+          <span class="add">＋</span>
+        </div>
+        <div class="act" style="--accent:var(--nt-activity-visite)">
+          <span class="grip">⋮⋮</span>
+          <span class="ico">🎫</span>
+          <span class="txt"><div class="t">Musée du Louvre</div><div class="m">Visite · 10:00 · 22 €</div></span>
+          <span class="add">＋</span>
+        </div>
+        <div class="act" style="--accent:var(--nt-activity-nature)">
+          <span class="grip">⋮⋮</span>
+          <span class="ico">🌳</span>
+          <span class="txt"><div class="t">Jardin du Luxembourg</div><div class="m">Nature · Après-midi</div></span>
+          <span class="add">＋</span>
+        </div>
+        <div class="act" style="--accent:var(--nt-activity-activite)">
+          <span class="grip">⋮⋮</span>
+          <span class="ico">🚤</span>
+          <span class="txt"><div class="t">Croisière sur la Seine</div><div class="m">Activité · 19:30 · 18 €</div></span>
+          <span class="add">＋</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLONNE DROITE : logistique + listes -->
+  <div class="col col--side">
+    <div class="panel">
+      <div class="panel__head">🏨 Logement <span class="count">(1)</span><span class="chev">▾</span></div>
+      <div class="panel__body">
+        <div class="act logi">
+          <span class="ico">🏨</span>
+          <span class="txt"><div class="t">Hôtel du Printemps</div><div class="m">📅 Date à renseigner</div></span>
+          <span class="add">✎</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">✓ Listes <span class="chev">▾</span></div>
+      <div class="panel__body">
+        <div class="field field--pill"><svg class="icon" viewBox="0 0 20 20"><path d="M8 3a5 5 0 013.9 8.1l3.5 3.5-1.4 1.4-3.5-3.5A5 5 0 118 3z"/></svg>Rechercher dans les listes</div>
+        <div style="padding-top:.3rem">
+          <div class="section-label" style="padding:.3rem .15rem">Gestion du budget</div>
+          <div class="listrow"><span class="cb"></span><span class="lt">Réserver le train</span></div>
+          <div class="listrow"><span class="cb"></span><span class="lt">Change devise</span></div>
+          <div class="listrow"><span class="cb"></span><span class="lt">Assurance voyage</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="note">Maquette — vue Général desktop. Corrigé : onglet actif souligné en bas, colonne centrale avec largeur minimale, scroll vertical normal de la page, hiérarchie visuelle renforcée (labels de section, stats, cartes arrondies).</p>
+
+<div class="fab">＋</div>
+
+</body>
+</html>

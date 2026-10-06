@@ -1,0 +1,26 @@
+// `display:block` du host : voir la règle globale dans styles/reset.scss
+// (composant de FEATURE, pas une primitive shared).
+//
+// SCROLLPORT desktop UNIQUE (refonte option B) : même anatomie que
+// `.tab-content-wrapper`/`swiper-slide` (trip-day-swiper.component.scss) — un
+// `position:fixed` plein écran qui défile verticalement, le html/body de
+// trip-detail ayant `overflow:hidden` (reset.scss, tout le scroll se fait
+// dans ce conteneur). `top:0;bottom:0` plutôt que `height:100dvh` : hauteur
+// de viewport garantie sans dépendre du recalcul de `dvh`. Le contenu interne
+// (day-panel / grille Général) réserve lui-même l'espace du chrome fixe
+// (toolbar + barre des jours) via son `padding-top`/`sticky-top` — AUCUNE
+// réservation ici, pour ne pas la compter deux fois (c'est exactement le rôle
+// que jouait `swiper-slide`, sans padding non plus). left/right `--nt-space-1`
+// comme le Swiper. Même réduction de bordure de contenu (`--nt-content-border-width`).
+.trip-detail-desktop-root {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: var(--nt-space-1);
+  right: var(--nt-space-1);
+  // `overflow-x: hidden` : la grille Général replie ses colonnes en dessous
+  // plutôt que de déborder en largeur, aucune scrollbar horizontale.
+  overflow-x: hidden;
+  overflow-y: auto;
+  --nt-content-border-width: var(--nt-border-width-hair);
+}
