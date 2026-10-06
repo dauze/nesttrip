@@ -34,12 +34,13 @@ import { ViewportService } from '@app/core/services/ui/viewport.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   imports: [DayPanelComponent, TripSummaryComponent, TripActivitiesComponent, LogisticsListComponent, NotesComponent, PullToRefreshDirective],
-  // TripDayMapHostService fourni par TripDetailComponent (pas ici). Depuis la
-  // refonte desktop/mobile (option B), l'instance de carte elle-même est aussi
-  // déclarée dans TripDetailComponent (hors du Swiper) : ce composant n'est
-  // plus monté qu'en mobile et ne fait que RÉCLAMER la carte via le service.
-  // SwiperLockService reste ici, propre au swiper.
-  providers: [SwiperLockService],
+  // TripDayMapHostService ET SwiperLockService fournis par TripDetailComponent
+  // (pas ici) : depuis la refonte desktop/mobile (option B), `DayReorderService`
+  // (dans DayPanelComponent) a besoin de SwiperLockService AUSSI en desktop, où
+  // le day-panel vit hors du Swiper — remonté à l'ancêtre commun. L'instance de
+  // carte elle-même est aussi déclarée dans TripDetailComponent (hors Swiper) :
+  // ce composant n'est plus monté qu'en mobile et ne fait que RÉCLAMER la carte.
+  providers: [],
   templateUrl: './trip-day-swiper.component.html',
   styleUrl: './trip-day-swiper.component.scss',
 })

@@ -1,8 +1,9 @@
 <app-panel
     class="map-panel pull-to-refresh-exclude"
-    [toggleable]="mapHost.currentOwner() !== 'general'"
-    [footerToggle]="mapHost.currentOwner() !== 'general'"
+    [toggleable]="mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()"
+    [footerToggle]="mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()"
     [bare]="mapHost.currentOwner() === 'general'"
+    [noHeader]="viewport.isSplitLayout()"
     [(collapsed)]="collapsed"
     [dragPullPx]="dragPullPx()"
     (afterToggle)="onCollapsedToggled($event)"
@@ -37,7 +38,14 @@
       }
   </div>
 
-  @if (mapHost.currentOwner() !== 'general') {
+  <!--
+    Footer togglable (poignée "pi-map" + grabber) RÉSERVÉ au layout empilé
+    (mobile) : en layout scindé (desktop) le repli de la carte passe par le
+    bouton "Réduire la carte" de DayPanelComponent (voir day-panel.component.html),
+    ce footer y faisait doublon (retour utilisateur) — d'où l'exclusion
+    `!viewport.isSplitLayout()`, identique à celle du `footerToggle` ci-dessus.
+  -->
+  @if (mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()) {
     <div
       #grabberFooter
       panelFooter

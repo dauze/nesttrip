@@ -68,12 +68,12 @@ export class TripDetailDesktopComponent {
 
   /**
    * `activeDay` est un ISO string ; `DayPanelComponent.dayId` attend un `Date`.
-   * Mémoïsé pour ne pas recréer un `Date` (donc re-rendre tout le day-panel) à
-   * chaque détection de changement tant que l'id ne bouge pas.
+   * Mémoïsé sur `activeDay()` seul (pas sur `isGeneralActive()`) : lu uniquement
+   * dans la branche `@else` (jour actif), où `activeDay()` est forcément un ISO
+   * valide — recrée un `Date` seulement quand l'id de jour change, pas à chaque
+   * bascule Général/Jour.
    */
-  protected readonly activeDayDate = computed(() =>
-    this.isGeneralActive() ? null : new Date(this.activeDay())
-  );
+  protected readonly activeDayDate = computed(() => new Date(this.activeDay()));
 
   constructor() {
     afterNextRender(() => this.ready.emit());

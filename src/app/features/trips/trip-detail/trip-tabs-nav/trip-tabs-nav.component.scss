@@ -10,6 +10,9 @@
   // Évite que la barre (fixed bottom-0) ne se retrouve sous la barre de
   // gestes/multitâche des mobiles.
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  // Repère de positionnement des chevrons/fondus absolus (desktop) — ce
+  // composant n'est monté qu'en desktop (voir trip-detail.component.html).
+  position: relative;
 }
 
 .app-tabs__list {
@@ -24,6 +27,86 @@
   overflow-y: hidden;
   background: var(--nt-content-background);
   border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  // Scrollbar native masquée (retour utilisateur : "l'ascenseur ne fait pas
+  // beau") — le défilement molette/trackpad reste intact, les fondus + chevrons
+  // ci-dessous prennent le relais pour signaler/piloter le débordement.
+  scrollbar-width: none; // Firefox
+  &::-webkit-scrollbar { display: none; } // WebKit/Blink
+}
+
+// --- Fondus latéraux : signalent qu'il reste des jours à défiler du côté
+// concerné (classes `--can-left`/`--can-right` posées par le composant).
+// Posés sur le ROOT en `::before`/`::after`, par-dessus le bord de la liste,
+// `pointer-events:none` pour ne jamais gêner le clic d'un onglet. ---
+.trip-tabs-nav-root::before,
+.trip-tabs-nav-root::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--nt-transition-duration) ease;
+  z-index: 1;
+}
+
+.trip-tabs-nav-root::before {
+  left: 0;
+  background: linear-gradient(to right, var(--nt-content-background), transparent);
+}
+
+.trip-tabs-nav-root::after {
+  right: 0;
+  background: linear-gradient(to left, var(--nt-content-background), transparent);
+}
+
+.trip-tabs-nav-root--can-left::before { opacity: 1; }
+.trip-tabs-nav-root--can-right::after { opacity: 1; }
+
+// --- Chevrons de défilement : ronds discrets, superposés aux bords. Masqués
+// par défaut ; révélés seulement au survol de la barre ET du côté où il reste
+// des jours (classes `--can-*`). `tabindex=-1` : purement souris/pointeur,
+// la navigation clavier passe par les onglets eux-mêmes. ---
+.trip-tabs-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: 50%;
+  background: var(--nt-content-background);
+  color: var(--nt-primary-color);
+  cursor: pointer;
+  box-shadow: var(--nt-shadow-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--nt-transition-duration) ease, color var(--nt-transition-duration) ease, border-color var(--nt-transition-duration) ease;
+
+  i {
+    font-size: var(--nt-icon-size-sm, 0.875rem);
+  }
+
+  &:hover {
+    color: var(--nt-primary-color);
+    border-color: var(--nt-form-field-hover-border-color);
+  }
+}
+
+.trip-tabs-nav-arrow--left { left: var(--nt-space-2, 0.5rem); }
+.trip-tabs-nav-arrow--right { right: var(--nt-space-2, 0.5rem); }
+
+// Révélés au survol de la barre, seulement du côté scrollable.
+.trip-tabs-nav-root:hover.trip-tabs-nav-root--can-left .trip-tabs-nav-arrow--left,
+.trip-tabs-nav-root:hover.trip-tabs-nav-root--can-right .trip-tabs-nav-arrow--right {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 // Les onglets se répartissent toute la largeur disponible quand il y en a

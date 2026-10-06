@@ -17,10 +17,15 @@
   grid-template-columns: 1fr;
   align-items: start;
   gap: var(--nt-layout-gap-split, 0.5rem);
-  padding-top: var(--chrome-top-offset, 0px);
-  // `+ --chrome-top-offset` AUSSI en bas : respiration pour défiler le dernier
-  // contenu au-dessus du bord bas (en desktop `--chrome-tabs-nav-height` vaut
-  // 0, la barre des jours étant en haut). Additionné au reserve mobile.
+  // PAS de padding-top de réservation du chrome : le scrollport parent
+  // (TripDetailDesktopComponent) commence DÉJÀ physiquement sous la barre des
+  // jours (`top: --chrome-top-offset`), il ne faut donc rien réserver ici
+  // (double décalage sinon). Juste une petite respiration en haut.
+  padding-top: var(--nt-layout-gap-stacked, 0.25rem);
+  // Respiration en bas pour défiler le dernier contenu au-dessus du bord bas
+  // (en desktop `--chrome-tabs-nav-height` vaut 0, la barre des jours étant en
+  // haut). `+ --chrome-top-offset` : marge généreuse pour que le bas du
+  // contenu ne colle pas au bord inférieur du viewport.
   padding-bottom: calc(
     var(--chrome-tabs-nav-height, 0px) + var(--chrome-top-offset, 0px) + var(--nt-layout-gap-stacked, 0.25rem)
   );
@@ -35,14 +40,20 @@
     grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
   }
 
+  // Logistique + Listes empilées VERTICALEMENT sur une 2e rangée pleine
+  // largeur (plus en `row`/`flex-wrap` : la mise côte à côte créait des
+  // "sauts" verticaux inégaux entre Logements et Listes selon leurs hauteurs
+  // respectives — retour utilisateur, "supprime les sauts"). Simple pile,
+  // comme au palier large, chaque panel l'un sous l'autre sans alignement
+  // forcé partagé.
   .trip-general-desktop-col--side {
     grid-column: 1 / -1;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
   }
 
   .trip-general-desktop-col--side > * {
-    flex: 1 1 20rem;
+    flex: 0 0 auto;
     min-width: 0;
   }
 }

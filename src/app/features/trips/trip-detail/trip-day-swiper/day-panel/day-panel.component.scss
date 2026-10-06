@@ -197,6 +197,15 @@
     // `height:100%`), qui sert de piste de "collage" pour tout le scroll.
     align-items: stretch;
     gap: var(--nt-layout-gap-split, 0.5rem);
+    // Hauteur réservée par la hauteur de carte sticky (`.sticky-map`, voir sa
+    // règle `height`) pour le bouton "Réduire la carte" posé AU-DESSUS d'elle
+    // dans la même colonne flex : hauteur du bouton (1 ligne de texte à
+    // `line-height` par défaut + padding `--nt-space-2`×2 + 2 bordures
+    // hairline) + un `gap` flex (`--nt-layout-gap-split`) qui le sépare de la
+    // carte. Un seul endroit à retoucher si le gabarit du bouton change.
+    --nt-map-collapse-reserve: calc(
+      1.5rem + (var(--nt-space-2) * 2) + (var(--nt-content-border-width) * 2) + var(--nt-layout-gap-split)
+    );
   }
 
   .day-panel-map-group,
@@ -217,6 +226,16 @@
 
   .day-panel-activities-group {
     flex: 0 1 32rem;
+  }
+
+  // "Vue d'ensemble de la journée" (timeline, `order: 2`) masquée en layout
+  // scindé (retour utilisateur) : la carte sticky remplit déjà toute la
+  // hauteur de viewport au-dessus d'elle, poussant la timeline SOUS le bas de
+  // l'écran — jamais visible dans la colonne carte (sticky, elle ne défile
+  // pas), donc inutile ici. Reste rendue en layout empilé (mobile), où elle a
+  // sa place normale dans le flux sous la carte.
+  .day-panel-timeline {
+    display: none;
   }
 
   // Sans activité, ni la timeline ni la carte ne sont rendues (voir le `@if`
@@ -248,7 +267,16 @@
     // Basée sur `--chrome-top-offset` (pas `--sticky-top-offset`, resterait
     // à 0 en `split-hideable`) : une hauteur volontairement conservatrice,
     // cohérente même avant que le chrome ne finisse de se masquer.
-    height: calc(100dvh - var(--chrome-top-offset, 0px) - 1.5rem);
+    //
+    // `- var(--nt-map-collapse-reserve)` : le bouton "Réduire la carte"
+    // (`.day-panel-map-collapse`) est un FRÈRE flex au-dessus de la carte
+    // dans la même colonne (`.day-panel-map-group`, `flex-direction:column`
+    // + `gap`) — sans réserver sa hauteur + le gap flex qui l'en sépare, la
+    // somme (bouton + gap + carte pleine hauteur) dépassait 100dvh et la
+    // carte débordait sous le bas de l'écran (retour utilisateur). Valeur =
+    // hauteur du bouton (texte 1 ligne + padding `--nt-space-2`×2 + bordure)
+    // + un `gap` flex (`--nt-layout-gap-split`).
+    height: calc(100dvh - var(--chrome-top-offset, 0px) - 1.5rem - var(--nt-map-collapse-reserve));
   }
 
   // --- Escamotage de la colonne carte (option B, retour utilisateur

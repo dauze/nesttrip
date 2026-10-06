@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, effect, inject, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { TripTab } from '../trip-tab.model';
 import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
 
@@ -20,6 +20,18 @@ export class TripTabsNavComponent {
   readonly tabSelected = output<{ id: string; index: number }>();
 
  private readonly tabsListRef = viewChild('tabsListRef', { read: ElementRef });
+
+  /**
+   * Débordement horizontal de la barre des jours (desktop) : la scrollbar
+   * native est masquée (voir SCSS) au profit de fondus latéraux + chevrons
+   * discrets. `canScrollLeft`/`canScrollRight` pilotent l'affichage de ces
+   * repères — on ne les montre que du côté où il reste réellement des jours à
+   * défiler. Mesurés sur `.app-tabs__list` (le vrai conteneur scrollable) via
+   * un listener de scroll + un ResizeObserver (changement de nombre de jours
+   * ou de largeur de fenêtre).
+   */
+  protected readonly canScrollLeft = signal(false);
+  protected readonly canScrollRight = signal(false);
 
   constructor() {
     // Hauteur réservée en padding-bottom par le contenu des slides (voir
@@ -48,6 +60,47 @@ export class TripTabsNavComponent {
       const unregister = this.chromeService.registerChromeElement(this.hostRef.nativeElement);
       onCleanup(unregister);
     });
+
+    // Suivi du débordement horizontal (desktop) : recalcule
+    // `canScrollLeft`/`canScrollRight` à chaque scroll de la barre et à chaque
+    // changement de taille (nombre de jours, largeur de fenêtre). Alimente les
+    // fondus + chevrons (voir le template/SCSS).
+    afterNextRender(() => {
+      const list = this.scrollListEl();
+      if (!list) return;
+
+      list.addEventListener('scroll', this.updateScrollShadows, { passive: true });
+      const resizeObserver = new ResizeObserver(() => this.updateScrollShadows());
+      resizeObserver.observe(list);
+      this.updateScrollShadows();
+
+      this.destroyRef.onDestroy(() => {
+        list.removeEventListener('scroll', this.updateScrollShadows);
+        resizeObserver.disconnect();
+      });
+    });
+  }
+
+  /** Le vrai conteneur scrollable horizontalement (`.app-tabs__list`, enfant de `#tabsListRef`). */
+  private scrollListEl(): HTMLElement | null {
+    return this.tabsListRef()?.nativeElement.querySelector('.app-tabs__list') ?? null;
+  }
+
+  private readonly updateScrollShadows = (): void => {
+    const list = this.scrollListEl();
+    if (!list) return;
+    const max = list.scrollWidth - list.clientWidth;
+    // Marge de 1px : évite un chevron qui clignote sur un écart sub-pixel
+    // (scrollWidth/clientWidth arrondis différemment selon le zoom navigateur).
+    this.canScrollLeft.set(list.scrollLeft > 1);
+    this.canScrollRight.set(list.scrollLeft < max - 1);
+  };
+
+  /** Clic sur un chevron : défile d'environ 80% de la largeur visible (une "page" de jours). */
+  protected scrollByPage(direction: -1 | 1): void {
+    const list = this.scrollListEl();
+    if (!list) return;
+    list.scrollBy({ left: direction * list.clientWidth * 0.8, behavior: 'smooth' });
   }
 
   protected onTabClick(id: string, index: number): void {

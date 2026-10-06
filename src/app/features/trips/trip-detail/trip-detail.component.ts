@@ -13,6 +13,7 @@ import { TripDetailDesktopComponent } from './trip-detail-desktop/trip-detail-de
 import { TripDayMapComponent } from './trip-day-swiper/day-panel/trip-day-map/trip-day-map.component';
 import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.service';
 import { TripDestinationLocationService } from '@app/core/services/business/trip-destination-location.service';
+import { SwiperLockService } from '@app/core/services/ui/swiper-lock.service';
 import { TripTab } from './trip-tab.model';
 import { Location } from '@angular/common';
 import { ActivityDayDispatchOverlayComponent } from '@app/shared/components/overlays/activity-day-dispatch-overlay/activity-day-dispatch-overlay.component';
@@ -73,9 +74,18 @@ const GENERAL_TAB_IDS = ['summary', 'activities', 'logistics', 'notes'];
   // déclarée dans CE composant (voir le template + les effects du
   // constructeur), hors du Swiper : elle doit survivre au démontage du Swiper
   // en desktop.
+  // SwiperLockService : remonté ici depuis TripDaySwiperComponent (refonte
+  // option B) — `DayReorderService` (fourni par DayPanelComponent) l'injecte,
+  // or en desktop le day-panel vit dans TripDetailDesktopComponent, HORS du
+  // Swiper : s'il n'était provisionné que par le Swiper (démonté en desktop),
+  // l'injection échouait (NullInjectorError) et la vue Jour desktop ne
+  // s'affichait pas du tout. Au niveau trip-detail, instance unique partagée
+  // par les deux modes ; en desktop le verrou n'a aucun lecteur (pas de Swiper
+  // à verrouiller), inoffensif.
   providers: [
     TripCreationTargetService, DayActivityFocusService, LogisticFocusService, NotesFocusService,
     SelectionModeService, TripItemDeletionService, DayLogisticQuickAddService, TripDayMapHostService,
+    SwiperLockService,
   ],
 })
 export class TripDetailComponent implements OnInit, OnDestroy {

@@ -1,4 +1,28 @@
-<div class="trip-tabs-nav-root">
+<div
+  class="trip-tabs-nav-root"
+  [class.trip-tabs-nav-root--can-left]="canScrollLeft()"
+  [class.trip-tabs-nav-root--can-right]="canScrollRight()">
+  <!-- Navigation du débordement (desktop) : chevrons discrets affichés
+       uniquement du côté où il reste des jours à défiler (voir
+       canScrollLeft/Right). La scrollbar native est masquée (SCSS), des fondus
+       latéraux signalent le débordement. -->
+  <button
+    type="button"
+    class="trip-tabs-nav-arrow trip-tabs-nav-arrow--left"
+    aria-label="Jours précédents"
+    tabindex="-1"
+    (click)="scrollByPage(-1)">
+    <i class="pi pi-chevron-left" aria-hidden="true"></i>
+  </button>
+  <button
+    type="button"
+    class="trip-tabs-nav-arrow trip-tabs-nav-arrow--right"
+    aria-label="Jours suivants"
+    tabindex="-1"
+    (click)="scrollByPage(1)">
+    <i class="pi pi-chevron-right" aria-hidden="true"></i>
+  </button>
+
   <div #tabsListRef class="app-tabs tabs-pop">
     <div class="app-tabs__list flex" role="tablist">
       @for (tab of tabs(); track tab.id; let i = $index) {

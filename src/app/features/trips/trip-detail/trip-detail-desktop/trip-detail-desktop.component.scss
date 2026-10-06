@@ -1,20 +1,24 @@
 // `display:block` du host : voir la règle globale dans styles/reset.scss
 // (composant de FEATURE, pas une primitive shared).
 //
-// SCROLLPORT desktop UNIQUE (refonte option B) : même anatomie que
-// `.tab-content-wrapper`/`swiper-slide` (trip-day-swiper.component.scss) — un
-// `position:fixed` plein écran qui défile verticalement, le html/body de
-// trip-detail ayant `overflow:hidden` (reset.scss, tout le scroll se fait
-// dans ce conteneur). `top:0;bottom:0` plutôt que `height:100dvh` : hauteur
-// de viewport garantie sans dépendre du recalcul de `dvh`. Le contenu interne
-// (day-panel / grille Général) réserve lui-même l'espace du chrome fixe
-// (toolbar + barre des jours) via son `padding-top`/`sticky-top` — AUCUNE
-// réservation ici, pour ne pas la compter deux fois (c'est exactement le rôle
-// que jouait `swiper-slide`, sans padding non plus). left/right `--nt-space-1`
-// comme le Swiper. Même réduction de bordure de contenu (`--nt-content-border-width`).
+// SCROLLPORT desktop UNIQUE (refonte option B) : `position:fixed` qui défile
+// verticalement, le html/body de trip-detail ayant `overflow:hidden`
+// (reset.scss, tout le scroll se fait dans ce conteneur).
+//
+// Il COMMENCE physiquement SOUS le chrome fixe (`top: var(--chrome-top-offset)`
+// = toolbar + barre des jours), PAS à `top:0` : la barre des jours est ainsi
+// un vrai calque AU-DESSUS, le contenu ne défile jamais dans sa zone (retour
+// utilisateur — "le scroll passe sous la barre des jours alors qu'elle doit
+// être au-dessus"). Conséquence : le contenu interne (day-panel / grille
+// Général) ne doit PLUS réserver cet espace lui-même, sinon il serait compté
+// deux fois — on neutralise donc ses réservations internes en remettant à 0
+// les custom props qu'il lit pour ça (`--day-map-chrome-offset`,
+// `--sticky-top-offset`), tout en gardant `--chrome-top-offset` à sa vraie
+// valeur (le calcul de hauteur de `.sticky-map` en a besoin). Le Swiper mobile,
+// lui, reste `top:0` plein écran avec réservation interne (inchangé).
 .trip-detail-desktop-root {
   position: fixed;
-  top: 0;
+  top: var(--chrome-top-offset, 0px);
   bottom: 0;
   left: var(--nt-space-1);
   right: var(--nt-space-1);
@@ -23,4 +27,13 @@
   overflow-x: hidden;
   overflow-y: auto;
   --nt-content-border-width: var(--nt-border-width-hair);
+  // Le scrollport commençant déjà sous le chrome, le contenu n'a plus à le
+  // réserver : `--day-map-chrome-offset` (padding-top de `.day-panel-root`) et
+  // `--sticky-top-offset` (top de `.sticky-map`, qui se cale alors en haut du
+  // scrollport) retombent à 0. `--chrome-top-offset` reste à sa vraie valeur
+  // (binding du template) : `.sticky-map` l'utilise pour sa hauteur
+  // (`100dvh - --chrome-top-offset - …`), qui doit tenir compte du chrome réel.
+  --day-map-chrome-offset: 0px;
+  --sticky-top-offset: 0px;
 }
+
