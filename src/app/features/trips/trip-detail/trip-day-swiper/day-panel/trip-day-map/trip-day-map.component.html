@@ -27,6 +27,9 @@
           [zoom]="zoom()"
           [options]="mapOptions()"
         >
+          @for (route of routePaths(); track route.dayKey) {
+            <map-polyline [path]="route.path" [options]="routeLineOptions()" />
+          }
           @for (point of points(); track point.activityId) {
             <map-advanced-marker
               [position]="{ lat: point.latitude, lng: point.longitude }"

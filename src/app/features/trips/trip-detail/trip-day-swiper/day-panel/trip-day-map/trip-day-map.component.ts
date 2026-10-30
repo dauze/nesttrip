@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
-import { GoogleMap, MapAdvancedMarker } from '@angular/google-maps';
+import { GoogleMap, MapAdvancedMarker, MapPolyline } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
 import { GooglePhotoService } from '@app/core/services/api/google-photo.service';
@@ -34,12 +34,41 @@ const DRAG_COMMIT_PX = 60;
   selector: 'app-trip-day-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [GoogleMap, MapAdvancedMarker, PanelComponent,],
+  imports: [GoogleMap, MapAdvancedMarker, MapPolyline, PanelComponent],
   templateUrl: 'trip-day-map.component.html',
   styleUrl: 'trip-day-map.component.scss',
 })
 export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
+  protected readonly routePaths = computed(() => {
+    const pointsByDay = new Map<string, DayMapPoint[]>();
+    for (const point of this.points()) {
+      const dayKey = point.dayId ?? 'active-day';
+      const dayPoints = pointsByDay.get(dayKey) ?? [];
+      dayPoints.push(point);
+      pointsByDay.set(dayKey, dayPoints);
+    }
+    return [...pointsByDay.entries()]
+      .map(([dayKey, points]) => ({
+        dayKey,
+        path: [...points]
+          .sort((left, right) => left.order - right.order)
+          .map((point) => ({ lat: point.latitude, lng: point.longitude })),
+      }))
+      .filter((route) => route.path.length > 1);
+  });
+  protected readonly routeLineOptions = computed<google.maps.PolylineOptions>(() => {
+    this.isDarkMode();
+    const strokeColor = getComputedStyle(document.documentElement).getPropertyValue('--nt-primary-color').trim();
+    return {
+      strokeColor,
+      strokeOpacity: 0.72,
+      strokeWeight: 3,
+      clickable: false,
+      geodesic: false,
+      zIndex: 1,
+    };
+  });
   readonly selectedActivityId = signal<string | null>(null);
   readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly photoService = inject(GooglePhotoService);

@@ -33,6 +33,7 @@ import { LOGISTIC_TYPE_META } from '../logistics/logistic.constants';
 
 /** Type-key/libellé/icône des dépenses libres dans les anneaux — pas de "type" propre (contrairement à activité/logistique), regroupées sous une seule catégorie. `--nt-activity-activite` (pas `--nt-logistic-other`, qui colore désormais la 5ᵉ entrée "Autre" de `computeExpenseBreakdown` — retour utilisateur : les deux ne doivent pas partager la même couleur, sans quoi une "Dépense libre" repliée dans "Autre" se confond visuellement avec le reste des dépenses libres non repliées). */
 const FREE_EXPENSE_META = { label: 'Dépense libre', icon: 'pi pi-wallet', colorVar: '--nt-activity-activite' };
+const DAY_MAP_COLOR_VARS = [...new Set(Object.values(ACTIVITY_TYPE_META).map((meta) => meta.colorVar))];
 
 /** Nombre max d'entrées affichées dans les anneaux : 4 types individuels + 1 entrée fixe "Autre" agrégeant le reliquat (voir `computeExpenseBreakdown`) — voir `TripSummaryComponent.expenseBreakdown`. */
 const MAX_EXPENSE_ENTRIES = 5;
@@ -247,10 +248,15 @@ export class TripSummaryComponent {
 
 
   /** Points de la carte, ordonnés chronologiquement (par jour) — voir `allPlacedActivities`. */
-  readonly generalMapPoints = computed<DayMapPoint[]>(() =>
-    this.allPlacedActivities()
+  readonly generalMapPoints = computed<DayMapPoint[]>(() => {
+    const dayColorIndexes = new Map<string, number>();
+    return this.allPlacedActivities()
       .filter(({ activity }) => activity.placeId && activity.latitude && activity.longitude)
-      .map(({ dayId, activity: a }, i) => ({
+      .map(({ dayId, activity: a }, i) => {
+        const dayKey = dayId.toISOString();
+        if (!dayColorIndexes.has(dayKey)) dayColorIndexes.set(dayKey, dayColorIndexes.size);
+        const dayColorIndex = dayColorIndexes.get(dayKey)!;
+        return {
         activityId: a.id,
         placeId: a.placeId!,
         name: a.title,
@@ -258,10 +264,11 @@ export class TripSummaryComponent {
         longitude: a.longitude!,
         order: i + 1,
         photoRef: a.photoRefs?.[0],
-        colorVar: ACTIVITY_TYPE_META[a.type].colorVar,
-        dayId: dayId.toISOString(),
-      })),
-  );
+        colorVar: DAY_MAP_COLOR_VARS[dayColorIndex % DAY_MAP_COLOR_VARS.length],
+        dayId: dayKey,
+      };
+      });
+  });
 
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
 
