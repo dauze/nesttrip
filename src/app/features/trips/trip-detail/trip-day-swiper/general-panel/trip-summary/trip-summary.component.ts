@@ -21,12 +21,13 @@ import { UserProfileService } from '@app/core/services/business/user-profile.ser
 import { CurrencyConversionService } from '@app/core/services/api/currency-conversion.service';
 import { convertWithRates } from '@app/core/utils/currency-conversion.util';
 import { suggestedCurrencyForCountry } from '@app/core/utils/country-currency.util';
+import { ProgressSpinnerComponent } from '@app/shared/components/feedback/progress-spinner/progress-spinner.component';
 import { TripTasksTileComponent } from './trip-tasks-tile/trip-tasks-tile.component';
 import { computeTasks } from './trip-tasks-tile/trip-tasks-tile.util';
 import { TripFilesTileComponent } from './trip-files-tile/trip-files-tile.component';
 import { computeFileGroups } from './trip-files-tile/trip-files-tile.util';
 import { ActivityTypeRingsComponent, RingChartEntry } from './activity-type-rings/activity-type-rings.component';
-import { computeExpenseBreakdown, ExpenseItem } from './trip-summary.util';
+import { computeExpenseBreakdown, convertExpenseItems, ExpenseItem, UnconvertedExpenseItem } from './trip-summary.util';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { LOGISTIC_TYPE_META } from '../logistics/logistic.constants';
 
@@ -55,7 +56,7 @@ const MAX_EXPENSE_ENTRIES = 5;
 @Component({
   selector: 'app-trip-summary',
   standalone: true,
-  imports: [DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, TripHeaderComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
+  imports: [DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, ProgressSpinnerComponent, TripHeaderComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
   templateUrl: './trip-summary.component.html',
   styleUrl: './trip-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -160,13 +161,8 @@ export class TripSummaryComponent {
    * jamais depuis le montant/devise d'origine — c'est exactement ce qui rend
    * ce montant stable dans le temps malgré la dérive du taux de marché.
    */
-  private readonly convertedExpenseItems = computed<ExpenseItem[] | null>(() => {
-    const ratesState = this.currencyConversionService.ratesState();
-    if (ratesState.status !== 'success') return null;
-    const target = this.userCurrency();
-    const rates = ratesState.data.rates;
-
-    const items: ExpenseItem[] = [];
+  private readonly unconvertedExpenseItems = computed<UnconvertedExpenseItem[]>(() => {
+    const items: UnconvertedExpenseItem[] = [];
     const pushItem = (
       typeKey: string, label: string, icon: string, colorVar: string,
       price: { amount: number; currency: string; frozenAmountEur?: number } | undefined,
@@ -174,11 +170,7 @@ export class TripSummaryComponent {
       if (!price || price.amount <= 0) return;
       const [sourceAmount, sourceCurrency] =
         price.frozenAmountEur !== undefined ? [price.frozenAmountEur, 'EUR'] : [price.amount, price.currency];
-      const converted = convertWithRates(sourceAmount, sourceCurrency, target, rates);
-      // Devise non résolue (absente des taux du jour) : ignorée du total
-      // plutôt que fausser silencieusement la somme avec un montant brut
-      // dans la mauvaise devise.
-      if (converted !== null) items.push({ typeKey, label, icon, colorVar, amount: converted });
+      items.push({ typeKey, label, icon, colorVar, amount: sourceAmount, currency: sourceCurrency });
     };
 
     for (const { activity } of this.allPlacedActivities()) {
@@ -195,6 +187,14 @@ export class TripSummaryComponent {
 
     return items;
   });
+
+  private readonly convertedExpenseItems = computed<ExpenseItem[] | null>(() => {
+    const ratesState = this.currencyConversionService.ratesState();
+    const rates = ratesState.status === 'success' ? ratesState.data.rates : undefined;
+    return convertExpenseItems(this.unconvertedExpenseItems(), this.userCurrency(), rates);
+  });
+
+  readonly expenseRatesLoading = computed(() => this.currencyConversionService.ratesState().status === 'loading');
 
   /** Total réellement converti dans `userCurrency` (remplace l'ancienne somme brute multi-devises) — `null` tant que les taux du jour ne sont pas résolus. */
   readonly totalExpense = computed<number | null>(() => {

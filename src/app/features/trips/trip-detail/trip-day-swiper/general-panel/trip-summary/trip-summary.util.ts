@@ -1,4 +1,5 @@
 import { RingChartEntry } from './activity-type-rings/activity-type-rings.component';
+import { convertWithRates } from '@app/core/utils/currency-conversion.util';
 
 export interface ExpenseItem {
   /** Clé de regroupement par TYPE (ex. `activity:visite`, `logistic:flight`) — PAS l'id de l'élément : plusieurs dépenses du même type s'additionnent dans le même anneau. */
@@ -7,6 +8,28 @@ export interface ExpenseItem {
   icon: string;
   colorVar: string;
   amount: number;
+}
+
+export interface UnconvertedExpenseItem extends Omit<ExpenseItem, 'amount'> {
+  amount: number;
+  currency: string;
+}
+
+export function convertExpenseItems(
+  items: UnconvertedExpenseItem[],
+  targetCurrency: string,
+  rates?: Record<string, number>,
+): ExpenseItem[] | null {
+  if (!rates && items.some((item) => item.currency !== targetCurrency)) return null;
+
+  const converted: ExpenseItem[] = [];
+  for (const item of items) {
+    const amount = convertWithRates(item.amount, item.currency, targetCurrency, rates ?? {});
+    if (amount === null) continue;
+    const { currency: _currency, ...expense } = item;
+    converted.push({ ...expense, amount });
+  }
+  return converted;
 }
 
 /** Icône/couleur de la 5ᵉ entrée fixe "Autre" (voir `computeExpenseBreakdown`) — même token neutre que `FREE_EXPENSE_META` (trip-summary.component.ts). */

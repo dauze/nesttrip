@@ -1,4 +1,29 @@
-import { computeExpenseBreakdown, ExpenseItem } from './trip-summary.util';
+import { computeExpenseBreakdown, convertExpenseItems, ExpenseItem, UnconvertedExpenseItem } from './trip-summary.util';
+
+describe('convertExpenseItems', () => {
+  const item: UnconvertedExpenseItem = {
+    typeKey: 'activity:visite',
+    label: 'Visite',
+    icon: 'pi pi-star',
+    colorVar: '--nt-activity-visite',
+    amount: 25,
+    currency: 'USD',
+  };
+
+  it('converts amounts already in the target currency while rates are loading', () => {
+    expect(convertExpenseItems([{ ...item, currency: 'EUR' }], 'EUR')).toEqual([
+      { typeKey: item.typeKey, label: item.label, icon: item.icon, colorVar: item.colorVar, amount: 25 },
+    ]);
+  });
+
+  it('waits for rates rather than mixing an unconverted foreign amount into the total', () => {
+    expect(convertExpenseItems([item], 'EUR')).toBeNull();
+  });
+
+  it('converts foreign amounts when rates are available', () => {
+    expect(convertExpenseItems([item], 'EUR', { USD: 1.25 })?.[0].amount).toBe(20);
+  });
+});
 
 describe('computeExpenseBreakdown', () => {
   function item(overrides: Partial<ExpenseItem> = {}): ExpenseItem {

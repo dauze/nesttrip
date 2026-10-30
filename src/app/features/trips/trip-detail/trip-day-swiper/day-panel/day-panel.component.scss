@@ -249,7 +249,7 @@
     // `--nt-sticky-map-top-gap`) : la hauteur ci-dessous est calculée au
     // pixel près pour occuper tout l'espace vertical disponible, l'ajouter
     // ferait déborder la carte en bas de l'écran.
-    top: var(--sticky-top-offset, 0px);
+    top: calc(var(--sticky-top-offset, 0px) + var(--nt-map-collapse-reserve));
     // Hauteur concrète = point de départ de la chaîne flex/`height:100%`
     // jusqu'à `<google-map>` (voir `PanelComponent.fillHeight` et
     // trip-day-map.component.scss) : CSS normal, aucun `!important`
@@ -261,12 +261,12 @@
     // `- var(--nt-map-collapse-reserve)` : le bouton "Réduire la carte"
     // (`.day-panel-map-collapse`) est un FRÈRE flex au-dessus de la carte
     // dans la même colonne (`.day-panel-map-group`, `flex-direction:column`
-    // + `gap`) — sans réserver sa hauteur + le gap flex qui l'en sépare, la
-    // somme (bouton + gap + carte pleine hauteur) dépassait 100dvh et la
-    // carte débordait sous le bas de l'écran (retour utilisateur). Valeur =
+    // + `gap`) et reste sticky au-dessus : sans réserver sa hauteur + le gap
+    // flex qui l'en sépare, la somme (bouton + gap + carte pleine hauteur)
+    // dépasserait l'espace disponible sous le chrome. Valeur =
     // hauteur du bouton (texte 1 ligne + padding `--nt-space-2`×2 + bordure)
     // + un `gap` flex (`--nt-layout-gap-split`).
-    height: calc(100dvh - var(--chrome-top-offset, 0px) - 1.5rem - var(--nt-map-collapse-reserve));
+    height: calc(100dvh - var(--chrome-top-offset, 0px) - var(--nt-map-collapse-reserve));
   }
 
   // --- Escamotage de la colonne carte (option B, retour utilisateur
@@ -279,6 +279,10 @@
   // timeline. S'appuie sur les tokens de panel pour rester cohérent avec le
   // reste du contenu jour.
   .day-panel-map-collapse {
+    position: sticky;
+    top: var(--sticky-top-offset, 0px);
+    z-index: 11;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;

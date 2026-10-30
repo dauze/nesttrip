@@ -32,8 +32,17 @@
             }
           </div>
         </app-activity-type-rings>
+      } @else if (totalExpense() === null) {
+        <div class="trip-summary-expenses-status" role="status" aria-live="polite">
+          @if (expenseRatesLoading()) {
+            <app-progress-spinner [style]="{ width: '1.25rem', height: '1.25rem' }" />
+            <span>Chargement des taux de change…</span>
+          } @else {
+            <span>Conversion des dépenses indisponible pour le moment.</span>
+          }
+        </div>
       } @else {
-        <div class="trip-summary-total">{{ totalExpense() !== null ? totalExpense()!.toFixed(2) : '0.00' }} {{ currencySymbol() }}</div>
+        <div class="trip-summary-total">{{ totalExpense()!.toFixed(2) }} {{ currencySymbol() }}</div>
       }
 
       <app-button label="Voir toutes les dépenses" [text]="true" size="small" class="w-max" (click)="openExpensesTable()" />

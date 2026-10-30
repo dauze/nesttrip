@@ -74,6 +74,16 @@
   text-align: center;
 }
 
+.trip-summary-expenses-status {
+  display: flex;
+  min-height: 4rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nt-space-2);
+  color: var(--nt-text-muted-color);
+  font-size: 0.875rem;
+}
+
 // Montant + sous-texte devise locale destination (src/specs/devise.md 3.5),
 // projetés au centre de l'anneau interactif via `[ringsCenter]" — voir
 // `ActivityTypeRingsComponent.rings-chart__center` pour le positionnement
