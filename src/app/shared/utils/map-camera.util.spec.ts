@@ -81,4 +81,16 @@ describe('estimateZoomDrop', () => {
     expect(far).toBeGreaterThan(near);
     expect(far).toBeLessThanOrEqual(6);
   });
+
+  it('respecte un plafond de dézoom plus faible pour la caméra du Résumé', () => {
+    const far = estimateZoomDrop(
+      { latitude: 48.8566, longitude: 2.3522 },
+      { latitude: 51.5074, longitude: -0.1278 },
+      { width: 400, height: 400 },
+      13,
+      4,
+    );
+
+    expect(far).toBeLessThanOrEqual(4);
+  });
 });

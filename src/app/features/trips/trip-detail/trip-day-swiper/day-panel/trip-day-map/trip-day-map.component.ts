@@ -575,7 +575,7 @@ export class TripDayMapComponent {
     );
   }
 
-  followScroll(from: DayMapPoint, to: DayMapPoint, t: number): void {
+  followScroll(from: DayMapPoint, to: DayMapPoint, t: number, maxZoomDrop = 6): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
@@ -594,7 +594,7 @@ export class TripDayMapComponent {
     // Calcul du recul — piloté par `clampedT` (BRUT), pas `eased` : voir la
     // doc de `zoomEnvelope`, le zoom a volontairement son propre rythme,
     // découplé de celui du déplacement.
-    const targetZoom = this.computeCinematicZoom(from, to, clampedT);
+    const targetZoom = this.computeCinematicZoom(from, to, clampedT, maxZoomDrop);
 
     // MOVE CAMERA : La magie vectorielle opère ici en une seule passe ultra-rapide
     map.moveCamera({
@@ -624,14 +624,14 @@ export class TripDayMapComponent {
    *   "regagné" — un ease-IN quadratique.
    * Mêmes formules (sens inverse) dans `GeneralMapCinematicService.returnToOverview`.
    */
-  followFromOverview(points: DayMapPoint[], point: DayMapPoint, t: number): void {
+  followFromOverview(points: DayMapPoint[], point: DayMapPoint, t: number, overviewZoomBuffer = 0.4): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
 
     const s = Math.min(1, Math.max(0, t));
     const easedPosition = 1 - Math.pow(1 - s, 3);
 
-    const overview = this.computeOverviewCamera(points, 0.2) ?? {
+    const overview = this.computeOverviewCamera(points, overviewZoomBuffer) ?? {
       center: { lat: point.latitude, lng: point.longitude },
       zoom: this.focusZoom(),
     };
@@ -674,14 +674,14 @@ export class TripDayMapComponent {
    * aux tuiles Google Maps le temps de charger sur un gros dézoom, d'où un
    * rendu qui semblait "sauter" au lieu de transitionner).
    */
-  estimateZoomDrop(from: DayMapPoint, to: DayMapPoint): number {
+  estimateZoomDrop(from: DayMapPoint, to: DayMapPoint, maxZoomDrop = 6): number {
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
-    return estimateZoomDropUtil(from, to, { width: rect.width, height: rect.height }, this.focusZoom());
+    return estimateZoomDropUtil(from, to, { width: rect.width, height: rect.height }, this.focusZoom(), maxZoomDrop);
   }
 
-  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number): number {
+  private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number, maxZoomDrop = 6): number {
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
-    return computeCinematicZoomUtil(from, to, t, { width: rect.width, height: rect.height }, this.focusZoom());
+    return computeCinematicZoomUtil(from, to, t, { width: rect.width, height: rect.height }, this.focusZoom(), maxZoomDrop);
   }
 
   get googleMap(): google.maps.Map | undefined {

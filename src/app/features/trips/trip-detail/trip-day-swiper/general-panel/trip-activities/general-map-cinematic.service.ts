@@ -1,6 +1,12 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { TripDayMapComponent } from '../../day-panel/trip-day-map/trip-day-map.component';
+
+export interface GeneralMapSpotlight {
+  point: DayMapPoint;
+  index: number;
+  total: number;
+}
 
 export interface GeneralMapCinematicConfig {
   isActive: () => boolean;
@@ -18,10 +24,10 @@ const IDLE_MS = 2000;
 // rapide, contrairement à un suivi de scroll. Réaccéléré un peu le
 // 2026-08-02 (retour utilisateur) : uniquement les déplacements
 // point-à-point, `DWELL_MS` (pause SUR chaque point) reste inchangé.
-const SEGMENT_MS = 3200;
-const RETURN_MS = 2500;
+const SEGMENT_MS = 2400;
+const RETURN_MS = 1800;
 /** Légère pause sur chaque point atteint pendant le tour, avant d'enchaîner vers le suivant — voir ROADMAP.md "UX / Interactions". */
-const DWELL_MS = 700;
+const DWELL_MS = 500;
 /**
  * Temps ajouté À LA DURÉE DE BASE (`SEGMENT_MS`/`RETURN_MS`) par niveau de
  * dézoom (voir `TripDayMapComponent.estimateZoomDrop`) — retour utilisateur :
@@ -32,7 +38,8 @@ const DWELL_MS = 700;
  * voir ROADMAP.md "UX / Interactions". Un petit trajet (dézoom ~0) garde
  * exactement `SEGMENT_MS`/`RETURN_MS`, comportement déjà jugé "parfait".
  */
-const MS_PER_ZOOM_LEVEL = 600;
+const MS_PER_ZOOM_LEVEL = 450;
+const MAX_GENERAL_ZOOM_DROP = 4;
 
 /**
  * Caméra du pool d'activités de l'onglet Général : entièrement décorrélée du
@@ -71,6 +78,9 @@ const MS_PER_ZOOM_LEVEL = 600;
  */
 @Injectable()
 export class GeneralMapCinematicService implements OnDestroy {
+  private readonly _currentSpotlight = signal<GeneralMapSpotlight | null>(null);
+  readonly currentSpotlight = this._currentSpotlight.asReadonly();
+
   private config!: GeneralMapCinematicConfig;
 
   private phase: Phase = 'idle-at-overview';
@@ -94,6 +104,7 @@ export class GeneralMapCinematicService implements OnDestroy {
 
   /** Rattachement à l'instance UNIQUE de carte partagée, une fois déplacée dans ce contexte — même moment que `DayScrollSyncService.attachMap` côté appelant. */
   attachMap(map: TripDayMapComponent): void {
+    this._currentSpotlight.set(null);
     this.mapSubscription?.unsubscribe();
     this.mapSubscription = map.activitySelected.subscribe(() => this.onMapAction());
 
@@ -111,7 +122,7 @@ export class GeneralMapCinematicService implements OnDestroy {
     // Position de repos initiale = vue d'ensemble, cohérente avec l'état
     // `idle-at-overview` (best-effort : si les points ne sont pas encore
     // prêts, `onIdleTimeout` re-tentera au prochain minuteur).
-    const overview = map.computeOverviewCamera(this.config.getPoints());
+    const overview = map.computeOverviewCamera(this.config.getPoints(), 0.2);
     if (overview) map.moveCameraTo(overview.center, overview.zoom);
   }
 
@@ -126,6 +137,7 @@ export class GeneralMapCinematicService implements OnDestroy {
   /** Action directement sur la carte : fige l'automatisme SANS toucher à la caméra, l'utilisateur garde la main — reprise du tour là où il en était après 2s d'inactivité. */
   private readonly onMapAction = (): void => {
     if (!this.config.isActive()) return;
+    this._currentSpotlight.set(null);
     clearTimeout(this.idleTimer);
     this.generation++;
     this.releaseWakeLock();
@@ -159,6 +171,7 @@ export class GeneralMapCinematicService implements OnDestroy {
     if (!this.config.isActive()) {
       this.generation++;
       this.phase = 'idle-at-overview';
+      this._currentSpotlight.set(null);
       this.releaseWakeLock();
       this.scheduleIdle();
       return true;
@@ -169,6 +182,7 @@ export class GeneralMapCinematicService implements OnDestroy {
   private onIdleTimeout(): void {
     const points = this.config.getPoints();
     if (!this.config.isActive() || !this.config.isExpanded() || points.length < 2) {
+      this._currentSpotlight.set(null);
       this.scheduleIdle();
       return;
     }
@@ -196,18 +210,19 @@ export class GeneralMapCinematicService implements OnDestroy {
   /** Transition douce vue d'ensemble -> 1er point (réutilise `TripDayMapComponent.followFromOverview`, piloté par le temps comme un segment). */
   private enterTour(points: DayMapPoint[], generation: number): void {
     const map = this.config.getMapComponent();
+    this._currentSpotlight.set({ point: points[0], index: 1, total: points.length });
     // Amplitude du "zoom in" overview -> point 0 (même raisonnement que les
     // segments, voir MS_PER_ZOOM_LEVEL) : écart entre le zoom de la vue
     // d'ensemble et le zoom de focus habituel.
-    const overview = map?.computeOverviewCamera(points);
-    const zoomDrop = map && overview ? Math.max(0, map.focusZoom() - overview.zoom) : 0;
+    const overview = map?.computeOverviewCamera(points, 0.2);
+    const zoomDrop = map && overview ? Math.min(MAX_GENERAL_ZOOM_DROP, Math.max(0, map.focusZoom() - overview.zoom)) : 0;
     const duration = SEGMENT_MS + zoomDrop * MS_PER_ZOOM_LEVEL;
     const start = performance.now();
 
     const step = (now: number): void => {
       if (this.shouldAbort(generation)) return;
       const t = Math.min(1, (now - start) / duration);
-      this.config.getMapComponent()?.followFromOverview(points, points[0], t);
+      this.config.getMapComponent()?.followFromOverview(points, points[0], t, 0.2);
 
       if (t < 1) {
         requestAnimationFrame(step);
@@ -237,27 +252,30 @@ export class GeneralMapCinematicService implements OnDestroy {
 
     if (index >= points.length - 1) {
       this.tourPointIndex = 0;
+      this._currentSpotlight.set({ point: points[points.length - 1], index: points.length, total: points.length });
       this.returnToOverview(generation);
       return;
     }
 
     const from = points[index];
     const to = points[index + 1];
+    this._currentSpotlight.set({ point: from, index: index + 1, total: points.length });
     const map = this.config.getMapComponent();
-    const zoomDrop = map?.estimateZoomDrop(from, to) ?? 0;
+    const zoomDrop = map?.estimateZoomDrop(from, to, MAX_GENERAL_ZOOM_DROP) ?? 0;
     const duration = SEGMENT_MS + zoomDrop * MS_PER_ZOOM_LEVEL;
     const start = performance.now();
 
     const step = (now: number): void => {
       if (this.shouldAbort(generation)) return;
       const t = Math.min(1, (now - start) / duration);
-      this.config.getMapComponent()?.followScroll(from, to, t);
+      this.config.getMapComponent()?.followScroll(from, to, t, MAX_GENERAL_ZOOM_DROP);
 
       if (t < 1) {
         requestAnimationFrame(step);
         return;
       }
       this.tourPointIndex = index + 1;
+      this._currentSpotlight.set({ point: to, index: index + 2, total: points.length });
       this.dwellTimer = window.setTimeout(() => {
         if (this.shouldAbort(generation)) return;
         this.runSegment(points, index + 1, generation);
@@ -281,10 +299,11 @@ export class GeneralMapCinematicService implements OnDestroy {
   private returnToOverview(generation: number): void {
     const map = this.config.getMapComponent();
     const from = map?.getCameraState();
-    const overview = map?.computeOverviewCamera(this.config.getPoints());
+    const overview = map?.computeOverviewCamera(this.config.getPoints(), 0.2);
 
     if (!map || !from || !overview) {
       this.phase = 'idle-at-overview';
+      this._currentSpotlight.set(null);
       this.releaseWakeLock();
       this.scheduleIdle();
       return;
@@ -315,6 +334,7 @@ export class GeneralMapCinematicService implements OnDestroy {
         return;
       }
       this.phase = 'idle-at-overview';
+      this._currentSpotlight.set(null);
       this.releaseWakeLock();
       this.scheduleIdle();
     };
@@ -343,6 +363,7 @@ export class GeneralMapCinematicService implements OnDestroy {
     clearTimeout(this.idleTimer);
     clearTimeout(this.dwellTimer);
     this.generation++;
+    this._currentSpotlight.set(null);
     this.releaseWakeLock();
     this.mapSubscription?.unsubscribe();
     this.detachMapListeners();

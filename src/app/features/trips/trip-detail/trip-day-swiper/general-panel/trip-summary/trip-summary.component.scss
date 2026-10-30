@@ -53,6 +53,69 @@
   width: 100%;
 }
 
+.trip-summary-map-card {
+  position: relative;
+}
+
+.trip-summary-map-spotlight {
+  position: absolute;
+  left: var(--nt-space-3);
+  bottom: var(--nt-space-3);
+  z-index: 4;
+  display: flex;
+  max-width: min(22rem, calc(100% - var(--nt-space-6)));
+  align-items: center;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-2) var(--nt-space-3);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-content-border-radius);
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-md);
+  pointer-events: none;
+}
+
+.trip-summary-map-spotlight__photo,
+.trip-summary-map-spotlight__placeholder {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--nt-radius-sm);
+  background: var(--nt-content-hover-background);
+  object-fit: cover;
+}
+
+.trip-summary-map-spotlight__placeholder i {
+  font-size: var(--nt-icon-size-md);
+}
+
+.trip-summary-map-spotlight__details {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.trip-summary-map-spotlight__title {
+  overflow: hidden;
+  color: var(--nt-text-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-summary-map-spotlight__day,
+.trip-summary-map-spotlight__progress {
+  color: var(--nt-text-muted-color);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 // Tuile Dépenses pleine largeur (retour utilisateur : la légende du donut
 // a besoin de plus de place qu'une tuile 1/2 largeur ne peut en offrir,
 // surtout sur petit écran — voir `.rings-chart__interactive-legend`).

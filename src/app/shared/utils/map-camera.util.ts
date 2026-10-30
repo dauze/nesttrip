@@ -130,6 +130,7 @@ export function estimateZoomDrop(
   to: CameraPoint,
   viewportPx: { width: number; height: number },
   focusZoom: number,
+  maxZoomDrop = 6,
 ): number {
   const distanceMeters = haversineDistanceMeters(from.latitude, from.longitude, to.latitude, to.longitude);
   if (distanceMeters < 50) return 0;
@@ -138,15 +139,13 @@ export function estimateZoomDrop(
   const width = Math.max(1, viewportPx.width - PADDING_PX * 2);
   const height = Math.max(1, viewportPx.height - PADDING_PX * 2);
   const OVERVIEW_ZOOM_BUFFER = 0.4;
-  const MAX_ZOOM_DROP = 6;
-
   const minLat = Math.min(from.latitude, to.latitude);
   const maxLat = Math.max(from.latitude, to.latitude);
   const minLng = Math.min(from.longitude, to.longitude);
   const maxLng = Math.max(from.longitude, to.longitude);
 
   const idealZoom = getBoundsZoomLevel(minLat, maxLat, minLng, maxLng, width, height) - OVERVIEW_ZOOM_BUFFER;
-  return Math.min(MAX_ZOOM_DROP, Math.max(0, focusZoom - idealZoom));
+  return Math.min(maxZoomDrop, Math.max(0, focusZoom - idealZoom));
 }
 
 /** Zoom cinématique le long d'un segment `from` -> `to` à la position `t` (brut, voir `zoomEnvelope`) — voir `TripDayMapComponent.followScroll`. */
@@ -156,7 +155,8 @@ export function computeCinematicZoom(
   t: number,
   viewportPx: { width: number; height: number },
   focusZoom: number,
+  maxZoomDrop = 6,
 ): number {
-  const zoomDrop = estimateZoomDrop(from, to, viewportPx, focusZoom);
+  const zoomDrop = estimateZoomDrop(from, to, viewportPx, focusZoom, maxZoomDrop);
   return focusZoom - zoomDrop * zoomEnvelope(t);
 }

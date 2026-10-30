@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewContainerRef, afterNextRender, computed, effect, inject, input, viewChild } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
@@ -17,6 +17,7 @@ import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.s
 import { GeneralMapCinematicService } from '../trip-activities/general-map-cinematic.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { GooglePlaceService } from '@app/core/services/api/google-place.service';
+import { GooglePhotoService } from '@app/core/services/api/google-photo.service';
 import { UserProfileService } from '@app/core/services/business/user-profile.service';
 import { CurrencyConversionService } from '@app/core/services/api/currency-conversion.service';
 import { convertWithRates } from '@app/core/utils/currency-conversion.util';
@@ -57,7 +58,7 @@ const MAX_EXPENSE_ENTRIES = 5;
 @Component({
   selector: 'app-trip-summary',
   standalone: true,
-  imports: [DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, ProgressSpinnerComponent, TripHeaderComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
+  imports: [AsyncPipe, DatePipe, DecimalPipe, CardComponent, SkeletonComponent, ButtonComponent, ProgressSpinnerComponent, TripHeaderComponent, TripTasksTileComponent, TripFilesTileComponent, ActivityTypeRingsComponent],
   templateUrl: './trip-summary.component.html',
   styleUrl: './trip-summary.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -80,6 +81,7 @@ export class TripSummaryComponent {
   private readonly dialogService = inject(DialogService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly googlePlaceService = inject(GooglePlaceService);
+  private readonly googlePhotoService = inject(GooglePhotoService);
   private readonly userProfileService = inject(UserProfileService);
   private readonly currencyConversionService = inject(CurrencyConversionService);
 
@@ -128,6 +130,11 @@ export class TripSummaryComponent {
 
   /** Carte partagée avec la vue jour/l'ancien onglet Activités, "prêtée" à ce contexte tant qu'il est actif. */
   readonly activeMapComponent = computed(() => (this.active() ? this.mapHost.activeMap() : null));
+  protected readonly mapSpotlight = this.mapCinematic.currentSpotlight;
+
+  protected getSpotlightPhotoUrl$(ref: string) {
+    return this.googlePhotoService.getPhotoUrl$(ref, 160);
+  }
 
   readonly currencyOptions = CURRENCY_OPTIONS;
 
