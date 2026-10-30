@@ -53,12 +53,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### UX / Interactions
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
--Le scroll implémenter maison pour rafraîchir doit passer devant la map dans les day activity, et la flèche doit etre plus épaisse
-- sur les liste déroulantes, il faut remettre un chevron pour le logos de depliage !
-- la carte de l'activité dans l'accueil, si il y a pas de photo le fond du logo nest pas bon. Et il faudrait l'agrandir un peu en hauteur pour avoir une photo plus grande
-- ajouter un circuit sur les point
-- **Carte mobile — plein écran au geste (décision UX du 2026-10-30).** Conserver le tap qui ouvre la carte à mi-hauteur ; tirer le grabber vers le bas pour passer au plein écran, geste inverse pour revenir à mi-hauteur. Depuis le plein écran, sélectionner un marqueur réduit d'abord la carte à mi-hauteur, puis navigue vers le jour.
-- dans la vue generale, les point de la carte doivent avoir une couleur différente selon les jour
+- pour relier les points, tu pourrais faire un peux plus smooth, car des lignes droites ça fait trop carré
+- sur la vue générale, il faudrait que tu agrandisse un peut la largeur de la colonne avec la carte, c'est un peu trop petit
 - pour relier les points, tu pourrais faire un peux plus smooth, car des lignes droites ça fait trop carré
 - sur la vue générale, il faudrait que tu agrandisse un peut la largeur de la colonne avec la carte, c'est un peu trop petit
  
