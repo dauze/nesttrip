@@ -57,7 +57,11 @@ export class LoginComponent {
     firstName: '',
     lastName: '',
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/) ]],
+    password: ['', [Validators.required, 
+      Validators.minLength(6)
+      // Au moins une minuscule, une majuscule, un chiffre, un caractère spécial, et 6 caractères minimum
+      //Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/) 
+      ]],
   });
   
   constructor() {
