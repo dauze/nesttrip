@@ -2,7 +2,8 @@
 
 Ce document sert de référence pour le projet ce qu'il reste à faire. Les items clos sont déplacés vers `ROADMAP_already done.md` (voir ce fichier pour l'historique détaillé) — ne pas les redupliquer ici.
 
-### Plan d'exécution en cours (2026-08-11)
+### Plan d'exécution en cours (2026-10-30)
+- **Gouttières des barres de navigation desktop/mobile — implémentées (2026-10-30).** Seuils inchangés ; barre mobile pleine largeur, onglets desktop bord-à-bord, jours toujours défilants. Maquette validée ; lint passé. Vérification visuelle sur l’app à confirmer dans une session authentifiée dédiée (`.env.e2e` absent).
 - Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_already done.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
 - **Parcours IA — sélection mobile implémentée (2026-10-30), vérification visuelle à confirmer.** Le sous-lot desktop est implémenté : liste avec retrait par croix, puis planification des activités gardées en `activities_day`/`full_plan`. Sur mobile, cartes à swiper à droite/gauche, validation toujours disponible, chargement de nouvelles propositions quand la pile est épuisée et liste complémentaire des activités gardées au-delà de 15 jours. Les vérifications automatisées passent ; il reste à confirmer le rendu dans une session authentifiée. Le Lot 4 (régénération ciblée d'un jour) reste reporté.
 
@@ -23,8 +24,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - refondre toute la partie générale
 - **Vue carte Jour — zoom global rapproché implémenté (décision UX du 2026-10-30), vérification visuelle à confirmer.** Le cadrage conserve tous les points avec un buffer réduit ; le zoom de la vue Général reste inchangé. Confirmation visuelle à faire dans une session authentifiée dédiée (`.env.e2e` absent).
 - **Bouton + pour créer une activité dans le jour courant — décision validée le 2026-10-30, comportement déjà présent.** Le FAB global du jour appelle `DayActivityCreationService.startCreation()` ; confirmation visuelle à faire dans une session authentifiée dédiée (`.env.e2e` absent).
-- il y a un moment ou l'affichage n'est pass bien entre la transition du mobile vers le desktop, quand on arrive après la largeur max de la bottom bar et de la liste de scool, des barres noire aapparaisent sur les coté, il faut trouver un moyen de soit faire la transition plus tôt vers le mode ordi, soit rajouter un mode, à trancher avec le skill ux
-- gérer proprement tous es patting et faire en sorte que la age ne soit pa visible au niveau des écats autour de la bar des jours 
 - **Vue Jour desktop — carte escamotable et commande sticky implémentées (2026-10-30), vérification visuelle à confirmer.** Le bouton « Réduire la carte » reste sticky sous le chrome ; sa hauteur est réservée dans le calcul de la carte pour qu'elle occupe le reste de la zone disponible. Le rail d'ouverture et la grille multi-colonnes carte repliée sont également présents. Confirmation visuelle à faire dans une session authentifiée dédiée (`.env.e2e` absent).
 
 ### UI 

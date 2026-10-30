@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NestTrip - Navigation pleine largeur</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f8fafc;
+      --surface: #fff;
+      --surface-soft: #eef4f3;
+      --text: #334155;
+      --muted: #64748b;
+      --border: #dce5e7;
+      --primary: #2a7871;
+      --primary-soft: #e4f1ef;
+      --coral: #e87562;
+      --gold: #d69a35;
+      --shadow: 0 8px 24px rgba(27, 52, 58, .08);
+      --radius: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --page: #11191b;
+        --surface: #1d282b;
+        --surface-soft: #273538;
+        --text: #edf4f3;
+        --muted: #a4b5b7;
+        --border: #35474a;
+        --primary: #56a69c;
+        --primary-soft: #253f3d;
+        --coral: #ef927e;
+        --gold: #e2b45f;
+        --shadow: 0 8px 24px rgba(0, 0, 0, .24);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+      font: 14px/1.45 system-ui, sans-serif;
+    }
+    button { color: inherit; font: inherit; }
+    .page { max-width: 1540px; margin: 0 auto; padding: 28px; }
+    .masthead { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    .brand { color: var(--primary); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+    h1 { margin: 4px 0 0; font-size: 26px; line-height: 1.15; }
+    .date { color: var(--muted); font-size: 12px; }
+    .boards { display: grid; grid-template-columns: minmax(560px, 1.3fr) minmax(440px, 1fr); align-items: start; gap: 22px; }
+    .board { min-width: 0; }
+    .board-heading { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 9px; }
+    .board-heading h2 { margin: 0; font-size: 15px; }
+    .board-heading span { color: var(--muted); font-size: 12px; }
+    .window { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+
+    .desktop-top {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .trip-title { font-weight: 700; }
+    .tools { display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 12px; }
+    .desktop-tabs {
+      position: relative;
+      display: flex;
+      min-height: 76px;
+      align-items: stretch;
+      overflow: hidden;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .desktop-tab-track { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .desktop-tab-track::-webkit-scrollbar { display: none; }
+    .desktop-tab {
+      flex: 1 0 76px;
+      min-width: 76px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 2px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .desktop-tab b { font-size: 17px; }
+    .desktop-tab small { font-size: 10px; }
+    .desktop-tab.is-active { color: var(--primary); border-bottom-color: var(--primary); }
+    .desktop-tab.general { flex: 0 0 108px; border-right: 1px solid var(--border); font-weight: 700; }
+    .scroll-cue {
+      position: absolute;
+      top: 50%;
+      z-index: 1;
+      display: grid;
+      width: 28px;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--primary);
+      transform: translateY(-50%);
+      box-shadow: 0 2px 6px rgba(27, 52, 58, .1);
+    }
+    .scroll-cue.left { left: 10px; }
+    .scroll-cue.right { right: 10px; }
+    .desktop-content { min-height: 305px; display: grid; grid-template-columns: 1fr 300px; gap: 12px; padding: 14px; background: var(--page); }
+    .map-placeholder { position: relative; min-height: 260px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: #dce8e3; }
+    .map-placeholder::before,
+    .map-placeholder::after { content: ''; position: absolute; width: 140%; height: 1px; background: rgba(42, 120, 113, .2); transform: rotate(-24deg); }
+    .map-placeholder::before { top: 42%; left: -20%; }
+    .map-placeholder::after { top: 68%; left: -18%; transform: rotate(19deg); }
+    .map-label { position: absolute; top: 14px; left: 14px; padding: 6px 9px; border-radius: 6px; background: rgba(255,255,255,.9); color: #355a57; font-size: 11px; }
+    .day-column { display: grid; align-content: start; gap: 8px; }
+    .activity { min-height: 58px; display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); }
+    .activity-mark { width: 4px; align-self: stretch; border-radius: 5px; background: var(--coral); }
+    .activity:nth-child(2) .activity-mark { background: var(--gold); }
+    .activity:nth-child(3) .activity-mark { background: var(--primary); }
+    .activity strong { display: block; font-size: 12px; }
+    .activity small { color: var(--muted); font-size: 11px; }
+
+    .mobile-window { position: relative; min-height: 510px; padding-bottom: 100px; }
+    .mobile-top { display: flex; height: 48px; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border); }
+    .mobile-top strong { font-size: 13px; }
+    .mobile-content { min-height: 352px; padding: 14px; background: var(--page); }
+    .mobile-content .activity { min-height: 72px; margin-bottom: 9px; }
+    .mobile-map { height: 112px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background: #dce8e3; }
+    .mobile-nav {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: grid;
+      gap: 6px;
+      padding: 9px 14px 12px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: 0 -5px 16px rgba(27, 52, 58, .08);
+    }
+    .mobile-days { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+    .mobile-days::-webkit-scrollbar { display: none; }
+    .mobile-day {
+      flex: 1 0 66px;
+      min-height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .mobile-day.is-active { border-color: var(--primary); background: var(--primary); color: white; }
+    .mobile-primary { position: relative; display: flex; height: 42px; padding: 4px; border-radius: 999px; background: var(--surface-soft); }
+    .mobile-primary button { z-index: 1; flex: 1; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .mobile-primary button.is-active { background: var(--primary); color: white; box-shadow: 0 2px 6px rgba(27, 52, 58, .14); }
+    .mobile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .mobile-actions span { height: 32px; border-radius: 6px; background: var(--surface); }
+
+    @media (max-width: 1080px) {
+      .page { padding: 20px; }
+      .boards { grid-template-columns: 1fr; }
+      .desktop-content { grid-template-columns: minmax(0, 1fr) 260px; }
+    }
+    @media (max-width: 680px) {
+      .page { padding: 16px 0; }
+      .masthead { padding: 0 16px; }
+      .date { display: none; }
+      .board-heading { padding: 0 16px; }
+      .window { border-right: 0; border-left: 0; border-radius: 0; }
+      .desktop-content { grid-template-columns: 1fr; }
+      .day-column { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div><div class="brand">NESTTRIP / NAVIGATION</div><h1>Barres de navigation pleine largeur</h1></div>
+      <div class="date">Seuils actuels conserv&eacute;s &middot; jours d&eacute;filants</div>
+    </header>
+
+    <div class="boards">
+      <section class="board" aria-labelledby="desktop-title">
+        <div class="board-heading"><h2 id="desktop-title">Desktop</h2><span>Barre de jours au bord de l’&eacute;cran</span></div>
+        <div class="window">
+          <div class="desktop-top"><span class="trip-title">Lisbonne, en famille</span><div class="tools"><span>R&eacute;sum&eacute;</span><span>Activit&eacute;s</span><span>R&eacute;glages</span></div></div>
+          <nav class="desktop-tabs" aria-label="Jours du voyage">
+            <span class="scroll-cue left" aria-hidden="true">‹</span>
+            <div class="desktop-tab-track">
+              <button class="desktop-tab general">G&eacute;n&eacute;ral</button>
+              <button class="desktop-tab"><small>DIM</small><b>12</b><small>OCT.</small></button>
+              <button class="desktop-tab is-active"><small>LUN</small><b>13</b><small>OCT.</small></button>
+              <button class="desktop-tab"><small>MAR</small><b>14</b><small>OCT.</small></button>
+              <button class="desktop-tab"><small>MER</small><b>15</b><small>OCT.</small></button>
+              <button class="desktop-tab"><small>JEU</small><b>16</b><small>OCT.</small></button>
+              <button class="desktop-tab"><small>VEN</small><b>17</b><small>OCT.</small></button>
+              <button class="desktop-tab"><small>SAM</small><b>18</b><small>OCT.</small></button>
+              <button class="desktop-tab"><small>DIM</small><b>19</b><small>OCT.</small></button>
+            </div>
+            <span class="scroll-cue right" aria-hidden="true">›</span>
+          </nav>
+          <div class="desktop-content">
+            <div class="map-placeholder"><span class="map-label">Jour 2 &middot; itin&eacute;raire</span></div>
+            <div class="day-column">
+              <div class="activity"><i class="activity-mark"></i><div><strong>Bel&eacute;m et le bord du Tage</strong><small>09:30 &middot; visite</small></div></div>
+              <div class="activity"><i class="activity-mark"></i><div><strong>D&eacute;jeuner au march&eacute;</strong><small>12:45 &middot; repas</small></div></div>
+              <div class="activity"><i class="activity-mark"></i><div><strong>Promenade dans Alfama</strong><small>15:00 &middot; activit&eacute;</small></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="board" aria-labelledby="mobile-title">
+        <div class="board-heading"><h2 id="mobile-title">Mobile large / tablette tactile</h2><span>Barre basse sans goutti&egrave;res</span></div>
+        <div class="window mobile-window">
+          <div class="mobile-top"><strong>Lisbonne, en famille</strong><span>⋯</span></div>
+          <div class="mobile-content">
+            <div class="mobile-map"></div>
+            <div class="mobile-actions"><span></span><span></span></div>
+            <div class="mobile-actions"><span></span><span></span></div>
+          </div>
+          <nav class="mobile-nav" aria-label="Navigation du voyage">
+            <div class="mobile-days">
+              <button class="mobile-day">J1 &middot; 12 oct.</button>
+              <button class="mobile-day is-active">J2 &middot; 13 oct.</button>
+              <button class="mobile-day">J3 &middot; 14 oct.</button>
+              <button class="mobile-day">J4 &middot; 15 oct.</button>
+              <button class="mobile-day">J5 &middot; 16 oct.</button>
+              <button class="mobile-day">J6 &middot; 17 oct.</button>
+              <button class="mobile-day">J7 &middot; 18 oct.</button>
+            </div>
+            <div class="mobile-primary">
+              <button>G&eacute;n&eacute;ral</button>
+              <button class="is-active">Jour 2</button>
+            </div>
+          </nav>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    document.querySelectorAll('.mobile-day').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.mobile-day').forEach((day) => day.classList.remove('is-active'));
+        button.classList.add('is-active');
+      });
+    });
+  </script>
+</body>
+</html>

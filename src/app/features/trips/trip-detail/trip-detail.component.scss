@@ -5,8 +5,8 @@
 // TripChromeService) touche les bords de l'écran (`left-0 right-0`), et doit
 // donc reproduire elle-même cette marge implicite qu'elle héritait en flux normal.
 .app-trip-tabs-nav-fixed {
-  left: 0.5rem;
-  right: 0.5rem;
+  left: 0;
+  right: 0;
 }
 
 // Le skeleton doit se superposer au contenu (invisible mais toujours dans
