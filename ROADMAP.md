@@ -25,7 +25,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - voir avec le skill UX ou mettre le bouton + ? 
 - il y a un moment ou l'affichage n'est pass bien entre la transition du mobile vers le desktop, quand on arrive après la largeur max de la bottom bar et de la liste de scool, des barres noire aapparaisent sur les coté, il faut trouver un moyen de soit faire la transition plus tôt vers le mode ordi, soit rajouter un mode, à trancher avec le skill ux
 - gérer proprement tous es patting et faire en sorte que la age ne soit pa visible au niveau des écats autour de la bar des jours 
-- **Vue Jour desktop — carte et commande de repli au scroll.** Garder « Réduire la carte » visible pendant le défilement du contenu et étendre la carte jusqu'en bas de la zone disponible, sans masquer la commande ni laisser de vide résiduel (problème illustré par les captures du 2026-10-30).
+- **Vue Jour desktop — carte escamotable et commande sticky implémentées (2026-10-30), vérification visuelle à confirmer.** Le bouton « Réduire la carte » reste sticky sous le chrome ; sa hauteur est réservée dans le calcul de la carte pour qu'elle occupe le reste de la zone disponible. Le rail d'ouverture et la grille multi-colonnes carte repliée sont également présents. Confirmation visuelle à faire dans une session authentifiée dédiée (`.env.e2e` absent).
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
