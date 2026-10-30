@@ -44,6 +44,14 @@ describe('computeOverviewCamera', () => {
     expect(result?.center.lng).toBeCloseTo(2.35);
     expect(result!.zoom).toBeLessThanOrEqual(13);
   });
+
+  it('applique un buffer de zoom configurable pour cadrer plus près sans rogner les points', () => {
+    const points = [{ latitude: 48.80, longitude: 2.30 }, { latitude: 48.90, longitude: 2.40 }];
+    const defaultView = computeOverviewCamera(points, { width: 400, height: 400 }, 13);
+    const closerView = computeOverviewCamera(points, { width: 400, height: 400 }, 13, 0.2);
+
+    expect(closerView!.zoom).toBeCloseTo(defaultView!.zoom + 0.2);
+  });
 });
 
 describe('estimateZoomDrop', () => {

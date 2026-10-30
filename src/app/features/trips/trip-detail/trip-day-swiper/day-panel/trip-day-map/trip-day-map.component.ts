@@ -631,7 +631,7 @@ export class TripDayMapComponent {
     const s = Math.min(1, Math.max(0, t));
     const easedPosition = 1 - Math.pow(1 - s, 3);
 
-    const overview = this.computeOverviewCamera(points) ?? {
+    const overview = this.computeOverviewCamera(points, 0.2) ?? {
       center: { lat: point.latitude, lng: point.longitude },
       zoom: this.focusZoom(),
     };
@@ -654,9 +654,9 @@ export class TripDayMapComponent {
    * la boucle de scroll. Public : réutilisé par `GeneralMapCinematicService`
    * pour la vue d'ensemble du pool (même calcul, mêmes points).
    */
-  computeOverviewCamera(points: DayMapPoint[]): { center: google.maps.LatLngLiteral; zoom: number } | null {
+  computeOverviewCamera(points: DayMapPoint[], overviewZoomBuffer = 0.4): { center: google.maps.LatLngLiteral; zoom: number } | null {
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
-    return computeOverviewCameraUtil(points, { width: rect.width, height: rect.height }, this.focusZoom());
+    return computeOverviewCameraUtil(points, { width: rect.width, height: rect.height }, this.focusZoom(), overviewZoomBuffer);
   }
 
   /**

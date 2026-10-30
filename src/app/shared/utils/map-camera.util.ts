@@ -12,6 +12,11 @@ export interface CameraPoint {
   longitude: number;
 }
 
+export interface CameraCenter {
+  lat: number;
+  lng: number;
+}
+
 export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
@@ -76,7 +81,8 @@ export function computeOverviewCamera(
   points: CameraPoint[],
   viewportPx: { width: number; height: number },
   focusZoom: number,
-): { center: google.maps.LatLngLiteral; zoom: number } | null {
+  overviewZoomBuffer = 0.4,
+): { center: CameraCenter; zoom: number } | null {
   if (!points.length) return null;
   if (points.length === 1) {
     return { center: { lat: points[0].latitude, lng: points[0].longitude }, zoom: focusZoom };
@@ -103,13 +109,11 @@ export function computeOverviewCamera(
   // que les coordonnées géographiques des points, pas la taille réelle des pins à l'écran
   // (numéro inclus) — sans cette marge les pins des points extrêmes débordent légèrement du
   // cadre visible.
-  const OVERVIEW_ZOOM_BUFFER = 0.4;
-
   // Ne jamais dézoomer plus que nécessaire : si les points sont proches, pas d'intérêt à zoomer
   // plus serré que le zoom de focus habituel.
   const zoom = Math.max(
     1,
-    Math.min(getBoundsZoomLevel(minLat, maxLat, minLng, maxLng, width, height) - OVERVIEW_ZOOM_BUFFER, focusZoom),
+    Math.min(getBoundsZoomLevel(minLat, maxLat, minLng, maxLng, width, height) - overviewZoomBuffer, focusZoom),
   );
 
   return { center, zoom };
