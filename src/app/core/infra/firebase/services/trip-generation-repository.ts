@@ -8,6 +8,8 @@ export abstract class TripGenerationRepository {
   abstract create(job: TripGeneration): Promise<void>;
   /** Soumet la sélection desktop à la seconde phase de planification IA. */
   abstract planSelectedActivities(tripId: string, candidateIds: string[]): Promise<void>;
+  /** Demande une nouvelle série mobile en conservant les activités déjà gardées ou rejetées. */
+  abstract requestMoreActivities(tripId: string, selectedIds: string[], rejectedIds: string[]): Promise<void>;
   /** "Régénérer tout" (§2.5) : repasse le job en `generating`, préférences éventuellement modifiées — la Cloud Function (déclenchée par cette écriture) recalcule `candidates`/`preview`. */
   abstract regenerate(tripId: string, preferences: TripAiPreferences): Promise<void>;
 }

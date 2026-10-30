@@ -37,91 +37,171 @@
       <span class="text-2xl font-semibold">Ton voyage proposé</span>
     </div>
 
-    <div class="flex flex-column gap-4">
-      @if (items().length === 0 && lodgingItems().length === 0) {
-        <p class="nt-text-muted">Aucune suggestion pour l'instant.</p>
-      }
+    <div class="flex flex-column gap-4" [class.preview__content--mobile-selection]="mobileSelectionMode()">
+      @if (mobileSelectionMode()) {
+        <section class="mobile-selection" aria-label="Sélection des activités">
+          <div class="mobile-selection__progress" aria-live="polite">
+            <span>{{ selectedActivityCount() }} gardée{{ selectedActivityCount() > 1 ? 's' : '' }}</span>
+            <span>{{ mobileQueue().length }} restante{{ mobileQueue().length > 1 ? 's' : '' }}</span>
+          </div>
 
-      @if (hasDayPlacement()) {
-        <p class="nt-text-muted text-xs">Horaires et enchaînements estimés par l'IA à partir de sa connaissance des lieux — à revérifier avant de partir.</p>
-        @for (day of dayGroups(); track day.dayIndex) {
-          <div class="flex flex-column gap-2">
-            <span class="preview-section-title">Jour {{ day.dayIndex + 1 }} — {{ day.date | date:'EEEE d MMMM' }}</span>
-            @for (item of day.items; track item.candidateId) {
+          @if (currentMobileCard(); as item) {
+            <article
+              class="mobile-selection__card"
+              [class.mobile-selection__card--dragging]="dragOffsetX() !== 0"
+              [style.transform]="mobileCardTransform()"
+              [attr.aria-label]="item.title"
+              (touchstart)="onCardTouchStart($event)"
+              (touchmove)="onCardTouchMove($event)"
+              (touchend)="onCardTouchEnd($event)">
+              <div class="mobile-selection__photo">
+                @if (item.photoRefs[0] && (getPhotoUrl$(item.photoRefs[0]) | async); as photoUrl) {
+                  <img [src]="photoUrl" [alt]="item.title" />
+                } @else {
+                  <div class="mobile-selection__photo-fallback"><i class="pi pi-map-marker" aria-hidden="true"></i></div>
+                }
+                <div class="mobile-selection__stamp mobile-selection__stamp--keep" [class.mobile-selection__stamp--visible]="dragOffsetX() > 28 || swipeExit() === 'keep'">
+                  <i class="pi pi-check" aria-hidden="true"></i><span>Garder</span>
+                </div>
+                <div class="mobile-selection__stamp mobile-selection__stamp--reject" [class.mobile-selection__stamp--visible]="dragOffsetX() < -28 || swipeExit() === 'reject'">
+                  <i class="pi pi-times" aria-hidden="true"></i><span>Passer</span>
+                </div>
+              </div>
+              <div class="mobile-selection__details">
+                <div class="flex align-items-start justify-content-between gap-2">
+                  <h2>{{ item.title }}</h2>
+                  <span class="mobile-selection__interest">{{ item.interest }}</span>
+                </div>
+                @if (item.address) {
+                  <p class="mobile-selection__address">{{ item.address }}</p>
+                }
+                <p class="mobile-selection__reason">{{ item.reason }}</p>
+                <div class="mobile-selection__meta">
+                  @if (item.estimatedDurationMinutes) { <span>{{ item.estimatedDurationMinutes }} min</span> }
+                  @if (item.estimatedPriceEur !== undefined) { <span>{{ item.estimatedPriceEur }} €</span> }
+                </div>
+              </div>
+            </article>
+
+            <div class="mobile-selection__actions">
+              <app-button label="Passer" severity="secondary" [outlined]="true" icon="pi pi-times" (click)="decideCurrentActivity('reject')" />
+              <app-button label="Garder" icon="pi pi-heart" (click)="decideCurrentActivity('keep')" />
+            </div>
+          } @else if (moreSuggestionsExhausted()) {
+            <div class="mobile-selection__empty">
+              <p>Il n’y a pas d’autres activités à proposer pour le moment.</p>
+            </div>
+          } @else {
+            <div class="mobile-selection__more">
+              <app-button label="Chercher d’autres activités" icon="pi pi-refresh" [loading]="requestingMore()" (click)="requestMoreActivities()" />
+              @if (moreError()) { <p class="nt-text-danger" role="alert">{{ moreError() }}</p> }
+            </div>
+          }
+
+          @if (longTrip()) {
+            <section class="mobile-selection__kept" aria-label="Activités gardées">
+              <h2>Activités gardées</h2>
+              @for (kept of keptActivities(); track kept.candidateId) {
+                <div class="mobile-selection__kept-row">
+                  <span>{{ kept.title }}</span>
+                  <button type="button" class="preview-item__remove" [attr.aria-label]="'Retirer ' + kept.title" (click)="removeKeptActivity(kept.candidateId)">
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </div>
+              } @empty {
+                <p class="nt-text-muted">Aucune activité gardée.</p>
+              }
+            </section>
+          }
+        </section>
+      } @else {
+        @if (items().length === 0 && lodgingItems().length === 0) {
+          <p class="nt-text-muted">Aucune suggestion pour l'instant.</p>
+        }
+
+        @if (hasDayPlacement()) {
+          <p class="nt-text-muted text-xs">Horaires et enchaînements estimés par l'IA à partir de sa connaissance des lieux — à revérifier avant de partir.</p>
+          @for (day of dayGroups(); track day.dayIndex) {
+            <div class="flex flex-column gap-2">
+              <span class="preview-section-title">Jour {{ day.dayIndex + 1 }} — {{ day.date | date:'EEEE d MMMM' }}</span>
+              @for (item of day.items; track item.candidateId) {
+                <ng-container [ngTemplateOutlet]="activityRow" [ngTemplateOutletContext]="{ item }" />
+              }
+            </div>
+          }
+        } @else {
+          <div class="flex flex-column gap-3">
+            @for (item of items(); track item.candidateId) {
               <ng-container [ngTemplateOutlet]="activityRow" [ngTemplateOutletContext]="{ item }" />
             }
           </div>
         }
-      } @else {
-        <div class="flex flex-column gap-3">
-          @for (item of items(); track item.candidateId) {
-            <ng-container [ngTemplateOutlet]="activityRow" [ngTemplateOutletContext]="{ item }" />
-          }
-        </div>
-      }
 
-      @if (!selectingActivities() && lodgingByCity().length > 0) {
-        <div class="flex flex-column gap-2">
-          <span class="preview-section-title">Logements</span>
-          @for (group of lodgingByCity(); track group.city) {
-            @for (item of group.items; track item.candidateId) {
-              <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
-                <app-checkbox [checked]="!item.excluded" (checkedChange)="toggleExcludeLodging(item.candidateId)" />
-                <div class="flex flex-column flex-1 min-w-0 gap-1">
-                  <span class="font-semibold">{{ item.title }}</span>
-                  @if (item.address) {
-                    <span class="nt-text-muted text-sm">{{ item.address }}</span>
-                  }
-                  <span class="nt-text-muted text-xs">{{ item.reason }}</span>
+        @if (!selectingActivities() && lodgingByCity().length > 0) {
+          <div class="flex flex-column gap-2">
+            <span class="preview-section-title">Logements</span>
+            @for (group of lodgingByCity(); track group.city) {
+              @for (item of group.items; track item.candidateId) {
+                <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
+                  <app-checkbox [checked]="!item.excluded" (checkedChange)="toggleExcludeLodging(item.candidateId)" />
+                  <div class="flex flex-column flex-1 min-w-0 gap-1">
+                    <span class="font-semibold">{{ item.title }}</span>
+                    @if (item.address) {
+                      <span class="nt-text-muted text-sm">{{ item.address }}</span>
+                    }
+                    <span class="nt-text-muted text-xs">{{ item.reason }}</span>
+                  </div>
+                  <app-button
+                    label="Remplacer"
+                    severity="secondary"
+                    [outlined]="true"
+                    size="small"
+                    class="flex-shrink-0"
+                    [disabled]="!canReplaceLodging(item)"
+                    (click)="replaceLodging(item.candidateId)"
+                  />
                 </div>
-                <app-button
-                  label="Remplacer"
-                  severity="secondary"
-                  [outlined]="true"
-                  size="small"
-                  class="flex-shrink-0"
-                  [disabled]="!canReplaceLodging(item)"
-                  (click)="replaceLodging(item.candidateId)"
-                />
+              }
+            }
+          </div>
+        }
+
+        @if (!selectingActivities() && transportSegments().length > 0) {
+          <div class="flex flex-column gap-2">
+            <span class="preview-section-title">Trajets estimés</span>
+            @for (segment of transportSegments(); track segment.id) {
+              <div class="preview-item flex flex-column gap-1">
+                <span class="font-semibold">{{ segment.fromCity }} → {{ segment.toCity }}</span>
+                <span class="nt-text-muted text-xs">{{ segment.estimatedLabel }}</span>
               </div>
             }
-          }
-        </div>
-      }
+          </div>
+        }
 
-      @if (!selectingActivities() && transportSegments().length > 0) {
-        <div class="flex flex-column gap-2">
-          <span class="preview-section-title">Trajets estimés</span>
-          @for (segment of transportSegments(); track segment.id) {
-            <div class="preview-item flex flex-column gap-1">
-              <span class="font-semibold">{{ segment.fromCity }} → {{ segment.toCity }}</span>
-              <span class="nt-text-muted text-xs">{{ segment.estimatedLabel }}</span>
-            </div>
-          }
-        </div>
-      }
-
-      @if (!selectingActivities() && generalNotesItems().length > 0) {
-        <div class="flex flex-column gap-2">
-          <span class="preview-section-title">Notes de voyage</span>
-          @for (note of generalNotesItems(); track note.id) {
-            <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="note.excluded">
-              <app-checkbox [checked]="!note.excluded" (checkedChange)="toggleExcludeGeneralNote(note.id)" />
-              <div class="flex flex-column flex-1 min-w-0 gap-1">
-                <span class="font-semibold">{{ note.title }}</span>
-                @for (point of note.points; track point) {
-                  <span class="nt-text-muted text-xs">• {{ point }}</span>
-                }
+        @if (!selectingActivities() && generalNotesItems().length > 0) {
+          <div class="flex flex-column gap-2">
+            <span class="preview-section-title">Notes de voyage</span>
+            @for (note of generalNotesItems(); track note.id) {
+              <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="note.excluded">
+                <app-checkbox [checked]="!note.excluded" (checkedChange)="toggleExcludeGeneralNote(note.id)" />
+                <div class="flex flex-column flex-1 min-w-0 gap-1">
+                  <span class="font-semibold">{{ note.title }}</span>
+                  @for (point of note.points; track point) {
+                    <span class="nt-text-muted text-xs">• {{ point }}</span>
+                  }
+                </div>
               </div>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       }
     </div>
 
-    <div cardFooter class="nt-footer-actions justify-content-end gap-2 pt-2 preview__footer">
-      <app-button label="Régénérer tout" severity="secondary" [outlined]="true" (click)="regenerateAll()" />
-      <app-button label="Valider" icon="pi pi-check" [loading]="validating()" [disabled]="!canValidate()" (click)="validate()" />
+    <div cardFooter class="nt-footer-actions justify-content-end gap-2 pt-2 preview__footer" [class.preview__footer--mobile-selection]="mobileSelectionMode()">
+      @if (!mobileSelectionMode()) {
+        <app-button label="Régénérer tout" severity="secondary" [outlined]="true" (click)="regenerateAll()" />
+      }
+      <app-button [label]="mobileSelectionMode() ? 'Valider (' + selectedActivityCount() + ')' : 'Valider'" icon="pi pi-check" [loading]="validating()" [disabled]="!canValidate() || requestingMore()" (click)="validate()" />
     </div>
   </app-card>
 </div>

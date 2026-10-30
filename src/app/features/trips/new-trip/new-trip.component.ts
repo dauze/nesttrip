@@ -357,7 +357,7 @@ export class NewTripComponent {
     const job: TripGeneration = {
       tripId: trip.id,
       status: 'generating',
-      desktopSelectionFlow: !this.viewport.isMobile(),
+      activitySelectionFlow: true,
       // `cities`/`multiCity` du champ "plusieurs destinations ?", hoisté hors
       // de ce panneau (ROADMAP.md "### UI") — plus édités dans
       // AiTripPreferencesComponent, reversés ici depuis `additionalCities`.

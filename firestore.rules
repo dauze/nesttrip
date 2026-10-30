@@ -84,16 +84,24 @@ service cloud.firestore {
         && (
           (
             request.resource.data.status == 'generating'
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'preferences', 'candidates', 'preview', 'lodgingCandidates', 'lodgingPreview', 'transportSegments', 'selectedCandidateIds', 'updatedAt'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'preferences', 'candidates', 'preview', 'lodgingCandidates', 'lodgingPreview', 'transportSegments', 'selectedCandidateIds', 'rejectedCandidateIds', 'moreSuggestionsExhausted', 'updatedAt'])
           )
           || (
             resource.data.status == 'ready_for_selection'
-            && resource.data.desktopSelectionFlow == true
+            && (resource.data.activitySelectionFlow == true || resource.data.desktopSelectionFlow == true)
             && resource.data.preferences.assistanceLevel in ['activities_day', 'full_plan']
             && request.resource.data.status == 'planning'
             && request.resource.data.selectedCandidateIds is list
             && request.resource.data.selectedCandidateIds.size() > 0
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'selectedCandidateIds', 'updatedAt'])
+          )
+          || (
+            resource.data.status == 'ready_for_selection'
+            && (resource.data.activitySelectionFlow == true || resource.data.desktopSelectionFlow == true)
+            && request.resource.data.status == 'loading_more'
+            && request.resource.data.selectedCandidateIds is list
+            && request.resource.data.rejectedCandidateIds is list
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'selectedCandidateIds', 'rejectedCandidateIds', 'updatedAt'])
           )
         );
       allow delete: if false;

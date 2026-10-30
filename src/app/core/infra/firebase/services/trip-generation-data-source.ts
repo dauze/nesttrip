@@ -14,7 +14,7 @@ import { TripGenerationRepository } from './trip-generation-repository';
  * (déclenche la Cloud Function `onDocumentWritten`, voir functions/src/
  * trip-generation/generate-trip.trigger.ts), puis mis à jour côté serveur
  * (Admin SDK) jusqu'à `ready_for_selection`/`ready_for_preview`/`failed`.
- * Le client ne soumet que les IDs choisis pour lancer la planification desktop.
+ * Le client ne soumet que les IDs choisis/refusés pour le parcours de sélection.
  */
 @Injectable({ providedIn: 'root' })
 export class TripGenerationDataSource extends TripGenerationRepository {
@@ -46,6 +46,15 @@ export class TripGenerationDataSource extends TripGenerationRepository {
     });
   }
 
+  requestMoreActivities(tripId: string, selectedIds: string[], rejectedIds: string[]): Promise<void> {
+    return updateDoc(doc(this.db, 'tripGenerations', tripId), {
+      status: 'loading_more',
+      selectedCandidateIds: selectedIds,
+      rejectedCandidateIds: rejectedIds,
+      updatedAt: Date.now(),
+    });
+  }
+
   regenerate(tripId: string, preferences: TripAiPreferences): Promise<void> {
     return updateDoc(doc(this.db, 'tripGenerations', tripId), {
       status: 'generating',
@@ -53,6 +62,8 @@ export class TripGenerationDataSource extends TripGenerationRepository {
       candidates: [],
       preview: [],
       selectedCandidateIds: [],
+      rejectedCandidateIds: [],
+      moreSuggestionsExhausted: false,
       lodgingCandidates: [],
       lodgingPreview: [],
       transportSegments: [],

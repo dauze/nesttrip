@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { AsyncPipe, DatePipe, NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CardComponent } from '@app/shared/components/layout/card/card.component';
@@ -17,6 +17,8 @@ import { ActivityType } from '@core/enums/activites-type.enum';
 import { BookingStatus } from '@core/enums/booking.status';
 import { NotesType } from '@core/enums/notes.type';
 import { Item } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/notes/notes.model';
+import { GooglePhotoService } from '@app/core/services/api/google-photo.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 
 interface DayGroup {
   dayIndex: number;
@@ -85,7 +87,7 @@ const INTEREST_TO_ACTIVITY_TYPE: Record<Interest, ActivityType> = {
   selector: 'app-trip-generation-preview',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardComponent, ButtonComponent, CheckboxComponent, NgTemplateOutlet, DatePipe],
+  imports: [CardComponent, ButtonComponent, CheckboxComponent, NgTemplateOutlet, DatePipe, AsyncPipe],
   templateUrl: './preview.component.html',
   styleUrl: './preview.component.scss',
 })
@@ -94,6 +96,8 @@ export class PreviewComponent {
   private readonly router = inject(Router);
   private readonly tripGenerationRepository = inject(TripGenerationRepository);
   private readonly tripFacade = inject(TripFacade);
+  private readonly viewport = inject(ViewportService);
+  private readonly photoService = inject(GooglePhotoService);
 
   protected readonly tripId = this.route.snapshot.paramMap.get('id')!;
 
@@ -104,11 +108,38 @@ export class PreviewComponent {
   protected readonly transportSegments = signal<GeneratedTransportSegment[]>([]);
   protected readonly generalNotesItems = signal<GeneratedGeneralNote[]>([]);
   protected readonly validating = signal(false);
+  protected readonly keptCandidateIds = signal<string[]>([]);
+  protected readonly rejectedCandidateIds = signal<string[]>([]);
+  protected readonly pendingMobileCandidateIds = signal<string[]>([]);
+  protected readonly requestingMore = signal(false);
+  protected readonly moreError = signal<string | null>(null);
+  protected readonly dragOffsetX = signal(0);
+  protected readonly swipeExit = signal<'keep' | 'reject' | null>(null);
   private lastSyncedStatus: string | null = null;
+  private touchStartX = 0;
+  private touchStartY = 0;
 
   protected readonly selectingActivities = computed(() => this.job()?.status === 'ready_for_selection');
-  protected readonly desktopSelectionFlow = computed(() => this.job()?.desktopSelectionFlow ?? false);
-  protected readonly selectedActivityCount = computed(() => this.items().filter((item) => !item.excluded).length);
+  protected readonly activitySelectionFlow = computed(() => {
+    const job = this.job();
+    return job?.activitySelectionFlow ?? job?.desktopSelectionFlow ?? false;
+  });
+  protected readonly desktopSelectionFlow = computed(() => this.activitySelectionFlow() && !this.viewport.isMobileChrome());
+  protected readonly mobileSelectionMode = computed(() => this.activitySelectionFlow() && this.viewport.isMobileChrome() && this.selectingActivities());
+  protected readonly mobileQueue = computed(() => {
+    const pendingIds = new Set(this.pendingMobileCandidateIds());
+    return this.items().filter((item) => pendingIds.has(item.candidateId));
+  });
+  protected readonly currentMobileCard = computed(() => this.mobileQueue()[0] ?? null);
+  protected readonly keptActivities = computed(() => {
+    const keptIds = new Set(this.keptCandidateIds());
+    return this.items().filter((item) => keptIds.has(item.candidateId));
+  });
+  protected readonly longTrip = computed(() => (this.job()?.tripDayDates.length ?? 0) > 15);
+  protected readonly moreSuggestionsExhausted = computed(() => this.job()?.moreSuggestionsExhausted ?? false);
+  protected readonly selectedActivityCount = computed(() => this.mobileSelectionMode()
+    ? this.keptCandidateIds().length
+    : this.items().filter((item) => !item.excluded).length);
   protected readonly canValidate = computed(() =>
     !this.selectingActivities() ||
     this.job()?.preferences.assistanceLevel === 'activities_only' ||
@@ -155,6 +186,16 @@ export class PreviewComponent {
         this.lodgingItems.set(job.lodgingPreview);
         this.transportSegments.set(job.transportSegments);
         this.generalNotesItems.set(job.generalNotes);
+        if (job.status === 'ready_for_selection' && (job.activitySelectionFlow || job.desktopSelectionFlow)) {
+          const keptIds = job.selectedCandidateIds ?? [];
+          const rejectedIds = job.rejectedCandidateIds ?? [];
+          const reviewedIds = new Set([...keptIds, ...rejectedIds]);
+          this.keptCandidateIds.set(keptIds);
+          this.rejectedCandidateIds.set(rejectedIds);
+          this.pendingMobileCandidateIds.set(job.preview
+            .map((item) => item.candidateId)
+            .filter((id) => !reviewedIds.has(id)));
+        }
       }
       this.lastSyncedStatus = job.status;
     });
@@ -168,6 +209,90 @@ export class PreviewComponent {
 
   protected removeActivity(candidateId: string): void {
     this.items.update((list) => list.filter((item) => item.candidateId !== candidateId));
+  }
+
+  protected onCardTouchStart(event: TouchEvent): void {
+    const touch = event.changedTouches[0];
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+    this.dragOffsetX.set(0);
+  }
+
+  protected onCardTouchMove(event: TouchEvent): void {
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+    if (Math.abs(deltaX) > Math.abs(deltaY)) this.dragOffsetX.set(deltaX);
+  }
+
+  protected onCardTouchEnd(event: TouchEvent): void {
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+    if (Math.abs(deltaX) >= 80 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      this.decideCurrentActivity(deltaX > 0 ? 'keep' : 'reject');
+    } else {
+      this.dragOffsetX.set(0);
+    }
+  }
+
+  protected decideCurrentActivity(decision: 'keep' | 'reject'): void {
+    const item = this.currentMobileCard();
+    if (!item || this.swipeExit()) return;
+
+    this.swipeExit.set(decision);
+    this.dragOffsetX.set(0);
+    setTimeout(() => {
+      if (decision === 'keep') {
+        this.keptCandidateIds.update((ids) => ids.includes(item.candidateId) ? ids : [...ids, item.candidateId]);
+        this.items.update((items) => items.map((candidate) => candidate.candidateId === item.candidateId
+          ? { ...candidate, excluded: false }
+          : candidate));
+      } else {
+        this.rejectedCandidateIds.update((ids) => ids.includes(item.candidateId) ? ids : [...ids, item.candidateId]);
+        this.items.update((items) => items.map((candidate) => candidate.candidateId === item.candidateId
+          ? { ...candidate, excluded: true }
+          : candidate));
+      }
+      this.pendingMobileCandidateIds.update((ids) => ids.filter((id) => id !== item.candidateId));
+      this.dragOffsetX.set(0);
+      this.swipeExit.set(null);
+    }, 180);
+  }
+
+  protected removeKeptActivity(candidateId: string): void {
+    this.keptCandidateIds.update((ids) => ids.filter((id) => id !== candidateId));
+    this.rejectedCandidateIds.update((ids) => ids.includes(candidateId) ? ids : [...ids, candidateId]);
+    this.items.update((items) => items.map((item) => item.candidateId === candidateId ? { ...item, excluded: true } : item));
+  }
+
+  protected requestMoreActivities(): void {
+    if (!this.mobileSelectionMode() || this.mobileQueue().length > 0 || this.moreSuggestionsExhausted() || this.requestingMore()) return;
+
+    this.requestingMore.set(true);
+    this.moreError.set(null);
+    this.tripGenerationRepository.requestMoreActivities(
+      this.tripId,
+      this.keptCandidateIds(),
+      this.rejectedCandidateIds(),
+    )
+      .then(() => this.router.navigate([`/trips/${this.tripId}/generating`]))
+      .catch((err) => {
+        console.error('[PreviewComponent] loading more activities error', err);
+        this.requestingMore.set(false);
+        this.moreError.set('Impossible de charger d’autres activités. Réessaie.');
+      });
+  }
+
+  protected mobileCardTransform(): string {
+    const exit = this.swipeExit();
+    if (exit === 'keep') return 'translate3d(110vw, 0, 0) rotate(16deg)';
+    if (exit === 'reject') return 'translate3d(-110vw, 0, 0) rotate(-16deg)';
+    return `translate3d(${this.dragOffsetX()}px, 0, 0) rotate(${this.dragOffsetX() / 18}deg)`;
+  }
+
+  protected getPhotoUrl$(ref: string) {
+    return this.photoService.getPhotoUrl$(ref, 900);
   }
 
   /** Pioche un autre candidat du même centre d'intérêt dans `job().candidates` (déjà en cache) — no-op si épuisé (voir `canReplace`, le bouton est désactivé dans ce cas). */
@@ -239,7 +364,9 @@ export class PreviewComponent {
     if (!job) return;
 
     if (job.status === 'ready_for_selection' && job.preferences.assistanceLevel !== 'activities_only') {
-      const candidateIds = this.items().filter((item) => !item.excluded).map((item) => item.candidateId);
+      const candidateIds = this.mobileSelectionMode()
+        ? this.keptCandidateIds()
+        : this.items().filter((item) => !item.excluded).map((item) => item.candidateId);
       if (candidateIds.length === 0) return;
       this.validating.set(true);
       this.tripGenerationRepository.planSelectedActivities(this.tripId, candidateIds)
@@ -255,8 +382,9 @@ export class PreviewComponent {
 
     const byDay = new Map<number, GeneratedActivityCandidate[]>();
     const withoutDay: GeneratedActivityCandidate[] = [];
+    const selectedIds = this.mobileSelectionMode() ? new Set(this.keptCandidateIds()) : null;
     for (const item of this.items()) {
-      if (item.excluded) continue;
+      if (selectedIds ? !selectedIds.has(item.candidateId) : item.excluded) continue;
       if (item.day !== undefined && job.tripDayDates[item.day] !== undefined) {
         const bucket = byDay.get(item.day) ?? [];
         bucket.push(item);

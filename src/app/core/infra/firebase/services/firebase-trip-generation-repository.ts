@@ -21,6 +21,10 @@ export class FirebaseTripGenerationRepository extends TripGenerationRepository {
     return this.dataSource.planSelectedActivities(tripId, candidateIds);
   }
 
+  requestMoreActivities(tripId: string, selectedIds: string[], rejectedIds: string[]): Promise<void> {
+    return this.dataSource.requestMoreActivities(tripId, selectedIds, rejectedIds);
+  }
+
   regenerate(tripId: string, preferences: TripAiPreferences): Promise<void> {
     return this.dataSource.regenerate(tripId, preferences);
   }

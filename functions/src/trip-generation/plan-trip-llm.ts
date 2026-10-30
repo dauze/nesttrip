@@ -180,6 +180,7 @@ function buildPrompt(
   numDays: number | undefined,
   targetSize: number,
   wantLodging: boolean,
+  excludedActivityTitles: string[],
 ): string {
   const interestLabels = preferences.interests.length ? preferences.interests.join(', ') : 'tous (aucune préférence particulière)';
   const cityNames = cities.map((c) => c.ville);
@@ -215,6 +216,10 @@ function buildPrompt(
       : '',
   ].filter(Boolean).join('\n');
   sections.push(constraints);
+
+  if (excludedActivityTitles.length > 0) {
+    sections.push(`Ces activités ont déjà été proposées dans ce voyage : ${excludedActivityTitles.join(' ; ')}. Ne les propose pas à nouveau, même sous un nom légèrement différent.`);
+  }
 
   if (preferences.freeText) {
     sections.push(
@@ -394,6 +399,7 @@ export async function planTripLlm(
   cities: GeocodedCity[],
   numDays: number | undefined,
   apiKey: string,
+  excludedActivityTitles: string[] = [],
 ): Promise<{ activities: PlannedActivity[]; lodging: PlannedLodging[]; dayStartHour?: number; dayEndHour?: number; generalNotes: PlannedGeneralNote[] }> {
   // + MEAL_SLOTS_PER_DAY : doit rester en lockstep avec perDayTarget dans buildPrompt (voir sa doc).
   const targetSize = numDays
@@ -405,7 +411,7 @@ export async function planTripLlm(
   const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: 'gemini-flash-latest',
-    contents: buildPrompt(cities, preferences, numDays, targetSize, wantLodging),
+    contents: buildPrompt(cities, preferences, numDays, targetSize, wantLodging, excludedActivityTitles),
     config: {
       responseMimeType: 'application/json',
       responseSchema: buildResponseSchema(cityNames),

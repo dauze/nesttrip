@@ -7,10 +7,11 @@ import { selectActivitiesStub } from './select-activities-stub';
 import { selectActivitiesLlm } from './select-activities-llm';
 import { planTripLlm, PlannedGeneralNote } from './plan-trip-llm';
 import { enrichActivitiesWithPlaces, enrichLodgingWithPlaces } from './enrich-activities-with-places';
-import { applyBudgetCap } from './apply-budget-cap';
+import { applyBudgetCap, remainingActivityBudgetEur } from './apply-budget-cap';
 import { geocodeCity, GeocodedCity } from './geocode-city';
 import { estimateTransportSegment } from './transport-estimate';
 import { planSelectedActivities } from './plan-selected-activities';
+import { onlyNewActivityCandidates } from './only-new-activity-candidates';
 import { GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate, TripAiPreferences, TripGenerationDoc } from './trip-generation.dto';
 
 /** Résout PlannedGeneralNote.relatedActivityIndex (index dans `planned.activities`, voir plan-trip-llm.ts) vers le candidateId stable via `candidateIdByPlannedIndex` (voir enrichActivitiesWithPlaces) — index absent/hors bornes/jamais résolu par Google ⇒ note créée SANS lien plutôt que perdue. */
@@ -50,6 +51,10 @@ async function selectActivities(
     console.error('selectActivitiesLlm error, fallback sur le stub:', err);
     return selectActivitiesStub(candidates, preferences, numDays);
   }
+}
+
+function hasActivitySelectionFlow(doc: TripGenerationDoc): boolean {
+  return doc.activitySelectionFlow ?? doc.desktopSelectionFlow ?? false;
 }
 
 /** Résultat du chemin primaire (`planTripLlm` + enrichissement) — `lodging` est `null` si ce chemin n'a rien produit d'exploitable pour les logements (hors `full_plan`, 0 logement retrouvé par Google...), auquel cas l'appelant retombe sur `buildLodging` (repli historique). */
@@ -97,7 +102,7 @@ async function generateActivities(
   apiKey: string,
   geminiApiKey: string | undefined,
 ): Promise<ActivityGenerationResult | { error: string }> {
-  const deferPlanning = doc.desktopSelectionFlow && doc.preferences.assistanceLevel !== 'activities_only';
+  const deferPlanning = hasActivitySelectionFlow(doc) && doc.preferences.assistanceLevel !== 'activities_only';
   const numDays = doc.preferences.assistanceLevel === 'activities_only' || deferPlanning ? undefined : doc.tripDayDates.length;
 
   if (geminiApiKey) {
@@ -133,6 +138,55 @@ async function generateActivities(
   return { candidates, preview, lodging: null, generalNotes: [] };
 }
 
+async function generateMoreActivities(
+  doc: TripGenerationDoc,
+  apiKey: string,
+  geminiApiKey: string | undefined,
+): Promise<{ candidates: GeneratedActivityCandidate[]; preview: GeneratedActivityCandidate[] }> {
+  const shownCandidateIds = new Set(doc.preview.map((candidate) => candidate.candidateId));
+  const cachedBatch = doc.candidates.filter((candidate) => !shownCandidateIds.has(candidate.candidateId)).slice(0, 10);
+  if (cachedBatch.length > 0) return { candidates: [], preview: cachedBatch };
+
+  const cities = await resolveCities(doc, apiKey);
+  const knownPlaceIds = doc.candidates.map((candidate) => candidate.placeId);
+  const remainingBudget = remainingActivityBudgetEur(
+    doc.candidates,
+    doc.selectedCandidateIds ?? [],
+    doc.preferences.budgetMaxEur,
+  );
+  const activityPreferences: TripAiPreferences = {
+    ...doc.preferences,
+    assistanceLevel: 'activities_only',
+    ...(remainingBudget !== undefined ? { budgetMaxEur: remainingBudget } : {}),
+  };
+
+  if (geminiApiKey) {
+    try {
+      const planned = await planTripLlm(
+        activityPreferences,
+        cities,
+        undefined,
+        geminiApiKey,
+        doc.candidates.map((candidate) => candidate.title),
+      );
+      const { candidates } = await enrichActivitiesWithPlaces(planned.activities, cities, apiKey);
+      const freshCandidates = onlyNewActivityCandidates(candidates, knownPlaceIds);
+      if (freshCandidates.length > 0) return { candidates: freshCandidates, preview: freshCandidates };
+    } catch (err) {
+      console.error('generateMoreActivities planTripLlm error, repli sur Places:', err);
+    }
+  }
+
+  const results = await Promise.all(
+    cities.map((city) => searchActivityCandidates({ latitude: city.latitude, longitude: city.longitude }, doc.preferences.interests, apiKey)),
+  );
+  const candidates = onlyNewActivityCandidates(dedupeByPlaceId(results.flat()), knownPlaceIds);
+  if (candidates.length === 0) return { candidates: [], preview: [] };
+
+  const preview = await selectActivities(candidates, activityPreferences, undefined, geminiApiKey);
+  return { candidates, preview };
+}
+
 /**
  * Résout la liste des villes à traiter (§4.1) : la destination principale
  * toujours, + les villes additionnelles (`preferences.cities`, simples
@@ -163,8 +217,8 @@ async function resolveCities(doc: TripGenerationDoc, apiKey: string): Promise<Ge
 /**
  * Pipeline de génération (process-creation-trip-ia.md §4) — déclenché par
  * toute écriture sur `tripGenerations/{tripId}` dont le document résultant a
- * `status: 'generating'` (création/régénération) ou `status: 'planning'`
- * (seconde phase desktop après sélection).
+ * `status: 'generating'` (création/régénération), `status: 'loading_more'`
+ * (lot mobile supplémentaire), ou `status: 'planning'` (seconde phase).
  *
  * `onDocumentWritten` (pas `onDocumentCreated`) est nécessaire pour ça, mais
  * ce même trigger se redéclenche sur SES PROPRES écritures de fin (statut
@@ -192,15 +246,59 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?
       if (!after?.exists) return;
 
       const doc = after.data() as TripGenerationDoc;
-      if (doc.status !== 'generating' && doc.status !== 'planning') return;
+      if (doc.status !== 'generating' && doc.status !== 'loading_more' && doc.status !== 'planning') return;
 
       const tripId = event.params.tripId;
       const db = admin.firestore();
       const apiKey = googleApiKey.value();
 
       try {
+        if (doc.status === 'loading_more') {
+          if (!hasActivitySelectionFlow(doc)) throw new Error('Transition de chargement invalide pour ce job.');
+
+          const selectedIds = doc.selectedCandidateIds ?? [];
+          const rejectedIds = doc.rejectedCandidateIds ?? [];
+          const knownIds = new Set(doc.candidates.map((candidate) => candidate.candidateId));
+          const selectedSet = new Set(selectedIds);
+          if (
+            selectedSet.size !== selectedIds.length ||
+            new Set(rejectedIds).size !== rejectedIds.length ||
+            selectedIds.some((id) => !knownIds.has(id)) ||
+            rejectedIds.some((id) => !knownIds.has(id) || selectedSet.has(id))
+          ) {
+            throw new Error('La sélection mobile des activités est invalide.');
+          }
+
+          const more = await generateMoreActivities(doc, apiKey, geminiApiKey?.value());
+          const newCandidates = onlyNewActivityCandidates(more.candidates, doc.candidates.map((candidate) => candidate.placeId));
+          const knownCandidateIds = new Set([
+            ...doc.candidates.map((candidate) => candidate.candidateId),
+            ...newCandidates.map((candidate) => candidate.candidateId),
+          ]);
+          const shownCandidateIds = new Set(doc.preview.map((candidate) => candidate.candidateId));
+          const newPreview = applyBudgetCap(
+            more.preview.filter((candidate) => knownCandidateIds.has(candidate.candidateId) && !shownCandidateIds.has(candidate.candidateId)),
+            remainingActivityBudgetEur(doc.candidates, selectedIds, doc.preferences.budgetMaxEur),
+          );
+          const rejectedSet = new Set(rejectedIds);
+
+          await db.doc(`tripGenerations/${tripId}`).update({
+            status: 'ready_for_selection',
+            candidates: [...doc.candidates, ...newCandidates],
+            preview: [
+              ...doc.preview.map((candidate) => ({ ...candidate, excluded: rejectedSet.has(candidate.candidateId) })),
+              ...newPreview,
+            ],
+            selectedCandidateIds: selectedIds,
+            rejectedCandidateIds: rejectedIds,
+            moreSuggestionsExhausted: newPreview.length === 0,
+            updatedAt: Date.now(),
+          });
+          return;
+        }
+
         if (doc.status === 'planning') {
-          if (!doc.desktopSelectionFlow || doc.preferences.assistanceLevel === 'activities_only') {
+          if (!hasActivitySelectionFlow(doc) || doc.preferences.assistanceLevel === 'activities_only') {
             throw new Error('Transition de planification invalide pour ce job.');
           }
 
@@ -259,7 +357,7 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?
           : [];
 
         await db.doc(`tripGenerations/${tripId}`).update({
-          status: doc.desktopSelectionFlow ? 'ready_for_selection' : 'ready_for_preview',
+          status: hasActivitySelectionFlow(doc) ? 'ready_for_selection' : 'ready_for_preview',
           candidates,
           preview,
           lodgingCandidates,

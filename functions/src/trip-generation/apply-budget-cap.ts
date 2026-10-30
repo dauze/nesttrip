@@ -36,3 +36,16 @@ export function applyBudgetCap(
 
   return activities.filter((a) => !excluded.has(a.candidateId));
 }
+
+export function remainingActivityBudgetEur(
+  candidates: GeneratedActivityCandidate[],
+  selectedCandidateIds: string[],
+  budgetMaxEur: number | undefined,
+): number | undefined {
+  if (budgetMaxEur === undefined) return undefined;
+  const selectedIds = new Set(selectedCandidateIds);
+  const selectedCost = candidates
+    .filter((candidate) => selectedIds.has(candidate.candidateId))
+    .reduce((sum, candidate) => sum + (candidate.estimatedPriceEur ?? 0), 0);
+  return Math.max(0, budgetMaxEur - selectedCost);
+}

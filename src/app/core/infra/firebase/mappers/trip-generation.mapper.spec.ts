@@ -128,8 +128,11 @@ describe('trip-generation.mapper', () => {
     it('est symétrique (fromFb ∘ toFb) sur un job complet (activité placée sur un jour, logement, transport, timeOfDay, heures de journée, notes générales liée/non liée)', () => {
       const job: TripGeneration = {
         ...baseJob,
+        activitySelectionFlow: true,
         desktopSelectionFlow: true,
         selectedCandidateIds: ['c1'],
+        rejectedCandidateIds: ['c2'],
+        moreSuggestionsExhausted: false,
         dayStartHour: 11,
         dayEndHour: 2,
         preview: [

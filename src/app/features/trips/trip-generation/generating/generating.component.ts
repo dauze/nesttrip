@@ -42,8 +42,9 @@ export class GeneratingComponent {
 
   protected readonly steps = computed<string[]>(() => {
     const job = this.job();
+    if (job?.status === 'loading_more') return ["Recherche d'autres activités"];
     if (job?.status === 'planning') return ['Planification des activités sélectionnées'];
-    if (job?.desktopSelectionFlow) return ['Recherche des activités'];
+    if (job?.activitySelectionFlow || job?.desktopSelectionFlow) return ['Recherche des activités'];
     const level = job?.preferences.assistanceLevel;
     if (level === 'full_plan') return ['Recherche des activités', 'Sélection des logements', 'Organisation du planning'];
     if (level === 'activities_day') return ['Recherche des activités', 'Organisation du planning'];

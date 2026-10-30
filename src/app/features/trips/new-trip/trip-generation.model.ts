@@ -10,7 +10,7 @@ import { Interest, TripAiPreferences } from './trip-ai-preferences.model';
  * `TripFacade.mergeFromRemote`/`TripStore` (déjà très sensibles, voir leur
  * doc) avec un concept qui n'a plus aucune utilité une fois l'aperçu validé.
  */
-export type TripGenerationStatus = 'generating' | 'ready_for_selection' | 'planning' | 'ready_for_preview' | 'failed';
+export type TripGenerationStatus = 'generating' | 'ready_for_selection' | 'loading_more' | 'planning' | 'ready_for_preview' | 'failed';
 
 /** Moment de la journée réaliste pour une activité (ouverture/ambiance du lieu) — détecté par le LLM, voir functions/src/trip-generation/plan-trip-llm.ts et select-activities-llm.ts. Consommé par PreviewComponent pour placer l'horaire. */
 export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
@@ -116,10 +116,16 @@ export interface TripGeneration {
   destination: { ville: string; placeId: string; latitude: number; longitude: number };
   /** Dates des jours du trip (epoch ms, ordre chronologique) — permet de répartir les activités par jour (`activities_day`/`full_plan`) et de recréer les vraies `DayActivityInstance` sur le bon jour à la validation. */
   tripDayDates: number[];
-  /** Active uniquement pour le nouveau parcours desktop ; le mobile garde le flux historique jusqu'à son implémentation dédiée. */
+  /** Active le parcours de sélection en deux phases, sur mobile comme sur desktop. */
+  activitySelectionFlow?: boolean;
+  /** Ancien flag conservé pour lire les jobs desktop créés avant l'unification du flux. */
   desktopSelectionFlow?: boolean;
   /** Identifiants gardés par l'utilisateur avant la seconde phase de planification. */
   selectedCandidateIds?: string[];
+  /** Identifiants rejetés sur mobile, conservés quand une nouvelle série est demandée. */
+  rejectedCandidateIds?: string[];
+  /** Indique que le serveur n'a plus de nouvelle activité à proposer. */
+  moreSuggestionsExhausted?: boolean;
   /** Pool complet d'activités récupéré côté serveur (§4.1) — sert de réservoir pour "Remplacer" (§2.6), jamais ré-appelé pour ça. */
   candidates: GeneratedActivityCandidate[];
   /** Sous-ensemble d'activités actuellement proposé à l'utilisateur (§2.5) — modifié localement (exclusion) et via "Remplacer" avant validation. */

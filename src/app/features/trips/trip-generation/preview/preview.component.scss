@@ -38,6 +38,208 @@
   }
 }
 
+.preview__content--mobile-selection {
+  padding-bottom: 6rem;
+}
+
+.mobile-selection {
+  display: flex;
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-selection__progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--nt-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.mobile-selection__card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: clamp(21rem, 57dvh, 34rem);
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-content-border-radius);
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-xs);
+  touch-action: pan-y;
+  transition: transform 180ms ease-out;
+  will-change: transform;
+}
+
+.mobile-selection__card--dragging {
+  transition: none;
+}
+
+.mobile-selection__photo {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  flex: 1 1 58%;
+  place-items: center;
+  overflow: hidden;
+  background: var(--nt-surface-100);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.mobile-selection__photo-fallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: var(--nt-primary-color);
+  font-size: 3rem;
+}
+
+.mobile-selection__details {
+  display: flex;
+  min-height: 0;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem;
+
+  h2 {
+    margin: 0;
+    color: var(--nt-text-color);
+    font-size: 1.2rem;
+    line-height: 1.3;
+  }
+}
+
+.mobile-selection__interest {
+  flex: 0 0 auto;
+  color: var(--nt-primary-color);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.mobile-selection__address,
+.mobile-selection__reason {
+  margin: 0;
+  color: var(--nt-text-muted-color);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.mobile-selection__meta {
+  display: flex;
+  gap: 0.75rem;
+  color: var(--nt-text-color);
+  font-size: 0.8125rem;
+}
+
+.mobile-selection__stamp {
+  position: absolute;
+  top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  border: 2px solid currentColor;
+  border-radius: var(--nt-radius-sm);
+  background: var(--nt-content-background);
+  font-size: 0.875rem;
+  font-weight: 700;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 100ms ease-out, transform 100ms ease-out;
+}
+
+.mobile-selection__stamp--keep {
+  left: 1rem;
+  color: var(--nt-green-500);
+  transform: rotate(-8deg) scale(0.9);
+}
+
+.mobile-selection__stamp--reject {
+  right: 1rem;
+  color: var(--nt-red-500);
+  transform: rotate(8deg) scale(0.9);
+}
+
+.mobile-selection__stamp--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mobile-selection__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.mobile-selection__more,
+.mobile-selection__empty {
+  display: flex;
+  min-height: 8rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.mobile-selection__empty p {
+  margin: 0;
+  color: var(--nt-text-muted-color);
+}
+
+.mobile-selection__kept {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  h2 {
+    margin: 0 0 0.25rem;
+    color: var(--nt-text-color);
+    font-size: 1rem;
+  }
+}
+
+.mobile-selection__kept-row {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  color: var(--nt-text-color);
+  font-size: 0.875rem;
+}
+
+.preview__footer--mobile-selection {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  justify-content: stretch;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-sm);
+}
+
+@media (max-height: 700px) and (max-width: 768px) {
+  .mobile-selection__card {
+    height: clamp(18rem, 52dvh, 26rem);
+  }
+}
+
 @media (min-width: 769px) {
   .preview__footer {
     position: sticky;
