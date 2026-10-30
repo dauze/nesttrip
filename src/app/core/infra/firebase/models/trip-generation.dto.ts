@@ -80,6 +80,8 @@ export interface TripGenerationFirebase {
   preferences: TripAiPreferencesFirebase;
   destination: { ville: string; placeId: string; latitude: number; longitude: number };
   tripDayDates: number[];
+  desktopSelectionFlow?: boolean;
+  selectedCandidateIds?: string[];
   candidates: GeneratedActivityCandidateFirebase[];
   preview: GeneratedActivityCandidateFirebase[];
   lodgingCandidates: GeneratedLodgingCandidateFirebase[];

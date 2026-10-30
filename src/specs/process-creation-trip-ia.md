@@ -74,12 +74,14 @@ Les étapes affichées dépendent du niveau choisi (`activities_only` n'affiche 
 
 **Important : rien n'est écrit dans le voyage réel avant validation par l'utilisateur.** À la fin de la génération, on affiche un aperçu :
 
-- Mode `activities_only` : liste des activités proposées (carte activité : photo, nom, catégorie, note Places), avec pour chacune un bouton "Remplacer" et une case pour l'exclure.
-- Mode `full_plan` et `activities_day` : planning jour par jour (même composant visuel que l'éditeur de voyage final, en preview), avec logements/transports/activités groupés par jour, chaque item avec bouton "Remplacer".
+- **Desktop — sélection avant planification** : premier aperçu sous forme de liste d'activités à garder, avec une croix pour retirer chaque proposition et un bouton "Remplacer". Le retrait reste local au job jusqu'à la validation.
+- En mode `activities_only`, "Valider" crée les activités gardées dans le pool, sans placement par jour, puis ouvre l'éditeur du voyage.
+- En modes `activities_day` et `full_plan`, "Valider" envoie les identifiants des activités gardées à une seconde étape IA qui les répartit par jour ; le mode `full_plan` conserve en plus logements et trajets. Le résultat revient dans l'aperçu final, où une seconde validation écrit les éléments dans le voyage.
+- **Mobile — parcours existant conservé pour ce sous-lot desktop** : l'aperçu et sa validation actuels ne changent pas ici. Le swipe droite/gauche, la demande d'autres propositions et la liste complémentaire pour les séjours de plus de 15 jours restent à implémenter ensuite (voir `ROADMAP.md`).
 
 Actions globales en bas d'écran :
 - **"Régénérer tout"** → relance la génération avec les mêmes préférences (ou renvoie au dialogue IA pour les modifier avant de relancer).
-- **"Valider"** → écrit les items en base (statut `suggested`, `ai_generated: true`) et redirige vers l'éditeur de voyage classique, où tout redevient éditable/supprimable normalement. Un badge discret "Suggéré par IA" reste visible sur chaque item généré (pour transparence), sans bloquer l'édition.
+- **"Valider"** → en `activities_only`, écrit les activités gardées et redirige vers l'éditeur ; après la planification en `activities_day`/`full_plan`, écrit l'aperçu final et redirige vers l'éditeur. Tout redevient éditable/supprimable normalement. Un badge discret "Suggéré par IA" reste visible sur chaque activité générée (pour transparence), sans bloquer l'édition.
 
 ### 2.6 Remplacement individuel ("Remplacer")
 
@@ -153,7 +155,7 @@ Principe : **le LLM ne choisit jamais librement des lieux "de mémoire"**. Il s�
 - **Activités** : réutilisation de l'intégration Google Places existante, avec des paramètres élargis (types de lieux dérivés des `interests`, rayon = zone de la destination, note minimale). On récupère un pool large (~20-30 candidats par centre d'intérêt) plutôt que le strict nécessaire, pour permettre le "Remplacer" sans nouvel appel.
 - **Logements** et **Transports** : uniquement en mode `full_plan`. Pas de source déjà branchée — à cadrer (§6) avant l'implémentation de ce sous-flux. Le mode `activities_only` ne dépend pas de cette brique et peut être livré indépendamment.
 
-### 4.2 Étape 2 — Sélection par le LLM
+### 4.2 Étape 2 — Sélection et planification
 
 Le LLM reçoit :
 - Le pool de candidats (id, nom, catégorie, coordonnées, note, description courte).
@@ -161,19 +163,23 @@ Le LLM reçoit :
 - Les dates du voyage (nombre de jours, éventuellement horaires d'ouverture des lieux si disponibles).
 - En mode `full_plan` uniquement : les contraintes de logique de planning (pas deux activités trop éloignées le même jour, cohérence géographique jour par jour si multi-villes).
 
-Il doit retourner un JSON structuré respectant un schéma fixe (liste d'items avec `candidateId`, `day` (null en mode `activities_only`), `startTime`/`endTime` optionnels, `reason` — courte justification affichable à l'utilisateur, ex. "Choisi pour ton intérêt musées").
+Sur mobile, le flux actuel conserve la génération en un passage : le LLM peut assigner `day` en modes `activities_day`/`full_plan`.
+
+Sur desktop, la génération initiale ne place pas les activités par jour. Pour `activities_day`/`full_plan`, après le choix utilisateur, un second appel reçoit uniquement les activités retenues (identifiées par `candidateId`) et retourne leur ordre de visite ainsi que leur index `day`. Il ne peut ni ajouter, ni supprimer, ni dupliquer une activité. Le serveur vérifie que chaque ID vient du pool généré et apparaît exactement une fois ; si l'appel est indisponible ou invalide, il répartit les IDs sélectionnés de façon déterministe sans perdre d'activité.
+
+En mode `activities_only`, `day` reste absent : la validation crée directement les activités gardées dans le pool.
 
 On utilise le tool use / function calling pour forcer le LLM à ne renvoyer que des `candidateId` existants dans le pool fourni (pas de champ libre pour le nom/l'adresse) — c'est la garde-fou anti-hallucination.
 
 ### 4.3 Étape 3 — Validation et persistance
 
 - Validation du JSON contre le schéma attendu (candidateId existants, dates dans la plage du trip, etc.). En cas d'item invalide, on le retire silencieusement plutôt que d'échouer toute la génération.
-- **Rien n'est encore écrit dans les tables définitives du trip à ce stade** : le résultat est stocké dans une structure de préview (liée au trip, statut `ready_for_preview`) pour que "Régénérer tout" et "Remplacer" restent sans effet de bord.
+- **Rien n'est encore écrit dans les tables définitives du trip à ce stade** : sur desktop, la première liste est stockée avec le statut `ready_for_selection`; la sélection déclenche `planning`, puis le résultat revient en `ready_for_preview`. Sur mobile, le statut reste directement `ready_for_preview`. "Régénérer tout" et "Remplacer" restent sans effet de bord.
 - À la validation utilisateur (§2.5), seulement là, création des vrais enregistrements d'activité/logement/transport, avec `source: ai_generated`, `status: suggested`.
 
 ### 4.4 Suivi de progression côté client
 
-- Court-polling (ex. toutes les 2s) sur un endpoint `GET /trips/:id/generation-status` renvoyant l'étape en cours + statut global (`generating` / `ready_for_preview` / `failed`). Suffisant pour une v1 (pas besoin de websocket tout de suite).
+- Observation temps réel du document `tripGenerations/{tripId}` : le flux desktop utilise les statuts `generating` → `ready_for_selection` → `planning` → `ready_for_preview` (`failed` en cas d'erreur). Le parcours mobile actuel conserve `generating` → `ready_for_preview` (`failed`). Pas besoin de websocket ou d'un endpoint de polling supplémentaire.
 - Timeout raisonnable (ex. 90s) : au-delà, statut `failed` avec message et proposition de repasser en création manuelle.
 
 ### 4.5 Gestion des échecs partiels

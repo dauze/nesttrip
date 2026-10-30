@@ -115,6 +115,8 @@ export function tripGenerationToFb(data: TripGeneration): TripGenerationFirebase
       preferences: data.preferences,
       destination: data.destination,
       tripDayDates: data.tripDayDates,
+      desktopSelectionFlow: data.desktopSelectionFlow,
+      selectedCandidateIds: data.selectedCandidateIds,
       candidates: data.candidates.map(candidateToFb),
       preview: data.preview.map(candidateToFb),
       lodgingCandidates: data.lodgingCandidates.map(lodgingToFb),

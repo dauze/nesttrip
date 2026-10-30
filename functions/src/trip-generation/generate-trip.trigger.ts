@@ -10,6 +10,7 @@ import { enrichActivitiesWithPlaces, enrichLodgingWithPlaces } from './enrich-ac
 import { applyBudgetCap } from './apply-budget-cap';
 import { geocodeCity, GeocodedCity } from './geocode-city';
 import { estimateTransportSegment } from './transport-estimate';
+import { planSelectedActivities } from './plan-selected-activities';
 import { GeneratedActivityCandidate, GeneratedGeneralNote, GeneratedLodgingCandidate, TripAiPreferences, TripGenerationDoc } from './trip-generation.dto';
 
 /** Résout PlannedGeneralNote.relatedActivityIndex (index dans `planned.activities`, voir plan-trip-llm.ts) vers le candidateId stable via `candidateIdByPlannedIndex` (voir enrichActivitiesWithPlaces) — index absent/hors bornes/jamais résolu par Google ⇒ note créée SANS lien plutôt que perdue. */
@@ -96,7 +97,8 @@ async function generateActivities(
   apiKey: string,
   geminiApiKey: string | undefined,
 ): Promise<ActivityGenerationResult | { error: string }> {
-  const numDays = doc.preferences.assistanceLevel === 'activities_only' ? undefined : doc.tripDayDates.length;
+  const deferPlanning = doc.desktopSelectionFlow && doc.preferences.assistanceLevel !== 'activities_only';
+  const numDays = doc.preferences.assistanceLevel === 'activities_only' || deferPlanning ? undefined : doc.tripDayDates.length;
 
   if (geminiApiKey) {
     try {
@@ -161,19 +163,18 @@ async function resolveCities(doc: TripGenerationDoc, apiKey: string): Promise<Ge
 /**
  * Pipeline de génération (process-creation-trip-ia.md §4) — déclenché par
  * toute écriture sur `tripGenerations/{tripId}` dont le document résultant a
- * `status: 'generating'` — couvre à la fois la création initiale (voir
- * `TripGenerationDataSource.create`) et "Régénérer tout"
- * (`TripGenerationDataSource.regenerate`), un seul trigger pour les deux.
+ * `status: 'generating'` (création/régénération) ou `status: 'planning'`
+ * (seconde phase desktop après sélection).
  *
  * `onDocumentWritten` (pas `onDocumentCreated`) est nécessaire pour ça, mais
  * ce même trigger se redéclenche sur SES PROPRES écritures de fin (statut
- * `ready_for_preview`/`failed`) — le garde-fou `status !== 'generating'`
+ * `ready_for_selection`/`ready_for_preview`/`failed`) — le garde-fou de statut
  * ci-dessous les ignore, pas de boucle infinie possible (cette fonction
- * n'écrit jamais `status: 'generating'` elle-même).
+ * n'écrit jamais `status: 'generating'` ni `status: 'planning'` elle-même).
  *
  * 3 niveaux (`preferences.assistanceLevel`) :
  * - `activities_only` : pool d'activités seul, pas de `day` assigné.
- * - `activities_day` : pool d'activités + `day` assigné (répartition par
+ * - `activities_day` : activités assignées à un jour (répartition par
  *   rythme, voir `selectActivitiesStub`), pas de logement/transport.
  * - `full_plan` : idem + logements (1 par ville, §6) + estimations de
  *   trajet entre villes consécutives si multi-villes (§6, pas d'API de
@@ -191,13 +192,45 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?
       if (!after?.exists) return;
 
       const doc = after.data() as TripGenerationDoc;
-      if (doc.status !== 'generating') return;
+      if (doc.status !== 'generating' && doc.status !== 'planning') return;
 
       const tripId = event.params.tripId;
       const db = admin.firestore();
       const apiKey = googleApiKey.value();
 
       try {
+        if (doc.status === 'planning') {
+          if (!doc.desktopSelectionFlow || doc.preferences.assistanceLevel === 'activities_only') {
+            throw new Error('Transition de planification invalide pour ce job.');
+          }
+
+          const selectedIds = doc.selectedCandidateIds;
+          const candidatesById = new Map(doc.candidates.map((candidate) => [candidate.candidateId, candidate]));
+          if (
+            !selectedIds?.length ||
+            new Set(selectedIds).size !== selectedIds.length ||
+            selectedIds.some((id) => !candidatesById.has(id))
+          ) {
+            throw new Error('La sélection des activités est invalide ou vide.');
+          }
+
+          const selectedCandidates = selectedIds.map((id) => candidatesById.get(id)!);
+          const plannedPreview = await planSelectedActivities(
+            selectedCandidates,
+            doc.preferences,
+            doc.destination,
+            doc.tripDayDates,
+            geminiApiKey?.value(),
+          );
+
+          await db.doc(`tripGenerations/${tripId}`).update({
+            status: 'ready_for_preview',
+            preview: plannedPreview,
+            updatedAt: Date.now(),
+          });
+          return;
+        }
+
         const cities = await resolveCities(doc, apiKey);
 
         const activitiesResult = await generateActivities(doc, cities, apiKey, geminiApiKey?.value());
@@ -226,7 +259,7 @@ export function makeGenerateTripTrigger(googleApiKey: SecretParam, geminiApiKey?
           : [];
 
         await db.doc(`tripGenerations/${tripId}`).update({
-          status: 'ready_for_preview',
+          status: doc.desktopSelectionFlow ? 'ready_for_selection' : 'ready_for_preview',
           candidates,
           preview,
           lodgingCandidates,

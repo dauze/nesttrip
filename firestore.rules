@@ -72,16 +72,30 @@ service cloud.firestore {
     // src/specs/process-creation-trip-ia.md §4, TripGenerationDataSource) —
     // collection séparée de `trips/{tripId}`, un seul doc par trip. Créé côté
     // client (déclenche la Cloud Function), puis rempli par elle seule
-    // (Admin SDK, hors rules) jusqu'à `ready_for_preview`/`failed`. Seul
-    // "Régénérer tout" (§2.5) écrit à nouveau côté client, sur un sous-
-    // ensemble précis de champs.
+    // (Admin SDK, hors rules) jusqu'à `ready_for_selection`/`ready_for_preview`/
+    // `failed`. Le client peut ensuite soumettre une sélection desktop avant
+    // le second passage de planification, ou régénérer le job.
     match /tripGenerations/{tripId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.tripId == tripId
         && request.resource.data.status == 'generating';
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'preferences', 'candidates', 'preview', 'lodgingCandidates', 'lodgingPreview', 'transportSegments', 'updatedAt']);
+        && (
+          (
+            request.resource.data.status == 'generating'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'preferences', 'candidates', 'preview', 'lodgingCandidates', 'lodgingPreview', 'transportSegments', 'selectedCandidateIds', 'updatedAt'])
+          )
+          || (
+            resource.data.status == 'ready_for_selection'
+            && resource.data.desktopSelectionFlow == true
+            && resource.data.preferences.assistanceLevel in ['activities_day', 'full_plan']
+            && request.resource.data.status == 'planning'
+            && request.resource.data.selectedCandidateIds is list
+            && request.resource.data.selectedCandidateIds.size() > 0
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'selectedCandidateIds', 'updatedAt'])
+          )
+        );
       allow delete: if false;
     }
 

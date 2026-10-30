@@ -106,6 +106,14 @@ export class PreviewComponent {
   protected readonly validating = signal(false);
   private lastSyncedStatus: string | null = null;
 
+  protected readonly selectingActivities = computed(() => this.job()?.status === 'ready_for_selection');
+  protected readonly desktopSelectionFlow = computed(() => this.job()?.desktopSelectionFlow ?? false);
+  protected readonly selectedActivityCount = computed(() => this.items().filter((item) => !item.excluded).length);
+  protected readonly canValidate = computed(() =>
+    !this.selectingActivities() ||
+    this.job()?.preferences.assistanceLevel === 'activities_only' ||
+    this.selectedActivityCount() > 0,
+  );
   protected readonly hasDayPlacement = computed(() => this.items().some((i) => i.day !== undefined));
 
   protected readonly dayGroups = computed<DayGroup[]>(() => {
@@ -142,7 +150,7 @@ export class PreviewComponent {
     effect(() => {
       const job = this.job();
       if (!job) return;
-      if (job.status === 'ready_for_preview' && this.lastSyncedStatus !== 'ready_for_preview') {
+      if ((job.status === 'ready_for_selection' || job.status === 'ready_for_preview') && this.lastSyncedStatus !== job.status) {
         this.items.set(job.preview);
         this.lodgingItems.set(job.lodgingPreview);
         this.transportSegments.set(job.transportSegments);
@@ -156,6 +164,10 @@ export class PreviewComponent {
 
   protected toggleExclude(candidateId: string): void {
     this.items.update((list) => list.map((c) => (c.candidateId === candidateId ? { ...c, excluded: !c.excluded } : c)));
+  }
+
+  protected removeActivity(candidateId: string): void {
+    this.items.update((list) => list.filter((item) => item.candidateId !== candidateId));
   }
 
   /** Pioche un autre candidat du même centre d'intérêt dans `job().candidates` (déjà en cache) — no-op si épuisé (voir `canReplace`, le bouton est désactivé dans ce cas). */
@@ -225,6 +237,20 @@ export class PreviewComponent {
   protected validate(): void {
     const job = this.job();
     if (!job) return;
+
+    if (job.status === 'ready_for_selection' && job.preferences.assistanceLevel !== 'activities_only') {
+      const candidateIds = this.items().filter((item) => !item.excluded).map((item) => item.candidateId);
+      if (candidateIds.length === 0) return;
+      this.validating.set(true);
+      this.tripGenerationRepository.planSelectedActivities(this.tripId, candidateIds)
+        .then(() => this.router.navigate([`/trips/${this.tripId}/generating`]))
+        .catch((err) => {
+          console.error('[PreviewComponent] planning selected activities error', err);
+          this.validating.set(false);
+        });
+      return;
+    }
+
     this.validating.set(true);
 
     const byDay = new Map<number, GeneratedActivityCandidate[]>();

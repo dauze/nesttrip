@@ -12,8 +12,9 @@ import { TripGenerationRepository } from './trip-generation-repository';
  * `tripGenerations/{tripId}` : collection séparée de `trips/{tripId}` (voir
  * doc de `TripGeneration`) — un seul doc par trip, créé côté client
  * (déclenche la Cloud Function `onDocumentWritten`, voir functions/src/
- * trip-generation/generate-trip.trigger.ts), puis mis à jour uniquement côté
- * serveur (Admin SDK) jusqu'à `ready_for_preview`/`failed`.
+ * trip-generation/generate-trip.trigger.ts), puis mis à jour côté serveur
+ * (Admin SDK) jusqu'à `ready_for_selection`/`ready_for_preview`/`failed`.
+ * Le client ne soumet que les IDs choisis pour lancer la planification desktop.
  */
 @Injectable({ providedIn: 'root' })
 export class TripGenerationDataSource extends TripGenerationRepository {
@@ -37,12 +38,21 @@ export class TripGenerationDataSource extends TripGenerationRepository {
     return setDoc(doc(this.db, 'tripGenerations', job.tripId), tripGenerationToFb(job));
   }
 
+  planSelectedActivities(tripId: string, candidateIds: string[]): Promise<void> {
+    return updateDoc(doc(this.db, 'tripGenerations', tripId), {
+      status: 'planning',
+      selectedCandidateIds: candidateIds,
+      updatedAt: Date.now(),
+    });
+  }
+
   regenerate(tripId: string, preferences: TripAiPreferences): Promise<void> {
     return updateDoc(doc(this.db, 'tripGenerations', tripId), {
       status: 'generating',
       preferences,
       candidates: [],
       preview: [],
+      selectedCandidateIds: [],
       lodgingCandidates: [],
       lodgingPreview: [],
       transportSegments: [],

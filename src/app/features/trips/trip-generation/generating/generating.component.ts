@@ -41,7 +41,10 @@ export class GeneratingComponent {
   protected readonly error = computed(() => this.job()?.error);
 
   protected readonly steps = computed<string[]>(() => {
-    const level = this.job()?.preferences.assistanceLevel;
+    const job = this.job();
+    if (job?.status === 'planning') return ['Planification des activités sélectionnées'];
+    if (job?.desktopSelectionFlow) return ['Recherche des activités'];
+    const level = job?.preferences.assistanceLevel;
     if (level === 'full_plan') return ['Recherche des activités', 'Sélection des logements', 'Organisation du planning'];
     if (level === 'activities_day') return ['Recherche des activités', 'Organisation du planning'];
     return ['Recherche des activités'];
@@ -52,7 +55,8 @@ export class GeneratingComponent {
     // utilisateur nécessaire (voir §2.4, le statut piloté par la Cloud
     // Function déclenche directement la suite du parcours).
     effect(() => {
-      if (this.status() === 'ready_for_preview') {
+      const status = this.status();
+      if (status === 'ready_for_selection' || status === 'ready_for_preview') {
         this.router.navigate([`/trips/${this.tripId}/preview`]);
       }
     });

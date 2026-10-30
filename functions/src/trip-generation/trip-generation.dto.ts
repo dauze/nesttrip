@@ -22,7 +22,7 @@ export interface TripAiPreferences {
   budgetMaxEur?: number;
 }
 
-export type TripGenerationStatus = 'generating' | 'ready_for_preview' | 'failed';
+export type TripGenerationStatus = 'generating' | 'ready_for_selection' | 'planning' | 'ready_for_preview' | 'failed';
 
 export interface GeneratedActivityCandidate {
   candidateId: string;
@@ -106,6 +106,8 @@ export interface TripGenerationDoc {
   preferences: TripAiPreferences;
   destination: { ville: string; placeId: string; latitude: number; longitude: number };
   tripDayDates: number[];
+  desktopSelectionFlow?: boolean;
+  selectedCandidateIds?: string[];
   candidates: GeneratedActivityCandidate[];
   preview: GeneratedActivityCandidate[];
   lodgingCandidates: GeneratedLodgingCandidate[];

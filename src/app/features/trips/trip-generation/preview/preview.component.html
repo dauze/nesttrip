@@ -1,6 +1,17 @@
 <ng-template #activityRow let-item="item">
   <div class="preview-item flex align-items-start gap-3" [class.preview-item--excluded]="item.excluded">
-    <app-checkbox [checked]="!item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
+    @if (desktopSelectionFlow()) {
+      <button
+        type="button"
+        class="preview-item__remove"
+        [attr.aria-label]="'Retirer ' + item.title"
+        [attr.title]="'Retirer ' + item.title"
+        (click)="removeActivity(item.candidateId)">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    } @else {
+      <app-checkbox [checked]="!item.excluded" (checkedChange)="toggleExclude(item.candidateId)" />
+    }
     <div class="flex flex-column flex-1 min-w-0 gap-1">
       <span class="font-semibold">{{ item.title }}</span>
       @if (item.address) {
@@ -49,7 +60,7 @@
         </div>
       }
 
-      @if (lodgingByCity().length > 0) {
+      @if (!selectingActivities() && lodgingByCity().length > 0) {
         <div class="flex flex-column gap-2">
           <span class="preview-section-title">Logements</span>
           @for (group of lodgingByCity(); track group.city) {
@@ -78,7 +89,7 @@
         </div>
       }
 
-      @if (transportSegments().length > 0) {
+      @if (!selectingActivities() && transportSegments().length > 0) {
         <div class="flex flex-column gap-2">
           <span class="preview-section-title">Trajets estimés</span>
           @for (segment of transportSegments(); track segment.id) {
@@ -90,7 +101,7 @@
         </div>
       }
 
-      @if (generalNotesItems().length > 0) {
+      @if (!selectingActivities() && generalNotesItems().length > 0) {
         <div class="flex flex-column gap-2">
           <span class="preview-section-title">Notes de voyage</span>
           @for (note of generalNotesItems(); track note.id) {
@@ -108,9 +119,9 @@
       }
     </div>
 
-    <div cardFooter class="nt-footer-actions justify-content-end gap-2 pt-2">
+    <div cardFooter class="nt-footer-actions justify-content-end gap-2 pt-2 preview__footer">
       <app-button label="Régénérer tout" severity="secondary" [outlined]="true" (click)="regenerateAll()" />
-      <app-button label="Valider" icon="pi pi-check" [loading]="validating()" (click)="validate()" />
+      <app-button label="Valider" icon="pi pi-check" [loading]="validating()" [disabled]="!canValidate()" (click)="validate()" />
     </div>
   </app-card>
 </div>

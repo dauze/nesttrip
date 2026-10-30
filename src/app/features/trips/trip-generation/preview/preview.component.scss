@@ -17,3 +17,34 @@
   color: var(--nt-text-color);
   text-transform: capitalize;
 }
+
+.preview-item__remove {
+  display: inline-flex;
+  flex: 0 0 2rem;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--nt-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--nt-red-500) 12%, transparent);
+    color: var(--nt-red-500);
+  }
+}
+
+@media (min-width: 769px) {
+  .preview__footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding-block: 0.75rem;
+    background: var(--nt-content-background);
+    border-top: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  }
+}
