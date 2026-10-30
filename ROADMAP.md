@@ -28,7 +28,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- mettre les chevrons vers le bas sur le chip des trajet plutot que mettre un minus (celui entre les carte des activités de la vue day). Idement pour la liste déroulante de la devise dans le menum paramètres
 - **Refonte de la liste sur mobile — à cadrer avec l'UX.** Définir le périmètre et une proposition visuelle avec le skill UX avant toute implémentation.
 
 
