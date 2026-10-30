@@ -1,14 +1,36 @@
-<input
-  #input
-  type="text"
-  [class]="'app-autocomplete__input ' + inputClass()"
-  [value]="value()"
-  [placeholder]="placeholder()"
-  [disabled]="isDisabled()"
-  [attr.maxlength]="maxLength()"
-  (input)="onInput($any($event.target).value)"
-  (blur)="onBlurInput()"
-  (keydown)="onKeydown($event)" />
+@if (multiline()) {
+  <!--
+    Variante multi-ligne (opt-in via [multiline], voir activity-header) : un
+    <textarea> qui wrappe le texte long et s'auto-ajuste en hauteur, au lieu de
+    l'<input> mono-ligne par défaut. `rows="1"` + autosize (voir onInput) :
+    part à une ligne, grandit avec le contenu. `Entrée` ne doit PAS insérer de
+    saut de ligne (un titre reste une seule ligne logique) — onKeydown valide
+    via blur à la place.
+  -->
+  <textarea
+    #input
+    rows="1"
+    [class]="'app-autocomplete__input app-autocomplete__input--multiline ' + inputClass()"
+    [value]="value()"
+    [placeholder]="placeholder()"
+    [disabled]="isDisabled()"
+    [attr.maxlength]="maxLength()"
+    (input)="onInput($any($event.target).value)"
+    (blur)="onBlurInput()"
+    (keydown)="onKeydown($event)"></textarea>
+} @else {
+  <input
+    #input
+    type="text"
+    [class]="'app-autocomplete__input ' + inputClass()"
+    [value]="value()"
+    [placeholder]="placeholder()"
+    [disabled]="isDisabled()"
+    [attr.maxlength]="maxLength()"
+    (input)="onInput($any($event.target).value)"
+    (blur)="onBlurInput()"
+    (keydown)="onKeydown($event)" />
+}
 
 <ng-template #panel>
   <div class="app-autocomplete-panel">

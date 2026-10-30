@@ -15,6 +15,7 @@ import {
   estimateZoomDrop as estimateZoomDropUtil,
   lerp,
 } from '@app/shared/utils/map-camera.util';
+import { smoothPath } from '@app/shared/utils/map-path-smoothing.util';
 
 /** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
 const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
@@ -61,12 +62,14 @@ export class TripDayMapComponent {
       pointsByDay.set(dayKey, dayPoints);
     }
     return [...pointsByDay.entries()]
-      .map(([dayKey, points]) => ({
-        dayKey,
-        path: [...points]
+      .map(([dayKey, points]) => {
+        const rawPath = [...points]
           .sort((left, right) => left.order - right.order)
-          .map((point) => ({ lat: point.latitude, lng: point.longitude })),
-      }))
+          .map((point) => ({ lat: point.latitude, lng: point.longitude }));
+        // Courbe lisse passant par chaque activité (ROADMAP.md "UX /
+        // Interactions", 2026-10-30) au lieu de segments droits "carrés".
+        return { dayKey, path: smoothPath(rawPath) };
+      })
       .filter((route) => route.path.length > 1);
   });
   protected readonly routeLineOptions = computed<google.maps.PolylineOptions>(() => {
@@ -272,16 +275,28 @@ export class TripDayMapComponent {
       mapId: environment.googleMapsMapId,
       colorScheme: this.isDarkMode() ? 'DARK' : 'LIGHT',
       disableDefaultUI: false,
-      // Seul le zoom est retiré (retour utilisateur : "remets tout sauf le
-      // zoom") — fullscreen/street view/plan-satellite/rotation restent les
-      // contrôles par défaut de Google. `cameraControl` (le bouton unifié
-      // "Map camera controls", API récente) est un réglage DISTINCT de
-      // `zoomControl` (l'ancien +/-) : les deux doivent être à `false`,
-      // sinon le bouton unifié reste affiché même `zoomControl` désactivé
-      // (constaté en vérifiant ce lot) — pinch/scroll restent pleinement
-      // utilisables via `gestureHandling: 'greedy'` juste en dessous.
+      // Zoom retiré (retour utilisateur : "remets tout sauf le zoom"), et
+      // fullscreen ÉGALEMENT retiré : le bouton plein écran NATIF de Google
+      // s'appuie sur l'API Fullscreen du navigateur posée sur le conteneur de
+      // la carte, mais un ANCÊTRE porte un `transform` (voir
+      // `.day-fixed-map--active`, trip-detail.component.scss — il suit le
+      // hide-on-scroll de la toolbar). Un `transform` non-`none` sur un
+      // ancêtre casse le rendu de l'élément fullscreen : le navigateur
+      // entre puis ressort aussitôt du plein écran — exactement le
+      // scintillement + retour à l'état précédent remonté par l'utilisateur.
+      // De toute façon l'app a son PROPRE plein écran (panel mobile :
+      // `useMobileFullscreenHeight`, tirage sur le grabber), donc ce bouton
+      // natif faisait doublon en plus d'être cassé ici. Street
+      // view/plan-satellite/rotation restent, eux, les contrôles par défaut.
+      // `cameraControl` (le bouton unifié "Map camera controls", API récente)
+      // est un réglage DISTINCT de `zoomControl` (l'ancien +/-) : les deux
+      // doivent être à `false`, sinon le bouton unifié reste affiché même
+      // `zoomControl` désactivé (constaté en vérifiant ce lot) — pinch/scroll
+      // restent pleinement utilisables via `gestureHandling: 'greedy'` juste
+      // en dessous.
       zoomControl: false,
       cameraControl: false,
+      fullscreenControl: false,
       gestureHandling: 'greedy',
       // Sans ce flag, le zoom fractionnaire est désactivé PAR DÉFAUT sur une
       // carte raster (activé par défaut seulement en vectoriel) — chaque

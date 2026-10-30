@@ -336,8 +336,18 @@
   // - drag-portal : portail de drag inter-jours (.drag-portal-anchor),
   //   volontairement tout en haut — voir sa justification dans
   //   trip-detail.component.scss.
+  // - pull-to-refresh : indicateur du geste "tirer pour actualiser" maison
+  //   (.nt-pull-to-refresh, voir PullToRefreshDirective). La flèche descend
+  //   du haut de l'écran et doit passer PAR-DESSUS la carte "jour" et son
+  //   footer (.day-fixed-map, --z-fixed-map) — strictement au-dessus de
+  //   --z-fixed-map, mais sous les overlays (backdrop/content) qui doivent
+  //   rester prioritaires. L'indicateur est `position: fixed` (styles/
+  //   pull-to-refresh.scss) pour s'extraire du stacking context local du
+  //   swiper-slide hôte : un z-index local, même supérieur, restait piégé
+  //   SOUS la carte fixe, qui vit dans un autre contexte (retour utilisateur).
   --z-app-toolbar: 20;
   --z-fixed-map: 20;
+  --z-pull-to-refresh: 25;
   --z-overlay-backdrop: 30;
   --z-overlay-content: 40;
   --z-drag-portal: 100;

@@ -64,6 +64,10 @@ img {
 
 .activity-header__title-text {
   min-width: 0;
+  // Un titre long wrappe sur plusieurs lignes (plutôt que tronqué en ellipsis) ;
+  // `anywhere` casse aussi les mots trop longs pour tenir sur une ligne (noms
+  // sans espace, URLs) afin de ne jamais déborder de la carte.
+  overflow-wrap: anywhere;
 }
 
 .activity-header__pencil {

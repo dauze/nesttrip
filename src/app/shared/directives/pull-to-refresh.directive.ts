@@ -51,10 +51,6 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
   ngOnInit(): void {
     const host = this.elementRef.nativeElement;
 
-    if (getComputedStyle(host).position === 'static') {
-      this.renderer.setStyle(host, 'position', 'relative');
-    }
-
     this.indicatorEl = this.renderer.createElement('div');
     this.renderer.addClass(this.indicatorEl, 'nt-pull-to-refresh');
     this.renderer.setAttribute(this.indicatorEl, 'aria-hidden', 'true');
@@ -65,7 +61,14 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
     this.renderer.addClass(this.iconEl, 'nt-pull-to-refresh__icon');
 
     this.renderer.appendChild(this.indicatorEl, this.iconEl);
-    this.renderer.appendChild(host, this.indicatorEl);
+    // Monté sur <body>, PAS sur l'hôte : les `swiper-slide` (hôtes du geste en
+    // vue jour) portent `filter: blur(...)` (voir trip-day-swiper.component.scss),
+    // ce qui crée un bloc englobant pour tout `position: fixed` descendant —
+    // l'indicateur y resterait piégé SOUS la carte fixe `.day-fixed-map`
+    // (retour utilisateur "la flèche passe par dessous la map et son footer").
+    // Dans <body>, il est bien dans le contexte racine du viewport, où
+    // --z-pull-to-refresh le fait repasser au-dessus de la carte et son footer.
+    this.renderer.appendChild(document.body, this.indicatorEl);
 
     host.addEventListener('touchstart', this.onTouchStart, { passive: true });
     host.addEventListener('touchmove', this.onTouchMove, { passive: false });
@@ -131,13 +134,11 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
       // plus un vrai pull-to-refresh, on abandonne proprement.
       this.phase = 'aborted';
       this.setDistance(0);
-        this.renderer.removeClass(this.elementRef.nativeElement, 'nt-pull-to-refresh-active');
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-      this.renderer.addClass(this.elementRef.nativeElement, 'nt-pull-to-refresh-active');
     this.setDistance(computePullDistance(deltaY));
   };
 
@@ -149,7 +150,6 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
         this.setDistance(0);
       }
     }
-    this.renderer.removeClass(this.elementRef.nativeElement, 'nt-pull-to-refresh-active');
     this.phase = 'idle';
   };
 

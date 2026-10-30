@@ -14,6 +14,7 @@ import { minutesToTime, timeToMinutes } from '@app/shared/components/activity-ca
 import { Logistic } from '@core/models/logistic.dto';
 import { PlaceSummary } from '@core/models/place.dto';
 import { ActivityType } from '@core/enums/activites-type.enum';
+import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { BookingStatus } from '@core/enums/booking.status';
 import { NotesType } from '@core/enums/notes.type';
 import { Item } from '@app/features/trips/trip-detail/trip-day-swiper/general-panel/notes/notes.model';
@@ -293,6 +294,24 @@ export class PreviewComponent {
 
   protected getPhotoUrl$(ref: string) {
     return this.photoService.getPhotoUrl$(ref, 900);
+  }
+
+  /**
+   * Fallback quand un candidat n'a pas de photo OU que la récupération échoue :
+   * on affiche l'icône identitaire du type d'activité + un fond teinté (même
+   * logique que la vignette de la liste d'activités, voir
+   * `ActivityHeaderComponent` / `ACTIVITY_TYPE_META`). Le type est déduit de
+   * l'`interest` du candidat via `INTEREST_TO_ACTIVITY_TYPE` (défaut ACTIVITE).
+   */
+  protected fallbackIcon(item: GeneratedActivityCandidate): string {
+    const type = INTEREST_TO_ACTIVITY_TYPE[item.interest as Interest] ?? ActivityType.ACTIVITE;
+    return ACTIVITY_TYPE_META[type].icon;
+  }
+
+  /** Variable CSS de couleur du type d'activité, utilisée pour teinter le fond et l'icône du fallback (voir `fallbackIcon`). */
+  protected fallbackColorVar(item: GeneratedActivityCandidate): string {
+    const type = INTEREST_TO_ACTIVITY_TYPE[item.interest as Interest] ?? ActivityType.ACTIVITE;
+    return `var(${ACTIVITY_TYPE_META[type].colorVar})`;
   }
 
   /** Pioche un autre candidat du même centre d'intérêt dans `job().candidates` (déjà en cache) — no-op si épuisé (voir `canReplace`, le bouton est désactivé dans ce cas). */

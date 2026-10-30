@@ -177,6 +177,28 @@ export class TripChromeService {
     return Math.max(0, this.contentTopOffset() + this.currentTranslateY);
   }
 
+  /**
+   * Hauteur de chrome fixe à soustraire d'un scroll programmatique VERS une
+   * cible (ex. `DayScrollSyncService.focusActivity`) pour qu'elle arrive juste
+   * SOUS le chrome plutôt que derrière lui. Dépend de l'origine du scrollport :
+   *
+   * - `'split-pinned'` (desktop) : le scrollport (`.trip-detail-desktop-root`)
+   *   commence DÉJÀ physiquement sous le chrome fixe (`top: --chrome-top-offset`,
+   *   voir trip-detail-desktop.component.scss) ET force `--sticky-top-offset:0`.
+   *   Les offsets des cartes (`getFreshCardOffsets`) sont mesurés relativement
+   *   au HAUT de ce scrollport, donc le chrome est déjà "consommé" : rien à
+   *   soustraire, sinon la cible descend de toute la hauteur du chrome et
+   *   arrive coupée en haut (bug observé : l'activité cliquée s'ancre trop bas).
+   *   Aucun élément n'est sticky au-dessus de la liste dans la colonne activités.
+   * - `'split-hideable'` (mobile paysage) / `'mobile'` : le scrollport
+   *   (`swiper-slide`) démarre à `top:0`, le chrome `position:fixed` RECOUVRE
+   *   son sommet — on soustrait la portion de chrome encore visible à l'instant
+   *   T (`getVisibleChromeHeight`, tient compte du masquage au scroll).
+   */
+  getScrollPaddingTop(): number {
+    return this.mode() === 'split-pinned' ? 0 : this.getVisibleChromeHeight();
+  }
+
   registerHeight(key: ChromeKey, px: number): void {
     this.heights.update(current => ({ ...current, [key]: px }));
   }

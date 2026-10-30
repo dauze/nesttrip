@@ -211,7 +211,7 @@ export class DayPanelComponent {
       getMapComponent: () => this.activeMapComponent(),
       getStickyMapEl: () => this.mapContainerEl(),
       isSplitLayout: () => this.viewport.isSplitLayout(),
-      getPinnedChromeOffset: () => this.chromeService.stickyContentTop(),
+      getPinnedChromeOffset: () => this.chromeService.getScrollPaddingTop(),
       getLogisticOffsets: () => this.getFreshLogisticOffsets(),
     });
 

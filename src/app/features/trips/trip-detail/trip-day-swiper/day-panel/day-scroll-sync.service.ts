@@ -31,15 +31,22 @@ export interface DayScrollSyncConfig {
    */
   cameraFollowEnabled?: () => boolean;
   /**
-   * `TripChromeService.stickyContentTop()` — 0 partout SAUF en `'split-pinned'`
-   * (desktop) où toolbar+header+barre des jours ne se masquent JAMAIS au
-   * scroll (contrairement à `'mobile'`/`'split-hideable'`, où le scroll
-   * programmatique ci-dessous déclenche aussi `TripChromeService.setScrollTop`,
-   * qui les fait glisser hors champ). En layout scindé, ce chrome fixe joue
-   * exactement le même rôle de "bouclier" que la carte empilée en mode
-   * empilé (voir `isSplitLayout` ci-dessus) : sans le compter, une cible
-   * calculée pour arriver en haut du scrollport (y=0) arrive en fait
-   * DERRIÈRE ce chrome toujours visible, jamais réellement dans le champ.
+   * Hauteur de chrome fixe à soustraire d'un scroll programmatique vers une
+   * cible (`TripChromeService.getScrollPaddingTop()`), pour qu'elle arrive
+   * juste SOUS le chrome et non derrière lui. Dépend de l'origine du
+   * scrollport selon le mode :
+   *
+   * - `'split-hideable'` (mobile paysage) : le scrollport (`swiper-slide`)
+   *   démarre à `top:0`, le chrome `position:fixed` recouvre son sommet — on
+   *   soustrait la portion de chrome encore visible à l'instant T.
+   * - `'split-pinned'` (desktop) : le scrollport (`.trip-detail-desktop-root`)
+   *   commence DÉJÀ sous le chrome (`top:--chrome-top-offset`) et force
+   *   `--sticky-top-offset:0` ; les offsets de cartes sont mesurés relativement
+   *   au haut de ce scrollport — le chrome est donc déjà "consommé", rien à
+   *   soustraire (sinon la cible descend de toute la hauteur du chrome et
+   *   arrive coupée en haut). Aucun élément n'est sticky au-dessus de la liste
+   *   dans la colonne activités : le bouton "Réduire la carte" et la carte
+   *   sticky vivent dans la colonne de GAUCHE, pas au-dessus de la cible.
    */
   getPinnedChromeOffset: () => number;
   /** Offsets des entrées logistique fusionnées dans la liste principale (voir `DayLogisticEntryComponent`) — alimente `focusLogisticEntry`, cible mesurée par `logisticId + role` (une réservation peut jouer plusieurs rôles le même jour, ex. Check-in ET Check-out d'un aller-retour). */
@@ -425,9 +432,13 @@ export class DayScrollSyncService implements OnDestroy {
     const stickyElement = this.config.getStickyMapEl();
 
     // En layout scindé, la carte est à côté (pas au-dessus) de la liste :
-    // aucune hauteur à soustraire pour "sortir de dessous" la carte — mais le
-    // chrome fixe (toolbar+header+jours) reste à soustraire en `'split-pinned'`
-    // (voir `getPinnedChromeOffset`), lui ne se masquant jamais au scroll.
+    // aucune hauteur de carte à soustraire. Le chrome fixe (toolbar+header+
+    // jours) est pris en charge par `getPinnedChromeOffset` selon le mode : 0
+    // en `'split-pinned'` (desktop, le scrollport démarre déjà sous le chrome,
+    // offsets de cartes mesurés depuis son haut — soustraire le chrome
+    // ferait descendre la cible et la couperait en haut), portion visible du
+    // chrome en `'split-hideable'` (mobile paysage, scrollport à top:0 sous
+    // le chrome fixe). Voir `TripChromeService.getScrollPaddingTop`.
     const stickyHeight = this.config.isSplitLayout()
       ? this.config.getPinnedChromeOffset()
       : stickyElement

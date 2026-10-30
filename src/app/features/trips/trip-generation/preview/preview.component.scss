@@ -96,12 +96,14 @@
   }
 }
 
+// Fond teinté + icône du type d'activité (cf. activity-header__thumb--placeholder).
 .mobile-selection__photo-fallback {
   display: grid;
   width: 100%;
   height: 100%;
   place-items: center;
-  color: var(--nt-primary-color);
+  background: color-mix(in srgb, var(--activity-type-color, var(--nt-primary-color)) 14%, var(--nt-content-background));
+  color: var(--activity-type-color, var(--nt-primary-color));
   font-size: 3rem;
 }
 

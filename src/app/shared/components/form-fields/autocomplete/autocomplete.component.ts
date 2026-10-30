@@ -61,6 +61,15 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
   readonly inputClass = input('');
   /** Longueur max du texte libre saisi (ROADMAP.md "Qualité / process") — tous les usages actuels sont des champs "titre"/lieu, jamais un texte long. */
   readonly maxLength = input(MAX_TITLE_LENGTH);
+  /**
+   * Opt-in (défaut `false`) : rend un `<textarea>` auto-ajusté à la place de
+   * l'`<input>` mono-ligne, pour qu'un libellé long wrappe sur plusieurs
+   * lignes au lieu d'être tronqué. Activé uniquement sur le titre d'activité
+   * (voir activity-header) — les autres usages (ville, logistique, brouillon)
+   * restent mono-ligne. Le texte reste une seule ligne logique : `Entrée`
+   * valide (blur) plutôt que d'insérer un saut de ligne.
+   */
+  readonly multiline = input(false);
 
   /** Émis à chaque frappe (texte brut) — le débounce/la recherche restent à la charge de l'appelant (voir GooglePlaceService.search$, déjà débouncé). Nommé `searched` (pas `search`, événement DOM natif) — voir la note sur `blurred`. */
   readonly searched = output<string>();
@@ -76,7 +85,7 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
 
   protected readonly itemTemplate = contentChild<TemplateRef<{ $implicit: T }>>('item');
   private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panel');
-  private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('input');
+  private readonly inputRef = viewChild<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('input');
 
   protected readonly value = signal('');
   protected readonly isOpen = signal(false);
@@ -88,6 +97,9 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
 
   writeValue(value: string): void {
     this.value.set(value ?? '');
+    // La valeur peut être posée par le formulaire après le rendu (ex. titre
+    // existant chargé) : réajuster la hauteur du textarea au contenu.
+    if (this.multiline()) this.scheduleAutosize();
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -107,6 +119,7 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
     this.value.set(text);
     this.onChange?.(text);
     this.searched.emit(text);
+    if (this.multiline()) this.autosize();
     if (!this.overlayRef) this.open();
   }
 
@@ -118,6 +131,13 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
 
   protected onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') this.close();
+    // En mode multi-ligne (titre), un titre reste une seule ligne logique :
+    // `Entrée` ne doit pas insérer de saut de ligne mais valider la saisie.
+    // (Shift+Entrée laissé libre serait incohérent → on bloque aussi.)
+    if (this.multiline() && event.key === 'Enter') {
+      event.preventDefault();
+      this.inputRef()?.nativeElement.blur();
+    }
   }
 
   protected selectOption(option: T): void {
@@ -125,7 +145,25 @@ export class AutoCompleteComponent<T = unknown> implements ControlValueAccessor 
     this.value.set(text);
     this.onChange?.(text);
     this.optionSelected.emit(option);
+    if (this.multiline()) this.scheduleAutosize();
     this.close();
+  }
+
+  /**
+   * Ajuste la hauteur du `<textarea>` à son contenu (autosize) : on remet la
+   * hauteur à `auto` pour que `scrollHeight` reflète le contenu réel, puis on
+   * la fixe à `scrollHeight`. No-op si le champ n'est pas (encore) un textarea.
+   */
+  private autosize(): void {
+    const el = this.inputRef()?.nativeElement;
+    if (!(el instanceof HTMLTextAreaElement)) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  /** Autosize au prochain tick, quand la valeur a été posée hors frappe (writeValue/selectOption) et que le DOM est à jour. */
+  private scheduleAutosize(): void {
+    queueMicrotask(() => this.autosize());
   }
 
   private open(): void {

@@ -58,7 +58,17 @@
                 @if (item.photoRefs[0] && (getPhotoUrl$(item.photoRefs[0]) | async); as photoUrl) {
                   <img [src]="photoUrl" [alt]="item.title" />
                 } @else {
-                  <div class="mobile-selection__photo-fallback"><i class="pi pi-map-marker" aria-hidden="true"></i></div>
+                  <!--
+                    Pas de photo OU échec de récupération (getPhotoUrl$ renvoie
+                    '' en cas d'erreur) : on affiche l'icône du type d'activité
+                    sur un fond teinté, comme la vignette de la liste
+                    d'activités (ActivityHeaderComponent), plutôt qu'un pin
+                    neutre sur fond gris.
+                  -->
+                  <div class="mobile-selection__photo-fallback"
+                       [style.--activity-type-color]="fallbackColorVar(item)">
+                    <i [class]="'pi ' + fallbackIcon(item)" aria-hidden="true"></i>
+                  </div>
                 }
                 <div class="mobile-selection__stamp mobile-selection__stamp--keep" [class.mobile-selection__stamp--visible]="dragOffsetX() > 28 || swipeExit() === 'keep'">
                   <i class="pi pi-check" aria-hidden="true"></i><span>Garder</span>

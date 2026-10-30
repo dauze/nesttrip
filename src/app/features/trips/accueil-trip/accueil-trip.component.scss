@@ -81,11 +81,19 @@ app-card.card {
 // voir selection-mode.scss) — contrairement à un `padding`/`margin` fixe,
 // ça ne laisserait donc jamais un vide résiduel avant la photo quand la
 // checkbox est cachée.
+// Refonte mobile "plus grand / plus aéré" (ROADMAP.md, décision UX du
+// 2026-10-30, option C) : on CONSERVE la rangée horizontale (photo à gauche,
+// infos à droite) mais on l'agrandit pour se rapprocher du rendu desktop —
+// `min-height` relevé à 6.5rem (contre 4rem) + `gap` un cran plus large.
+// `min-height` reste un plancher : une rangée grandit encore si le titre
+// passe sur 2 lignes. Toutes ces valeurs de base sont ré-écrasées par le bloc
+// `@media (min-width: 769px)` plus bas (qui bascule en colonne), donc le
+// desktop n'est pas touché.
 .trip-select-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  min-height: 4rem;
+  gap: 1rem;
+  min-height: 6.5rem;
   position: relative;
   cursor: pointer;
 }
@@ -116,7 +124,11 @@ app-card.card {
 // photo n'a donc besoin d'aucun `border-radius` propre.
 .trip-select-row__thumb {
   flex-shrink: 0;
-  width: 5.5rem;
+  // Vignette élargie à 7rem (contre 5.5rem) : plus imposante, proche du poids
+  // visuel de la photo bannière desktop, tout en gardant le format rangée.
+  // `align-self: stretch` la fait occuper toute la hauteur réelle de la rangée
+  // (plancher `min-height: 6.5rem`), bord-à-bord haut/bas/gauche.
+  width: 7rem;
   align-self: stretch;
   object-fit: cover;
 }
@@ -142,10 +154,16 @@ app-card.card {
   background: var(--nt-content-hover-background);
 }
 
+// `gap` interne relevé (0.35rem contre 0.125rem) + un padding vertical pour
+// aérer titre/dates maintenant que la rangée est plus haute. Pas de padding
+// droit explicite : le `gap` de `.trip-select-row` espace déjà le corps du
+// chevron. Le bloc desktop (@media min-width:769px) repose son propre padding
+// complet sur ce sélecteur, donc ces valeurs ne concernent que le mobile.
 .trip-select-row__body {
   flex: 1 1 auto;
   min-width: 0;
-  gap: 0.125rem;
+  gap: 0.35rem;
+  padding: var(--nt-space-2) 0;
 }
 
 // Dernier enfant de la rangée : seul inset explicite du bord DROIT réel de

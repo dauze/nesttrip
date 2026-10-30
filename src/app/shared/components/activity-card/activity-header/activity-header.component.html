@@ -3,19 +3,26 @@
     <i class="pi pi-bars"></i>
   </span>
 
+  @let thumbRef = firstPhotoRef();
+  @let thumbUrl = thumbRef ? (getPhotoUrl$(thumbRef, 120) | async) : null;
   <div
     class="activity-header__thumb flex-shrink-0 border-round overflow-hidden flex align-items-center justify-content-center"
-    [class.activity-header__thumb--placeholder]="!firstPhotoRef()"
+    [class.activity-header__thumb--placeholder]="!thumbUrl"
     [style.--activity-header-type-color]="'var(' + activityTypeMeta[activity().type].colorVar + ')'">
-      @if (firstPhotoRef(); as ref) {
-        @if (getPhotoUrl$(ref, 120) | async; as url) {
-          <img [src]="url" [alt]="activity().title" draggable="false"
-               class="activity-header__thumb-img"
-               role="button" tabindex="0"
-               (click)="openPhotoViewer($event)"
-               (keydown.enter)="openPhotoViewer($event)" />
-        }
+      @if (thumbUrl) {
+        <img [src]="thumbUrl" [alt]="activity().title" draggable="false"
+             class="activity-header__thumb-img"
+             role="button" tabindex="0"
+             (click)="openPhotoViewer($event)"
+             (keydown.enter)="openPhotoViewer($event)" />
       } @else {
+        <!--
+          Pas de photo OU échec de récupération (getPhotoUrl$ renvoie '' en cas
+          d'erreur, voir GooglePhotoService.catchError) : on retombe sur
+          l'icône identitaire du type d'activité + le fond teinté
+          (`--placeholder`), comme la vignette de la liste d'activités — plutôt
+          qu'une zone vide. Voir demande ROADMAP / fallback vignette.
+        -->
         <i [class]="'pi text-xl nt-text-muted ' + activityTypeMeta[activity().type]?.icon"></i>
       }
   </div>
@@ -30,7 +37,7 @@
   <div class="activity-header__meta flex flex-column flex-1 min-w-0 gap-1">
     @if (viewport.isMobile()) {
       <div class="activity-header__title-mobile flex align-items-center gap-2 min-w-0">
-        <span class="activity-header__title-text font-semibold text-base white-space-nowrap overflow-hidden text-overflow-ellipsis">
+        <span class="activity-header__title-text font-semibold text-base white-space-normal">
           {{ activity().title || "Nom de l'activité" }}
         </span>
         <button
@@ -47,6 +54,7 @@
         <app-autocomplete
           [suggestions]="places()"
           [formControl]="titleControl"
+          [multiline]="true"
           (blurred)="onTitleBlur()"
           (searched)="onSearch($event)"
           (optionSelected)="onSelect($event)"

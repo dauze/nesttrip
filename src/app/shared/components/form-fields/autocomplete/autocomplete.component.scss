@@ -33,3 +33,16 @@
     cursor: not-allowed;
   }
 }
+
+// Variante multi-ligne (opt-in via [multiline], voir activity-header) : le
+// libellé long wrappe au lieu d'être tronqué. La hauteur est pilotée par
+// l'autosize JS (voir AutoCompleteComponent.autosize) — on désactive donc le
+// resize manuel et on masque la scrollbar interne (jamais nécessaire puisque
+// la hauteur suit toujours le contenu).
+.app-autocomplete__input--multiline {
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}

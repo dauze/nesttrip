@@ -216,16 +216,31 @@
     min-width: 0;
   }
 
-  // La carte prend TOUT l'espace disponible (la donnée spatiale profite de la
-  // largeur, contrairement à une carte d'activité) ; la colonne activités
-  // reste à une largeur de lecture confortable, jamais étirée sur tout le
-  // reste de l'écran.
+  // Rééquilibrage largeur carte/activités (ROADMAP.md "UX / Interactions",
+  // décision 2026-10-30, option B). La carte était comprimée en bande étroite
+  // car la colonne activités réclamait `flex: 0 1 32rem` EN PRIORITÉ (grow:0),
+  // ne laissant que le reste à la carte.
+  //
+  // IMPORTANT (retour utilisateur) : surtout PAS de `min-width` sur la colonne
+  // activités — un plancher trop large la faisait déborder hors de l'écran et
+  // TRONQUER le panneau d'activité (cartes coupées à droite). La colonne
+  // activités doit pouvoir rétrécir (`flex-shrink: 1`, `min-width: 0` hérité
+  // du bloc partagé ci-dessus), jamais imposer une largeur qui force le
+  // débordement.
+  //
+  // Modèle : les activités gardent une base de LECTURE confortable (26rem,
+  // non prioritaire — `grow:0`), la carte prend TOUT le reste (`flex:1 1 auto`,
+  // `grow:1`) et obtient donc la part majoritaire dès que l'écran dépasse
+  // ~26rem + la largeur carte. Un `min-width` modéré SUR LA CARTE SEULEMENT
+  // l'empêche de redevenir une bande fine, sans jamais tronquer les activités
+  // (c'est la carte qui cède en dernier, pas le contenu textuel).
   .day-panel-map-group {
     flex: 1 1 auto;
+    min-width: 18rem;
   }
 
   .day-panel-activities-group {
-    flex: 0 1 32rem;
+    flex: 0 1 26rem;
   }
 
   // Sans activité, ni la timeline ni la carte ne sont rendues (voir le `@if`
@@ -249,7 +264,14 @@
     // `--nt-sticky-map-top-gap`) : la hauteur ci-dessous est calculée au
     // pixel près pour occuper tout l'espace vertical disponible, l'ajouter
     // ferait déborder la carte en bas de l'écran.
-    top: calc(var(--sticky-top-offset, 0px) + var(--nt-map-collapse-reserve));
+    //
+    // `+ --nt-layout-gap-stacked` : MÊME offset que le bouton frère ci-dessous
+    // (`.day-panel-map-collapse`), qui le réserve pour éviter de "remonter" au
+    // premier pixel de scroll (padding-top de `.day-panel-root`). La carte doit
+    // suivre ce décalage, sinon l'écart bouton↔carte se réduirait au scroll
+    // (le bouton colle plus bas que son flux, la carte pas). La `height`
+    // ci-dessous soustrait ce même terme pour ne pas déborder en bas.
+    top: calc(var(--sticky-top-offset, 0px) + var(--nt-layout-gap-stacked, 0.25rem) + var(--nt-map-collapse-reserve));
     // Hauteur concrète = point de départ de la chaîne flex/`height:100%`
     // jusqu'à `<google-map>` (voir `PanelComponent.fillHeight` et
     // trip-day-map.component.scss) : CSS normal, aucun `!important`
@@ -266,7 +288,10 @@
     // dépasserait l'espace disponible sous le chrome. Valeur =
     // hauteur du bouton (texte 1 ligne + padding `--nt-space-2`×2 + bordure)
     // + un `gap` flex (`--nt-layout-gap-split`).
-    height: calc(100dvh - var(--chrome-top-offset, 0px) - var(--nt-map-collapse-reserve));
+    // `- --nt-layout-gap-stacked` : le `top` ci-dessus a été décalé d'autant
+    // (alignement sur l'offset de flux du bouton frère) — soustraire le même
+    // terme ici empêche la carte de déborder sous le bas de l'écran.
+    height: calc(100dvh - var(--chrome-top-offset, 0px) - var(--nt-layout-gap-stacked, 0.25rem) - var(--nt-map-collapse-reserve));
   }
 
   // --- Escamotage de la colonne carte (option B, retour utilisateur
@@ -280,7 +305,15 @@
   // reste du contenu jour.
   .day-panel-map-collapse {
     position: sticky;
-    top: var(--sticky-top-offset, 0px);
+    // `+ --nt-layout-gap-stacked` : CE bouton est le PREMIER enfant de flux de
+    // la colonne carte, qui démarre `--nt-layout-gap-stacked` sous le haut du
+    // scrollport (padding-top de `.day-panel-root`, voir sa règle). Coller à
+    // `--sticky-top-offset` SEUL (0 en desktop) le ferait "remonter" de ce
+    // gap au tout premier pixel de scroll — artefact sticky classique (écart
+    // entre sa position de flux initiale et son point de collage). En calant
+    // le `top` sur la MÊME valeur que son offset de flux, aucun saut à
+    // l'accrochage (retour utilisateur : "le bouton remonte un peu à tort").
+    top: calc(var(--sticky-top-offset, 0px) + var(--nt-layout-gap-stacked, 0.25rem));
     z-index: 11;
     flex: 0 0 auto;
     display: flex;
@@ -324,9 +357,12 @@
     .day-panel-map-group {
       // Rail étroit à hauteur de contenu (pas `1 1 auto`) : la carte ne doit
       // plus manger d'espace. `align-self: stretch` NON voulu — on garde le
-      // rail court, collé en haut.
+      // rail court, collé en haut. `min-width: 0` annule le plancher `22rem`
+      // du mode déplié (voir plus haut) : sinon la colonne repliée resterait
+      // large de 22rem au lieu de se réduire au rail (~2.5rem).
       flex: 0 0 auto;
       align-self: flex-start;
+      min-width: 0;
     }
 
     // Tout le contenu "carte dépliée" disparaît : la carte elle-même (plus

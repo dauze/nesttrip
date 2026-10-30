@@ -5,8 +5,18 @@
  * donc globales plutôt que scoped à un composant.
  * ------------------------------------------------------------------- */
 
+// `position: fixed` + monté sur <body> (voir PullToRefreshDirective.ngOnInit) :
+// la flèche descend du haut de l'écran et doit passer PAR-DESSUS la carte
+// "jour" fixe et son footer (.day-fixed-map). L'hôte du geste est un
+// `swiper-slide` qui porte `filter: blur(...)` : laissé enfant de l'hôte, un
+// `position: fixed` serait contenu par ce slide (le `filter` crée un bloc
+// englobant) et resterait piégé SOUS la carte fixe (retour utilisateur "passe
+// par dessous"). Monté sur <body>, l'indicateur est dans le contexte racine du
+// viewport, où --z-pull-to-refresh (> --z-fixed-map) le fait bien repasser
+// au-dessus de la carte et de son footer. `top: 0` = ras du haut de l'écran,
+// le `translateY` piloté par la directive l'en fait descendre.
 .nt-pull-to-refresh {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 50%;
   transform: translate(-50%, 0);
@@ -20,12 +30,7 @@
   box-shadow: var(--nt-shadow-sm);
   opacity: 0;
   pointer-events: none;
-  z-index: calc(var(--z-fixed-map) + 1);
-}
-
-.nt-pull-to-refresh-active {
-  position: relative;
-  z-index: calc(var(--z-fixed-map) + 1);
+  z-index: var(--z-pull-to-refresh);
 }
 
 .nt-pull-to-refresh__icon {

@@ -38,7 +38,7 @@
 
     <!-- List -->
     } @else {
-      <div class="grid m-0 gap-2 trip-grid">
+      <div class="grid m-0 gap-3 trip-grid">
         @for (trip of trips(); track trip.id) {
           <app-card
             [appSelectable]="{ kind: 'trip', id: trip.id }" #sel="appSelectable"
