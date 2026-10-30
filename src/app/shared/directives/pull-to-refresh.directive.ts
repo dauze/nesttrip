@@ -131,11 +131,13 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
       // plus un vrai pull-to-refresh, on abandonne proprement.
       this.phase = 'aborted';
       this.setDistance(0);
+        this.renderer.removeClass(this.elementRef.nativeElement, 'nt-pull-to-refresh-active');
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
+      this.renderer.addClass(this.elementRef.nativeElement, 'nt-pull-to-refresh-active');
     this.setDistance(computePullDistance(deltaY));
   };
 
@@ -147,6 +149,7 @@ export class PullToRefreshDirective implements OnInit, OnDestroy {
         this.setDistance(0);
       }
     }
+    this.renderer.removeClass(this.elementRef.nativeElement, 'nt-pull-to-refresh-active');
     this.phase = 'idle';
   };
 
