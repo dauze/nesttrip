@@ -4,7 +4,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### Plan d'exécution en cours (2026-08-11)
 - Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_already done.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
-- **Parcours IA — sélection mobile EN COURS (2026-10-30).** Le sous-lot desktop est implémenté : liste avec retrait par croix, puis planification des activités gardées en `activities_day`/`full_plan`. Sur mobile, cartes à swiper à droite/gauche, validation toujours disponible, chargement de nouvelles propositions quand la pile est épuisée et liste complémentaire des activités gardées au-delà de 15 jours. Le Lot 4 (régénération ciblée d'un jour) reste reporté.
+- **Parcours IA — sélection mobile implémentée (2026-10-30), vérification visuelle à confirmer.** Le sous-lot desktop est implémenté : liste avec retrait par croix, puis planification des activités gardées en `activities_day`/`full_plan`. Sur mobile, cartes à swiper à droite/gauche, validation toujours disponible, chargement de nouvelles propositions quand la pile est épuisée et liste complémentaire des activités gardées au-delà de 15 jours. Les vérifications automatisées passent ; il reste à confirmer le rendu dans une session authentifiée. Le Lot 4 (régénération ciblée d'un jour) reste reporté.
 
 ### Offline & données (non prioritaire)
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
@@ -77,7 +77,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
 - Diagnostiquer pourquoi le diagramme des dépenses ne s'affiche plus et rétablir son affichage.
-- lors du drag and drop des activité sur un day, comme il y a les modes de transport ça fait un d'emplacement vide et on dirait qu'il y a un beug, on peut pas les masquer au drag et faire une annimation ou il se fond et disparaissent donc le carte se rapprochent en même temps que de se fermer ? 
+- **Drag intra-jour — gaps de trajet masqués avec animation (2026-10-30), vérification visuelle à confirmer.** Les gaps se réduisent après le seuil de déplacement réel et réapparaissent au relâchement ; lint, typecheck et tests unitaires passent. La confirmation visuelle attend une session authentifiée dédiée (`.env.e2e` absent).
 - Lorsque l'on arrive sur l'écran d'accueil aavec la liste des voyages, il faut que les photos soient en spinner avant de s'afficher le temps qu'elles se chargent
 - mettre un padding sur la case à cocher et l'icone de drag de chaque ligne dans les listes de case à cocher
 - la fleche pour aller à droite dans le calendrier à été remplacé par une croix à tord
