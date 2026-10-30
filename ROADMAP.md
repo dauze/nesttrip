@@ -4,6 +4,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### Plan d'exécution en cours (2026-08-11)
 - Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_already done.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
+- **Parcours IA — sélection mobile EN COURS (2026-10-30).** Le sous-lot desktop est implémenté : liste avec retrait par croix, puis planification des activités gardées en `activities_day`/`full_plan`. Sur mobile, cartes à swiper à droite/gauche, validation toujours disponible, chargement de nouvelles propositions quand la pile est épuisée et liste complémentaire des activités gardées au-delà de 15 jours. Le Lot 4 (régénération ciblée d'un jour) reste reporté.
 
 ### Offline & données (non prioritaire)
 - Mode hors ligne : quid des données Google (Maps/Places) en offline ?
@@ -26,11 +27,13 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - voir avec le skill UX ou mettre le bouton + ? 
 - il y a un moment ou l'affichage n'est pass bien entre la transition du mobile vers le desktop, quand on arrive après la largeur max de la bottom bar et de la liste de scool, des barres noire aapparaisent sur les coté, il faut trouver un moyen de soit faire la transition plus tôt vers le mode ordi, soit rajouter un mode, à trancher avec le skill ux
 - gérer proprement tous es patting et faire en sorte que la age ne soit pa visible au niveau des écats autour de la bar des jours 
+- **Vue Jour desktop — carte et commande de repli au scroll.** Garder « Réduire la carte » visible pendant le défilement du contenu et étendre la carte jusqu'en bas de la zone disponible, sans masquer la commande ni laisser de vide résiduel (problème illustré par les captures du 2026-10-30).
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
 - sur la dialogue de note, mettre le focuse sur les note quand elle s'ouvre
 - mettre les chevrons vers le bas sur le chip des trajet plutot que mettre un minus (celui entre les carte des activités de la vue day). Idement pour la liste déroulante de la devise dans le menum paramètres
+- **Refonte de la liste sur mobile — à cadrer avec l'UX.** Définir le périmètre et une proposition visuelle avec le skill UX avant toute implémentation.
 
 
 ### Carte
@@ -42,6 +45,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Suggestions d'activités via la ville dans le pool (A affiner)
 
 ### Nouveau voyage / IA
+- **Parcours de sélection des activités générées — desktop implémenté, sous-lot mobile EN COURS (2026-10-30).** Après la saisie du texte et la génération IA, choisir les activités avant la planification intelligente. Sur téléphone, cartes swipe à droite pour garder et à gauche pour passer, boutons explicites, validation fixe toujours accessible et demande d'un nouveau lot quand la pile est épuisée ; afficher la liste des activités gardées avec une croix au-delà de 15 jours. Sur ordinateur fixe et portable, conserver la liste avec croix. Les lots supplémentaires excluent les lieux déjà proposés et préservent les choix précédents.
 - Proposer une amélioration d'itinéraire par jour. Je ne sais pas comment le matérialiser, mais ça permettrait de modifier l'ordre des activité, en prenant compte les horaires d'ouverture et les distances (IA) (A affiner)
 
 ### I18n (non prioritaire)
@@ -55,6 +59,13 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### UX / Interactions
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
+-Le scroll implémenter maison pour rafraîchir doit passer devant la map dans les day activity, et la flèche doit etre plus épaisse
+- sur les liste déroulantes, il faut remettre un chevron pour le logos de depliage !
+- Le centrage de la carte est sur paris le jour ou il n'y a pas d'activité, il faut que ce soit sur le placeid du trip
+- la carte de l'activité dans l'accueil, si il y a pas de photo le fond du logo nest pas bon. Et il faudrait l'agrandir un peu en hauteur pour avoir une photo plus grande
+- ajouter un circuit sur les point
+- Ameliorer la carte pour l'ouvrir en grand en glissant, elle peut prendre toute la taille de l'écran, pas que la moitié. Ensuite, quand on louvre en grand et que l'on clique sur un point, il faut qu'elle se réduise avant de basculer sur le jour
+- dans la vue generale, les point de la carte doivent avoir une couleur différente selon les jour
  
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)
@@ -66,9 +77,12 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
+- Diagnostiquer pourquoi le diagramme des dépenses ne s'affiche plus et rétablir son affichage.
 - lors du drag and drop des activité sur un day, comme il y a les modes de transport ça fait un d'emplacement vide et on dirait qu'il y a un beug, on peut pas les masquer au drag et faire une annimation ou il se fond et disparaissent donc le carte se rapprochent en même temps que de se fermer ? 
-- Lorsque l'on arrive sur l'écran d'accuei aavec la liste des voyaes, il faut que les photos soient en spinner avant de s'afficher le temps qu'elles se chargent
+- Lorsque l'on arrive sur l'écran d'accueil aavec la liste des voyages, il faut que les photos soient en spinner avant de s'afficher le temps qu'elles se chargent
 - mettre un padding sur la case à cocher et l'icone de drag de chaque ligne dans les listes de case à cocher
+- la fleche pour aller à droite dans le calendrier à été remplacé par une croix à tord
+- L'écran de voyage sur le bureau a des beug sur la liste des voyage, la timeline passe sous la carte à tord 
 
 ### Qualité / process
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
