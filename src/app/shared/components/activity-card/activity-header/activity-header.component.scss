@@ -28,7 +28,15 @@ img {
 // jamais être battu autrement.
 .activity-header__thumb {
   width: 4rem;
-  height: 4rem;
+  height: 4.5rem;
+}
+
+.activity-header__thumb--placeholder {
+  background: color-mix(in srgb, var(--activity-header-type-color) 14%, var(--nt-content-background));
+
+  i {
+    color: var(--activity-header-type-color);
+  }
 }
 
 .activity-header__thumb-img {

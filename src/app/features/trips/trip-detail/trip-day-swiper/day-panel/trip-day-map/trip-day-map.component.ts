@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, effect, ElementRef, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
-import { GoogleMap, MapAdvancedMarker, MapPolyline } from '@angular/google-maps';
+import { GoogleMap, MapAdvancedMarker, MapCircle, MapPolyline } from '@angular/google-maps';
 import { DayMapPoint } from '@app/core/models/day-map-point';
 import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
 import { GooglePhotoService } from '@app/core/services/api/google-photo.service';
@@ -34,12 +34,24 @@ const DRAG_COMMIT_PX = 60;
   selector: 'app-trip-day-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [GoogleMap, MapAdvancedMarker, MapPolyline, PanelComponent],
+  imports: [GoogleMap, MapAdvancedMarker, MapCircle, MapPolyline, PanelComponent],
   templateUrl: 'trip-day-map.component.html',
   styleUrl: 'trip-day-map.component.scss',
 })
 export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
+  protected readonly userPosition = signal<google.maps.LatLngLiteral | null>(null);
+  protected readonly userPositionAccuracy = signal(0);
+  protected readonly locatingUser = signal(false);
+  protected readonly locationError = signal<string | null>(null);
+  protected readonly userAccuracyCircleOptions: google.maps.CircleOptions = {
+    fillColor: '#4285F4', fillOpacity: 0.14, strokeColor: '#4285F4', strokeOpacity: 0.45,
+    strokeWeight: 1, clickable: false, zIndex: 2,
+  };
+  protected readonly userLocationDotOptions: google.maps.CircleOptions = {
+    fillColor: '#4285F4', fillOpacity: 1, strokeColor: '#ffffff', strokeOpacity: 1,
+    strokeWeight: 2, clickable: false, zIndex: 3,
+  };
   protected readonly routePaths = computed(() => {
     const pointsByDay = new Map<string, DayMapPoint[]>();
     for (const point of this.points()) {
@@ -535,6 +547,32 @@ export class TripDayMapComponent {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
     map.moveCamera({ center, zoom });
+  }
+
+  protected locateUser(): void {
+    this.locationError.set(null);
+    if (!navigator.geolocation) {
+      this.locationError.set('La géolocalisation n’est pas disponible sur cet appareil.');
+      return;
+    }
+
+    this.locatingUser.set(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const position = { lat: coords.latitude, lng: coords.longitude };
+        this.userPosition.set(position);
+        this.userPositionAccuracy.set(coords.accuracy);
+        this.locatingUser.set(false);
+        this.moveCameraTo(position, Math.max(this.zoom(), 15));
+      },
+      (error) => {
+        this.locatingUser.set(false);
+        this.locationError.set(error.code === error.PERMISSION_DENIED
+          ? 'Autorise l’accès à ta position pour l’afficher sur la carte.'
+          : 'Position indisponible pour le moment.');
+      },
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
+    );
   }
 
   followScroll(from: DayMapPoint, to: DayMapPoint, t: number): void {

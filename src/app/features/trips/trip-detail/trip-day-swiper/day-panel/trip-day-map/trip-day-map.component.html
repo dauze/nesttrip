@@ -30,6 +30,10 @@
           @for (route of routePaths(); track route.dayKey) {
             <map-polyline [path]="route.path" [options]="routeLineOptions()" />
           }
+          @if (userPosition(); as position) {
+            <map-circle [center]="position" [radius]="userPositionAccuracy()" [options]="userAccuracyCircleOptions" />
+            <map-circle [center]="position" [radius]="8" [options]="userLocationDotOptions" />
+          }
           @for (point of points(); track point.activityId) {
             <map-advanced-marker
               [position]="{ lat: point.latitude, lng: point.longitude }"
@@ -40,6 +44,19 @@
           }
         </google-map>
       }
+      <div class="map-location-control">
+        <button
+          type="button"
+          class="map-location-control__button"
+          [disabled]="locatingUser()"
+          [attr.aria-label]="locatingUser() ? 'Localisation en cours' : 'Afficher ma position'"
+          (click)="locateUser()">
+          <i [class]="locatingUser() ? 'pi pi-spinner pi-spin' : 'pi pi-crosshairs'" aria-hidden="true"></i>
+        </button>
+        @if (locationError(); as error) {
+          <span class="map-location-control__error" role="status">{{ error }}</span>
+        }
+      </div>
   </div>
 
   <!--

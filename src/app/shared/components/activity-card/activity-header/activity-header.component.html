@@ -3,7 +3,10 @@
     <i class="pi pi-bars"></i>
   </span>
 
-  <div class="activity-header__thumb flex-shrink-0 border-round overflow-hidden nt-bg-subtle flex align-items-center justify-content-center">
+  <div
+    class="activity-header__thumb flex-shrink-0 border-round overflow-hidden flex align-items-center justify-content-center"
+    [class.activity-header__thumb--placeholder]="!firstPhotoRef()"
+    [style.--activity-header-type-color]="'var(' + activityTypeMeta[activity().type].colorVar + ')'">
       @if (firstPhotoRef(); as ref) {
         @if (getPhotoUrl$(ref, 120) | async; as url) {
           <img [src]="url" [alt]="activity().title" draggable="false"

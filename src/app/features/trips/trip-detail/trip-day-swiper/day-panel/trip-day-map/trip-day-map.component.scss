@@ -59,8 +59,55 @@
 // avec un peu d'air tout autour (retour utilisateur : "le conteneur n'a pas
 // de radius en haut, ok, mais la map doit en avoir, idem pour le padding").
 .map-container {
+  position: relative;
   border-radius: var(--nt-content-border-radius);
   overflow: hidden;
+}
+
+.map-location-control {
+  position: absolute;
+  top: var(--nt-space-3);
+  right: 3.5rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--nt-space-2);
+  pointer-events: none;
+}
+
+.map-location-control__button {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-pill);
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-sm);
+  color: var(--nt-primary-color);
+  font-size: var(--nt-icon-size-md);
+  cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto;
+
+  &:disabled {
+    opacity: var(--nt-disabled-opacity);
+    cursor: wait;
+  }
+}
+
+.map-location-control__error {
+  max-width: min(18rem, calc(100vw - 5rem));
+  padding: 0.5rem 0.75rem;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-sm);
+  background: var(--nt-content-background);
+  box-shadow: var(--nt-shadow-sm);
+  color: var(--nt-text-color);
+  font-size: 0.8125rem;
+  pointer-events: auto;
 }
 
 // Icônes du footer togglable (voir `footerToggle`/`[panelFooter]`,
