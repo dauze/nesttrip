@@ -31,7 +31,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- sur la dialogue de note, mettre le focuse sur les note quand elle s'ouvre
 - mettre les chevrons vers le bas sur le chip des trajet plutot que mettre un minus (celui entre les carte des activités de la vue day). Idement pour la liste déroulante de la devise dans le menum paramètres
 - **Refonte de la liste sur mobile — à cadrer avec l'UX.** Définir le périmètre et une proposition visuelle avec le skill UX avant toute implémentation.
 
@@ -61,7 +60,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
 -Le scroll implémenter maison pour rafraîchir doit passer devant la map dans les day activity, et la flèche doit etre plus épaisse
 - sur les liste déroulantes, il faut remettre un chevron pour le logos de depliage !
-- Le centrage de la carte est sur paris le jour ou il n'y a pas d'activité, il faut que ce soit sur le placeid du trip
 - la carte de l'activité dans l'accueil, si il y a pas de photo le fond du logo nest pas bon. Et il faudrait l'agrandir un peu en hauteur pour avoir une photo plus grande
 - ajouter un circuit sur les point
 - Ameliorer la carte pour l'ouvrir en grand en glissant, elle peut prendre toute la taille de l'écran, pas que la moitié. Ensuite, quand on louvre en grand et que l'on clique sur un point, il faut qu'elle se réduise avant de basculer sur le jour
