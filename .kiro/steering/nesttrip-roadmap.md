@@ -11,3 +11,4 @@ patterns de `CLAUDE.md`, vérifier, clore proprement en déplaçant l'item vers
 `ROADMAP_already done.md`) est décrit dans le skill projet ci-dessous. Le suivre.
 
 #[[file:.claude/skills/nesttrip-roadmap/SKILL.md]]
+#[[file:AGENTS.md]]

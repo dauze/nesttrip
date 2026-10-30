@@ -1,5 +1,7 @@
 # Nest Trip — Instructions projet
 
+@AGENTS.md
+
 App Angular de planification de voyages (jours, activités, réservations) avec backend Firebase (Firestore/Auth/Storage) et un petit backend maison pour les données Google Places.
 
 Voir `ROADMAP.md` à la racine pour la liste des fonctionnalités déjà en place (à ne pas casser) et ce qui reste à faire.
@@ -70,14 +72,14 @@ src/app/features/     # UI par domaine (trips, trip-detail, ...), contient les *
 - `_poolActivities: Record<poolId, PoolActivity>` (pool plat de **toutes** les activités "légères" connues, tous trips confondus — identité Google + fichiers uniquement, **jamais** le form)
 - `_dayActivityInstances: Record<instanceId, DayActivityInstance>` (pool plat de **toutes** les instances connues, tous trips confondus — le form : type/durée/horaires/prix/réservation/notes, référence son activité de pool via `instance.activityId`)
 - `_tripDays: Record<tripId, dayKey[]>`, `_dayActivityIds: Record<dayKey, instanceId[]>` (instances référencées par un jour, dans l'ordre), `_tripActivities: Record<tripId, poolId[]>` (toutes les activités de pool d'un trip, placées sur un/plusieurs jours ou aucun)
-- `_notesItems` / `_tripNotesItems`, `_tripMembers: Record<tripId, Record<email, TripMember>>`
+- `_notesItems` / `_tripNotesItems`, `_tripMembers: Record<tripId, Record<uid, TripMember>>`
 - `dayKey` = `day.id.toISOString()` partout côté store (à ne pas confondre avec la clé Firestore `getTime()`, voir plus haut)
 
 **Pool "léger" + instances par jour (important)** : une activité de pool (`PoolActivity` : id, title, placeId/address/lat/lng, photoRefs, `files`) peut être placée sur **plusieurs jours simultanément**. Chaque placement crée une `DayActivityInstance` séparée (son propre id, son propre form), référençant la même `PoolActivity` via `activityId`. Éditer le form d'une instance (via `ActivityFormComponent`) n'affecte que cette instance ; éditer l'identité ou les fichiers (titre, lieu Google, upload/suppression de fichier) affecte toujours la `PoolActivity` et se répercute donc sur toutes ses instances, puisque les fichiers ne vivent **que** sur le pool (jamais dupliqués par instance — chemin Storage `trips/{tripId}/{poolActivityId}/...`). L'UI consomme une vue composée `Activity` (mêmes champs qu'avant + `activityId` en FK vers le pool) : `id` vaut l'instanceId en contexte jour, le poolId en contexte pool (auto-référencé par `activityId`). `ActivityCardComponent` bascule entre les deux vues selon la présence de son input `dayId` ; le form (`app-activity-form`) n'est monté qu'en contexte jour.
 
 **Pourquoi normaliser** : une activité peut être affichée à la fois dans un/plusieurs jours et dans une vue générale. Stocker l'identité une seule fois (`_poolActivities`) et la référencer ailleurs par id garantit qu'une édition d'identité/fichier se répercute partout instantanément ; stocker chaque instance séparément (`_dayActivityInstances`) garantit que le form d'un placement n'écrase jamais celui d'un autre.
 
-**Sélecteur `activeTrip`** : `computed()` qui recompose `Trip` à partir de `_trips` + `_tripDays` + `_days`, mais renvoie volontairement `activities: []` et `dayActivityInstances: []` — le pool et les instances ne sont **pas** lus ici. Les lire aurait rendu `activeTrip` (et tout ce qui en dépend, y compris le skeleton de chargement) réactif à chaque édition d'activité. Les activités se consomment via des sélecteurs dédiés et mémoïsés : `getDayActivities(dayId)`, `getDayActivity(instanceId)`, `getPoolActivity(poolId)`, `getPoolActivityView(poolId)`, `getAllPoolActivities(tripId)`, `getActivityDayIds(tripId)` (retourne `Map<poolId, Date[]>` — une activité de pool peut être placée sur zéro, un ou plusieurs jours) — chacun met en cache son `Signal` calculé dans une `Map` interne, créé à la demande.
+**Sélecteur `activeTrip`** : `computed()` qui recompose `Trip` à partir de `_trips` + `_tripDays` + `_days`, mais renvoie volontairement `activities: []`, `dayActivityInstances: []`, `logistics: []` et `expenses: []` — ces collections ne sont **pas** lues ici. Les lire aurait rendu `activeTrip` (et tout ce qui en dépend, y compris le skeleton de chargement) réactif à chaque édition d'activité. Les activités se consomment via des sélecteurs dédiés et mémoïsés : `getDayActivities(dayId)`, `getDayActivity(instanceId)`, `getPoolActivity(poolId)`, `getPoolActivityView(poolId)`, `getAllPoolActivities(tripId)`, `getActivityDayIds(tripId)` (retourne `Map<poolId, Date[]>` — une activité de pool peut être placée sur zéro, un ou plusieurs jours) — chacun met en cache son `Signal` calculé dans une `Map` interne, créé à la demande.
 
 **Flux optimiste d'une commande** (ex. `updatePoolActivity`, `updateDayActivityInstance`, `createActivity`, `dispatchActivity`, `addDay`...) — le même schéma partout dans `TripStore` :
 1. Mise à jour **immédiate** des signals locaux via `.update((map) => ({ ...map, ... }))` — jamais de mutation en place, toujours un nouvel objet/map.
@@ -106,5 +108,5 @@ src/app/features/     # UI par domaine (trips, trip-detail, ...), contient les *
 ## Ce que je ne veux pas que tu fasses
 
 - Ne pas introduire de nouveau pattern d'accès aux données en dehors du couple repository/data source/mapper existant sans demander.
-- Ne pas committer/modifier `environnements/environnement*.ts` avec des clés en clair sans prévenir.
+- La politique de protection des fichiers d'environnement est centralisée dans le bloc partagé de `AGENTS.md`.
 - Ne pas court-circuiter `_pendingActivityIds` ni son nettoyage global via l'`effect()` sur `syncing()` : c'est ce qui empêche l'UI de "revenir en arrière" pendant une écriture debouncée en cours.
