@@ -77,7 +77,7 @@ export class TripDayMapComponent {
       strokeOpacity: 0.72,
       strokeWeight: 3,
       clickable: false,
-      geodesic: false,
+      geodesic: true,
       zIndex: 1,
     };
   });
