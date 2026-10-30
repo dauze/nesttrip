@@ -5,6 +5,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### Plan d'exécution en cours (2026-10-30)
 - **Accueil mobile — liste de voyages implémentée (2026-10-30), vérification visuelle sur l’app à confirmer.** Périmètre : accueil uniquement. Rangées conservées, vignettes élargies à 5.5rem et chip « En cours » posé sur la photo ; actions et navigation inchangées. Maquette validée. Lint, typecheck et tests unitaires passent ; confirmation sur l’app dans une session authentifiée dédiée (`.env.e2e` absent).
 - **Gouttières des barres de navigation desktop/mobile — implémentées (2026-10-30).** Seuils inchangés ; barre mobile pleine largeur, onglets desktop bord-à-bord, jours toujours défilants. Maquette validée ; lint passé. Vérification visuelle sur l’app à confirmer dans une session authentifiée dédiée (`.env.e2e` absent).
+- **Vue Général desktop — colonne Résumé/carte élargie (décision UX du 2026-10-30), implémentée.** Au seul palier à trois colonnes, plafond passé de 19rem à 21rem ; le palier à deux colonnes (20rem) et le mobile restent inchangés. Maquette validée, lint passé ; confirmation visuelle sur l’app dans une session authentifiée dédiée (`.env.e2e` absent).
 - **Carte du Résumé — courbes directes entre les points implémentées (décision UX du 2026-10-30), vérification visuelle à confirmer.** Les polylignes sont géodésiques, sans calcul de route ; points, ordre et couleurs par jour inchangés. Lint, typecheck et tests unitaires passent. Confirmation visuelle dans une session authentifiée dédiée (`.env.e2e` absent).
 - Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_already done.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
 - **Parcours IA — sélection mobile implémentée (2026-10-30), vérification visuelle à confirmer.** Le sous-lot desktop est implémenté : liste avec retrait par croix, puis planification des activités gardées en `activities_day`/`full_plan`. Sur mobile, cartes à swiper à droite/gauche, validation toujours disponible, chargement de nouvelles propositions quand la pile est épuisée et liste complémentaire des activités gardées au-delà de 15 jours. Les vérifications automatisées passent ; il reste à confirmer le rendu dans une session authentifiée. Le Lot 4 (régénération ciblée d'un jour) reste reporté.
@@ -54,9 +55,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### UX / Interactions
 - Prérenseigner une liste de to take à la création d'un voyage et des activités en arrivant sur l'IHM ? Que sur le premier trip qsue l'on créé, pour la cinématique ? (A affiner)
 - Rajouter les transports / hotel des notification directement dans la vu d'ensemble (A affiner)
-- sur la vue générale, il faudrait que tu agrandisse un peut la largeur de la colonne avec la carte, c'est un peu trop petit
 - pour relier les points, tu pourrais faire un peux plus smooth, car des lignes droites ça fait trop carré
-- sur la vue générale, il faudrait que tu agrandisse un peut la largeur de la colonne avec la carte, c'est un peu trop petit
  
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)

@@ -86,7 +86,7 @@
        au lieu de minmax(0,1fr) — elle ne s'écrase plus. Colonnes latérales
        légèrement resserrées pour lui laisser la place. */
     grid-template-columns:
-      minmax(15rem, 19rem)
+      minmax(15rem, 21rem)
       minmax(26rem, 1fr)
       minmax(16rem, 21rem);
     align-items:start;
@@ -97,7 +97,7 @@
   }
   /* En dessous du plancher combiné : la colonne latérale droite passe dessous
      plutôt que d'écraser (dégradation gracieuse tablette large) */
-  @media (max-width: 78rem) {
+  @media (max-width: 75rem) {
     .general-root { grid-template-columns: minmax(15rem,19rem) minmax(24rem,1fr); }
     .general-root .col--side { grid-column: 1 / -1; flex-direction:row; }
     .general-root .col--side > * { flex:1; }

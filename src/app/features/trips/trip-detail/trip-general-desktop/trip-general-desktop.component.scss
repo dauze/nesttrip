@@ -62,7 +62,7 @@
 // latérale reprend sa pile verticale (une seule colonne étroite à droite).
 @media (min-width: 75rem) {
   .trip-general-desktop-grid {
-    grid-template-columns: minmax(15rem, 19rem) minmax(26rem, 1fr) minmax(16rem, 21rem);
+    grid-template-columns: minmax(15rem, 21rem) minmax(26rem, 1fr) minmax(16rem, 21rem);
   }
 
   .trip-general-desktop-col--side {
