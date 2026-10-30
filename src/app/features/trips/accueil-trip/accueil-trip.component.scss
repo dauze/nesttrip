@@ -86,6 +86,7 @@ app-card.card {
   align-items: center;
   gap: 0.75rem;
   min-height: 4rem;
+  position: relative;
   cursor: pointer;
 }
 
@@ -115,9 +116,16 @@ app-card.card {
 // photo n'a donc besoin d'aucun `border-radius` propre.
 .trip-select-row__thumb {
   flex-shrink: 0;
-  width: 4rem;
+  width: 5.5rem;
   align-self: stretch;
   object-fit: cover;
+}
+
+.trip-select-row__chip {
+  position: absolute;
+  bottom: var(--nt-space-2);
+  left: var(--nt-space-2);
+  z-index: 1;
 }
 
 // `--nt-content-hover-background` (théma-consciente), PAS le brut
@@ -269,6 +277,7 @@ app-card.card {
     position: absolute;
     top: var(--nt-space-3);
     left: var(--nt-space-3);
+    bottom: auto;
     z-index: 1;
   }
 

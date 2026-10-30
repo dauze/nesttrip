@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NestTrip - Accueil mobile</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f5f8f8;
+      --surface: #fff;
+      --surface-soft: #edf4f3;
+      --text: #263b3d;
+      --muted: #748689;
+      --border: #e0e8e8;
+      --primary: #2a7871;
+      --primary-soft: #e6f2f0;
+      --coral: #e77b67;
+      --shadow: 0 7px 22px rgba(27, 52, 58, .08);
+      --radius: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --page: #11191b;
+        --surface: #1d282b;
+        --surface-soft: #273538;
+        --text: #edf4f3;
+        --muted: #a4b5b7;
+        --border: #35474a;
+        --primary: #56a69c;
+        --primary-soft: #253f3d;
+        --coral: #ef927e;
+        --shadow: 0 7px 22px rgba(0, 0, 0, .24);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background: #e9eeee;
+      color: var(--text);
+      font: 14px/1.4 system-ui, sans-serif;
+    }
+    button { color: inherit; font: inherit; }
+    .presentation { display: grid; justify-items: center; gap: 12px; }
+    .presentation-label { color: #607477; font-size: 11px; font-weight: 750; }
+    .device {
+      width: min(390px, calc(100vw - 32px));
+      min-height: 820px;
+      overflow: hidden;
+      border: 1px solid rgba(38, 59, 61, .14);
+      border-radius: 22px;
+      background: var(--page);
+      box-shadow: 0 24px 70px rgba(27, 52, 58, .18);
+    }
+    .status-bar { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 21px; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .screen { padding: 12px 16px 24px; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 24px; line-height: 1.15; font-weight: 750; }
+    .header-action { border: 0; padding: 8px 0 8px 10px; background: transparent; color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .trip-list { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .trip-row { position: relative; display: grid; grid-template-columns: 90px minmax(0, 1fr) 18px; align-items: center; gap: 12px; min-height: 104px; padding: 10px 12px 10px 10px; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); text-align: left; cursor: pointer; }
+    .trip-row:last-child { border-bottom: 0; }
+    .trip-row:active { background: var(--surface-soft); }
+    .trip-photo { position: relative; width: 90px; height: 80px; overflow: hidden; border-radius: 6px; background: var(--surface-soft); }
+    .trip-photo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .trip-photo--placeholder { display: grid; place-items: center; color: var(--primary); }
+    .trip-photo--placeholder span { font-size: 26px; }
+    .status-chip { position: absolute; left: 5px; bottom: 5px; padding: 3px 6px; border-radius: 999px; background: rgba(255,255,255,.94); color: #25645e; font-size: 9px; font-weight: 800; }
+    .trip-copy { min-width: 0; display: grid; gap: 6px; }
+    .trip-title { display: -webkit-box; overflow: hidden; color: var(--text); font-size: 15px; font-weight: 730; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .trip-dates { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 550; white-space: nowrap; }
+    .trip-dates svg { width: 13px; height: 13px; flex: 0 0 auto; color: var(--primary); }
+    .arrow { color: #9aa9aa; font-size: 19px; line-height: 1; }
+    .selection-check { position: absolute; top: 8px; right: 8px; width: 21px; height: 21px; display: none; place-items: center; border: 1.5px solid white; border-radius: 50%; background: var(--primary); color: white; font-size: 12px; box-shadow: 0 1px 5px rgba(0,0,0,.2); }
+    .selection-mode .selection-check { display: grid; border-color: var(--border); background: var(--surface); color: transparent; }
+    .selection-mode .trip-row.is-selected { background: var(--surface-soft); }
+    .selection-mode .trip-row.is-selected .selection-check { border-color: var(--primary); background: var(--primary); color: white; }
+    .selection-mode .arrow { visibility: hidden; }
+    .add-trip { width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 16px; border: 0; border-radius: 8px; background: var(--primary); color: white; font-size: 14px; font-weight: 750; box-shadow: 0 4px 11px rgba(42, 120, 113, .2); cursor: pointer; }
+    .add-trip span { font-size: 20px; font-weight: 400; }
+    .footnote { margin-top: 12px; color: var(--muted); font-size: 10px; text-align: center; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="presentation">
+    <div class="presentation-label">PROPOSITION / ACCUEIL MOBILE</div>
+    <section class="device" aria-label="Maquette de l’accueil mobile NestTrip">
+      <div class="status-bar"><span>9:41</span><span>● ● ● &nbsp; 100%</span></div>
+      <div class="screen">
+        <header class="header">
+          <h1>Mes voyages</h1>
+          <button class="header-action" type="button" aria-pressed="false">Sélectionner</button>
+        </header>
+
+        <div class="trip-list" role="list">
+          <button class="trip-row" type="button" role="listitem">
+            <span class="trip-photo">
+              <img src="https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=280&q=80" alt="">
+              <span class="status-chip">EN COURS</span>
+            </span>
+            <span class="trip-copy">
+              <span class="trip-title">Lisbonne et la côte de l’Alentejo</span>
+              <span class="trip-dates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/></svg>12 oct. – 19 oct. 2026</span>
+            </span>
+            <span class="arrow" aria-hidden="true">›</span>
+            <span class="selection-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="trip-row" type="button" role="listitem">
+            <span class="trip-photo"><img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=280&q=80" alt=""></span>
+            <span class="trip-copy">
+              <span class="trip-title">Kyoto, entre les temples et la forêt</span>
+              <span class="trip-dates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/></svg>04 avr. – 13 avr. 2027</span>
+            </span>
+            <span class="arrow" aria-hidden="true">›</span>
+            <span class="selection-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="trip-row" type="button" role="listitem">
+            <span class="trip-photo"><img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=280&q=80" alt=""></span>
+            <span class="trip-copy">
+              <span class="trip-title">Quelques jours à Paris</span>
+              <span class="trip-dates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/></svg>21 juin – 25 juin 2027</span>
+            </span>
+            <span class="arrow" aria-hidden="true">›</span>
+            <span class="selection-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="trip-row" type="button" role="listitem">
+            <span class="trip-photo trip-photo--placeholder"><span aria-hidden="true">⌖</span></span>
+            <span class="trip-copy">
+              <span class="trip-title">Prochaine aventure</span>
+              <span class="trip-dates">Dates à définir</span>
+            </span>
+            <span class="arrow" aria-hidden="true">›</span>
+            <span class="selection-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+
+        <button class="add-trip" type="button"><span aria-hidden="true">+</span>Nouvelle aventure</button>
+        <p class="footnote">Les rangées restent compactes ; les photos portent l’identité de chaque voyage.</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    const selectionButton = document.querySelector('.header-action');
+    const list = document.querySelector('.trip-list');
+    selectionButton.addEventListener('click', () => {
+      const active = list.classList.toggle('selection-mode');
+      selectionButton.setAttribute('aria-pressed', String(active));
+      selectionButton.textContent = active ? 'Terminé' : 'Sélectionner';
+    });
+    document.querySelectorAll('.trip-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        if (list.classList.contains('selection-mode')) row.classList.toggle('is-selected');
+      });
+    });
+  </script>
+</body>
+</html>

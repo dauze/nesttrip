@@ -83,6 +83,9 @@
                    <i class="pi pi-map-marker text-4xl text-primary"></i>
                 </span>
               }
+              @if (isActiveTrip(trip)) {
+                <app-chip class="trip-select-row__chip">En cours</app-chip>
+              }
 
               <!-- Informations du voyage -->
               <div
@@ -91,11 +94,6 @@
               >
                 <span class="font-bold trip-select-row__title">
                   {{ trip.title }}
-                  @if(isActiveTrip(trip)){
-                    <app-chip class="trip-select-row__chip">
-                      En cours
-                    </app-chip>
-                  }
                 </span>
                 <span class="flex align-items-center gap-1">
                   <i class="pi pi-calendar text-xs"></i>

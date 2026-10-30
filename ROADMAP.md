@@ -3,6 +3,7 @@
 Ce document sert de référence pour le projet ce qu'il reste à faire. Les items clos sont déplacés vers `ROADMAP_already done.md` (voir ce fichier pour l'historique détaillé) — ne pas les redupliquer ici.
 
 ### Plan d'exécution en cours (2026-10-30)
+- **Accueil mobile — liste de voyages implémentée (2026-10-30), vérification visuelle sur l’app à confirmer.** Périmètre : accueil uniquement. Rangées conservées, vignettes élargies à 5.5rem et chip « En cours » posé sur la photo ; actions et navigation inchangées. Maquette validée. Lint, typecheck et tests unitaires passent ; confirmation sur l’app dans une session authentifiée dédiée (`.env.e2e` absent).
 - **Gouttières des barres de navigation desktop/mobile — implémentées (2026-10-30).** Seuils inchangés ; barre mobile pleine largeur, onglets desktop bord-à-bord, jours toujours défilants. Maquette validée ; lint passé. Vérification visuelle sur l’app à confirmer dans une session authentifiée dédiée (`.env.e2e` absent).
 - Génération de voyage assistée par IA : Lots 1 à 3 faits, voir `ROADMAP_already done.md`. **Lot 4 (régénération ciblée d'un seul jour) — pas commencé, décision actée avec l'utilisateur le 2026-08-11 : reporté.** La spec elle-même (`src/specs/process-creation-trip-ia.md` §7) le conditionne aux retours d'usage réel des Lots 2/3 — à reprendre après un usage réel, pas avant.
 - **Parcours IA — sélection mobile implémentée (2026-10-30), vérification visuelle à confirmer.** Le sous-lot desktop est implémenté : liste avec retrait par croix, puis planification des activités gardées en `activities_day`/`full_plan`. Sur mobile, cartes à swiper à droite/gauche, validation toujours disponible, chargement de nouvelles propositions quand la pile est épuisée et liste complémentaire des activités gardées au-delà de 15 jours. Les vérifications automatisées passent ; il reste à confirmer le rendu dans une session authentifiée. Le Lot 4 (régénération ciblée d'un jour) reste reporté.
@@ -28,7 +29,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
-- **Refonte de la liste sur mobile — à cadrer avec l'UX.** Définir le périmètre et une proposition visuelle avec le skill UX avant toute implémentation.
 
 
 ### Carte
@@ -60,6 +60,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - ajouter un circuit sur les point
 - **Carte mobile — plein écran au geste (décision UX du 2026-10-30).** Conserver le tap qui ouvre la carte à mi-hauteur ; tirer le grabber vers le bas pour passer au plein écran, geste inverse pour revenir à mi-hauteur. Depuis le plein écran, sélectionner un marqueur réduit d'abord la carte à mi-hauteur, puis navigue vers le jour.
 - dans la vue generale, les point de la carte doivent avoir une couleur différente selon les jour
+- pour relier les points, tu pourrais faire un peux plus smooth, car des lignes droites ça fait trop carré
+- sur la vue générale, il faudrait que tu agrandisse un peut la largeur de la colonne avec la carte, c'est un peu trop petit
  
 
 ### Multipersonne (A affiner et surtout vérifier si c'est utile)
@@ -76,7 +78,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Lorsque l'on arrive sur l'écran d'accueil aavec la liste des voyages, il faut que les photos soient en spinner avant de s'afficher le temps qu'elles se chargent
 - mettre un padding sur la case à cocher et l'icone de drag de chaque ligne dans les listes de case à cocher
 - la fleche pour aller à droite dans le calendrier à été remplacé par une croix à tord
-- L'écran de voyage sur le bureau a des beug sur la liste des voyage, la timeline passe sous la carte à tord 
+- L'écran de voyage sur le bureau a des beug sur la liste des voyage, la timeline passe sous la carte à tord
+- sur la vue ordinateur dans un jour, 2 problèmes : Le bouton réduire carte bouge un tout petit peut quand je scroll en bas, et la synchronisation entre la carte et les activitées via le scroll est cassé et plus aligné depuis que tu as rajouter la vue d'ensemble de la journée ou le bouton "réduire la carte"
 
 ### Qualité / process
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)
