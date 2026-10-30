@@ -67,13 +67,8 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 
 ### Bugs / fixes
 - Refaire une passe sur toutes les cinématiques de préremplissage des données pour les activités, les vols, les trains, les voitures et les hotels et autre pour être sur que tout fonctionne bien et que tous les champs sont saisi (Non prioritaire)
-- Diagnostiquer pourquoi le diagramme des dépenses ne s'affiche plus et rétablir son affichage.
 - **Drag intra-jour — gaps de trajet masqués avec animation (2026-10-30), vérification visuelle à confirmer.** Les gaps se réduisent après le seuil de déplacement réel et réapparaissent au relâchement ; lint, typecheck et tests unitaires passent. La confirmation visuelle attend une session authentifiée dédiée (`.env.e2e` absent).
-- Lorsque l'on arrive sur l'écran d'accueil aavec la liste des voyages, il faut que les photos soient en spinner avant de s'afficher le temps qu'elles se chargent
-- mettre un padding sur la case à cocher et l'icone de drag de chaque ligne dans les listes de case à cocher
-- la fleche pour aller à droite dans le calendrier à été remplacé par une croix à tord
-- L'écran de voyage sur le bureau a des beug sur la liste des voyage, la timeline passe sous la carte à tord
-- sur la vue ordinateur dans un jour, 2 problèmes : Le bouton réduire carte bouge un tout petit peut quand je scroll en bas, et la synchronisation entre la carte et les activitées via le scroll est cassé et plus aligné depuis que tu as rajouter la vue d'ensemble de la journée ou le bouton "réduire la carte"
+- **Vue Jour desktop — synchronisation carte/activité et stabilité du repli : à confirmer visuellement.** Le suivi de caméra est géré par `DayScrollSyncService`, et le bouton « Réduire la carte » est sticky avec sa hauteur réservée. Le signalement de désalignement et de léger mouvement au scroll reste ouvert jusqu’à une vérification réelle en session authentifiée (`.env.e2e` absent).
 
 ### Qualité / process
 - empacter le tout dans une application pour mobile ? Comment gérer la cohabitation ? décision d'architecture (Capacitor ? store ?) à prendre avec l'utilisateur avant de commencer  (non prioritaire)

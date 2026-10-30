@@ -562,3 +562,6 @@ Ce document sert de référence pour le projet ce qui est déjà en place (à ne
 - **Vignettes de l’accueil** : le placeholder sans photo utilise le fond de contenu adapté au thème et les photos mobiles sont agrandies ; implémenté dans `edf6322` puis affiné dans `94929bc`.
 - **Circuit direct et couleurs des jours sur la carte générale** : lignes directes groupées et ordonnées par jour, sans calcul de trajet routier ; les marqueurs du résumé utilisent une couleur distincte par jour. Implémenté dans `d5ca18f`.
 - **Carte mobile plein écran au geste** : tap pour la mi-hauteur, glisser le grabber pour passer en plein écran ou revenir, puis réduction à mi-hauteur avant la navigation depuis un marqueur. Implémenté dans `45256be`.
+- **Spinner photo des voyages à l’accueil** : pendant la résolution de la photo, afficher un spinner dans la vignette avant l’image ou le placeholder d’échec ; implémenté dans `edf6322`.
+- **Zones tactiles des checkboxes et poignées de drag** : padding compensé par marge négative pour agrandir les hitboxes sans déplacer les icônes ; implémenté dans `607b858`.
+- **Flèche suivante du calendrier** : restaurer le chevron droit du bouton de navigation, à la place de l’icône croix ; corrigé dans `f0b4f69`.
