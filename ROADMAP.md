@@ -11,7 +11,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - Stockage des fichiers en local si possible (A affiner)
 
 ### UI spécifique Desktop (A affiner)
-- **Écran d'accueil "Mes voyages" en grille de cartes sur desktop — décidé avec l'utilisateur le 2026-09-30, EN COURS.** Sur mobile, liste de lignes inchangée. Au-delà de 768px : conteneur centré/borné + grille de cartes-vignettes (`auto-fill, minmax(17rem, 1fr)`), photo Google Places en visuel principal (16:10), chip "En cours" en overlay sur la photo, tuile "Nouvelle aventure" fantôme intégrée à la grille. Sélection/suppression : **option checkbox en overlay au survol de la carte, visible en permanence en mode sélection** (retour utilisateur : option 1 des 3 proposées). Ne toucher au mobile sous aucun prétexte (media query `min-width: 769px` uniquement).
+- **Écran d'accueil "Mes voyages" en grille de cartes sur desktop — implémenté, vérification visuelle à confirmer (2026-10-30).** Le code respecte les décisions validées : liste mobile inchangée ; au-delà de 768px, grille de cartes-vignettes `auto-fill, minmax(17rem, 1fr)`, photo 16:10, chip "En cours" en overlay, tuile "Nouvelle aventure" et checkbox au survol/en mode sélection. Le rendu attend une confirmation dans une session authentifiée dédiée (`.env.e2e` absent).
 - Vue calendrier (A affiner)
 - Améliorer la vue jour, le résumé de la journé est trop étiré là
 - Le scroll auto sur le premier element fait que l'on ne peut pas rester en haut en vu desktop cela déplace automatiquement 
