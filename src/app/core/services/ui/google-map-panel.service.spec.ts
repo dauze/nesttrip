@@ -87,4 +87,29 @@ describe('GoogleMapPanelService', () => {
     expect(service.isCollapsed()).toBe(true);
     expect(setMapCollapsedByDefault).toHaveBeenCalledWith(true);
   });
+
+  it('ouvre le panel en plein écran sans faire persister cet état transitoire', () => {
+    TestBed.tick();
+
+    service.setFullscreen(true);
+
+    expect(service.isFullscreen()).toBe(true);
+    expect(service.isCollapsed()).toBe(false);
+    expect(setMapCollapsedByDefault).toHaveBeenCalledWith(false);
+
+    service.setFullscreen(false);
+
+    expect(service.isFullscreen()).toBe(false);
+    expect(service.isCollapsed()).toBe(false);
+    expect(setMapCollapsedByDefault).toHaveBeenCalledTimes(1);
+  });
+
+  it('quitter le plein écran en repliant la carte efface l’état plein écran', () => {
+    service.setFullscreen(true);
+
+    service.setCollapse(true);
+
+    expect(service.isFullscreen()).toBe(false);
+    expect(service.isCollapsed()).toBe(true);
+  });
 });

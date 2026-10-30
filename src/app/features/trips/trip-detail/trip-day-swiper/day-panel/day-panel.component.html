@@ -48,13 +48,20 @@
             <i class="pi pi-map" aria-hidden="true"></i>
           </button>
         }
-        <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
-          (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
-          (logisticSelected)="onLogisticEntrySelected($event)"/>
+        @if (!viewport.isSplitLayout()) {
+          <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
+            (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
+            (logisticSelected)="onLogisticEntrySelected($event)"/>
+        }
         <div #stickyMap class="sticky-map"></div>
       }
     </div>
     <div class="day-panel-activities-group">
+      @if (timelineEntries().length > 0 && viewport.isSplitLayout()) {
+        <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
+          (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
+          (logisticSelected)="onLogisticEntrySelected($event)"/>
+      }
       <app-day-logistic-banner class="day-panel-banner" [tripId]="tripId()" [dayId]="dayId()" />
       <app-panel [noHeader]="true" class="activities-column">
         <div class="flex flex-column gap-2">

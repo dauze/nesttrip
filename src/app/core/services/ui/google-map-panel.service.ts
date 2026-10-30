@@ -20,9 +20,17 @@ export class GoogleMapPanelService {
   // carte s'ouvre dès que la préférence connue le demande — un dépliage
   // reste moins perturbant visuellement qu'un repliage inattendu.
   private readonly _isCollapsed = signal<boolean>(true);
+  private readonly _isFullscreen = signal(false);
 
   // 2. Le signal public en lecture seule (récupération de la donnée)
   readonly isCollapsed = this._isCollapsed.asReadonly();
+  /** État plein écran transitoire du panel mobile — jamais persisté comme préférence. */
+  readonly isFullscreen = this._isFullscreen.asReadonly();
+
+  setFullscreen(value: boolean): void {
+    this._isFullscreen.set(value);
+    if (value) this.setCollapse(false);
+  }
 
   /**
    * Préférence utilisateur (`users/{uid}.mapCollapsedByDefault`, ROADMAP.md
@@ -50,6 +58,7 @@ export class GoogleMapPanelService {
    */
   setCollapse(value: boolean): void {
     this._isCollapsed.set(value);
+    if (value) this._isFullscreen.set(false);
     this.seeded = true;
     this.userProfileService.setMapCollapsedByDefault(value);
   }

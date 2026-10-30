@@ -1,5 +1,6 @@
 <app-panel
     class="map-panel pull-to-refresh-exclude"
+  [class.map-panel--fullscreen]="useMobileFullscreenHeight()"
     [toggleable]="mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()"
     [footerToggle]="mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()"
     [bare]="mapHost.currentOwner() === 'general'"
@@ -7,9 +8,9 @@
     [(collapsed)]="collapsed"
     [dragPullPx]="dragPullPx()"
     (afterToggle)="onCollapsedToggled($event)"
-    [fillHeight]="useSplitHeight()">
+    [fillHeight]="useSplitHeight() || useMobileFullscreenHeight()">
     <div class="flex flex-column gap-2 swiper-no-swiping map-container"
-      [class.map-container--fill]="useSplitHeight()">
+      [class.map-container--fill]="useSplitHeight() || useMobileFullscreenHeight()">
       <!--
         @for à un seul élément, tracké par isDarkMode() : google.maps.Map ne
         rafraîchit pas visuellement son rendu quand `colorScheme` change via
@@ -20,7 +21,7 @@
       -->
       @for (darkMode of [isDarkMode()]; track darkMode) {
         <google-map
-          [height]="useSplitHeight() ? '100%' : '32dvh'"
+          [height]="mobileMapHeight()"
           width="100%"
           [center]="center()"
           [zoom]="zoom()"

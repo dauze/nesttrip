@@ -228,16 +228,6 @@
     flex: 0 1 32rem;
   }
 
-  // "Vue d'ensemble de la journée" (timeline, `order: 2`) masquée en layout
-  // scindé (retour utilisateur) : la carte sticky remplit déjà toute la
-  // hauteur de viewport au-dessus d'elle, poussant la timeline SOUS le bas de
-  // l'écran — jamais visible dans la colonne carte (sticky, elle ne défile
-  // pas), donc inutile ici. Reste rendue en layout empilé (mobile), où elle a
-  // sa place normale dans le flux sous la carte.
-  .day-panel-timeline {
-    display: none;
-  }
-
   // Sans activité, ni la timeline ni la carte ne sont rendues (voir le `@if`
   // dans le template) : masque la colonne de gauche, désormais vide, ET
   // libère la colonne activités de son plafond de largeur (`flex:0 1 32rem`
@@ -335,10 +325,9 @@
       align-self: flex-start;
     }
 
-    // Tout le contenu "carte dépliée" disparaît : la timeline (vue
-    // d'ensemble), la carte elle-même (plus de hauteur figée = plus de bloc
-    // blanc résiduel, le bug d'origine) et le bouton "Réduire".
-    .day-panel-timeline,
+    // Tout le contenu "carte dépliée" disparaît : la carte elle-même (plus
+    // de hauteur figée = plus de bloc blanc résiduel) et le bouton "Réduire".
+    // La timeline reste dans la colonne activités, où elle est désormais rendue.
     .sticky-map,
     .day-panel-map-collapse {
       display: none;

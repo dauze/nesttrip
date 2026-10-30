@@ -47,6 +47,11 @@
   }
 }
 
+.map-panel--fullscreen {
+  border: none;
+  border-radius: 0;
+}
+
 // La map elle-même GARDE un vrai cadre arrondi sur les 4 coins (y compris en
 // haut) et un padding autour (hérité de `.app-panel__content-inner`, plus
 // `flushContent` retiré ici) : seul le CADRE EXTÉRIEUR (`.map-panel`

@@ -93,3 +93,10 @@
   background: var(--nt-content-background);
   box-shadow: var(--nt-shadow-lg);
 }
+
+.day-fixed-map--fullscreen {
+  top: 0;
+  bottom: 0;
+  z-index: calc(var(--z-app-toolbar) + 1);
+  border-radius: 0;
+}

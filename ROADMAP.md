@@ -28,6 +28,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - il y a un moment ou l'affichage n'est pass bien entre la transition du mobile vers le desktop, quand on arrive après la largeur max de la bottom bar et de la liste de scool, des barres noire aapparaisent sur les coté, il faut trouver un moyen de soit faire la transition plus tôt vers le mode ordi, soit rajouter un mode, à trancher avec le skill ux
 - gérer proprement tous es patting et faire en sorte que la age ne soit pa visible au niveau des écats autour de la bar des jours 
 - **Vue Jour desktop — carte et commande de repli au scroll.** Garder « Réduire la carte » visible pendant le défilement du contenu et étendre la carte jusqu'en bas de la zone disponible, sans masquer la commande ni laisser de vide résiduel (problème illustré par les captures du 2026-10-30).
+- **Vue Jour desktop — timeline hors de la colonne carte (décision UX du 2026-10-30).** Garder la carte pleine hauteur à gauche ; déplacer « Vue d'ensemble de la journée » en tête de la colonne droite, au-dessus du bandeau et des activités, sous forme de panneau repliable. Ne pas modifier le layout mobile.
 
 ### UI 
 - Quand on déplace les activités selon les jours, il faudrait pouvoir saisir les données de chaque carte via la cinématique puis revenir à l'onglet du pool ? (A affiner)
@@ -62,7 +63,7 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 - sur les liste déroulantes, il faut remettre un chevron pour le logos de depliage !
 - la carte de l'activité dans l'accueil, si il y a pas de photo le fond du logo nest pas bon. Et il faudrait l'agrandir un peu en hauteur pour avoir une photo plus grande
 - ajouter un circuit sur les point
-- Ameliorer la carte pour l'ouvrir en grand en glissant, elle peut prendre toute la taille de l'écran, pas que la moitié. Ensuite, quand on louvre en grand et que l'on clique sur un point, il faut qu'elle se réduise avant de basculer sur le jour
+- **Carte mobile — plein écran au geste (décision UX du 2026-10-30).** Conserver le tap qui ouvre la carte à mi-hauteur ; tirer le grabber vers le bas pour passer au plein écran, geste inverse pour revenir à mi-hauteur. Depuis le plein écran, sélectionner un marqueur réduit d'abord la carte à mi-hauteur, puis navigue vers le jour.
 - dans la vue generale, les point de la carte doivent avoir une couleur différente selon les jour
  
 

@@ -23,6 +23,7 @@ import { SelectionActionBarComponent } from '@app/shared/components/actions/sele
 import { SelectionModeService } from '@app/shared/services/selection-mode.service';
 import { ActivityDispatchService } from '@app/core/services/business/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
+import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
 import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { TripCreationTargetService } from './trip-creation-target.service';
 import { DayActivityFocusService } from './day-activity-focus.service';
@@ -94,6 +95,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly location = inject(Location);
   private readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
+  protected readonly mapPanelService = inject(GoogleMapPanelService);
   protected readonly viewport = inject(ViewportService);
   protected readonly fabTarget = inject(TripCreationTargetService);
   private readonly dayFocusService = inject(DayActivityFocusService);

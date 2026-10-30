@@ -77,6 +77,15 @@ export class TripDayMapComponent {
    * réduite à 0px de haut, invisible, en layout scindé desktop.
    */
   protected readonly useSplitHeight = computed(() => this.viewport.isSplitLayout() && this.mapHost.currentOwner() !== 'general');
+  protected readonly useMobileFullscreenHeight = computed(() =>
+    this.googleMapPanelService.isFullscreen() && this.mapHost.currentOwner() === 'day' && !this.viewport.isSplitLayout(),
+  );
+  protected readonly mobileMapHeight = computed(() => {
+    if (this.useSplitHeight() || this.useMobileFullscreenHeight()) return '100%';
+    const dragDelta = this.dragPullPx();
+    if (!this.collapsedAtDragStart && dragDelta !== null && dragDelta > 0) return `calc(32dvh + ${dragDelta}px)`;
+    return '32dvh';
+  });
 
 
   // Injectez l'ElementRef pour permettre au parent de manipuler son DOM
@@ -106,6 +115,7 @@ export class TripDayMapComponent {
   protected readonly dragPullPx = signal<number | null>(null);
   private dragPointerId: number | null = null;
   private dragStartY = 0;
+  private fullscreenAtDragStart = false;
   /** État de la carte AU DÉBUT du geste courant — détermine quel sens (ouverture ou fermeture) peut être validé au relâchement, voir `onGrabberPointerUp`. Stable pendant tout le geste : `collapsed` lui-même ne change qu'au commit, jamais en cours de route. */
   private collapsedAtDragStart = false;
   /** Vrai dès que le tirage a dépassé un mouvement négligeable — sert à avaler le `click` de fin de geste (voir `onGrabberClickCapture`) pour ne pas déclencher EN PLUS le toggle normal du bouton footer. */
@@ -113,6 +123,12 @@ export class TripDayMapComponent {
   private readonly grabberFooter = viewChild<ElementRef<HTMLElement>>('grabberFooter');
 
   constructor() {
+    effect(() => {
+      if (this.mapHost.currentOwner() !== 'day' && this.googleMapPanelService.isFullscreen()) {
+        this.googleMapPanelService.setFullscreen(false);
+      }
+    });
+
     afterNextRender(() => {
       document.addEventListener('pointermove', this.onGrabberPointerMove);
       document.addEventListener('pointerup', this.onGrabberPointerUp);
@@ -146,6 +162,7 @@ export class TripDayMapComponent {
     this.dragStartY = event.clientY;
     this.dragMoved = false;
     this.collapsedAtDragStart = this.collapsed();
+    this.fullscreenAtDragStart = this.googleMapPanelService.isFullscreen();
     this.dragPullPx.set(0);
   }
 
@@ -174,6 +191,10 @@ export class TripDayMapComponent {
     if (this.collapsedAtDragStart && delta >= DRAG_COMMIT_PX) {
       this.collapsed.set(false);
       this.onCollapsedToggled({ collapsed: false });
+    } else if (this.fullscreenAtDragStart && delta <= -DRAG_COMMIT_PX) {
+      this.googleMapPanelService.setFullscreen(false);
+    } else if (!this.collapsedAtDragStart && !this.fullscreenAtDragStart && delta >= DRAG_COMMIT_PX) {
+      this.googleMapPanelService.setFullscreen(true);
     } else if (!this.collapsedAtDragStart && delta <= -DRAG_COMMIT_PX) {
       this.collapsed.set(true);
       this.onCollapsedToggled({ collapsed: true });
@@ -404,6 +425,15 @@ export class TripDayMapComponent {
   }
 
   onMarkerClick(point: DayMapPoint): void {
+    if (this.googleMapPanelService.isFullscreen() && this.mapHost.currentOwner() === 'day') {
+      this.googleMapPanelService.setFullscreen(false);
+      requestAnimationFrame(() => {
+        this.focusOnPoint(point);
+        this.activitySelected.emit(point);
+      });
+      return;
+    }
+
     this.focusOnPoint(point);
     this.activitySelected.emit(point);
   }
@@ -430,6 +460,11 @@ export class TripDayMapComponent {
     // constante (voir sa doc) — jamais modifiable par l'utilisateur, ce
     // bouton n'existe même pas dans ce contexte (voir le template).
     if (this.mapHost.currentOwner() === 'general') return;
+    if (event.collapsed && this.googleMapPanelService.isFullscreen()) {
+      this.collapsed.set(false);
+      this.googleMapPanelService.setFullscreen(false);
+      return;
+    }
     this.googleMapPanelService.setCollapse(event.collapsed);
   }
 

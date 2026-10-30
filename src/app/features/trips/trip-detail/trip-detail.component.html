@@ -46,6 +46,7 @@
         #dayFixedMap
         class="day-fixed-map"
         [class.day-fixed-map--active]="mapHost.dayFixedContainerHeight() > 0"
+        [class.day-fixed-map--fullscreen]="mapPanelService.isFullscreen() && mapHost.currentOwner() === 'day'"
         [style.--chrome-toolbar-height.px]="chromeService.toolbarHeight()"
       ></div>
 
