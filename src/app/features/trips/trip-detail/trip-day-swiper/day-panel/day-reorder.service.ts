@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Injectable, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Injectable, OnDestroy, inject, signal } from '@angular/core';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { SwiperLockService } from '@app/core/services/ui/swiper-lock.service';
 import { GoogleMapPanelService } from '@app/core/services/ui/google-map-panel.service';
@@ -126,6 +126,8 @@ export class DayReorderService implements OnDestroy {
   private pointerY = 0;
   /** État du réordonnancement manuel en cours dans ce jour (voir `onDragHandleDown`), `undefined` en dehors d'un drag. */
   private drag?: DayDragState;
+  private readonly _isDragging = signal(false);
+  readonly isDragging = this._isDragging.asReadonly();
 
   /** Instantané de l'état ouvert/fermé des cartes + de la carte Google, pris au début d'un drag dans ce jour pour tout restaurer à la fin. */
   private collapseSnapshot?: { cards: Map<string, boolean>; map: boolean };
@@ -252,6 +254,7 @@ export class DayReorderService implements OnDestroy {
     this.lockService.unlock();
     this.dispatchService.clearActiveDayDrag();
     this.unlockActivityListHeight();
+    this._isDragging.set(false);
     this.drag = undefined;
 
     if (!drag.thresholdCrossed) {
@@ -315,6 +318,7 @@ export class DayReorderService implements OnDestroy {
   /** Sort réellement la carte du flux (sur place, voir `leaveFlowHidden`) et fait apparaître un clone SOUS LE DOIGT (voir `grabOffsetX/Y`, pas sa position mesurée après collapse) hors du swiper (voir ActivityDispatchService.registerDragPortal), puis fige les offsets des voisines pour le hit-test. */
   private beginCardFollow(drag: DayDragState): void {
     drag.thresholdCrossed = true;
+    this._isDragging.set(true);
 
     const el = drag.card.hostElement;
     const rect = el.getBoundingClientRect();
@@ -493,6 +497,7 @@ export class DayReorderService implements OnDestroy {
     this.lockService.unlock();
     this.dispatchService.clearActiveDayDrag();
     this.unlockActivityListHeight();
+    this._isDragging.set(false);
     if (this.drag === drag) this.drag = undefined;
 
     for (const c of this.config.getCards()) {

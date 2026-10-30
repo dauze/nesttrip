@@ -3,6 +3,16 @@
   position: relative;
   z-index: 1;
   margin-block: calc(-1 * var(--nt-layout-gap-split, 0.5rem));
+  max-height: 8rem;
+  transition: max-height 180ms ease, margin-block 180ms ease, opacity 180ms ease;
+}
+
+:host(.day-distance-gap--dragging) {
+  max-height: 0;
+  margin-block: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .day-distance-gap-rail {
