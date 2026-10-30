@@ -6,6 +6,7 @@ import { ViewportService } from '@core/services/ui/viewport.service';
 export interface AppMenuItem {
   label?: string;
   icon?: string;
+  selected?: boolean;
   command?: () => void;
   /** Groupe (en-tête `label` + sous-items) — voir `runCommand`/le template pour le rendu à plat sinon. */
   items?: AppMenuItem[];

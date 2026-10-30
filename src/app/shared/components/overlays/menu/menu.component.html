@@ -10,7 +10,12 @@
           <div class="app-menu-panel__group-label">{{ group.label }}</div>
         }
         @for (item of group.items; track item.label) {
-          <button type="button" class="app-menu-panel__item flex align-items-center gap-2 w-full" (click)="runCommand(item)">
+          <button
+            type="button"
+            class="app-menu-panel__item flex align-items-center gap-2 w-full"
+            [class.app-menu-panel__item--selected]="item.selected"
+            [attr.aria-pressed]="item.selected ?? null"
+            (click)="runCommand(item)">
             @if (item.icon) {
               <i [class]="item.icon"></i>
             }
@@ -18,7 +23,12 @@
           </button>
         }
       } @else {
-        <button type="button" class="app-menu-panel__item flex align-items-center gap-2 w-full" (click)="runCommand(group)">
+        <button
+          type="button"
+          class="app-menu-panel__item flex align-items-center gap-2 w-full"
+          [class.app-menu-panel__item--selected]="group.selected"
+          [attr.aria-pressed]="group.selected ?? null"
+          (click)="runCommand(group)">
           @if (group.icon) {
             <i [class]="group.icon"></i>
           }

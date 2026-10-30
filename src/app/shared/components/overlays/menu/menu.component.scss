@@ -52,6 +52,16 @@
       color: var(--nt-text-hover-muted-color);
     }
   }
+
+  &.app-menu-panel__item--selected {
+    background: color-mix(in srgb, var(--nt-primary-color) 12%, transparent);
+    color: var(--nt-primary-color);
+    font-weight: 600;
+
+    i {
+      color: var(--nt-primary-color);
+    }
+  }
 }
 
 // Styles du tiroir MOBILE (`.app-menu-overlay--mobile`/`.app-menu-backdrop--mobile`,

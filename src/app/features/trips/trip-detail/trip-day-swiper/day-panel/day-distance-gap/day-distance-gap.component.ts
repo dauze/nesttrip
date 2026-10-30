@@ -98,7 +98,7 @@ export class DayDistanceGapComponent {
     const override = this.overrides()[this.overrideKey()] ?? null;
     return MODE_MENU_ENTRIES.map(({ mode, label }) => ({
       label,
-      icon: override === mode ? 'pi pi-check' : undefined,
+      selected: override === mode,
       command: () => this.tripFacade.setTravelModeOverride(this.tripId(), this.overrideKey(), mode),
     }));
   });
