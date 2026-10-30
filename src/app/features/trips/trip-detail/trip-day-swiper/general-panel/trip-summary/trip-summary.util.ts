@@ -26,8 +26,13 @@ export function convertExpenseItems(
   for (const item of items) {
     const amount = convertWithRates(item.amount, item.currency, targetCurrency, rates ?? {});
     if (amount === null) continue;
-    const { currency: _currency, ...expense } = item;
-    converted.push({ ...expense, amount });
+    converted.push({
+      typeKey: item.typeKey,
+      label: item.label,
+      icon: item.icon,
+      colorVar: item.colorVar,
+      amount,
+    });
   }
   return converted;
 }

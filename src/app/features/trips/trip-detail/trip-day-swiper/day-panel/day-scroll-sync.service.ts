@@ -521,6 +521,14 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
+    // En layout scindé, le sommet du scrollport contient la timeline/le
+    // bandeau avant la première activité. Le snap de la carte la plus proche
+    // déplaçait alors automatiquement la page hors de ce sommet, empêchant
+    // de rester en haut de la vue desktop (ROADMAP.md, retour utilisateur).
+    // Le snap reste actif dès que l'utilisateur a commencé à défiler et en
+    // layout empilé mobile.
+    if (this.config.isSplitLayout() && slideEl.scrollTop <= 0) return;
+
     // Même raisonnement que focusActivity ci-dessus.
     const stickyHeight = this.config.isSplitLayout()
       ? this.config.getPinnedChromeOffset()

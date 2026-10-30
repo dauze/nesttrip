@@ -74,9 +74,17 @@
 // CheckboxComponent (spécificité 1) sans dépendre de l'ordre de chargement
 // entre la feuille globale et le style scopé du composant, injecté au runtime.
 .nt-select-checkbox.nt-select-checkbox {
+  padding-block: var(--nt-space-2);
+  margin-block: calc(-1 * var(--nt-space-2));
+
   @media (max-width: 768px) {
     display: none;
   }
+}
+
+.drag-handle-hitbox {
+  padding: var(--nt-space-2);
+  margin-block: calc(-1 * var(--nt-space-2));
 }
 
 .nt-selectable.nt-selection-mode .nt-select-checkbox.nt-select-checkbox {
