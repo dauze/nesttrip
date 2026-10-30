@@ -90,7 +90,7 @@
             </span>
             @if (item.type === NotesType.TODO) {
               <app-checkbox
-                class="flex-shrink-0"
+                class="notes-point__checkbox flex-shrink-0"
                 [checked]="point.checked"
                 (checkedChange)="toggleCheck(item, $index)"
               />
@@ -146,6 +146,7 @@
                 <div class="flex align-items-center gap-2 w-full opacity-70 pl-2 pr-3">
                   <span class="w-1rem"></span>
                   <app-checkbox
+                    class="notes-point__checkbox"
                     [checked]="point.checked"
                     (checkedChange)="toggleCheck(item, item.elements.indexOf(point))"
                   />

@@ -20,6 +20,7 @@ import { insertDistanceGaps, TimelineEntryWithGap } from './day-logistic-banner/
 import { DayDistanceGapComponent } from './day-distance-gap/day-distance-gap.component';
 import { LogisticDayOccurrence } from './day-logistic-banner/logistic-day-occurrence';
 import { Activity, ActivityEcho } from '@app/shared/components/activity-card/activity.model';
+import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { PanelComponent } from '@app/shared/components/layout/panel/panel.component';
 import { ActivityCardComponent } from '@app/shared/components/activity-card/activity-card.component';
 import { ActivityEchoCardComponent } from '@app/shared/components/activity-card/activity-echo-card/activity-echo-card.component';
@@ -106,6 +107,7 @@ export class DayPanelComponent {
         longitude: a.longitude!,
         order: i + 1,
         photoRef: a.photoRefs?.[0],
+        colorVar: ACTIVITY_TYPE_META[a.type].colorVar,
       }));
   });
 

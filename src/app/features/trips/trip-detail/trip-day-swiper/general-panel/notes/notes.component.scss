@@ -62,6 +62,11 @@
   margin: -0.5rem 0;
 }
 
+.notes-point__checkbox {
+  padding: 0.375rem;
+  margin: -0.375rem;
+}
+
 // Le bouton de suppression d'un point de note (visibility/pointer-events,
 // pas display) est piloté directement en binding de style inline dans le
 // template — voir notes.component.html : sa largeur reste réservée en

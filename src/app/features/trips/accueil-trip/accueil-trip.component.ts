@@ -3,6 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { CardComponent } from '@app/shared/components/layout/card/card.component';
 import { ButtonComponent } from '@app/shared/components/actions/button/button.component';
 import { SkeletonComponent } from '@app/shared/components/feedback/skeleton/skeleton.component';
+import { ProgressSpinnerComponent } from '@app/shared/components/feedback/progress-spinner/progress-spinner.component';
 import { MessageComponent } from '@app/shared/components/feedback/message/message.component';
 import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
 import { SelectableDirective } from '@app/shared/directives/selectable.directive';
@@ -30,6 +31,7 @@ import { Observable } from 'rxjs';
     CardComponent,
     ButtonComponent,
     SkeletonComponent,
+    ProgressSpinnerComponent,
     MessageComponent,
     RouterModule,
     CheckboxComponent,

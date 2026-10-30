@@ -65,8 +65,19 @@
               ></app-checkbox>
 
               <!-- Visuel / Avatar -->
-              @if (trip.photoRef && (getPhotoUrl$(trip.photoRef, 400) | async); as photoUrl) {
-                <img [src]="photoUrl" alt="" class="trip-select-row__thumb" />
+              @if (trip.photoRef) {
+                @let photoUrl = getPhotoUrl$(trip.photoRef, 400) | async;
+                @if (photoUrl === null) {
+                  <span class="trip-select-row__thumb trip-select-row__thumb--loading" role="status" aria-label="Chargement de la photo">
+                    <app-progress-spinner [style]="{ width: '1.25rem', height: '1.25rem' }" />
+                  </span>
+                } @else if (photoUrl) {
+                  <img [src]="photoUrl" alt="" class="trip-select-row__thumb" />
+                } @else {
+                  <span class="trip-select-row__thumb trip-select-row__thumb--placeholder flex align-items-center justify-content-center">
+                    <i class="pi pi-map-marker text-4xl text-primary"></i>
+                  </span>
+                }
               } @else {
                 <span class="trip-select-row__thumb trip-select-row__thumb--placeholder flex align-items-center justify-content-center">
                    <i class="pi pi-map-marker text-4xl text-primary"></i>

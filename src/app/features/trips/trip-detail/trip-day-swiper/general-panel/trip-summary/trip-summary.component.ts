@@ -258,6 +258,7 @@ export class TripSummaryComponent {
         longitude: a.longitude!,
         order: i + 1,
         photoRef: a.photoRefs?.[0],
+        colorVar: ACTIVITY_TYPE_META[a.type].colorVar,
         dayId: dayId.toISOString(),
       })),
   );

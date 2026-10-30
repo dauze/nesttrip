@@ -344,15 +344,16 @@ export class TripDayMapComponent {
 
     const isSelected = point.activityId === this.selectedActivityId();
     const photoUrl = point.photoRef ? this.photoUrls()[point.photoRef] : undefined;
+    const typeColor = `var(${point.colorVar ?? '--nt-primary-color'})`;
 
     if (photoUrl) {
-      return this.buildPhotoMarker(photoUrl, isSelected);
+      return this.buildPhotoMarker(photoUrl, isSelected, typeColor);
     }
 
     // PinElement étend HTMLElement : on le retourne directement plutôt que
     // sa propriété `.element`, dépréciée par l'API Google Maps. Toujours en
-    // couleur primary (pin "classique", pas de rouge) — le halo/l'accent du
-    // marqueur sélectionné (ROADMAP.md "### UI") passe par un bord PLUS
+    // couleur d'identité du type — le halo/l'accent du marqueur sélectionné
+    // (ROADMAP.md "### UI") passe par un bord PLUS
     // marqué (couleur active, plus épais) en plus de la taille, pas
     // seulement l'échelle comme avant. `glyphColor` DOIT être posé
     // explicitement : sans `glyphText`/`glyph`, PinElement affiche quand même
@@ -360,9 +361,9 @@ export class TripDayMapComponent {
     // ressortait comme un point rouge résiduel au milieu du pin même une
     // fois `background`/`borderColor` recolorés.
     return new google.maps.marker.PinElement({
-      background: 'var(--nt-primary-color)',
-      borderColor: isSelected ? 'var(--nt-primary-active-color)' : 'var(--nt-primary-hover-color)',
-      glyphColor: 'var(--nt-primary-color)',
+      background: typeColor,
+      borderColor: isSelected ? 'var(--nt-primary-active-color)' : typeColor,
+      glyphColor: typeColor,
       scale: isSelected ? 1.35 : 1,
     });
   }
@@ -372,14 +373,14 @@ export class TripDayMapComponent {
    * (`document.createElement`, styles posés en inline), donc pas de CSS
    * scopé du composant qui s'y applique — voir `markerContent`.
    */
-  private buildPhotoMarker(url: string, isSelected: boolean): HTMLElement {
+  private buildPhotoMarker(url: string, isSelected: boolean, typeColor: string): HTMLElement {
     const size = isSelected ? 44 : 36;
-    // Halo couleur primary (pas de rouge, ROADMAP.md "### UI") : un anneau
+    // Halo de la couleur du type : un anneau
     // supplémentaire, diffus, en plus du bord — c'est lui qui donne
     // l'impression de "halo" plutôt qu'un simple bord plus épais.
-    const borderColor = isSelected ? 'var(--nt-primary-active-color)' : 'var(--nt-primary-color)';
+    const borderColor = isSelected ? 'var(--nt-primary-active-color)' : typeColor;
     const haloShadow = isSelected
-      ? ', 0 0 0 0.25rem color-mix(in srgb, var(--nt-primary-color) 40%, transparent)'
+      ? `, 0 0 0 0.25rem color-mix(in srgb, ${typeColor} 40%, transparent)`
       : '';
 
     const wrapper = document.createElement('div');

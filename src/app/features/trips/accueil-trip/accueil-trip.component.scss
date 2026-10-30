@@ -127,6 +127,13 @@ app-card.card {
   background: var(--nt-content-hover-background);
 }
 
+.trip-select-row__thumb--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nt-content-hover-background);
+}
+
 .trip-select-row__body {
   flex: 1 1 auto;
   min-width: 0;
