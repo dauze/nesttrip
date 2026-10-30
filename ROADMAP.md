@@ -34,7 +34,6 @@ Ce document sert de référence pour le projet ce qu'il reste à faire. Les item
 ### Carte
 - Rajouter la Position actuelle de l'utilisateur sur la carte (non prioritaire)
 - **Carte du Résumé — bandeau de visite et caméra plus douce (UX validée le 2026-10-30, implémenté ; visuel à confirmer).** Pendant la promenade automatique, afficher en bas de carte un bandeau compact avec photo, titre, jour et progression ; le masquer dès une interaction manuelle. Rapprocher le zoom d’ensemble, limiter le recul des segments à 4 niveaux et accélérer les transitions.
-- il faut que l'icone ne soit plus collorié de la couleur primary mais putot par rapport au type ue c'est, couleur activité, repas, etc
 
 ### Activités
 - Suggestions d'activités via la ville dans le pool (A affiner)
