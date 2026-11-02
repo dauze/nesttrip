@@ -15,7 +15,7 @@ import {
   estimateZoomDrop as estimateZoomDropUtil,
   lerp,
 } from '@app/shared/utils/map-camera.util';
-import { smoothPath } from '@app/shared/utils/map-path-smoothing.util';
+import { smoothPath, smoothPathUntil } from '@app/shared/utils/map-path-smoothing.util';
 
 /** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
 const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
@@ -30,6 +30,12 @@ const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.
  * ailleurs (`LongPressDirective`).
  */
 const DRAG_COMMIT_PX = 60;
+
+/** Écart max (en fraction de segment) autour d'une activité pour la considérer « atteinte » pendant le scroll. */
+const ARRIVAL_THRESHOLD = 0.2;
+
+/** Durée de recentrage quand la zone recouverte par le panneau change — alignée sur l'animation de repli du panneau. */
+const INSET_TWEEN_MS = 280;
 
 @Component({
   selector: 'app-trip-day-map',
@@ -77,17 +83,32 @@ export class TripDayMapComponent {
     const strokeColor = getComputedStyle(document.documentElement).getPropertyValue('--nt-primary-color').trim();
     return {
       strokeColor,
-      strokeOpacity: 0.72,
+      // Vue Jour : tracé complet en retrait, le chemin parcouru (`progressLine`) passe par-dessus.
+      strokeOpacity: this.mapHost.currentOwner() === 'day' ? 0.4 : 0.72,
       strokeWeight: 3,
       clickable: false,
       geodesic: true,
       zIndex: 1,
     };
   });
-  readonly selectedActivityId = signal<string | null>(null);
+  /** Points du jour dans l'ordre de parcours (contexte 'day' uniquement) : base de la numérotation et du chemin parcouru. */
+  private readonly dayRoute = computed(() =>
+    this.mapHost.currentOwner() === 'day' ? [...this.points()].sort((left, right) => left.order - right.order) : [],
+  );
+  private readonly dayRouteIndex = computed(() => new Map(this.dayRoute().map((point, index) => [point.activityId, index])));
+  /** Activité « atteinte » par le scroll (ou cliquée) : marqueur agrandi. */
+  private readonly highlightedActivityId = signal<string | null>(null);
+  private readonly markerRefs = new Map<string, google.maps.marker.AdvancedMarkerElement>();
+  /** Chemin déjà parcouru : polyline impérative, mise à jour à chaque frame de scroll sans détection de changement. */
+  private progressLine: google.maps.Polyline | null = null;
+  /** Dernière caméra demandée, AVANT décalage du panneau — rejouée quand ce décalage change. */
+  private lastLogicalCamera: { center: google.maps.LatLngLiteral; zoom: number } | null = null;
+  /** Valeur courante (animée) de `cameraInset`, utilisée par tous les calculs de caméra. */
+  private appliedInset = 0;
+  private insetAnimationFrame = 0;
   readonly googleMapPanelService = inject(GoogleMapPanelService);
   private readonly photoService = inject(GooglePhotoService);
-  /** URL résolue (blob) par `photoRef` — voir l'effect de chargement dans le constructeur et `markerContent`. Chaîne vide = échec, traité comme "pas de photo". */
+  /** URL résolue (blob) par `photoRef` — voir l'effect de chargement dans le constructeur et `markerContents`. Chaîne vide = échec, traité comme "pas de photo". */
   private readonly photoUrls = signal<Record<string, string>>({});
   private readonly requestedPhotoRefs = new Set<string>();
   /** `protected` : lu depuis le template pour basculer `[toggleable]`/`[bare]` selon le contexte (voir trip-day-map.component.html). */
@@ -121,6 +142,10 @@ export class TripDayMapComponent {
    * réduite à 0px de haut, invisible, en layout scindé desktop.
    */
   protected readonly useSplitHeight = computed(() => this.viewport.isSplitLayout() && this.mapHost.currentOwner() !== 'general');
+  /** Vue Jour desktop : carte plein écran sous des éléments flottants, sans cadre (voir TripDetailDesktopComponent). */
+  protected readonly edgeToEdge = computed(() => !this.viewport.isMobileChrome() && this.mapHost.currentOwner() === 'day');
+  /** Largeur (px) recouverte à gauche par le panneau flottant : la caméra centre sur la zone visible restante. */
+  private readonly cameraInset = computed(() => (this.edgeToEdge() ? this.mapHost.desktopMapInsetLeft() : 0));
   protected readonly useMobileFullscreenHeight = computed(() =>
     this.googleMapPanelService.isFullscreen() && this.mapHost.currentOwner() === 'day' && !this.viewport.isSplitLayout(),
   );
@@ -195,6 +220,11 @@ export class TripDayMapComponent {
         document.removeEventListener('pointercancel', this.onGrabberPointerUp);
         footerEl?.removeEventListener('click', this.onGrabberClickCapture, { capture: true });
       });
+    });
+
+    this.destroyRef.onDestroy(() => {
+      cancelAnimationFrame(this.insetAnimationFrame);
+      this.progressLine?.setMap(null);
     });
 
     this.setupMapEffects();
@@ -310,6 +340,16 @@ export class TripDayMapComponent {
       // (voir le warning console "Falling back to Raster" et
       // ROADMAP.md "Warnings de dépréciation Google Maps").
       isFractionalZoomEnabled: true,
+      // Desktop : le haut et la gauche de la carte sont recouverts par la barre
+      // des jours et le panneau flottants. Dépend du seul mode de chrome (pas du
+      // contexte jour/général) : changer `options` recentre la carte et réinitialise
+      // son type (`GoogleMap._combineOptions`).
+      ...(this.viewport.isMobileChrome()
+        ? {}
+        : {
+            mapTypeControlOptions: { position: google.maps.ControlPosition.BOTTOM_CENTER },
+            streetViewControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+          }),
     };
   });
 
@@ -341,6 +381,7 @@ export class TripDayMapComponent {
       }
 
       this.lastPointsKey = key;
+      this.clearDayProgress();
 
       if (!pts.length) {
         // Bascule vers un jour/contexte sans AUCUNE activité géolocalisée
@@ -389,6 +430,40 @@ export class TripDayMapComponent {
       this.moveCameraTo(coords, this.zoom());
     });
 
+    effect(() => {
+      if (this.mapHost.currentOwner() !== 'day') this.clearDayProgress();
+    });
+
+    // Surbrillance appliquée sur les éléments existants (pas de reconstruction) pour que la transition CSS joue.
+    effect(() => {
+      const highlighted = this.highlightedActivityId();
+      for (const [activityId, element] of this.markerContents()) {
+        const isOn = activityId === highlighted;
+        element.style.transform = isOn ? 'scale(1.35)' : '';
+        element.style.filter = isOn ? `drop-shadow(0 0 0.4rem ${element.dataset['glow']})` : '';
+        const marker = this.markerRefs.get(activityId);
+        if (marker) marker.zIndex = isOn ? 1000 : null;
+      }
+    });
+
+    // Repli/dépli du panneau desktop : la caméra glisse vers le centre de la nouvelle zone visible.
+    effect(() => {
+      const target = this.cameraInset();
+      cancelAnimationFrame(this.insetAnimationFrame);
+      const from = this.appliedInset;
+      if (from === target) return;
+
+      const start = performance.now();
+      const step = (now: number) => {
+        const progress = Math.min(1, (now - start) / INSET_TWEEN_MS);
+        this.appliedInset = lerp(from, target, easeInOutCubic(progress));
+        const camera = this.lastLogicalCamera;
+        if (camera) this.applyCamera(camera.center, camera.zoom);
+        if (progress < 1) this.insetAnimationFrame = requestAnimationFrame(step);
+      };
+      this.insetAnimationFrame = requestAnimationFrame(step);
+    });
+
     // Miniature photo Google sur les markers (voir ROADMAP.md "UX /
     // Interactions", remplace le numéro partout) : charge paresseusement
     // l'URL (blob, via GooglePhotoService — mise en cache par ref au niveau
@@ -407,67 +482,58 @@ export class TripDayMapComponent {
   }
 
   /**
-   * Vignette photo Google à la place du numéro (voir ROADMAP.md "UX /
-   * Interactions") : si une photo est résolue pour ce point, un cercle avec
-   * la miniature ; sinon (pas de photo Google, ou pas encore chargée, ou
-   * échec) un `PinElement` classique mais SANS `glyphText` — le numéro
-   * disparaît partout, y compris en fallback.
+   * Contenu de chaque marqueur, construit une fois par point/photo (stable à
+   * travers la surbrillance, voir l'effect dédié) : vignette photo Google si
+   * résolue, sinon `PinElement` sans glyphe, plus la pastille de rang 1..n en
+   * vue Jour.
    */
-  markerContent(point: DayMapPoint): HTMLElement {
-    // Protection indispensable au cas où Google Maps n'est pas encore totalement instancié dans le DOM
-    if (typeof google === 'undefined' || !google.maps || !google.maps.marker) {
-      return document.createElement('div');
+  protected readonly markerContents = computed(() => {
+    const photoUrls = this.photoUrls();
+    const ranks = this.dayRouteIndex();
+    const contents = new Map<string, HTMLElement>();
+    for (const point of this.points()) {
+      const rank = ranks.get(point.activityId);
+      const photoUrl = point.photoRef ? photoUrls[point.photoRef] : undefined;
+      contents.set(point.activityId, this.buildMarker(point, photoUrl, rank === undefined ? null : rank + 1));
     }
+    return contents;
+  });
 
-    const isSelected = point.activityId === this.selectedActivityId();
-    const photoUrl = point.photoRef ? this.photoUrls()[point.photoRef] : undefined;
+  private buildMarker(point: DayMapPoint, photoUrl: string | undefined, rank: number | null): HTMLElement {
     const typeColor = `var(${point.colorVar ?? '--nt-primary-color'})`;
+    const wrapper = document.createElement('div');
+    wrapper.dataset['glow'] = `color-mix(in srgb, ${typeColor} 70%, transparent)`;
+    wrapper.style.cssText = `
+      position: relative;
+      transform-origin: 50% 100%;
+      transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), filter 220ms ease;
+    `;
 
-    if (photoUrl) {
-      return this.buildPhotoMarker(photoUrl, isSelected, typeColor);
-    }
+    // Protection indispensable au cas où Google Maps n'est pas encore totalement instancié dans le DOM
+    if (typeof google === 'undefined' || !google.maps || !google.maps.marker) return wrapper;
 
-    // PinElement étend HTMLElement : on le retourne directement plutôt que
-    // sa propriété `.element`, dépréciée par l'API Google Maps. Toujours en
-    // couleur d'identité du type — le halo/l'accent du marqueur sélectionné
-    // (ROADMAP.md "### UI") passe par un bord PLUS
-    // marqué (couleur active, plus épais) en plus de la taille, pas
-    // seulement l'échelle comme avant. `glyphColor` DOIT être posé
-    // explicitement : sans `glyphText`/`glyph`, PinElement affiche quand même
-    // un petit rond central avec sa couleur par défaut (rouge Google), qui
-    // ressortait comme un point rouge résiduel au milieu du pin même une
-    // fois `background`/`borderColor` recolorés.
-    return new google.maps.marker.PinElement({
-      background: typeColor,
-      borderColor: isSelected ? 'var(--nt-primary-active-color)' : typeColor,
-      glyphColor: typeColor,
-      scale: isSelected ? 1.35 : 1,
-    });
+    // `glyphColor` explicite : sans glyphe, PinElement affiche sinon un rond central rouge Google.
+    wrapper.appendChild(photoUrl
+      ? this.buildPhotoMarker(photoUrl, typeColor)
+      : new google.maps.marker.PinElement({ background: typeColor, borderColor: typeColor, glyphColor: typeColor }));
+    if (rank !== null) wrapper.appendChild(this.buildRankBadge(rank));
+    return wrapper;
   }
 
   /**
    * Marker "vignette" custom : construit hors du renderer Angular
    * (`document.createElement`, styles posés en inline), donc pas de CSS
-   * scopé du composant qui s'y applique — voir `markerContent`.
+   * scopé du composant qui s'y applique — voir `buildMarker`.
    */
-  private buildPhotoMarker(url: string, isSelected: boolean, typeColor: string): HTMLElement {
-    const size = isSelected ? 44 : 36;
-    // Halo de la couleur du type : un anneau
-    // supplémentaire, diffus, en plus du bord — c'est lui qui donne
-    // l'impression de "halo" plutôt qu'un simple bord plus épais.
-    const borderColor = isSelected ? 'var(--nt-primary-active-color)' : typeColor;
-    const haloShadow = isSelected
-      ? `, 0 0 0 0.25rem color-mix(in srgb, ${typeColor} 40%, transparent)`
-      : '';
-
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-      width: ${size}px;
-      height: ${size}px;
+  private buildPhotoMarker(url: string, typeColor: string): HTMLElement {
+    const frame = document.createElement('div');
+    frame.style.cssText = `
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      border: ${isSelected ? 3 : 2}px solid ${borderColor};
+      border: 2px solid ${typeColor};
       overflow: hidden;
-      box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35)${haloShadow};
+      box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
       background: #ffffff;
     `;
 
@@ -475,12 +541,79 @@ export class TripDayMapComponent {
     img.src = url;
     img.alt = '';
     img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block;';
-    wrapper.appendChild(img);
+    frame.appendChild(img);
 
-    return wrapper;
+    return frame;
+  }
+
+  private buildRankBadge(rank: number): HTMLElement {
+    const badge = document.createElement('span');
+    badge.textContent = String(rank);
+    badge.style.cssText = `
+      position: absolute;
+      top: -6px;
+      right: -9px;
+      box-sizing: border-box;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 999px;
+      border: 2px solid #ffffff;
+      background: var(--nt-primary-color);
+      color: var(--nt-primary-contrast-color);
+      font: 700 10px/14px system-ui, sans-serif;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+    `;
+    return badge;
+  }
+
+  /** Créée à chaque instance `google.maps.Map` (recréée au changement de thème, voir le template). */
+  protected onMapInitialized(map: google.maps.Map): void {
+    this.progressLine?.setMap(null);
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--nt-primary-color').trim();
+    this.progressLine = new google.maps.Polyline({
+      map,
+      clickable: false,
+      geodesic: true,
+      strokeColor: color,
+      strokeOpacity: 1,
+      strokeWeight: 6,
+      zIndex: 2,
+      icons: [{
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 5, fillColor: color, fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 },
+        offset: '100%',
+      }],
+    });
+  }
+
+  /** `progress` = index fractionnaire dans `dayRoute` (0 = 1re activité) ; `null` = rien de parcouru. */
+  private setDayProgress(progress: number | null): void {
+    const route = this.dayRoute();
+    if (progress === null || !route.length) {
+      this.clearDayProgress();
+      return;
+    }
+
+    this.progressLine?.setPath(route.length > 1
+      ? smoothPathUntil(route.map((point) => ({ lat: point.latitude, lng: point.longitude })), progress)
+      : []);
+
+    const nearest = Math.round(progress);
+    this.highlightedActivityId.set(
+      Math.abs(progress - nearest) <= ARRIVAL_THRESHOLD ? route[nearest]?.activityId ?? null : null,
+    );
+  }
+
+  private clearDayProgress(): void {
+    this.progressLine?.setPath([]);
+    this.highlightedActivityId.set(null);
   }
 
   onMarkerClick(point: DayMapPoint): void {
+    if (this.mapHost.currentOwner() === 'day') this.highlightedActivityId.set(point.activityId);
+
     if (this.googleMapPanelService.isFullscreen() && this.mapHost.currentOwner() === 'day') {
       this.googleMapPanelService.setFullscreen(false);
       requestAnimationFrame(() => {
@@ -537,15 +670,12 @@ export class TripDayMapComponent {
     // recentrait/scrollait plus rien en usage normal.
     marker.gmpClickable = true;
     marker.addEventListener('gmp-click', () => this.onMarkerClick(point));
+    this.markerRefs.set(point.activityId, marker);
+    if (point.activityId === this.highlightedActivityId()) marker.zIndex = 1000;
   }
 
   private focusOnPoint(point: DayMapPoint): void {
-    const map = this.mapRef()?.googleMap;
-    if (!map) return;
-    map.moveCamera({
-      center: { lat: point.latitude, lng: point.longitude },
-      zoom: this.focusZoom()
-    });
+    this.moveCameraTo({ lat: point.latitude, lng: point.longitude }, this.focusZoom());
   }
 
   /** Lecture directe de l'état caméra courant — utilisé par `GeneralMapCinematicService` pour tweener depuis un état arbitraire (pas forcément un point/l'overview connus à l'avance), voir sa doc. */
@@ -559,9 +689,26 @@ export class TripDayMapComponent {
 
   /** Déplacement caméra direct (sans easing propre) — le tween éventuel est piloté par l'appelant, voir `GeneralMapCinematicService`. */
   moveCameraTo(center: google.maps.LatLngLiteral, zoom: number): void {
+    this.lastLogicalCamera = { center, zoom };
+    this.applyCamera(center, zoom);
+  }
+
+  /**
+   * Le centre demandé doit apparaître au milieu de la zone NON recouverte par
+   * le panneau : on décale le centre réel de la carte de `inset / 2` px vers
+   * l'ouest (Mercator : 360° de longitude = 256·2^zoom px).
+   */
+  private applyCamera(center: google.maps.LatLngLiteral, zoom: number): void {
     const map = this.mapRef()?.googleMap;
     if (!map) return;
-    map.moveCamera({ center, zoom });
+    const lngPerPx = 360 / (256 * Math.pow(2, zoom));
+    map.moveCamera({ center: { lat: center.lat, lng: center.lng - (this.appliedInset / 2) * lngPerPx }, zoom });
+  }
+
+  /** Taille de la zone de carte réellement visible (hors panneau flottant), pour les calculs de zoom. */
+  private visibleSize(): { width: number; height: number } {
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    return { width: Math.max(1, rect.width - this.appliedInset), height: rect.height };
   }
 
   protected locateUser(): void {
@@ -611,11 +758,15 @@ export class TripDayMapComponent {
     // découplé de celui du déplacement.
     const targetZoom = this.computeCinematicZoom(from, to, clampedT, maxZoomDrop);
 
-    // MOVE CAMERA : La magie vectorielle opère ici en une seule passe ultra-rapide
-    map.moveCamera({
-      center: targetCenter,
-      zoom: targetZoom
-    });
+    this.moveCameraTo(targetCenter, targetZoom);
+
+    if (this.mapHost.currentOwner() === 'day') {
+      const fromIndex = this.dayRouteIndex().get(from.activityId);
+      const toIndex = this.dayRouteIndex().get(to.activityId);
+      if (fromIndex !== undefined && toIndex !== undefined) {
+        this.setDayProgress(fromIndex + (toIndex - fromIndex) * eased);
+      }
+    }
   }
 
   /**
@@ -657,7 +808,13 @@ export class TripDayMapComponent {
     };
     const targetZoom = lerp(overview.zoom, this.focusZoom(), s * s);
 
-    map.moveCamera({ center: targetCenter, zoom: targetZoom });
+    this.moveCameraTo(targetCenter, targetZoom);
+
+    if (this.mapHost.currentOwner() === 'day') {
+      // Rien n'est encore parcouru avant la 1re activité ; elle s'allume à l'approche.
+      this.progressLine?.setPath([]);
+      this.highlightedActivityId.set(s >= 1 - ARRIVAL_THRESHOLD ? point.activityId : null);
+    }
   }
 
   /**
@@ -670,8 +827,7 @@ export class TripDayMapComponent {
    * pour la vue d'ensemble du pool (même calcul, mêmes points).
    */
   computeOverviewCamera(points: DayMapPoint[], overviewZoomBuffer = 0.4): { center: google.maps.LatLngLiteral; zoom: number } | null {
-    const rect = this.elementRef.nativeElement.getBoundingClientRect();
-    return computeOverviewCameraUtil(points, { width: rect.width, height: rect.height }, this.focusZoom(), overviewZoomBuffer);
+    return computeOverviewCameraUtil(points, this.visibleSize(), this.focusZoom(), overviewZoomBuffer);
   }
 
   /**
@@ -690,13 +846,11 @@ export class TripDayMapComponent {
    * rendu qui semblait "sauter" au lieu de transitionner).
    */
   estimateZoomDrop(from: DayMapPoint, to: DayMapPoint, maxZoomDrop = 6): number {
-    const rect = this.elementRef.nativeElement.getBoundingClientRect();
-    return estimateZoomDropUtil(from, to, { width: rect.width, height: rect.height }, this.focusZoom(), maxZoomDrop);
+    return estimateZoomDropUtil(from, to, this.visibleSize(), this.focusZoom(), maxZoomDrop);
   }
 
   private computeCinematicZoom(from: DayMapPoint, to: DayMapPoint, t: number, maxZoomDrop = 6): number {
-    const rect = this.elementRef.nativeElement.getBoundingClientRect();
-    return computeCinematicZoomUtil(from, to, t, { width: rect.width, height: rect.height }, this.focusZoom(), maxZoomDrop);
+    return computeCinematicZoomUtil(from, to, t, this.visibleSize(), this.focusZoom(), maxZoomDrop);
   }
 
   get googleMap(): google.maps.Map | undefined {

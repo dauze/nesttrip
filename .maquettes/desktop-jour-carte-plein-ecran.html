@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NestTrip — Maquette vue Jour desktop : carte plein écran + panneau flottant</title>
+<style>
+  :root {
+    --nt-primary-50:#ECF6F5; --nt-primary-100:#D0EAE7; --nt-primary-500:#2A7871; --nt-primary-600:#21615B;
+    --nt-primary-color:var(--nt-primary-500); --nt-primary-contrast-color:#fff;
+    --nt-surface-0:#fff; --nt-surface-50:#f8fafc; --nt-surface-100:#f1f5f9; --nt-surface-200:#e2e8f0;
+    --nt-surface-300:#cbd5e1; --nt-surface-400:#94a3b8; --nt-surface-500:#64748b; --nt-surface-600:#475569;
+    --nt-surface-700:#334155; --nt-surface-800:#1e293b;
+    --nt-text-color:var(--nt-surface-700); --nt-text-muted-color:var(--nt-surface-500);
+    --nt-content-background:var(--nt-surface-0); --nt-content-hover-background:var(--nt-surface-100);
+    --nt-content-inset-background:var(--nt-surface-50);
+    --nt-content-border-color:var(--nt-surface-200); --nt-page-background:var(--nt-surface-50);
+    --nt-radius-md:.5rem; --nt-radius-lg:.75rem; --nt-radius-xl:1rem; --nt-radius-pill:999px;
+    --nt-shadow-xs:0 .0625rem .125rem rgba(15,23,42,.06);
+    --nt-shadow-sm:0 .125rem .5rem rgba(15,23,42,.08);
+    --nt-shadow-md:0 .375rem 1rem -.125rem rgba(15,23,42,.12);
+    --nt-shadow-lg:0 .75rem 2rem -.5rem rgba(15,23,42,.22);
+    --nt-space-1:.25rem; --nt-space-2:.5rem; --nt-space-3:.75rem; --nt-space-4:1rem;
+    --nt-activity-repas:#F97316; --nt-activity-visite:#F43F5E; --nt-activity-activite:#f79009; --nt-activity-nature:#12b76e;
+    --nt-logistic-logement:#7a5af8; --nt-green-500:#12b76e;
+
+    --toolbar-h:3.25rem;
+    --gap:.5rem;
+    --sidebar-w:clamp(22rem, 30vw, 27rem);
+    --daybar-h:4.1rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --nt-primary-color:#43A198; --nt-primary-contrast-color:#09090b;
+      --nt-text-color:#fff; --nt-text-muted-color:#a1a1aa;
+      --nt-content-background:#18181b; --nt-content-hover-background:#27272a; --nt-content-inset-background:#27272a;
+      --nt-content-border-color:#3f3f46; --nt-page-background:#09090b;
+      --nt-shadow-md:0 .375rem 1rem -.125rem rgba(0,0,0,.45);
+      --nt-shadow-lg:0 .75rem 2rem -.5rem rgba(0,0,0,.6);
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--nt-page-background); color:var(--nt-text-color); font-size:15px; line-height:1.4;
+    height:100vh; overflow:hidden;
+  }
+
+  /* ---------- Toolbar app (inchangée, opaque) ---------- */
+  .toolbar {
+    position:fixed; top:0; left:0; right:0; height:var(--toolbar-h); z-index:40;
+    display:flex; align-items:center; gap:.75rem; padding:0 1.25rem;
+    background:var(--nt-page-background);
+  }
+  .toolbar .back, .toolbar .gear { color:var(--nt-primary-color); font-size:1.15rem; cursor:pointer; width:2rem; text-align:center; }
+  .toolbar h1 { flex:1; text-align:center; font-size:1.1rem; font-weight:700; }
+  .avatars { display:flex; }
+  .avatars span { width:2rem; height:2rem; border-radius:var(--nt-radius-pill); background:var(--nt-surface-200);
+    color:var(--nt-surface-700); display:grid; place-items:center; font-size:.75rem; font-weight:700;
+    border:2px solid var(--nt-page-background); margin-left:-.5rem; }
+
+  /* ---------- Carte plein écran (sous la toolbar) ---------- */
+  .map {
+    position:fixed; top:var(--toolbar-h); left:0; right:0; bottom:0; z-index:0; overflow:hidden;
+    background:
+      radial-gradient(circle at 70% 30%, #cfe3d4 0 9%, transparent 9.2%),
+      radial-gradient(circle at 25% 75%, #cfe3d4 0 7%, transparent 7.2%),
+      linear-gradient(135deg,#eef1ec,#e4e9e2);
+  }
+  @media (prefers-color-scheme: dark) {
+    .map { background:
+      radial-gradient(circle at 70% 30%, #1d2b24 0 9%, transparent 9.2%),
+      radial-gradient(circle at 25% 75%, #1d2b24 0 7%, transparent 7.2%),
+      linear-gradient(135deg,#1b1e22,#16181b); }
+  }
+  .map svg { position:absolute; inset:0; width:100%; height:100%; }
+  .road { stroke:#fff; stroke-width:7; fill:none; opacity:.9; }
+  .road--small { stroke-width:3; }
+  .river { stroke:#a9cbe8; stroke-width:16; fill:none; opacity:.8; }
+  @media (prefers-color-scheme: dark) { .road { stroke:#2c3036; } .river { stroke:#1e3347; } }
+  .route { stroke:var(--nt-primary-color); stroke-width:4; fill:none; stroke-linecap:round; }
+  .marker {
+    position:absolute; transform:translate(-50%,-100%); display:flex; flex-direction:column; align-items:center; cursor:pointer;
+    transition:transform .2s ease;
+  }
+  .marker:hover, .marker.is-focus { transform:translate(-50%,-100%) scale(1.12); }
+  .marker__bubble {
+    width:2.2rem; height:2.2rem; border-radius:50%; display:grid; place-items:center; font-weight:700; color:#fff;
+    background:var(--c); border:3px solid #fff; box-shadow:var(--nt-shadow-md); font-size:.85rem;
+  }
+  .marker__tip { width:0; height:0; border:6px solid transparent; border-top-color:#fff; margin-top:-2px; }
+  .map-ctrl {
+    position:absolute; right:1rem; width:2.75rem; height:2.75rem; border-radius:var(--nt-radius-pill);
+    background:var(--nt-content-background); box-shadow:var(--nt-shadow-sm); border:1px solid var(--nt-content-border-color);
+    display:grid; place-items:center; color:var(--nt-primary-color); cursor:pointer; z-index:5;
+    transition:top .28s cubic-bezier(.4,0,.2,1);
+  }
+  .map-attrib { position:absolute; right:.5rem; bottom:.25rem; font-size:.7rem; color:var(--nt-text-muted-color); }
+
+  /* ---------- Barre des jours flottante ("barre de recherche") ---------- */
+  .daybar {
+    position:fixed; z-index:30; height:var(--daybar-h);
+    display:flex; gap:var(--nt-space-1); padding:var(--nt-space-1); overflow-x:auto; scrollbar-width:none;
+    background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-xl); box-shadow:var(--nt-shadow-md);
+    transition:left .28s cubic-bezier(.4,0,.2,1), top .28s cubic-bezier(.4,0,.2,1), width .28s cubic-bezier(.4,0,.2,1);
+  }
+  .daybar::-webkit-scrollbar { display:none; }
+  .tab {
+    flex:1 0 auto; min-width:3.75rem; padding:.4rem 1rem; border:none; background:transparent; border-radius:var(--nt-radius-lg);
+    color:var(--nt-text-muted-color); font:inherit; font-weight:600; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.15;
+    transition:background-color .2s ease,color .2s ease;
+  }
+  .tab:hover:not(.is-active) { background:var(--nt-content-hover-background); }
+  .tab.is-active { background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); }
+  .tab .num { font-size:1.1rem; font-weight:700; }
+  .tab .wd,.tab .mo { font-size:.7rem; }
+
+  /* ---------- Panneau latéral flottant ---------- */
+  .sidebar {
+    position:fixed; z-index:20; left:var(--gap); bottom:var(--gap); width:var(--sidebar-w);
+    display:flex; flex-direction:column;
+    background:var(--nt-page-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-xl); box-shadow:var(--nt-shadow-lg);
+    transition:transform .28s cubic-bezier(.4,0,.2,1), top .28s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar__scroll {
+    flex:1; min-height:0; overflow-y:auto; padding:var(--nt-space-2); border-radius:inherit;
+    display:flex; flex-direction:column; gap:var(--nt-space-2);
+    scrollbar-width:thin;
+  }
+  .sidebar__scroll > * { flex-shrink:0; }
+  /* poignée "<" collée au bord droit, comme Google Maps */
+  .sidebar__toggle {
+    position:absolute; top:50%; left:100%; transform:translateY(-50%);
+    width:1.5rem; height:3rem; border:1px solid var(--nt-content-border-color); border-left:none;
+    border-radius:0 var(--nt-radius-md) var(--nt-radius-md) 0;
+    background:var(--nt-content-background); color:var(--nt-text-muted-color); box-shadow:var(--nt-shadow-sm);
+    display:grid; place-items:center; cursor:pointer; font-size:.8rem;
+  }
+  .sidebar__toggle:hover { color:var(--nt-primary-color); }
+  body.is-collapsed .sidebar { transform:translateX(calc(-100% - var(--gap))); }
+  body.is-collapsed .sidebar__toggle .chev { transform:rotate(180deg); }
+  .chev { display:inline-block; transition:transform .28s ease; }
+
+  /* --- Variantes de placement de la barre des jours --- */
+  /* C (pleine largeur, au-dessus du panneau) */
+  body[data-bar="C"] .daybar { top:calc(var(--toolbar-h) + var(--gap)); left:var(--gap); right:var(--gap); }
+  body[data-bar="C"] .sidebar { top:calc(var(--toolbar-h) + var(--daybar-h) + var(--gap)*2); }
+  body[data-bar="C"] .map-ctrl { top:calc(var(--daybar-h) + var(--gap)*2); }
+  /* B (sur la carte, à droite du panneau) */
+  body[data-bar="B"] .daybar { top:calc(var(--toolbar-h) + var(--gap)); left:calc(var(--sidebar-w) + var(--gap)*3); right:var(--gap); }
+  body[data-bar="B"].is-collapsed .daybar { left:calc(1.5rem + var(--gap)*2); }
+  body[data-bar="B"] .sidebar { top:calc(var(--toolbar-h) + var(--gap)); }
+  body[data-bar="B"] .map-ctrl { top:calc(var(--daybar-h) + var(--gap)*2); }
+  /* A (en tête du panneau, comme la barre de recherche Google) */
+  body[data-bar="A"] .daybar { top:calc(var(--toolbar-h) + var(--gap)); left:var(--gap); width:var(--sidebar-w); }
+  body[data-bar="A"] .sidebar { top:calc(var(--toolbar-h) + var(--daybar-h) + var(--gap)*2); }
+  body[data-bar="A"] .map-ctrl { top:1rem; }
+  body[data-bar="A"].is-collapsed .daybar { width:var(--sidebar-w); }
+
+  /* ---------- Contenu du panneau ---------- */
+  .panel {
+    background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-md); box-shadow:var(--nt-shadow-xs);
+  }
+  .panel__head {
+    display:flex; align-items:center; gap:.5rem; padding:.55rem .75rem; font-weight:600;
+    background:var(--nt-content-hover-background); border-bottom:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-md) var(--nt-radius-md) 0 0;
+  }
+  .panel__head .pm { margin-left:auto; color:var(--nt-text-muted-color); }
+  .tl { padding:.25rem .75rem; }
+  .tl-row { display:flex; align-items:center; gap:.6rem; padding:.45rem 0; font-size:.88rem; cursor:pointer; }
+  .tl-row + .tl-row { border-top:1px solid var(--nt-content-border-color); }
+  .tl-row:hover .tl-title { color:var(--nt-primary-color); }
+  .tl-time { width:2.8rem; color:var(--nt-text-muted-color); font-variant-numeric:tabular-nums; }
+  .tl-badge { width:1.6rem; height:1.6rem; border-radius:50%; display:grid; place-items:center; font-size:.75rem;
+    background:color-mix(in srgb,var(--c) 16%,transparent); color:var(--c); }
+
+  .banner {
+    display:flex; align-items:center; gap:.6rem; padding:.6rem .75rem; font-size:.85rem;
+    background:var(--nt-content-background); border:1px solid var(--nt-content-border-color); border-radius:var(--nt-radius-md);
+  }
+  .banner .tl-badge { --c:var(--nt-logistic-logement); }
+
+  .card {
+    position:relative; background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-md); box-shadow:var(--nt-shadow-xs); overflow:hidden; cursor:pointer;
+    transition:box-shadow .2s ease, border-color .2s ease;
+  }
+  .card:hover { box-shadow:var(--nt-shadow-sm); }
+  .card.is-focus { border-color:color-mix(in srgb,var(--accent) 60%,transparent); box-shadow:var(--nt-shadow-md); }
+  .card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:.4rem;
+    background:linear-gradient(to bottom,var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); }
+  .card__head { display:flex; align-items:flex-start; gap:.6rem; padding:.7rem .8rem .6rem .9rem; }
+  .card__icon { width:2rem; height:2rem; border-radius:50%; display:grid; place-items:center; flex:none;
+    background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent); font-size:.9rem; }
+  .card__title { flex:1; min-width:0; }
+  .card__title h3 { font-size:.98rem; font-weight:700; }
+  .card__meta { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.2rem; font-size:.8rem; color:var(--nt-text-muted-color); }
+  .card__grip { color:var(--nt-surface-400); cursor:grab; }
+  .card__body { display:grid; grid-template-columns:1fr 1fr; gap:0 1rem; padding:0 .8rem .8rem .9rem; }
+  .fld { padding:.45rem 0; border-top:1px solid var(--nt-content-border-color); }
+  .fld .k { font-size:.72rem; color:var(--nt-text-muted-color); font-weight:600; }
+  .fld .v { margin-top:.1rem; font-weight:600; font-size:.88rem; }
+  .fld--full { grid-column:1/-1; }
+  .notes { margin-top:.3rem; padding:.5rem .6rem; border-radius:var(--nt-radius-md); background:var(--nt-content-inset-background); font-weight:400; font-size:.84rem; }
+
+  .gap-row { display:flex; align-items:center; gap:.5rem; padding:0 .9rem; font-size:.78rem; color:var(--nt-text-muted-color); }
+  .gap-row::before { content:""; width:2px; height:1.1rem; margin-left:.9rem; margin-right:.4rem; border-radius:2px;
+    background:repeating-linear-gradient(to bottom,var(--nt-surface-300) 0 3px,transparent 3px 6px); }
+
+  /* ---------- FAB ---------- */
+  .fab {
+    position:fixed; right:1.5rem; bottom:1.5rem; width:3.4rem; height:3.4rem; z-index:30;
+    border-radius:var(--nt-radius-pill); background:var(--nt-primary-color); color:var(--nt-primary-contrast-color);
+    display:grid; place-items:center; box-shadow:var(--nt-shadow-md); font-size:1.6rem; cursor:pointer;
+  }
+
+  /* ---------- Sélecteur de variantes (hors maquette) ---------- */
+  .switcher {
+    position:fixed; left:50%; bottom:1rem; transform:translateX(-50%); z-index:50;
+    display:flex; gap:.75rem; align-items:center; padding:.45rem .6rem; font-size:.8rem; white-space:nowrap;
+    background:#0f172a; color:#fff; border-radius:var(--nt-radius-pill); box-shadow:var(--nt-shadow-lg);
+  }
+  .switcher b { opacity:.7; font-weight:600; }
+  .switcher button { border:none; background:transparent; color:#cbd5e1; padding:.3rem .6rem; border-radius:var(--nt-radius-pill); cursor:pointer; font:inherit; }
+  .switcher button.on { background:#43A198; color:#fff; }
+</style>
+</head>
+<body data-bar="C">
+
+<header class="toolbar">
+  <span class="back">←</span>
+  <h1>Road trip Paris</h1>
+  <div class="avatars"><span>CB</span><span>ND</span></div>
+  <span class="gear">⚙</span>
+</header>
+
+<!-- Carte : occupe tout l'écran sous la toolbar -->
+<div class="map" id="map">
+  <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="river" d="M-20 420 C 180 380, 300 470, 470 430 S 760 330, 1020 380" />
+    <path class="road" d="M0 200 L1000 260" /><path class="road" d="M420 0 L520 700" />
+    <path class="road" d="M0 600 C 300 520, 600 640, 1000 560" /><path class="road" d="M760 0 L700 700" />
+    <path class="road road--small" d="M200 0 L260 700" /><path class="road road--small" d="M0 340 L1000 120" />
+    <path class="road road--small" d="M0 500 L1000 470" /><path class="road road--small" d="M600 0 L900 700" />
+    <path class="route" d="M540 300 C 600 340, 640 360, 660 400 S 720 470, 770 450 S 860 380, 840 330" />
+  </svg>
+  <div class="marker" style="left:54%;top:43%;--c:var(--nt-activity-visite)" data-id="a1"><div class="marker__bubble">1</div><div class="marker__tip"></div></div>
+  <div class="marker is-focus" style="left:66%;top:57%;--c:var(--nt-activity-repas)" data-id="a2"><div class="marker__bubble">2</div><div class="marker__tip"></div></div>
+  <div class="marker" style="left:77%;top:64%;--c:var(--nt-activity-nature)" data-id="a3"><div class="marker__bubble">3</div><div class="marker__tip"></div></div>
+  <div class="marker" style="left:84%;top:47%;--c:var(--nt-activity-activite)" data-id="a4"><div class="marker__bubble">4</div><div class="marker__tip"></div></div>
+  <div class="map-ctrl" title="Afficher ma position">⌖</div>
+  <div class="map-attrib">Données cartographiques ©2026 Google</div>
+</div>
+
+<!-- Barre des jours flottante -->
+<nav class="daybar" role="tablist">
+  <button class="tab">Général</button>
+  <button class="tab is-active"><span class="wd">Lun.</span><span class="num">24</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Mar.</span><span class="num">25</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Mer.</span><span class="num">26</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Jeu.</span><span class="num">27</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Ven.</span><span class="num">28</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Sam.</span><span class="num">29</span><span class="mo">Août</span></button>
+  <button class="tab"><span class="wd">Dim.</span><span class="num">30</span><span class="mo">Août</span></button>
+</nav>
+
+<!-- Panneau latéral flottant : résumé du jour en tête, puis la liste -->
+<aside class="sidebar" aria-label="Activités du jour">
+  <div class="sidebar__scroll">
+    <section class="panel">
+      <div class="panel__head">📅 Vue d'ensemble de la journée <span class="pm">−</span></div>
+      <div class="tl">
+        <div class="tl-row" data-id="a1" style="--c:var(--nt-activity-visite)"><span class="tl-time">10:00</span><span class="tl-badge">🏛</span><span class="tl-title">Musée du Louvre</span></div>
+        <div class="tl-row" data-id="a2" style="--c:var(--nt-activity-repas)"><span class="tl-time">13:00</span><span class="tl-badge">🍴</span><span class="tl-title">Bouillon Chartier</span></div>
+        <div class="tl-row" data-id="a3" style="--c:var(--nt-activity-nature)"><span class="tl-time">15:30</span><span class="tl-badge">🌳</span><span class="tl-title">Jardin du Luxembourg</span></div>
+        <div class="tl-row" data-id="a4" style="--c:var(--nt-activity-activite)"><span class="tl-time">19:30</span><span class="tl-badge">⛴</span><span class="tl-title">Croisière sur la Seine</span></div>
+      </div>
+    </section>
+
+    <div class="banner"><span class="tl-badge">🛏</span><span>Nuit sur place — <b>Hôtel des Grands Boulevards</b></span></div>
+
+    <article class="card" data-id="a1" style="--accent:var(--nt-activity-visite)">
+      <div class="card__head"><span class="card__icon">🏛</span>
+        <div class="card__title"><h3>Musée du Louvre</h3><div class="card__meta"><span>🕐 10:00 – 12:30</span><span>€ 22</span></div></div>
+        <span class="card__grip">⋮⋮</span></div>
+    </article>
+    <div class="gap-row">🚶 12 min · 900 m</div>
+    <article class="card is-focus" data-id="a2" style="--accent:var(--nt-activity-repas)">
+      <div class="card__head"><span class="card__icon">🍴</span>
+        <div class="card__title"><h3>Bouillon Chartier Grands Boulevards</h3><div class="card__meta"><span>🕐 13:00 – 14:15</span><span>€ 16</span></div></div>
+        <span class="card__grip">⋮⋮</span></div>
+      <div class="card__body">
+        <div class="fld"><div class="k">Type</div><div class="v" style="color:var(--nt-activity-repas)">Repas</div></div>
+        <div class="fld"><div class="k">Statut</div><div class="v" style="color:var(--nt-green-500)">Réservé</div></div>
+        <div class="fld"><div class="k">Début</div><div class="v">13:00</div></div>
+        <div class="fld"><div class="k">Durée</div><div class="v">1 h 15</div></div>
+        <div class="fld fld--full"><div class="k">Notes</div><div class="notes">Arriver un peu avant l'ouverture pour éviter l'attente.</div></div>
+      </div>
+    </article>
+    <div class="gap-row">🚶 25 min · 1,9 km</div>
+    <article class="card" data-id="a3" style="--accent:var(--nt-activity-nature)">
+      <div class="card__head"><span class="card__icon">🌳</span>
+        <div class="card__title"><h3>Jardin du Luxembourg</h3><div class="card__meta"><span>🕐 15:30 – 17:00</span><span>Gratuit</span></div></div>
+        <span class="card__grip">⋮⋮</span></div>
+    </article>
+    <div class="gap-row">🚶 18 min · 1,3 km</div>
+    <article class="card" data-id="a4" style="--accent:var(--nt-activity-activite)">
+      <div class="card__head"><span class="card__icon">⛴</span>
+        <div class="card__title"><h3>Croisière sur la Seine</h3><div class="card__meta"><span>🕐 19:30 – 21:00</span><span>€ 35</span></div></div>
+        <span class="card__grip">⋮⋮</span></div>
+    </article>
+  </div>
+  <button class="sidebar__toggle" id="toggle" aria-label="Réduire le panneau"><span class="chev">◀</span></button>
+</aside>
+
+<div class="fab">＋</div>
+
+<div class="switcher">
+  <b>Barre des jours</b>
+  <button data-v="C" class="on">C · pleine largeur</button>
+  <button data-v="B">B · sur la carte</button>
+  <button data-v="A">A · en tête du panneau</button>
+</div>
+
+<script>
+  document.getElementById('toggle').addEventListener('click', () => {
+    const c = document.body.classList.toggle('is-collapsed');
+    document.getElementById('toggle').setAttribute('aria-label', c ? 'Afficher le panneau' : 'Réduire le panneau');
+  });
+  document.querySelectorAll('.switcher button').forEach(b => b.addEventListener('click', () => {
+    document.body.dataset.bar = b.dataset.v;
+    document.querySelectorAll('.switcher button').forEach(x => x.classList.toggle('on', x === b));
+  }));
+  // Survol carte <-> liste : même focus des deux côtés
+  const focus = id => document.querySelectorAll('[data-id]').forEach(el => el.classList.toggle('is-focus', el.dataset.id === id));
+  document.querySelectorAll('.card,.marker,.tl-row').forEach(el => el.addEventListener('click', () => focus(el.dataset.id)));
+</script>
+</body>
+</html>

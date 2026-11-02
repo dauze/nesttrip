@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, ViewContainerRef, computed, inject, input, signal } from '@angular/core';
-import { DialogRef } from '@angular/cdk/dialog';
 import { finalize } from 'rxjs';
 import { AvatarComponent } from '@app/shared/components/avatar/avatar/avatar.component';
 import { AvatarGroupComponent } from '@app/shared/components/avatar/avatar-group/avatar-group.component';
@@ -16,7 +15,7 @@ import { getInitials } from '@app/shared/utils/get-initials';
 
 /**
  * Avatars des participants — cliquable (voir `openDialog`), ouvre directement
- * la pop-up "compagnons de route" (`CollaboratorsDialogComponent`, même
+ * la pop-up "Voyageurs" (`CollaboratorsDialogComponent`, même
  * dialog que la ligne "Participants" de `TripSettingsSectionComponent`).
  * Monté dans la toolbar app (`TripsComponent`, à côté de la roue crantée) au
  * lieu du header voyage (ROADMAP.md, "Le trip header doit évoluer") : le
@@ -61,11 +60,11 @@ export class TripCollaboratorsComponent {
 
   private readonly addLoading = signal(false);
   private readonly addError = signal<string | null>(null);
-  private collaboratorsDialogRef?: DialogRef<void, CollaboratorsDialogComponent>;
 
   protected openDialog(): void {
     this.addError.set(null);
     const data: CollaboratorsDialogData = {
+      tripTitle: computed(() => this.tripFacade.activeTrip()?.title ?? ''),
       members: this.members,
       currentUserId: this.currentUserId,
       isOwner: this.isOwner,
@@ -76,9 +75,9 @@ export class TripCollaboratorsComponent {
       onRemove: (uid) => this.onRemoveCollaborator(uid),
       onRemoveCompanion: (uid) => this.onRemoveCompanion(uid),
     };
-    this.collaboratorsDialogRef = this.dialogService.open<void, CollaboratorsDialogData, CollaboratorsDialogComponent>(
+    this.dialogService.open<void, CollaboratorsDialogData, CollaboratorsDialogComponent>(
       CollaboratorsDialogComponent,
-      { data, viewContainerRef: this.viewContainerRef },
+      { data, panelClass: 'app-travellers-dialog-panel', viewContainerRef: this.viewContainerRef },
     );
   }
 
@@ -90,7 +89,7 @@ export class TripCollaboratorsComponent {
       .addCollaborator(this.tripId(), email)
       .pipe(finalize(() => this.addLoading.set(false)))
       .subscribe({
-        next: () => this.collaboratorsDialogRef?.close(),
+        // Pas de fermeture : la personne apparaît dans « Dans ce voyage », on peut en ajouter d'autres.
         error: (err) => {
           const message = err?.error?.error ?? err?.message ?? 'Une erreur est survenue';
           this.addError.set(message);

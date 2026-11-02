@@ -36,6 +36,14 @@ export class TripDayMapHostService {
   private readonly _dayFixedContainerHeight = signal(0);
   readonly dayFixedContainerHeight = this._dayFixedContainerHeight.asReadonly();
 
+  /** Calque carte plein écran de la vue Jour desktop (posé par `TripDetailDesktopComponent`), prioritaire sur `.sticky-map` pour `DayPanelComponent` en mode flottant. */
+  private readonly _desktopDayContainer = signal<HTMLElement | null>(null);
+  readonly desktopDayContainer = this._desktopDayContainer.asReadonly();
+
+  /** Largeur (px) recouverte à gauche de ce calque par le panneau flottant : la caméra centre sur la zone restante. */
+  private readonly _desktopMapInsetLeft = signal(0);
+  readonly desktopMapInsetLeft = this._desktopMapInsetLeft.asReadonly();
+
   /**
    * Ancre neutre de repli (`.map-anchor` de `TripDaySwiperComponent`, toujours
    * montée pour toute la durée de vie du trip) — utilisée par `parkToDefault()`
@@ -68,6 +76,14 @@ export class TripDayMapHostService {
 
   setDayFixedContainerHeight(height: number): void {
     this._dayFixedContainerHeight.set(height);
+  }
+
+  registerDesktopDayContainer(el: HTMLElement | null): void {
+    this._desktopDayContainer.set(el);
+  }
+
+  setDesktopMapInsetLeft(px: number): void {
+    this._desktopMapInsetLeft.set(px);
   }
 
   /**

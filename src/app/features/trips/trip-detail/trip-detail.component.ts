@@ -93,7 +93,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(TripFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly location = inject(Location);
-  private readonly dispatchService = inject(ActivityDispatchService);
+  protected readonly dispatchService = inject(ActivityDispatchService);
   protected readonly chromeService = inject(TripChromeService);
   protected readonly mapPanelService = inject(GoogleMapPanelService);
   protected readonly viewport = inject(ViewportService);

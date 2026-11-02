@@ -90,8 +90,9 @@
            ancêtre `swiper-slide` applique un transform permanent, ce qui
            casserait le `position:fixed` de ce bouton. Masqué pendant le mode
            sélection (voir app-selection-action-bar juste en dessous), qui
-           recouvre de toute façon la barre des jours à cet endroit. -->
-      @if (!selectionService.active()) {
+           recouvre de toute façon la barre des jours à cet endroit. Desktop :
+           masqué aussi pendant un drag, la pastille calendrier prend sa place. -->
+      @if (!selectionService.active() && (viewport.isMobileChrome() || !dispatchService.sheetVisible())) {
         <app-floating-add-button
           [icon]="fabIcon()"
           [ariaLabel]="fabAriaLabel()"

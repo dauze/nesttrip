@@ -7,6 +7,7 @@ import { Day } from '@app/features/trips/trip.model';
 import { TripFacade } from '@app/features/trips/trip-facade.service';
 import { ActivityDispatchService } from '@app/core/services/business/activity-dispatch.service';
 import { TripChromeService } from '@app/core/services/ui/trip-chrome.service';
+import { ViewportService } from '@app/core/services/ui/viewport.service';
 import { DayActivityFocusService } from '@app/features/trips/trip-detail/day-activity-focus.service';
 import { DispatchBallContentService } from './dispatch-ball-content.service';
 import { DispatchHoverEscalationService } from './dispatch-hover-escalation.service';
@@ -38,6 +39,10 @@ const THUMB_BORDER_THIN_PX = 1;
 /** Variable CSS du liseré gris de l'activity-header (même bordure que `app-panel`, voir panel.component.scss). */
 const THUMB_BORDER_GRAY = 'var(--nt-content-border-color)';
 const BALL_BORDER_WIDTH_PX = 3;
+/** Desktop : la pastille calendrier est visible, un court survol suffit (pas de zone à deviner). */
+const DESKTOP_ESCALATE_HOVER_MS = 150;
+/** En-têtes de colonnes du mini-calendrier desktop (semaine commençant le lundi). */
+const WEEKDAY_INITIALS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 function lerp(from: number, to: number, t: number): number {
   return from + (to - from) * t;
@@ -64,6 +69,19 @@ export class ActivityDayDispatchOverlayComponent {
   private readonly ballContentService = inject(DispatchBallContentService);
   private readonly hoverEscalation = inject(DispatchHoverEscalationService);
   private readonly dayFocusService = inject(DayActivityFocusService);
+  private readonly viewport = inject(ViewportService);
+
+  /** Vrai desktop : calendrier en pastille bas-droite qui s'ouvre en mini-calendrier mensuel (décision UX 2026-11-02). */
+  protected readonly desktop = computed(() => !this.viewport.isMobileChrome());
+  protected readonly weekdayInitials = WEEKDAY_INITIALS;
+  protected readonly hoveredDate = computed(() => {
+    const key = this.dispatchService.hoveredDayKey();
+    return key ? new Date(key) : null;
+  });
+  protected readonly tipTransform = computed(() => {
+    const p = this.dispatchService.pointer();
+    return `translate3d(${p.x}px, ${p.y + BALL_SIZE / 2 + 8}px, 0) translateX(-50%)`;
+  });
 
   readonly days = input<Day[]>([]);
   /** Jour (ou 'notes') actuellement visible dans le swiper, utilisé comme zone de dépose de secours quand le calendrier est rétracté. */
@@ -150,6 +168,7 @@ export class ActivityDayDispatchOverlayComponent {
   constructor() {
     this.hoverEscalation.connect({
       getSheetEl: () => this.sheetRef()?.nativeElement ?? null,
+      getEscalateDelayMs: () => (this.desktop() ? DESKTOP_ESCALATE_HOVER_MS : undefined),
     });
 
     // La demande de dispatch réelle est émise par le service ; c'est ici,
@@ -256,6 +275,11 @@ export class ActivityDayDispatchOverlayComponent {
 
   protected dayKeyFor(day: Day): string {
     return day.id.toISOString();
+  }
+
+  /** Colonne (1 = lundi) du premier jour d'un mois dans la grille desktop. */
+  protected weekdayColumn(day: Day): number {
+    return ((day.id.getDay() + 6) % 7) + 1;
   }
 
   protected onGridScroll(): void {

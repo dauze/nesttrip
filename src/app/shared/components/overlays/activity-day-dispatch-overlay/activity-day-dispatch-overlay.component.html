@@ -2,17 +2,30 @@
   class="dispatch-overlay fixed left-0 right-0 top-0 bottom-0"
   [class.dispatch-overlay--active]="dispatchService.isVisible()"
   [class.dispatch-overlay--expanded]="sheetExpanded()"
+  [class.dispatch-overlay--desktop]="desktop()"
   [class.dispatch-overlay--bar-visible]="dispatchService.activeDayDrag() !== null">
 
   <div #sheet class="dispatch-overlay__sheet"
     [style.--dispatch-collapsed-h.px]="collapsedHeight()"
     [style.--dispatch-expand-duration.ms]="expandDurationMs()">
 
+    @if (desktop()) {
+      <div class="dispatch-overlay__dock-head">
+        <i class="pi pi-calendar dispatch-overlay__dock-icon" aria-hidden="true"></i>
+        <span>{{ dispatchService.isVisible() ? 'Déposez sur un jour' : 'Glissez ici pour changer de jour' }}</span>
+      </div>
+    }
+
     <div #grid class="dispatch-overlay__scroll" (scroll)="onGridScroll()">
       @for (group of monthGroups(); track group.label) {
         <div class="dispatch-overlay__month">
           <div class="dispatch-overlay__month-label nt-bg-content font-semibold text-sm">{{ group.label }}</div>
-          <div class="flex flex-wrap gap-2 mb-2">
+          <div class="dispatch-overlay__days">
+            @if (desktop()) {
+              @for (initial of weekdayInitials; track $index) {
+                <span class="dispatch-overlay__weekday">{{ initial }}</span>
+              }
+            }
             @for (day of group.items; track day.id.getTime(); let di = $index) {
              <app-button
                 #dayCell
@@ -21,11 +34,13 @@
                 [severity]="dispatchService.hoveredDayKey() === dayKeyFor(day) ? undefined : 'secondary'"
                 [attr.data-day-key]="dayKeyFor(day)"
                 [style.transitionDelay.ms]="sheetExpanded() ? di * 25 : 0"
+                [style.gridColumnStart]="desktop() && di === 0 ? weekdayColumn(day) : null"
                 class="dispatch-overlay__day"
+                [class.dispatch-overlay__day--current]="dayKeyFor(day) === activeDayId()"
                 [class.dispatch-overlay__day--in]="sheetExpanded()">
                 <span class="flex flex-column align-items-center gap-0">
                   <span class="text-lg font-bold line-height-1">{{ day.id | date: 'd' }}</span>
-                  <span class="text-xs uppercase line-height-1">{{ day.id | date: 'EEE' }}</span>
+                  <span class="dispatch-overlay__day-weekday text-xs uppercase line-height-1">{{ day.id | date: 'EEE' }}</span>
                 </span>
                 @if ((countsByDay().get(dayKeyFor(day)) ?? 0) > 0) {
                   <span class="dispatch-overlay__day-count">{{ countsByDay().get(dayKeyFor(day)) }}</span>
@@ -55,3 +70,9 @@
     <div #ballContent class="dispatch-ball__content w-full h-full overflow-hidden flex align-items-center"></div>
   </div>
 </div>
+
+@if (desktop() && phase() === 'lifted' && hoveredDate(); as date) {
+  <div class="dispatch-tip" [style.transform]="tipTransform()">
+    {{ dragged()?.origin === 'pool' ? 'Ajouter au' : 'Déplacer au' }} {{ date | date: 'EEEE d MMMM' }}
+  </div>
+}

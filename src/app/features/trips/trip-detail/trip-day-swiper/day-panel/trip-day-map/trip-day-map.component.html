@@ -1,16 +1,18 @@
 <app-panel
     class="map-panel pull-to-refresh-exclude"
   [class.map-panel--fullscreen]="useMobileFullscreenHeight()"
+  [class.map-panel--edge]="edgeToEdge()"
     [toggleable]="mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()"
     [footerToggle]="mapHost.currentOwner() !== 'general' && !viewport.isSplitLayout()"
-    [bare]="mapHost.currentOwner() === 'general'"
+    [bare]="mapHost.currentOwner() === 'general' || edgeToEdge()"
     [noHeader]="viewport.isSplitLayout()"
     [(collapsed)]="collapsed"
     [dragPullPx]="dragPullPx()"
     (afterToggle)="onCollapsedToggled($event)"
     [fillHeight]="useSplitHeight() || useMobileFullscreenHeight()">
     <div class="flex flex-column gap-2 swiper-no-swiping map-container"
-      [class.map-container--fill]="useSplitHeight() || useMobileFullscreenHeight()">
+      [class.map-container--fill]="useSplitHeight() || useMobileFullscreenHeight()"
+      [class.map-container--edge]="edgeToEdge()">
       <!--
         @for à un seul élément, tracké par isDarkMode() : google.maps.Map ne
         rafraîchit pas visuellement son rendu quand `colorScheme` change via
@@ -26,6 +28,7 @@
           [center]="center()"
           [zoom]="zoom()"
           [options]="mapOptions()"
+          (mapInitialized)="onMapInitialized($event)"
         >
           @for (route of routePaths(); track route.dayKey) {
             <map-polyline [path]="route.path" [options]="routeLineOptions()" />
@@ -38,7 +41,7 @@
             <map-advanced-marker
               [position]="{ lat: point.latitude, lng: point.longitude }"
               [title]="point.name"
-              [content]="markerContent(point)"
+              [content]="markerContents().get(point.activityId) ?? null"
               (markerInitialized)="onMarkerInitialized($event, point)"
             />
           }

@@ -37,3 +37,85 @@
   --sticky-top-offset: 0px;
 }
 
+// --- Vue Jour (décision UX 2026-11-02, `.maquettes/desktop-jour-carte-plein-ecran.html`) :
+// carte plein écran sous la toolbar ; barre des jours (TripDetailComponent, z-5)
+// et panneau d'activités flottent par-dessus. `top` posés en binding (px mesurés). ---
+
+.desktop-day-map {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.desktop-day-sidebar {
+  --desktop-sidebar-gap: var(--nt-space-2);
+
+  position: fixed;
+  z-index: 2;
+  left: var(--desktop-sidebar-gap);
+  bottom: var(--desktop-sidebar-gap);
+  width: clamp(22rem, 30vw, 27rem);
+  background: var(--nt-page-background);
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-radius: var(--nt-radius-xl);
+  box-shadow: var(--nt-shadow-lg);
+  transition: transform 280ms var(--nt-ease-standard);
+
+  &--collapsed {
+    transform: translateX(calc(-100% - var(--desktop-sidebar-gap)));
+  }
+}
+
+// Scrollport de la vue Jour (`data-scrollport`) : commence déjà sous le chrome,
+// le contenu n'a donc rien à réserver (mêmes neutralisations que le scrollport Général).
+.desktop-day-sidebar__scroll {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 var(--nt-space-2) var(--nt-space-2);
+  border-radius: inherit;
+  scrollbar-width: thin;
+  --nt-content-border-width: var(--nt-border-width-hair);
+  --day-map-chrome-offset: 0px;
+  --sticky-top-offset: 0px;
+  --fixed-map-height: 0px;
+  --chrome-tabs-nav-height: 0px;
+}
+
+// Languette « < » collée au bord droit du panneau, comme Google Maps.
+.desktop-day-sidebar__toggle {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 3rem;
+  padding: 0;
+  border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
+  border-left: none;
+  border-radius: 0 var(--nt-radius-md) var(--nt-radius-md) 0;
+  background: var(--nt-content-background);
+  color: var(--nt-text-muted-color);
+  box-shadow: var(--nt-shadow-sm);
+  cursor: pointer;
+  transition: color var(--nt-transition-duration) ease;
+
+  i {
+    font-size: var(--nt-icon-size-sm, 0.875rem);
+    transition: transform 280ms var(--nt-ease-standard);
+  }
+
+  &:hover {
+    color: var(--nt-primary-color);
+  }
+}
+
+.desktop-day-sidebar--collapsed .desktop-day-sidebar__toggle i {
+  transform: rotate(180deg);
+}
+

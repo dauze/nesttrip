@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NestTrip — Maquette : déplacer une activité vers un autre jour (desktop)</title>
+<style>
+  :root {
+    --nt-primary-50:#ECF6F5; --nt-primary-100:#D0EAE7; --nt-primary-500:#2A7871; --nt-primary-600:#21615B;
+    --nt-primary-color:var(--nt-primary-500); --nt-primary-contrast-color:#fff;
+    --nt-surface-0:#fff; --nt-surface-50:#f8fafc; --nt-surface-100:#f1f5f9; --nt-surface-200:#e2e8f0;
+    --nt-surface-300:#cbd5e1; --nt-surface-400:#94a3b8; --nt-surface-500:#64748b; --nt-surface-700:#334155;
+    --nt-text-color:var(--nt-surface-700); --nt-text-muted-color:var(--nt-surface-500);
+    --nt-content-background:var(--nt-surface-0); --nt-content-hover-background:var(--nt-surface-100);
+    --nt-content-border-color:var(--nt-surface-200); --nt-page-background:var(--nt-surface-50);
+    --nt-radius-md:.5rem; --nt-radius-lg:.75rem; --nt-radius-xl:1rem; --nt-radius-pill:999px;
+    --nt-shadow-xs:0 .0625rem .125rem rgba(15,23,42,.06);
+    --nt-shadow-sm:0 .125rem .5rem rgba(15,23,42,.08);
+    --nt-shadow-md:0 .375rem 1rem -.125rem rgba(15,23,42,.12);
+    --nt-shadow-lg:0 .75rem 2rem -.375rem rgba(15,23,42,.18);
+    --nt-activity-repas:#F97316; --nt-activity-visite:#F43F5E; --nt-activity-nature:#12b76e; --nt-activity-activite:#f79009;
+    --toolbar-h:3.25rem; --daybar-h:4.1rem; --gap:.5rem; --sidebar-w:clamp(22rem,30vw,27rem);
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --nt-primary-color:#43A198; --nt-primary-contrast-color:#09090b;
+      --nt-text-color:#fff; --nt-text-muted-color:#a1a1aa;
+      --nt-content-background:#18181b; --nt-content-hover-background:#27272a;
+      --nt-content-border-color:#3f3f46; --nt-page-background:#09090b;
+      --nt-shadow-md:0 .375rem 1rem -.125rem rgba(0,0,0,.4); --nt-shadow-lg:0 .75rem 2rem -.375rem rgba(0,0,0,.55);
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--nt-page-background);
+    color:var(--nt-text-color); font-size:15px; line-height:1.4; height:100vh; overflow:hidden; user-select:none; }
+
+  .toolbar { position:fixed; inset:0 0 auto 0; height:var(--toolbar-h); z-index:40; display:flex; align-items:center;
+    padding:0 1.25rem; background:var(--nt-page-background); font-weight:700; justify-content:center; }
+  .map { position:fixed; inset:var(--toolbar-h) 0 0 0; background:linear-gradient(135deg,#e6ece4,#dfe7dc); }
+  @media (prefers-color-scheme: dark) { .map { background:linear-gradient(135deg,#1b1e22,#16181b); } }
+  .map::after { content:"Carte"; position:absolute; right:30%; top:50%; color:var(--nt-text-muted-color); opacity:.5; font-size:2rem; }
+
+  /* Barre des jours */
+  .daybar { position:fixed; z-index:30; top:calc(var(--toolbar-h) + var(--gap)); left:var(--gap); right:var(--gap); height:var(--daybar-h);
+    display:flex; gap:.25rem; padding:.25rem; background:var(--nt-content-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-lg); box-shadow:var(--nt-shadow-md); transition:box-shadow .25s ease, border-color .25s ease; }
+  .tab { flex:1 0 auto; min-width:3.75rem; border:none; background:transparent; border-radius:var(--nt-radius-md); font:inherit; font-weight:600;
+    color:var(--nt-text-muted-color); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.15;
+    position:relative; transition:background-color .18s ease, color .18s ease, transform .18s var(--ease), outline-color .18s ease; outline:2px dashed transparent; outline-offset:-3px; }
+  .tab .num { font-size:1.1rem; font-weight:700; }
+  .tab .s { font-size:.7rem; }
+  .tab.is-active { background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); }
+  .tab .count { position:absolute; top:.2rem; right:.35rem; font-size:.65rem; color:var(--nt-primary-color); }
+  .tab.is-active .count { color:inherit; }
+
+  /* Panneau */
+  .sidebar { position:fixed; z-index:20; left:var(--gap); bottom:var(--gap); top:calc(var(--toolbar-h) + var(--daybar-h) + var(--gap)*2);
+    width:var(--sidebar-w); background:var(--nt-page-background); border:1px solid var(--nt-content-border-color);
+    border-radius:var(--nt-radius-xl); box-shadow:var(--nt-shadow-lg); padding:.5rem; display:flex; flex-direction:column; gap:.5rem; overflow:hidden; }
+  .hint { font-size:.8rem; color:var(--nt-text-muted-color); padding:.25rem .25rem 0; }
+  .card { position:relative; flex:none; display:flex; align-items:center; gap:.6rem; padding:.7rem .8rem .7rem .9rem;
+    background:var(--nt-content-background); border:1px solid var(--nt-content-border-color); border-radius:var(--nt-radius-md);
+    box-shadow:var(--nt-shadow-xs); cursor:grab; overflow:hidden; transition:opacity .2s ease; }
+  .card::before { content:""; position:absolute; inset:0 auto 0 0; width:.4rem; background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); }
+  .card.is-lifted { opacity:.35; }
+  .card .ic { width:2rem; height:2rem; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent); }
+  .card h3 { font-size:.95rem; }
+  .card small { color:var(--nt-text-muted-color); }
+  .card .grip { margin-left:auto; color:var(--nt-surface-400); }
+
+  /* Fantôme */
+  .ghost { position:fixed; z-index:60; pointer-events:none; width:16rem; padding:.55rem .7rem .55rem .85rem; display:flex; align-items:center; gap:.5rem;
+    background:var(--nt-content-background); border-radius:var(--nt-radius-md); box-shadow:0 .75rem 1.75rem rgba(0,0,0,.25);
+    border-left:.4rem solid var(--accent); transform:rotate(-2deg); font-weight:600; font-size:.9rem; opacity:0; transition:opacity .15s ease; }
+  .ghost.on { opacity:1; }
+  .ghost .tip { position:absolute; left:0; top:calc(100% + .35rem); white-space:nowrap; font-size:.75rem; font-weight:600;
+    padding:.2rem .55rem; border-radius:var(--nt-radius-pill); background:var(--nt-primary-color); color:var(--nt-primary-contrast-color);
+    opacity:0; transform:translateY(-.25rem); transition:opacity .2s ease, transform .2s ease; }
+  .ghost .tip.on { opacity:1; transform:none; }
+
+  /* ===== Piste B : la barre des jours devient la cible ===== */
+  body[data-v="B"].dragging .daybar { border-color:var(--nt-primary-color); box-shadow:0 0 0 .25rem color-mix(in srgb,var(--nt-primary-color) 25%,transparent), var(--nt-shadow-lg); }
+  body[data-v="B"].dragging .tab.is-day:not(.is-active) { outline-color:color-mix(in srgb,var(--nt-primary-color) 45%,transparent); }
+  body[data-v="B"].dragging .tab.is-active { opacity:.45; }
+  body[data-v="B"].dragging .tab.is-general { opacity:.35; }
+  body[data-v="B"] .tab.is-target { background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); transform:scale(1.06); outline-color:transparent; }
+  body[data-v="B"] .tab.is-target .count { color:inherit; }
+  .bar-caption { position:fixed; z-index:31; left:50%; top:calc(var(--toolbar-h) + var(--daybar-h) + var(--gap) + .4rem);
+    transform:translate(-50%,-.4rem); opacity:0; pointer-events:none; white-space:nowrap;
+    display:flex; align-items:center; gap:.4rem; padding:.3rem .8rem; border-radius:var(--nt-radius-pill); font-size:.8rem; font-weight:600;
+    background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); box-shadow:var(--nt-shadow-md); transition:opacity .2s ease, transform .25s var(--ease); }
+  body[data-v="B"].dragging .bar-caption { opacity:1; transform:translate(-50%,0); }
+  body[data-v="B"].dragging .bar-caption::before { content:"↑"; }
+
+  /* ===== Piste A : dock calendrier en bas à droite ===== */
+  .dock { position:fixed; z-index:35; right:1.5rem; bottom:1.5rem; display:none; flex-direction:column; align-items:stretch;
+    background:var(--nt-content-background); border:2px dashed color-mix(in srgb,var(--nt-primary-color) 55%,transparent);
+    border-radius:var(--nt-radius-xl); box-shadow:var(--nt-shadow-lg); overflow:hidden;
+    width:15rem; max-height:3.4rem; transition:width .35s var(--ease), max-height .35s var(--ease), border-color .2s ease; }
+  body[data-v="A"].dragging .dock { display:flex; animation:dock-in .3s var(--ease); }
+  @keyframes dock-in { from { transform:translateY(1rem); opacity:0; } }
+  .dock__head { display:flex; align-items:center; gap:.6rem; padding:.85rem 1rem; font-weight:600; font-size:.9rem; color:var(--nt-primary-color); flex:none; }
+  .dock__head .ico { font-size:1.1rem; animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform:scale(1.18); } }
+  .dock.is-open { width:22rem; max-height:20rem; border-style:solid; border-color:var(--nt-primary-color); }
+  .dock.is-open .dock__head .ico { animation:none; }
+  .dock__grid { padding:0 1rem 1rem; display:grid; grid-template-columns:repeat(7,1fr); gap:.3rem; opacity:0; transition:opacity .25s ease .1s; }
+  .dock.is-open .dock__grid { opacity:1; }
+  .dock__month { grid-column:1/-1; font-size:.8rem; font-weight:600; color:var(--nt-text-muted-color); text-transform:capitalize; padding:.25rem 0; }
+  .dock__wd { font-size:.65rem; text-align:center; color:var(--nt-text-muted-color); text-transform:uppercase; }
+  .cell { aspect-ratio:1; border-radius:var(--nt-radius-md); display:grid; place-items:center; font-weight:700; font-size:.9rem; position:relative;
+    background:var(--nt-content-hover-background); transition:background-color .15s ease, transform .15s var(--ease); }
+  .cell.out { background:transparent; color:var(--nt-surface-300); font-weight:400; }
+  .cell.cur { outline:2px solid var(--nt-primary-color); outline-offset:-2px; color:var(--nt-primary-color); }
+  .cell.is-target { background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); transform:scale(1.1); }
+  .cell .count { position:absolute; top:.1rem; right:.25rem; font-size:.6rem; color:var(--nt-primary-color); }
+  .cell.is-target .count { color:inherit; }
+
+  .fab { position:fixed; right:1.5rem; bottom:1.5rem; width:3.4rem; height:3.4rem; border-radius:50%; z-index:30;
+    background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); display:grid; place-items:center; font-size:1.6rem; box-shadow:var(--nt-shadow-md); transition:opacity .2s ease; }
+  body[data-v="A"].dragging .fab { opacity:0; }
+
+  .toast { position:fixed; z-index:70; left:50%; bottom:1.5rem; transform:translate(-50%,1rem); opacity:0; padding:.6rem 1rem;
+    border-radius:var(--nt-radius-pill); background:#0f172a; color:#fff; font-size:.85rem; transition:opacity .25s ease, transform .3s var(--ease); }
+  .toast.on { opacity:1; transform:translate(-50%,0); }
+  .toast b { color:#6CBBB3; margin-left:.5rem; cursor:pointer; }
+
+  .switcher { position:fixed; z-index:80; right:6rem; bottom:1.6rem; display:flex; gap:.4rem; align-items:center; padding:.4rem .5rem;
+    background:#0f172a; color:#fff; border-radius:var(--nt-radius-pill); font-size:.8rem; white-space:nowrap; }
+  .switcher button { border:none; background:transparent; color:#cbd5e1; padding:.3rem .65rem; border-radius:var(--nt-radius-pill); font:inherit; cursor:pointer; }
+  .switcher button.on { background:#43A198; color:#fff; }
+  body.dragging .switcher { opacity:0; }
+</style>
+</head>
+<body data-v="B">
+
+<div class="toolbar">Road trip Paris</div>
+<div class="map"></div>
+
+<nav class="daybar" id="daybar"></nav>
+<div class="bar-caption">Déposez sur un jour pour y déplacer l'activité</div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="hint">Maquette : glissez une activité (souris) puis relâchez sur un autre jour.</div>
+  <div class="card" style="--accent:var(--nt-activity-visite)"><span class="ic">🏛</span><div><h3>Musée du Louvre</h3><small>10:00 – 12:30</small></div><span class="grip">⋮⋮</span></div>
+  <div class="card" style="--accent:var(--nt-activity-repas)"><span class="ic">🍴</span><div><h3>Bouillon Chartier</h3><small>13:00 – 14:15</small></div><span class="grip">⋮⋮</span></div>
+  <div class="card" style="--accent:var(--nt-activity-nature)"><span class="ic">🌳</span><div><h3>Jardin du Luxembourg</h3><small>15:30 – 17:00</small></div><span class="grip">⋮⋮</span></div>
+  <div class="card" style="--accent:var(--nt-activity-activite)"><span class="ic">⛴</span><div><h3>Croisière sur la Seine</h3><small>19:30 – 21:00</small></div><span class="grip">⋮⋮</span></div>
+</aside>
+
+<div class="dock" id="dock">
+  <div class="dock__head"><span class="ico">📅</span><span id="dockLabel">Glissez ici pour changer de jour</span></div>
+  <div class="dock__grid" id="dockGrid"></div>
+</div>
+
+<div class="fab">＋</div>
+<div class="ghost" id="ghost"><span id="ghostIcon"></span><span id="ghostTitle"></span><span class="tip" id="ghostTip"></span></div>
+<div class="toast" id="toast"></div>
+
+<div class="switcher">
+  <button data-v="B" class="on">B · Barre des jours = cible</button>
+  <button data-v="A">A · Calendrier bas-droite</button>
+</div>
+
+<script>
+  const days = [24,25,26,27,28,29,30].map((d, i) => ({ d, wd:['Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.','Dim.'][i], n:[4,2,0,3,1,0,2][i] }));
+  const ACTIVE = 24;
+  const daybar = document.getElementById('daybar');
+  daybar.innerHTML = '<button class="tab is-general">Général</button>' + days.map(x =>
+    `<button class="tab is-day ${x.d===ACTIVE?'is-active':''}" data-day="${x.d}"><span class="s">${x.wd}</span><span class="num">${x.d}</span><span class="s">Août</span>${x.n?`<span class="count">${x.n}</span>`:''}</button>`).join('');
+
+  const grid = document.getElementById('dockGrid');
+  grid.innerHTML = '<div class="dock__month">août 2026</div>' + ['L','M','M','J','V','S','D'].map(w => `<div class="dock__wd">${w}</div>`).join('')
+    + [17,18,19,20,21,22,23].map(d => `<div class="cell out">${d}</div>`).join('')
+    + days.map(x => `<div class="cell ${x.d===ACTIVE?'cur':''}" data-day="${x.d}">${x.d}${x.n?`<span class="count">${x.n}</span>`:''}</div>`).join('');
+
+  const body = document.body, ghost = document.getElementById('ghost'), tip = document.getElementById('ghostTip');
+  const dock = document.getElementById('dock'), toast = document.getElementById('toast');
+  let drag = null, openTimer = null;
+
+  document.querySelectorAll('.switcher button').forEach(b => b.onclick = () => {
+    body.dataset.v = b.dataset.v;
+    document.querySelectorAll('.switcher button').forEach(x => x.classList.toggle('on', x === b));
+  });
+
+  document.querySelectorAll('.card').forEach(card => card.addEventListener('pointerdown', e => {
+    drag = { card, x0:e.clientX, y0:e.clientY, started:false, target:null };
+  }));
+
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (!drag.started && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
+    if (!drag.started) start();
+    ghost.style.left = (e.clientX - 20) + 'px'; ghost.style.top = (e.clientY - 18) + 'px';
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = el?.closest(body.dataset.v === 'B' ? '.tab.is-day' : '.cell[data-day]');
+    const valid = target && +target.dataset.day !== ACTIVE ? target : null;
+    document.querySelectorAll('.is-target').forEach(t => t !== valid && t.classList.remove('is-target'));
+    valid?.classList.add('is-target');
+    drag.target = valid;
+    tip.textContent = valid ? `Déplacer au ${valid.dataset.day} août` : (body.dataset.v === 'B' ? 'Réordonner, ou glisser sur un jour ↑' : 'Réordonner, ou glisser sur 📅 ↘');
+    tip.classList.add('on');
+
+    if (body.dataset.v === 'A') {
+      const over = el?.closest('.dock');
+      if (over && !dock.classList.contains('is-open') && !openTimer) {
+        openTimer = setTimeout(() => { dock.classList.add('is-open'); document.getElementById('dockLabel').textContent = 'Déposez sur un jour'; }, 150);
+      }
+      if (!over && openTimer) { clearTimeout(openTimer); openTimer = null; }
+    }
+  });
+
+  window.addEventListener('pointerup', () => {
+    if (!drag) return;
+    if (drag.started) {
+      if (drag.target) {
+        const title = drag.card.querySelector('h3').textContent;
+        drag.card.remove();
+        toast.innerHTML = `« ${title} » déplacé au ${drag.target.dataset.day} août<b>Voir</b>`;
+        toast.classList.add('on'); setTimeout(() => toast.classList.remove('on'), 2600);
+      } else {
+        drag.card.classList.remove('is-lifted');
+      }
+      end();
+    }
+    drag = null;
+  });
+
+  function start() {
+    drag.started = true;
+    drag.card.classList.add('is-lifted');
+    ghost.style.setProperty('--accent', getComputedStyle(drag.card).getPropertyValue('--accent'));
+    document.getElementById('ghostIcon').textContent = drag.card.querySelector('.ic').textContent;
+    document.getElementById('ghostTitle').textContent = drag.card.querySelector('h3').textContent;
+    ghost.classList.add('on'); body.classList.add('dragging');
+  }
+  function end() {
+    ghost.classList.remove('on'); tip.classList.remove('on'); body.classList.remove('dragging');
+    dock.classList.remove('is-open'); document.getElementById('dockLabel').textContent = 'Glissez ici pour changer de jour';
+    clearTimeout(openTimer); openTimer = null;
+    document.querySelectorAll('.is-target,.is-lifted').forEach(t => t.classList.remove('is-target','is-lifted'));
+  }
+</script>
+</body>
+</html>

@@ -92,6 +92,12 @@ export class DayScrollSyncService implements OnDestroy {
   private frameBudget = 0;
   private static readonly MAX_FRAMES_WITHOUT_IDLE = 600;
   private readonly ACTIVITY_SCROLL_GAP = 8;
+  private readonly FOCUS_SCROLL_DURATION = 700;
+  private readonly SNAP_SCROLL_DURATION = 400;
+  /** Frames consécutives sans correction avant de considérer la cible stabilisée. */
+  private readonly FOCUS_STABLE_FRAMES = 8;
+  private readonly FOCUS_SETTLE_MAX_MS = 1200;
+  private cancelAutoScroll?: () => void;
   private readonly SNAP_DELAY = 500;
   private readonly SNAP_DISTANCE = 60;
 
@@ -410,78 +416,108 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
-    this.scrollToOffsetTop(target.top, onComplete);
+    this.scrollToLiveTarget(
+      () => this.config.getFreshOffsets().find(item => item.card.activity()?.id === activityId)?.top ?? null,
+      onComplete,
+    );
   }
 
   /** Scroll vers une entrée logistique fusionnée dans la liste (voir `TimelineComponent.logisticSelected`) — miroir de `focusActivity`, cible mesurée par `logisticId + role`. */
   focusLogisticEntry(logisticId: string, role: string, onComplete?: () => void): void {
-    const target = this.config.getLogisticOffsets().find(
+    const measure = () => this.config.getLogisticOffsets().find(
       (o) => o.logisticId === logisticId && o.role === role
-    );
+    )?.top ?? null;
 
-    if (!target) {
+    if (measure() === null) {
       onComplete?.();
       return;
     }
 
-    this.scrollToOffsetTop(target.top, onComplete);
+    this.scrollToLiveTarget(measure, onComplete);
   }
 
-  /** Voir `focusActivity`/`focusLogisticEntry` : même calcul de bouclier sticky (carte + chrome fixe), factoriser évite de le dupliquer par cible. */
-  private scrollToOffsetTop(top: number, onComplete?: () => void): void {
-    const stickyElement = this.config.getStickyMapEl();
-
-    // En layout scindé, la carte est à côté (pas au-dessus) de la liste :
-    // aucune hauteur de carte à soustraire. Le chrome fixe (toolbar+header+
-    // jours) est pris en charge par `getPinnedChromeOffset` selon le mode : 0
-    // en `'split-pinned'` (desktop, le scrollport démarre déjà sous le chrome,
-    // offsets de cartes mesurés depuis son haut — soustraire le chrome
-    // ferait descendre la cible et la couperait en haut), portion visible du
-    // chrome en `'split-hideable'` (mobile paysage, scrollport à top:0 sous
-    // le chrome fixe). Voir `TripChromeService.getScrollPaddingTop`.
-    const stickyHeight = this.config.isSplitLayout()
-      ? this.config.getPinnedChromeOffset()
-      : stickyElement
-        ? stickyElement.getBoundingClientRect().height
-        : this.stickyHeight();
-
-    const targetScroll = top - stickyHeight - this.ACTIVITY_SCROLL_GAP;
-
-    this.smoothScrollTo(targetScroll, 700, onComplete);
+  /**
+   * Hauteur (px, depuis le haut du scrollport) masquée par ce qui est fixe
+   * au-dessus de la liste. Layout scindé : chrome seul (`getPinnedChromeOffset`,
+   * la carte est à côté). Empilé (mobile) : bas RÉEL de la carte fixe, qui
+   * inclut la portion de toolbar encore visible — sa seule hauteur décalait
+   * la cible de cette portion.
+   */
+  private getTopShield(slideEl: HTMLElement): number {
+    if (this.config.isSplitLayout()) return this.config.getPinnedChromeOffset();
+    const stickyRect = this.config.getStickyMapEl()?.getBoundingClientRect();
+    if (!stickyRect || stickyRect.height === 0) return this.stickyHeight();
+    return stickyRect.bottom - slideEl.getBoundingClientRect().top;
   }
 
-  private smoothScrollTo(targetY: number, duration = 600, onComplete?: () => void): void {
+  /**
+   * Cible REMESURÉE à chaque frame (`measureTop`) plutôt que figée au départ :
+   * à l'arrivée sur un jour (clic depuis la carte générale), photos, segments
+   * de distance et hauteur de carte se stabilisent encore pendant le scroll —
+   * une cible figée arrivait décalée. Après l'animation, une courte phase de
+   * stabilisation recolle la cible tant que la mise en page bouge encore.
+   */
+  private scrollToLiveTarget(measureTop: () => number | null, onComplete?: () => void, duration = this.FOCUS_SCROLL_DURATION): void {
     const slideEl = this.config.getSlideEl();
     if (!this.config.isActive() || !slideEl) {
       onComplete?.();
       return;
     }
 
+    this.cancelAutoScroll?.();
+    let cancelled = false;
+    const cancelOnUserInput = () => { cancelled = true; };
+    const userEvents = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+    for (const type of userEvents) window.addEventListener(type, cancelOnUserInput, { passive: true, once: true });
+
+    const targetScroll = () => {
+      const top = measureTop();
+      return top === null ? null : top - this.getTopShield(slideEl) - this.ACTIVITY_SCROLL_GAP;
+    };
+
+    const finish = () => {
+      for (const type of userEvents) window.removeEventListener(type, cancelOnUserInput);
+      this.cancelAutoScroll = undefined;
+      this.isAutoScrolling = false;
+      this.wakeLoop();
+      onComplete?.();
+    };
+    this.cancelAutoScroll = () => { cancelled = true; };
+
     this.isAutoScrolling = true;
     const startY = slideEl.scrollTop;
-    const distance = targetY - startY;
-
     const startTime = performance.now();
-
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    let lastTarget = targetScroll() ?? startY;
+    let settleStart = 0;
+    let stableFrames = 0;
 
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+    const animate = (now: number) => {
+      if (cancelled || !this.config.isActive()) {
+        finish();
+        return;
+      }
 
-      const eased = easeOutCubic(progress);
-
-      slideEl.scrollTop = startY + distance * eased;
-
-      this.wakeLoop();
+      lastTarget = targetScroll() ?? lastTarget;
+      const progress = Math.min((now - startTime) / duration, 1);
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        slideEl.scrollTop = startY + (lastTarget - startY) * easeOutCubic(progress);
       } else {
-        this.isAutoScrolling = false;
-        this.wakeLoop();
-        onComplete?.();
+        settleStart ||= now;
+        const drift = lastTarget - slideEl.scrollTop;
+        const before = slideEl.scrollTop;
+        if (Math.abs(drift) > 1) slideEl.scrollTop = lastTarget;
+        // Cible hors bornes (dernière activité) : scrollTop ne bouge plus, c'est stable aussi.
+        stableFrames = Math.abs(slideEl.scrollTop - before) <= 1 ? stableFrames + 1 : 0;
+        if (stableFrames >= this.FOCUS_STABLE_FRAMES || now - settleStart > this.FOCUS_SETTLE_MAX_MS) {
+          finish();
+          return;
+        }
       }
+
+      this.wakeLoop();
+      requestAnimationFrame(animate);
     };
 
     requestAnimationFrame(animate);
@@ -541,11 +577,7 @@ export class DayScrollSyncService implements OnDestroy {
     if (this.config.isSplitLayout() && slideEl.scrollTop <= 0) return;
 
     // Même raisonnement que focusActivity ci-dessus.
-    const stickyHeight = this.config.isSplitLayout()
-      ? this.config.getPinnedChromeOffset()
-      : stickyElement.getBoundingClientRect().height;
-
-    const anchor = slideEl.scrollTop + stickyHeight;
+    const anchor = slideEl.scrollTop + this.getTopShield(slideEl);
 
     const cards = this.config.getFreshOffsets();
 
@@ -575,10 +607,16 @@ export class DayScrollSyncService implements OnDestroy {
       return;
     }
 
-    this.smoothScrollTo(candidate.top - stickyHeight - 5, 400);
+    const snapped = candidate.card;
+    this.scrollToLiveTarget(
+      () => this.config.getFreshOffsets().find(item => item.card === snapped)?.top ?? null,
+      undefined,
+      this.SNAP_SCROLL_DURATION,
+    );
   }
 
   ngOnDestroy(): void {
+    this.cancelAutoScroll?.();
     this.mapSubscription?.unsubscribe();
     this.mapObserver?.disconnect();
     this.globalObserver?.disconnect();

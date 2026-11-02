@@ -88,6 +88,9 @@ export class DayPanelComponent {
 
   readonly active = input(false);
 
+  /** Vue Jour desktop : panneau flottant sur une carte plein écran (voir TripDetailDesktopComponent) — pas de colonne carte locale. */
+  readonly floating = input(false);
+
   readonly activities: Signal<Activity[]> = computed(() => this.tripFacade.getDayActivities(this.dayId())());
 
   /** Activités + échos + occurrences logistiques "frontière" (voir day-timeline-merge.ts) : consommé pour l'AFFICHAGE (timeline mini + liste principale) — le drag/la carte/la création restent sur `activities()`, qui ne contient ni écho ni logistique. */
@@ -125,7 +128,7 @@ export class DayPanelComponent {
    * SCSS) : la colonne carte se réduit à un rail cliquable et la colonne
    * activités récupère la largeur pour passer en grille multi-colonnes.
    */
-  readonly mapCollapsedSplit = computed(() => this.viewport.isSplitLayout() && this.mapPanelService.isCollapsed());
+  readonly mapCollapsedSplit = computed(() => !this.floating() && this.viewport.isSplitLayout() && this.mapPanelService.isCollapsed());
 
   /** Bouton chevron "replier" (haut de la colonne carte, layout scindé) — écrit dans la même préférence que la poignée mobile. */
   protected collapseMap(): void {
@@ -211,7 +214,8 @@ export class DayPanelComponent {
       getMapComponent: () => this.activeMapComponent(),
       getStickyMapEl: () => this.mapContainerEl(),
       isSplitLayout: () => this.viewport.isSplitLayout(),
-      getPinnedChromeOffset: () => this.chromeService.getScrollPaddingTop(),
+      // Le panneau flottant démarre déjà sous le chrome : rien à soustraire.
+      getPinnedChromeOffset: () => (this.floating() ? 0 : this.chromeService.getScrollPaddingTop()),
       getLogisticOffsets: () => this.getFreshLogisticOffsets(),
     });
 
@@ -294,6 +298,7 @@ export class DayPanelComponent {
    * sortie du scroll, plus seulement "sticky" dedans.
    */
   private mapContainerEl(): HTMLElement | null {
+    if (this.floating()) return this.mapHost.desktopDayContainer();
     if (this.viewport.isSplitLayout()) return this.stickyMap()?.nativeElement ?? null;
     return this.mapHost.dayFixedContainer();
   }

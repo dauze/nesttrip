@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NestTrip — Maquette : gestion des voyageurs (mobile + desktop)</title>
+<style>
+  :root {
+    --nt-primary-50:#ECF6F5; --nt-primary-100:#D0EAE7; --nt-primary-500:#2A7871; --nt-primary-600:#21615B;
+    --nt-primary-color:var(--nt-primary-500); --nt-primary-contrast-color:#fff;
+    --nt-surface-0:#fff; --nt-surface-50:#f8fafc; --nt-surface-100:#f1f5f9; --nt-surface-200:#e2e8f0;
+    --nt-surface-300:#cbd5e1; --nt-surface-400:#94a3b8; --nt-surface-500:#64748b; --nt-surface-700:#334155;
+    --nt-text-color:var(--nt-surface-700); --nt-text-muted-color:var(--nt-surface-500);
+    --nt-content-background:var(--nt-surface-0); --nt-content-hover-background:var(--nt-surface-100);
+    --nt-content-inset-background:var(--nt-surface-50);
+    --nt-content-border-color:var(--nt-surface-200); --nt-page-background:var(--nt-surface-50);
+    --nt-danger:#dc2626;
+    --nt-radius-md:.5rem; --nt-radius-lg:.75rem; --nt-radius-xl:1rem; --nt-radius-2xl:1.75rem; --nt-radius-pill:999px;
+    --nt-shadow-sm:0 .125rem .5rem rgba(15,23,42,.08);
+    --nt-shadow-lg:0 .75rem 2rem -.375rem rgba(15,23,42,.18);
+    --nt-overlay-modal-shadow:0 1.25rem 1.5625rem -.3125rem rgba(0,0,0,.1),0 .5rem .625rem -.375rem rgba(0,0,0,.1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --nt-primary-color:#43A198; --nt-primary-50:#0f2a28; --nt-primary-contrast-color:#09090b;
+      --nt-text-color:#fff; --nt-text-muted-color:#a1a1aa;
+      --nt-content-background:#18181b; --nt-content-hover-background:#27272a; --nt-content-inset-background:#202024;
+      --nt-content-border-color:#3f3f46; --nt-page-background:#09090b; --nt-danger:#f87171;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--nt-page-background);
+    color:var(--nt-text-color); font-size:15px; line-height:1.4; padding:1.5rem; }
+  h1.page { font-size:1.1rem; margin-bottom:.25rem; }
+  p.lead { color:var(--nt-text-muted-color); font-size:.9rem; margin-bottom:1.25rem; max-width:60rem; }
+  .stage { display:flex; gap:2rem; align-items:flex-start; flex-wrap:wrap; }
+  .label { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--nt-text-muted-color); margin-bottom:.5rem; }
+
+  /* ---------- Briques ---------- */
+  .avatar { width:2.4rem; height:2.4rem; border-radius:50%; flex:none; display:grid; place-items:center; font-weight:700; font-size:.8rem;
+    background:var(--nt-surface-200); color:var(--nt-surface-700); position:relative; }
+  .avatar--me { background:var(--nt-primary-100); color:var(--nt-primary-600); }
+  .who { flex:1; min-width:0; }
+  .who b { display:flex; align-items:center; gap:.4rem; font-weight:600; }
+  .who small { display:block; color:var(--nt-text-muted-color); font-size:.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { font-size:.68rem; font-weight:700; padding:.1rem .45rem; border-radius:var(--nt-radius-pill); background:var(--nt-primary-50); color:var(--nt-primary-color); }
+  .badge--muted { background:var(--nt-content-hover-background); color:var(--nt-text-muted-color); }
+  .row { display:flex; align-items:center; gap:.7rem; padding:.55rem .25rem; }
+  .row + .row { border-top:1px solid var(--nt-content-border-color); }
+  .icon-btn { width:2.25rem; height:2.25rem; border-radius:50%; border:none; background:transparent; color:var(--nt-text-muted-color);
+    display:grid; place-items:center; cursor:pointer; font-size:1rem; }
+  .icon-btn:hover { background:var(--nt-content-hover-background); color:var(--nt-danger); }
+  .section-title { display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; margin:1rem 0 .35rem; }
+  .section-title h3 { font-size:.95rem; }
+  .section-title span { font-size:.78rem; color:var(--nt-text-muted-color); }
+  .hint { font-size:.78rem; color:var(--nt-text-muted-color); margin-top:.35rem; }
+  .field { display:flex; gap:.5rem; }
+  .field input { flex:1; min-width:0; padding:.6rem .75rem; border-radius:var(--nt-radius-md); border:1px solid var(--nt-surface-300);
+    background:var(--nt-content-background); color:inherit; font:inherit; }
+  .btn { border:none; border-radius:var(--nt-radius-md); padding:.6rem 1rem; font:inherit; font-weight:600; cursor:pointer;
+    background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); white-space:nowrap; }
+  .btn--ghost { background:transparent; color:var(--nt-text-color); border:1px solid var(--nt-content-border-color); }
+  .chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+  .chip { display:flex; align-items:center; gap:.5rem; padding:.3rem .75rem .3rem .3rem; border-radius:var(--nt-radius-pill);
+    border:1px dashed color-mix(in srgb,var(--nt-primary-color) 55%,transparent); background:var(--nt-content-background);
+    font-weight:600; font-size:.85rem; cursor:pointer; color:var(--nt-text-color); }
+  .chip .avatar { width:1.8rem; height:1.8rem; font-size:.65rem; }
+  .chip .plus { color:var(--nt-primary-color); font-weight:800; }
+  .chip:hover { border-style:solid; background:var(--nt-primary-50); }
+  .link { background:none; border:none; color:var(--nt-primary-color); font:inherit; font-size:.8rem; font-weight:600; cursor:pointer; }
+  .info { display:flex; gap:.5rem; padding:.6rem .75rem; border-radius:var(--nt-radius-md); background:var(--nt-content-inset-background);
+    font-size:.8rem; color:var(--nt-text-muted-color); }
+
+  /* ---------- Mobile : bottom sheet ---------- */
+  .phone { width:390px; height:780px; border-radius:2.5rem; border:10px solid #0f172a; overflow:hidden; position:relative; background:#c9d4d0; flex:none; }
+  .phone::before { content:""; position:absolute; inset:0; background:rgba(0,0,0,.4); }
+  .sheet { position:absolute; left:0; right:0; bottom:0; max-height:88%; display:flex; flex-direction:column;
+    background:var(--nt-content-background); border-radius:var(--nt-radius-2xl) var(--nt-radius-2xl) 0 0; box-shadow:var(--nt-shadow-lg); }
+  .sheet__grab { width:2.5rem; height:.3rem; border-radius:var(--nt-radius-pill); background:var(--nt-surface-300); margin:.6rem auto .2rem; }
+  .sheet__head { padding:.4rem 1.25rem .6rem; }
+  .sheet__head h2 { font-size:1.2rem; }
+  .sheet__head p { font-size:.82rem; color:var(--nt-text-muted-color); }
+  .sheet__body { flex:1; overflow-y:auto; padding:0 1.25rem 1rem; }
+  .sheet__foot { padding:.75rem 1.25rem 1.25rem; border-top:1px solid var(--nt-content-border-color); }
+  .sheet__foot .btn { width:100%; padding:.85rem; font-size:1rem; }
+  .sheet .row { padding:.7rem .1rem; }
+
+  /* ---------- Desktop : dialog 2 colonnes ---------- */
+  .desk { width:720px; flex:none; background:var(--nt-content-background); border-radius:var(--nt-radius-xl); box-shadow:var(--nt-overlay-modal-shadow);
+    border:1px solid var(--nt-content-border-color); overflow:hidden; }
+  .desk__head { display:flex; align-items:flex-start; gap:1rem; padding:1.1rem 1.25rem; border-bottom:1px solid var(--nt-content-border-color); }
+  .desk__head h2 { font-size:1.15rem; }
+  .desk__head p { font-size:.85rem; color:var(--nt-text-muted-color); }
+  .desk__head .close { margin-left:auto; }
+  .desk__cols { display:grid; grid-template-columns:1fr 1fr; }
+  .desk__col { padding:.25rem 1.25rem 1.25rem; }
+  .desk__col + .desk__col { background:var(--nt-content-inset-background); border-left:1px solid var(--nt-content-border-color); }
+  .desk .row .icon-btn { opacity:0; transition:opacity .15s ease; }
+  .desk .row:hover .icon-btn { opacity:1; }
+  .desk__foot { display:flex; justify-content:flex-end; padding:.75rem 1.25rem; border-top:1px solid var(--nt-content-border-color); }
+
+  .opt { position:sticky; top:0; z-index:5; display:flex; gap:.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; font-size:.8rem; }
+  .opt button { border:1px solid var(--nt-content-border-color); background:var(--nt-content-background); color:inherit; border-radius:var(--nt-radius-pill); padding:.3rem .7rem; font:inherit; cursor:pointer; }
+  .opt button.on { background:var(--nt-primary-color); color:var(--nt-primary-contrast-color); border-color:transparent; }
+</style>
+</head>
+<body>
+<h1 class="page">Gestion des voyageurs — proposition</h1>
+<p class="lead">Deux notions bien séparées : <b data-t="members">Voyageurs</b> = qui a accès à <i>ce</i> voyage (peut voir et modifier) ;
+  <b data-t="buddies">Mes proches</b> = votre carnet permanent, rempli automatiquement avec les personnes avec qui vous avez déjà voyagé, qui sert juste à les ajouter en un clic.</p>
+
+<div class="opt">
+  <b>Vocabulaire :</b>
+  <button class="on" data-names="Voyageurs|Mes proches">Voyageurs / Mes proches</button>
+  <button data-names="Participants|Compagnons habituels">Participants / Compagnons habituels</button>
+  <button data-names="Membres du voyage|Mon carnet">Membres du voyage / Mon carnet</button>
+</div>
+
+<div class="stage">
+  <!-- ================= MOBILE ================= -->
+  <div>
+    <div class="label">Mobile · bottom sheet</div>
+    <div class="phone">
+      <div class="sheet">
+        <div class="sheet__grab"></div>
+        <div class="sheet__head">
+          <h2 data-t="members">Voyageurs</h2>
+          <p>Qui peut voir et modifier « Road trip Paris »</p>
+        </div>
+        <div class="sheet__body">
+          <div class="section-title"><h3>Dans ce voyage</h3><span>2 personnes</span></div>
+          <div class="row"><span class="avatar avatar--me">ND</span><div class="who"><b>Nicolas Dauzet <span class="badge">Vous</span> <span class="badge badge--muted">Organisateur</span></b><small>nicolas.dauzet@gmail.com</small></div></div>
+          <div class="row"><span class="avatar">CB</span><div class="who"><b>Clémentine Bonin</b><small>clementineboninc@gmail.com</small></div>
+            <button class="icon-btn" title="Retirer du voyage">⊖</button></div>
+
+          <div class="section-title"><h3>Ajouter quelqu'un</h3></div>
+          <div class="chips">
+            <button class="chip"><span class="avatar">JD</span>Jer Dam <span class="plus">＋</span></button>
+          </div>
+          <p class="hint"><span data-t="buddies">Mes proches</span> · personnes avec qui vous avez déjà voyagé. <button class="link">Gérer</button></p>
+
+          <div class="field" style="margin-top:.85rem">
+            <input placeholder="Ou son adresse e-mail" />
+            <button class="btn">Ajouter</button>
+          </div>
+          <p class="hint">La personne doit avoir un compte NestTrip.</p>
+        </div>
+        <div class="sheet__foot"><button class="btn btn--ghost">Terminé</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DESKTOP ================= -->
+  <div>
+    <div class="label">Desktop · dialog 2 colonnes</div>
+    <div class="desk">
+      <div class="desk__head">
+        <div><h2 data-t="members">Voyageurs</h2><p>Qui peut voir et modifier « Road trip Paris »</p></div>
+        <button class="icon-btn close" title="Fermer">✕</button>
+      </div>
+      <div class="desk__cols">
+        <div class="desk__col">
+          <div class="section-title"><h3>Dans ce voyage</h3><span>2 personnes</span></div>
+          <div class="row"><span class="avatar avatar--me">ND</span><div class="who"><b>Nicolas Dauzet <span class="badge">Vous</span></b><small>Organisateur · nicolas.dauzet@gmail.com</small></div></div>
+          <div class="row"><span class="avatar">CB</span><div class="who"><b>Clémentine Bonin</b><small>clementineboninc@gmail.com</small></div>
+            <button class="icon-btn" title="Retirer du voyage">⊖</button></div>
+          <div class="info" style="margin-top:1rem">ℹ Seul l'organisateur peut retirer quelqu'un du voyage.</div>
+        </div>
+        <div class="desk__col">
+          <div class="section-title"><h3>Ajouter quelqu'un</h3></div>
+          <div class="field"><input placeholder="Adresse e-mail" /><button class="btn">Ajouter</button></div>
+          <p class="hint">La personne doit avoir un compte NestTrip.</p>
+
+          <div class="section-title"><h3 data-t="buddies">Mes proches</h3><button class="link">Gérer</button></div>
+          <div class="chips">
+            <button class="chip"><span class="avatar">JD</span>Jer Dam <span class="plus">＋</span></button>
+          </div>
+          <p class="hint">Ajoutés automatiquement après un voyage partagé. Un clic les ajoute à ce voyage.</p>
+        </div>
+      </div>
+      <div class="desk__foot"><button class="btn btn--ghost">Terminé</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.opt button').forEach(b => b.onclick = () => {
+    const [members, buddies] = b.dataset.names.split('|');
+    document.querySelectorAll('[data-t="members"]').forEach(e => e.textContent = members);
+    document.querySelectorAll('[data-t="buddies"]').forEach(e => e.textContent = buddies);
+    document.querySelectorAll('.opt button').forEach(x => x.classList.toggle('on', x === b));
+  });
+</script>
+</body>
+</html>

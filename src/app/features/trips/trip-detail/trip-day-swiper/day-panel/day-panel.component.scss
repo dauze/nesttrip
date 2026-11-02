@@ -243,6 +243,12 @@
     flex: 0 1 26rem;
   }
 
+  // Mode `floating` (vue Jour desktop) : plus de colonne carte, la liste
+  // occupe toute la largeur du panneau flottant.
+  .day-panel-body--floating .day-panel-activities-group {
+    flex: 1 1 auto;
+  }
+
   // Sans activité, ni la timeline ni la carte ne sont rendues (voir le `@if`
   // dans le template) : masque la colonne de gauche, désormais vide, ET
   // libère la colonne activités de son plafond de largeur (`flex:0 1 32rem`

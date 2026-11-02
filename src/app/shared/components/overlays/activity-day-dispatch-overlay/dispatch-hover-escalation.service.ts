@@ -9,6 +9,8 @@ const DAY_DRAG_ESCALATE_HOVER_MS = 450;
 
 export interface DispatchHoverEscalationConfig {
   getSheetEl: () => HTMLElement | null;
+  /** Délai de survol avant escalade — `DAY_DRAG_ESCALATE_HOVER_MS` par défaut. */
+  getEscalateDelayMs?: () => number | undefined;
 }
 
 /**
@@ -52,7 +54,7 @@ export class DispatchHoverEscalationService implements OnDestroy {
       this.escalateTimer = setTimeout(() => {
         this.escalateTimer = undefined;
         this.triggerEscalation(info);
-      }, DAY_DRAG_ESCALATE_HOVER_MS);
+      }, this.config.getEscalateDelayMs?.() ?? DAY_DRAG_ESCALATE_HOVER_MS);
     }
   }
 

@@ -3,9 +3,13 @@ import {
   Component,
   afterNextRender,
   computed,
+  effect,
+  ElementRef,
   inject,
   input,
   output,
+  signal,
+  viewChild,
 } from '@angular/core';
 import { Trip } from '../../trip.model';
 import { TripGeneralDesktopComponent } from '../trip-general-desktop/trip-general-desktop.component';
@@ -35,9 +39,9 @@ import { TripDayMapHostService } from '@app/core/services/ui/trip-day-map-host.s
  * plus de swipe horizontal (sans objet à la souris).
  *
  * Carte Google Maps partagée : réclamée par `TripSummaryComponent` en vue
- * Général et par `DayPanelComponent` (`.sticky-map`, layout scindé) en vue
- * Jour — jamais les deux à la fois (Général et Jour ne sont jamais rendus
- * simultanément ici). L'instance unique vit dans TripDetailComponent, hôte
+ * Général et par `DayPanelComponent` (mode `floating`, calque plein écran
+ * `#dayMapLayer` sous le panneau d'activités flottant) en vue Jour — jamais
+ * les deux à la fois. L'instance unique vit dans TripDetailComponent, hôte
  * neutre.
  */
 @Component({
@@ -75,7 +79,41 @@ export class TripDetailDesktopComponent {
    */
   protected readonly activeDayDate = computed(() => new Date(this.activeDay()));
 
+  /** Panneau d'activités replié (languette « < ») : volontairement non mémorisé. */
+  protected readonly sidebarCollapsed = signal(false);
+
+  private readonly dayMapLayer = viewChild<ElementRef<HTMLElement>>('dayMapLayer');
+  private readonly sidebar = viewChild<ElementRef<HTMLElement>>('sidebar');
+  /** Bord droit du panneau déplié (px, `offsetLeft + offsetWidth` : insensible au `transform` de repli). */
+  private readonly sidebarRight = signal(0);
+
   constructor() {
     afterNextRender(() => this.ready.emit());
+
+    effect((onCleanup) => {
+      const el = this.dayMapLayer()?.nativeElement ?? null;
+      this.mapHost.registerDesktopDayContainer(el);
+      onCleanup(() => this.mapHost.registerDesktopDayContainer(null));
+    });
+
+    effect((onCleanup) => {
+      const el = this.sidebar()?.nativeElement;
+      if (!el) {
+        this.sidebarRight.set(0);
+        return;
+      }
+      const observer = new ResizeObserver(() => this.sidebarRight.set(el.offsetLeft + el.offsetWidth));
+      observer.observe(el);
+      onCleanup(() => observer.disconnect());
+    });
+
+    effect((onCleanup) => {
+      this.mapHost.setDesktopMapInsetLeft(this.sidebarCollapsed() ? 0 : this.sidebarRight());
+      onCleanup(() => this.mapHost.setDesktopMapInsetLeft(0));
+    });
+  }
+
+  protected toggleSidebar(): void {
+    this.sidebarCollapsed.update((collapsed) => !collapsed);
   }
 }

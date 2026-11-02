@@ -20,42 +20,47 @@
   <div
     class="day-panel-body"
     [class.day-panel-body--no-map]="timelineEntries().length === 0"
+    [class.day-panel-body--floating]="floating()"
     [class.day-panel-body--map-collapsed]="mapCollapsedSplit()">
-    <div class="day-panel-map-group">
-      @if (timelineEntries().length > 0) {
-        <!-- Contrôles d'escamotage RÉSERVÉS au layout scindé (desktop, retour
-             utilisateur 2026-09-30, option B) : `@if (viewport.isSplitLayout())`
-             garantit qu'ils ne sont JAMAIS rendus en layout empilé (mobile),
-             où la carte garde sa seule poignée de footer (TripDayMapComponent,
-             inchangée). Le bouton "replier" chapeaute la colonne carte quand
-             elle est dépliée ; le rail vertical la remplace quand elle est
-             escamotée (colonne réduite à ce rail cliquable par le SCSS). -->
-        @if (viewport.isSplitLayout()) {
-          <button
-            type="button"
-            class="day-panel-map-collapse"
-            aria-label="Réduire la carte"
-            (click)="collapseMap()">
-            <i class="pi pi-angle-left" aria-hidden="true"></i>
-            <span>Réduire la carte</span>
-          </button>
-          <button
-            type="button"
-            class="day-panel-map-rail"
-            aria-label="Afficher la carte"
-            (click)="expandMap()">
-            <i class="pi pi-angle-right" aria-hidden="true"></i>
-            <i class="pi pi-map" aria-hidden="true"></i>
-          </button>
+    <!-- Mode `floating` (vue Jour desktop) : la carte vit dans le calque plein
+         écran de TripDetailDesktopComponent, pas de colonne carte locale. -->
+    @if (!floating()) {
+      <div class="day-panel-map-group">
+        @if (timelineEntries().length > 0) {
+          <!-- Contrôles d'escamotage RÉSERVÉS au layout scindé (desktop, retour
+               utilisateur 2026-09-30, option B) : `@if (viewport.isSplitLayout())`
+               garantit qu'ils ne sont JAMAIS rendus en layout empilé (mobile),
+               où la carte garde sa seule poignée de footer (TripDayMapComponent,
+               inchangée). Le bouton "replier" chapeaute la colonne carte quand
+               elle est dépliée ; le rail vertical la remplace quand elle est
+               escamotée (colonne réduite à ce rail cliquable par le SCSS). -->
+          @if (viewport.isSplitLayout()) {
+            <button
+              type="button"
+              class="day-panel-map-collapse"
+              aria-label="Réduire la carte"
+              (click)="collapseMap()">
+              <i class="pi pi-angle-left" aria-hidden="true"></i>
+              <span>Réduire la carte</span>
+            </button>
+            <button
+              type="button"
+              class="day-panel-map-rail"
+              aria-label="Afficher la carte"
+              (click)="expandMap()">
+              <i class="pi pi-angle-right" aria-hidden="true"></i>
+              <i class="pi pi-map" aria-hidden="true"></i>
+            </button>
+          }
+          @if (!viewport.isSplitLayout()) {
+            <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
+              (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
+              (logisticSelected)="onLogisticEntrySelected($event)"/>
+          }
+          <div #stickyMap class="sticky-map"></div>
         }
-        @if (!viewport.isSplitLayout()) {
-          <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"
-            (activitySelected)="scrollSync.focusActivity($event)" (echoSelected)="onEchoSelected($event)"
-            (logisticSelected)="onLogisticEntrySelected($event)"/>
-        }
-        <div #stickyMap class="sticky-map"></div>
-      }
-    </div>
+      </div>
+    }
     <div class="day-panel-activities-group">
       @if (timelineEntries().length > 0 && viewport.isSplitLayout()) {
         <app-timeline class="day-panel-timeline" [entries]="timelineEntries()"

@@ -1,4 +1,4 @@
-<!-- Scrollport desktop UNIQUE (option B) : marqué `data-scrollport` pour que
+<!-- Vue Général — scrollport desktop UNIQUE (option B) : marqué `data-scrollport` pour que
      `getScrollContainer` le retrouve hors Swiper (DayPanelComponent.getSlideEl,
      DayReorderService, DayScrollSyncService, FabBottomProximity...). Il commence
      physiquement SOUS la barre des jours (`top: --chrome-top-offset`, posé en
@@ -8,15 +8,39 @@
      sont forcés à 0 côté SCSS (le contenu n'a plus à réserver le chrome,
      déjà fait par le `top` du scrollport). `--fixed-map-height` reste 0 en
      desktop (carte en colonne, pas de conteneur fixe). -->
-<div
-  class="trip-detail-desktop-root"
-  data-scrollport
-  [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
-  [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
-  [style.--fixed-map-height.px]="mapHost.dayFixedContainerHeight()">
-  @if (isGeneralActive()) {
+@if (isGeneralActive()) {
+  <div
+    class="trip-detail-desktop-root"
+    data-scrollport
+    [style.--chrome-top-offset.px]="chromeService.contentTopOffset()"
+    [style.--chrome-tabs-nav-height.px]="chromeService.tabsNavBottomReserve()"
+    [style.--fixed-map-height.px]="mapHost.dayFixedContainerHeight()">
     <app-trip-general-desktop [trip]="trip()" [active]="true" />
-  } @else {
-    <app-day-panel [dayId]="activeDayDate()" [tripId]="trip().id" [active]="true" />
-  }
-</div>
+  </div>
+} @else {
+  <!-- Vue Jour : carte plein écran sous la toolbar, barre des jours et
+       panneau d'activités flottants par-dessus (décision UX 2026-11-02). -->
+  <div
+    #dayMapLayer
+    class="desktop-day-map"
+    [style.top.px]="chromeService.toolbarHeight()"
+    [style.--map-overlay-top.px]="chromeService.contentTopOffset() - chromeService.toolbarHeight()"></div>
+  <aside
+    #sidebar
+    class="desktop-day-sidebar"
+    aria-label="Activités du jour"
+    [class.desktop-day-sidebar--collapsed]="sidebarCollapsed()"
+    [style.top.px]="chromeService.contentTopOffset()">
+    <div class="desktop-day-sidebar__scroll" data-scrollport [attr.inert]="sidebarCollapsed() ? '' : null">
+      <app-day-panel [dayId]="activeDayDate()" [tripId]="trip().id" [active]="true" [floating]="true" />
+    </div>
+    <button
+      type="button"
+      class="desktop-day-sidebar__toggle"
+      [attr.aria-label]="sidebarCollapsed() ? 'Afficher le panneau' : 'Réduire le panneau'"
+      [attr.aria-expanded]="!sidebarCollapsed()"
+      (click)="toggleSidebar()">
+      <i class="pi pi-angle-left" aria-hidden="true"></i>
+    </button>
+  </aside>
+}

@@ -47,7 +47,8 @@
   }
 }
 
-.map-panel--fullscreen {
+.map-panel--fullscreen,
+.map-panel--edge {
   border: none;
   border-radius: 0;
 }
@@ -64,9 +65,14 @@
   overflow: hidden;
 }
 
+.map-container--edge {
+  border-radius: 0;
+}
+
 .map-location-control {
   position: absolute;
-  top: var(--nt-space-3);
+  // `--map-overlay-top` : hauteur recouverte par la barre des jours flottante (vue Jour desktop).
+  top: calc(var(--map-overlay-top, 0px) + var(--nt-space-3));
   right: 3.5rem;
   z-index: 5;
   display: flex;

@@ -1,85 +1,118 @@
-<app-dialog-frame header="Collaborateurs" (closeRequested)="close()">
-  <div class="flex flex-column gap-2 member-list">
-    @for (entry of memberEntries(); track entry[0]) {
-      <div class="flex align-items-center gap-2">
-        <app-avatar [label]="getInitials(entry[1].displayName, entry[1].email)" shape="circle" size="normal" />
-        <div class="flex-1 flex flex-column overflow-hidden">
-          <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].displayName || entry[1].email }}</span>
-          @if (entry[1].displayName) {
-            <span class="text-sm nt-text-muted white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ entry[1].email }}</span>
-          }
-        </div>
-        <app-button
-          icon="pi pi-times"
-          [rounded]="true"
-          [text]="true"
-          severity="danger"
-          [ariaDisabled]="!canRemove(entry[0])"
-          [appTooltip]="removeTooltip(entry[0])"
-          [tooltipDisabled]="canRemove(entry[0])"
-          tooltipPosition="left"
-          (click)="onRemove(entry[0])" />
+<app-dialog-frame header="Voyageurs" (closeRequested)="close()">
+  <p class="travellers-subtitle nt-text-muted">Qui peut voir et modifier « {{ data.tripTitle() }} »</p>
+
+  <div class="travellers-layout">
+    <section class="travellers-col" aria-labelledby="travellers-in-trip">
+      <div class="travellers-section-title">
+        <h3 id="travellers-in-trip">Dans ce voyage</h3>
+        <span class="nt-text-muted">{{ memberEntries().length }} {{ memberEntries().length > 1 ? 'personnes' : 'personne' }}</span>
       </div>
-    }
-  </div>
-
-  <div class="flex flex-column gap-2 pt-3">
-    <label for="inviteeEmail">Ajouter</label>
-    <div class="flex gap-2">
-      <input
-        appInputText
-        id="inviteeEmail"
-        name="inviteeEmail"
-        [(ngModel)]="inviteeEmail"
-        placeholder="collaborateur@email.com"
-        [disabled]="data.addLoading()"
-        class="flex-1" />
-      <app-button
-        label="Inviter"
-        [loading]="data.addLoading()"
-        [disabled]="!inviteeEmail"
-        (click)="submitInvite()" />
-    </div>
-    @if (data.addError()) {
-      <app-message severity="error" [text]="data.addError()!" />
-    }
-  </div>
-
-  @if (availableCompanions().length > 0) {
-    <div class="flex flex-column gap-2 pt-3">
-      <span class="font-medium">Companions de route</span>
-      <div class="flex flex-column gap-2 companion-list">
-        @for (companion of availableCompanions(); track companion.uid) {
-          <div
-            class="flex align-items-center gap-2 companion-row"
-            role="button"
-            tabindex="0"
-            (click)="onAddCompanion(companion)"
-            (keydown.enter)="onAddCompanion(companion)">
-            <app-avatar [label]="getInitials(companion.displayName, companion.email)" shape="circle" size="normal" />
-            <div class="flex-1 flex flex-column overflow-hidden">
-              <span class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.displayName || companion.email }}</span>
-              @if (companion.displayName) {
-                <span class="text-sm nt-text-muted white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ companion.email }}</span>
+      <div class="member-list">
+        @for (entry of memberEntries(); track entry[0]) {
+          <div class="traveller-row">
+            <app-avatar [label]="getInitials(entry[1].displayName, entry[1].email)" shape="circle" size="normal" />
+            <div class="traveller-who">
+              <span class="traveller-name">
+                <span class="traveller-name__text">{{ entry[1].displayName || entry[1].email }}</span>
+                @if (entry[0] === data.currentUserId()) {
+                  <span class="traveller-badge">Vous</span>
+                }
+                @if (entry[1].role === 'owner') {
+                  <span class="traveller-badge traveller-badge--muted">Organisateur</span>
+                }
+              </span>
+              @if (entry[1].displayName) {
+                <span class="traveller-email nt-text-muted">{{ entry[1].email }}</span>
               }
             </div>
-            <app-button
-              icon="pi pi-times"
-              [rounded]="true"
-              [text]="true"
-              severity="secondary"
-              appTooltip="Retirer de mes companions"
-              tooltipPosition="left"
-              (click)="onRemoveCompanionClick($event, companion.uid)" />
+            @if (canRemove(entry[0])) {
+              <app-button
+                class="traveller-remove"
+                icon="pi pi-user-minus"
+                [rounded]="true"
+                [text]="true"
+                severity="danger"
+                appTooltip="Retirer du voyage"
+                tooltipPosition="left"
+                (click)="onRemove(entry[0])" />
+            }
           </div>
         }
       </div>
-    </div>
-  }
+      @if (!data.isOwner()) {
+        <p class="travellers-info">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          Seul l'organisateur peut retirer quelqu'un du voyage.
+        </p>
+      }
+    </section>
+
+    <section class="travellers-col travellers-col--add" aria-labelledby="travellers-add">
+      <div class="travellers-section-title">
+        <h3 id="travellers-add">Ajouter quelqu'un</h3>
+      </div>
+
+      @if (availableCompanions().length > 0) {
+        <div class="companion-chips">
+          @for (companion of availableCompanions(); track companion.uid) {
+            <div
+              class="companion-chip"
+              [class.companion-chip--revealed]="revealedCompanionUid() === companion.uid"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="'Ajouter ' + (companion.displayName || companion.email) + ' au voyage'"
+              appLongPress
+              (pointerdown)="onChipPointerDown()"
+              (longPress)="onCompanionLongPress(companion.uid)"
+              (click)="onAddCompanion(companion)"
+              (keydown.enter)="onAddCompanion(companion)">
+              <app-avatar [label]="getInitials(companion.displayName, companion.email)" shape="circle" size="normal" />
+              <span class="companion-chip__name">{{ companion.displayName || companion.email }}</span>
+              <i class="pi pi-plus companion-chip__plus" aria-hidden="true"></i>
+              <button
+                type="button"
+                class="companion-chip__forget"
+                aria-label="Retirer de mes proches"
+                appTooltip="Retirer de mes proches (ne touche pas ce voyage)"
+                tooltipPosition="top"
+                (click)="onRemoveCompanionClick($event, companion.uid)">
+                <i class="pi pi-times" aria-hidden="true"></i>
+              </button>
+            </div>
+          }
+        </div>
+        <p class="travellers-hint nt-text-muted">
+          <strong>Mes proches</strong> · ajoutés automatiquement quand vous partagez un voyage. Un clic les ajoute à celui-ci.
+        </p>
+      }
+
+      <div class="travellers-invite">
+        <input
+          appInputText
+          id="inviteeEmail"
+          name="inviteeEmail"
+          type="email"
+          aria-label="Adresse e-mail"
+          [(ngModel)]="inviteeEmail"
+          [placeholder]="availableCompanions().length > 0 ? 'Ou son adresse e-mail' : 'Adresse e-mail'"
+          [disabled]="data.addLoading()"
+          (keydown.enter)="submitInvite()" />
+        <app-button
+          label="Ajouter"
+          [loading]="data.addLoading()"
+          [disabled]="!inviteeEmail"
+          (click)="submitInvite()" />
+      </div>
+      <p class="travellers-hint nt-text-muted">La personne doit déjà avoir un compte NestTrip.</p>
+      @if (data.addError()) {
+        <app-message severity="error" [text]="data.addError()!" />
+      }
+    </section>
+  </div>
 
   <div dialogFooter class="nt-footer-actions justify-content-end">
     <app-button
-      label="Fermer"
+      label="Terminé"
       severity="secondary"
       [outlined]="!viewport.isMobile()"
       [size]="viewport.isMobile() ? 'large' : 'normal'"

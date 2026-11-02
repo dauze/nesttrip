@@ -30,7 +30,8 @@
   background: var(--nt-content-background);
   border: var(--nt-border-width-hairline) solid var(--nt-content-border-color);
   border-radius: var(--nt-radius-lg);
-  box-shadow: var(--nt-shadow-xs);
+  // `md` : la barre flotte au-dessus de la carte plein écran en vue Jour (décision 2026-11-02).
+  box-shadow: var(--nt-shadow-md);
   // Marge ASYMÉTRIQUE (retour utilisateur) : un léger filet en haut pour
   // détacher la barre du chrome, RIEN en bas (la barre colle le contenu qui
   // suit), détachement horizontal conservé pour l'effet "carte flottante".

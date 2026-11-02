@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Signal, computed, inject, signal } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { FormsModule } from '@angular/forms';
 import { AvatarComponent } from '@app/shared/components/avatar/avatar/avatar.component';
@@ -11,6 +11,7 @@ import { TripMember } from '@app/features/trips/trip.model';
 import { Companion } from '@app/core/models/user-profile.dto';
 import { getInitials } from '@app/shared/utils/get-initials';
 import { ViewportService } from '@app/core/services/ui/viewport.service';
+import { LongPressDirective } from '@app/shared/directives/long-press.directive';
 
 /**
  * Signaux (pas des valeurs figées) + callbacks : voir la doc de
@@ -19,6 +20,7 @@ import { ViewportService } from '@app/core/services/ui/viewport.service';
  * a besoin de rester réactif aux membres/companions/addLoading/addError.
  */
 export interface CollaboratorsDialogData {
+  tripTitle: Signal<string>;
   members: Signal<Record<string, TripMember>>;
   currentUserId: Signal<string>;
   isOwner: Signal<boolean>;
@@ -30,10 +32,16 @@ export interface CollaboratorsDialogData {
   onRemoveCompanion: (uid: string) => void;
 }
 
+/**
+ * Pop-up « Voyageurs » (décision UX 2026-11-02, `.maquettes/voyageurs-dialog.html`) :
+ * sépare qui a accès à CE voyage (membres) du carnet permanent « Mes proches »
+ * (companions du profil), qui ne sert qu'à ajouter en un clic. Bottom sheet sur
+ * mobile, 2 colonnes sur desktop (`.app-travellers-dialog-panel`, dialog.scss).
+ */
 @Component({
   selector: 'app-collaborators-dialog',
   standalone: true,
-  imports: [FormsModule, AvatarComponent, TooltipDirective, ButtonComponent, DialogFrameComponent, InputTextDirective, MessageComponent],
+  imports: [FormsModule, AvatarComponent, TooltipDirective, ButtonComponent, DialogFrameComponent, InputTextDirective, MessageComponent, LongPressDirective],
   templateUrl: './collaborators-dialog.component.html',
   styleUrl: './collaborators-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,23 +66,37 @@ export class CollaboratorsDialogComponent {
     return this.data.isOwner() && uid !== this.data.currentUserId();
   }
 
-  protected removeTooltip(uid: string): string {
-    if (uid === this.data.currentUserId()) {
-      return 'Vous ne pouvez pas vous retirer vous-même, supprimez le voyage à la place';
-    }
-    if (!this.data.isOwner()) {
-      return 'Seul le créateur du voyage peut retirer un membre';
-    }
-    return '';
+  /** Proche dont la croix « Retirer de mes proches » est révélée par un appui long (tactile) ; au survol sur desktop. */
+  protected readonly revealedCompanionUid = signal<string | null>(null);
+  /** Le relâchement d'un appui long émet aussi un `click` : il ne doit pas ajouter. */
+  private swallowNextChipClick = false;
+
+  protected onCompanionLongPress(uid: string): void {
+    this.revealedCompanionUid.set(uid);
+    this.swallowNextChipClick = true;
+  }
+
+  /** Certains navigateurs n'émettent pas de `click` après un appui long : le drapeau ne doit pas survivre au geste suivant. */
+  protected onChipPointerDown(): void {
+    this.swallowNextChipClick = false;
   }
 
   protected submitInvite(): void {
-    if (!this.inviteeEmail) return;
+    if (!this.inviteeEmail || this.data.addLoading()) return;
     this.data.onAdd(this.inviteeEmail);
     this.inviteeEmail = '';
   }
 
   protected onAddCompanion(companion: Companion): void {
+    if (this.swallowNextChipClick) {
+      this.swallowNextChipClick = false;
+      return;
+    }
+    if (this.revealedCompanionUid() === companion.uid) {
+      this.revealedCompanionUid.set(null);
+      return;
+    }
+    this.revealedCompanionUid.set(null);
     this.data.onAdd(companion.email);
   }
 
@@ -85,6 +107,7 @@ export class CollaboratorsDialogComponent {
 
   protected onRemoveCompanionClick(event: Event, uid: string): void {
     event.stopPropagation();
+    this.revealedCompanionUid.set(null);
     this.data.onRemoveCompanion(uid);
   }
 

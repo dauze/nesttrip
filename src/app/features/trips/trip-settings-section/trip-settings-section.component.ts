@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ViewContainerRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DialogRef } from '@angular/cdk/dialog';
 import { format } from 'date-fns';
 import { filter, finalize, firstValueFrom, take } from 'rxjs';
 import { DatePickerComponent } from '@app/shared/components/form-fields/date-picker/date-picker.component';
@@ -119,7 +118,6 @@ export class TripSettingsSectionComponent {
 
   private readonly addLoading = signal(false);
   private readonly addError = signal<string | null>(null);
-  private collaboratorsDialogRef?: DialogRef<void, CollaboratorsDialogComponent>;
 
   constructor() {
     // Resynchronise le form caché à chaque changement réel de `dateRange` —
@@ -271,6 +269,7 @@ export class TripSettingsSectionComponent {
   protected openParticipantsDialog(): void {
     this.addError.set(null);
     const data: CollaboratorsDialogData = {
+      tripTitle: computed(() => this.tripFacade.activeTrip()?.title ?? ''),
       members: this.members,
       currentUserId: this.currentUserId,
       isOwner: this.isOwner,
@@ -281,9 +280,9 @@ export class TripSettingsSectionComponent {
       onRemove: (uid) => this.onRemoveCollaborator(uid),
       onRemoveCompanion: (uid) => this.onRemoveCompanion(uid),
     };
-    this.collaboratorsDialogRef = this.dialogService.open<void, CollaboratorsDialogData, CollaboratorsDialogComponent>(
+    this.dialogService.open<void, CollaboratorsDialogData, CollaboratorsDialogComponent>(
       CollaboratorsDialogComponent,
-      { data, viewContainerRef: this.viewContainerRef },
+      { data, panelClass: 'app-travellers-dialog-panel', viewContainerRef: this.viewContainerRef },
     );
   }
 
@@ -315,7 +314,7 @@ export class TripSettingsSectionComponent {
       .addCollaborator(this.tripId(), email)
       .pipe(finalize(() => this.addLoading.set(false)))
       .subscribe({
-        next: () => this.collaboratorsDialogRef?.close(),
+        // Pas de fermeture : la personne apparaît dans « Dans ce voyage », on peut en ajouter d'autres.
         error: (err) => {
           const message = err?.error?.error ?? err?.message ?? 'Une erreur est survenue';
           this.addError.set(message);
