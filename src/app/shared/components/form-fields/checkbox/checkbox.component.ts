@@ -16,6 +16,7 @@ import { ChangeDetectionStrategy, Component, input, model } from '@angular/core'
 export class CheckboxComponent {
   readonly checked = model(false);
   readonly disabled = input(false);
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   protected toggle(): void {
     if (this.disabled()) return;

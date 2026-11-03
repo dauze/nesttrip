@@ -1,5 +1,33 @@
 import { RingChartEntry } from './activity-type-rings/activity-type-rings.component';
 import { convertWithRates } from '@app/core/utils/currency-conversion.util';
+import { DayMapPoint } from '@app/core/models/day-map-point';
+import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
+
+export function computeGeneralMapPoints(
+  placements: { dayId: Date; activity: {
+    id: string; title: string; type: keyof typeof ACTIVITY_TYPE_META;
+    placeId?: string; latitude?: number; longitude?: number; photoRefs?: string[];
+  } }[],
+  days: Date[],
+): DayMapPoint[] {
+  const dayNumbers = new Map([...days].sort((left, right) => left.getTime() - right.getTime())
+    .map((day, index) => [day.toISOString(), index + 1]));
+  return [...placements]
+    .sort((left, right) => left.dayId.getTime() - right.dayId.getTime())
+    .filter(({ activity }) => activity.placeId && Number.isFinite(activity.latitude) && Number.isFinite(activity.longitude))
+    .map(({ dayId, activity }, index) => ({
+      activityId: activity.id,
+      placeId: activity.placeId!,
+      name: activity.title,
+      latitude: activity.latitude!,
+      longitude: activity.longitude!,
+      order: index + 1,
+      photoRef: activity.photoRefs?.[0],
+      colorVar: ACTIVITY_TYPE_META[activity.type].colorVar,
+      dayId: dayId.toISOString(),
+      dayNumber: dayNumbers.get(dayId.toISOString()),
+    }));
+}
 
 export interface ExpenseItem {
   /** Clé de regroupement par TYPE (ex. `activity:visite`, `logistic:flight`) — PAS l'id de l'élément : plusieurs dépenses du même type s'additionnent dans le même anneau. */

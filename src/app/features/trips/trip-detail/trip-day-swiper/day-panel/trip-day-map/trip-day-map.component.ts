@@ -16,6 +16,7 @@ import {
   lerp,
 } from '@app/shared/utils/map-camera.util';
 import { smoothPath, smoothPathUntil } from '@app/shared/utils/map-path-smoothing.util';
+import { GeolocationService } from '@app/core/services/ui/geolocation.service';
 
 /** Repli ultime (Paris) si la destination du trip n'a pas pu être résolue (`defaultCenter`, voir plus bas) — ex. trip sans `placeId`, résolution en échec, ou pas encore résolue. */
 const PARIS_FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 48.8566, lng: 2.3522 };
@@ -47,10 +48,9 @@ const INSET_TWEEN_MS = 280;
 })
 export class TripDayMapComponent {
   readonly points = signal<DayMapPoint[]>([]);
-  protected readonly userPosition = signal<google.maps.LatLngLiteral | null>(null);
-  protected readonly userPositionAccuracy = signal(0);
-  protected readonly locatingUser = signal(false);
-  protected readonly locationError = signal<string | null>(null);
+  protected readonly geolocation = inject(GeolocationService);
+  protected readonly userPosition = this.geolocation.position;
+  protected readonly userPositionAccuracy = this.geolocation.accuracy;
   protected readonly userAccuracyCircleOptions: google.maps.CircleOptions = {
     fillColor: '#4285F4', fillOpacity: 0.14, strokeColor: '#4285F4', strokeOpacity: 0.45,
     strokeWeight: 1, clickable: false, zIndex: 2,
@@ -327,7 +327,8 @@ export class TripDayMapComponent {
       zoomControl: false,
       cameraControl: false,
       fullscreenControl: false,
-      gestureHandling: 'greedy',
+      keyboardShortcuts: false,
+      gestureHandling: 'cooperative',
       // Sans ce flag, le zoom fractionnaire est désactivé PAR DÉFAUT sur une
       // carte raster (activé par défaut seulement en vectoriel) — chaque
       // `zoom` non entier calculé par `followScroll`/`computeCinematicZoom`
@@ -516,7 +517,9 @@ export class TripDayMapComponent {
     wrapper.appendChild(photoUrl
       ? this.buildPhotoMarker(photoUrl, typeColor)
       : new google.maps.marker.PinElement({ background: typeColor, borderColor: typeColor, glyphColor: typeColor }));
-    if (rank !== null) wrapper.appendChild(this.buildRankBadge(rank));
+    if (rank !== null || point.dayNumber !== undefined) {
+      wrapper.appendChild(this.buildRankBadge(rank !== null ? String(rank) : `J${point.dayNumber}`));
+    }
     return wrapper;
   }
 
@@ -546,9 +549,9 @@ export class TripDayMapComponent {
     return frame;
   }
 
-  private buildRankBadge(rank: number): HTMLElement {
+  private buildRankBadge(label: string): HTMLElement {
     const badge = document.createElement('span');
-    badge.textContent = String(rank);
+    badge.textContent = label;
     badge.style.cssText = `
       position: absolute;
       top: -6px;
@@ -669,7 +672,10 @@ export class TripDayMapComponent {
     // déclenché programmatiquement passait encore, d'où le clic qui ne
     // recentrait/scrollait plus rien en usage normal.
     marker.gmpClickable = true;
-    marker.addEventListener('gmp-click', () => this.onMarkerClick(point));
+    marker.addEventListener('gmp-click', () => {
+      const current = this.points().find(candidate => candidate.activityId === point.activityId);
+      if (current) this.onMarkerClick(current);
+    });
     this.markerRefs.set(point.activityId, marker);
     if (point.activityId === this.highlightedActivityId()) marker.zIndex = 1000;
   }
@@ -712,29 +718,8 @@ export class TripDayMapComponent {
   }
 
   protected locateUser(): void {
-    this.locationError.set(null);
-    if (!navigator.geolocation) {
-      this.locationError.set('La géolocalisation n’est pas disponible sur cet appareil.');
-      return;
-    }
-
-    this.locatingUser.set(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const position = { lat: coords.latitude, lng: coords.longitude };
-        this.userPosition.set(position);
-        this.userPositionAccuracy.set(coords.accuracy);
-        this.locatingUser.set(false);
-        this.moveCameraTo(position, Math.max(this.zoom(), 15));
-      },
-      (error) => {
-        this.locatingUser.set(false);
-        this.locationError.set(error.code === error.PERMISSION_DENIED
-          ? 'Autorise l’accès à ta position pour l’afficher sur la carte.'
-          : 'Position indisponible pour le moment.');
-      },
-      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
-    );
+    const position = this.geolocation.position();
+    if (this.geolocation.enabled() && position) this.moveCameraTo(position, Math.max(this.zoom(), 15));
   }
 
   followScroll(from: DayMapPoint, to: DayMapPoint, t: number, maxZoomDrop = 6): void {

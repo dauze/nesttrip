@@ -1,19 +1,19 @@
 <app-card>
-  <div
+  <button
+    type="button"
     class="trip-header__row flex align-items-center justify-content-between gap-2"
-    role="button"
-    tabindex="0"
     aria-label="Paramètres du voyage"
     (click)="onHeaderClick($event)"
   >
     <div class="trip-header__info flex flex-column min-w-0">
+      <span class="trip-header__title">{{ tripTitle() }}</span>
       <span class="text-sm">{{ dateRangeLabel() }}</span>
       @if (companionNamesLabel()) {
         <span class="text-xs trip-header__companions">{{ companionNamesLabel() }}</span>
       }
     </div>
-    <i class="pi pi-chevron-right trip-header__settings-icon flex-shrink-0" aria-hidden="true"></i>
-  </div>
+    <span class="trip-header__settings flex-shrink-0"><i class="pi pi-pencil trip-header__settings-icon" aria-hidden="true"></i><span>Paramètres du voyage</span></span>
+  </button>
 </app-card>
 
 <app-menu #settingsMenu>

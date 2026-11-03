@@ -1,4 +1,20 @@
-import { computeExpenseBreakdown, convertExpenseItems, ExpenseItem, UnconvertedExpenseItem } from './trip-summary.util';
+import { computeExpenseBreakdown, computeGeneralMapPoints, convertExpenseItems, ExpenseItem, UnconvertedExpenseItem } from './trip-summary.util';
+import { ActivityType } from '@app/core/enums/activites-type.enum';
+
+describe('computeGeneralMapPoints', () => {
+  it('keeps placements chronological with type colors, real day numbers and zero coordinates', () => {
+    const days = [new Date('2026-11-01'), new Date('2026-11-02'), new Date('2026-11-03')];
+    const activity = { id: 'first', title: 'Long title', type: ActivityType.VISITE, placeId: 'place', latitude: 0, longitude: 0 };
+    const result = computeGeneralMapPoints([
+      { dayId: days[2], activity: { ...activity, id: 'second' } },
+      { dayId: days[0], activity },
+      { dayId: days[1], activity: { ...activity, id: 'missing', latitude: undefined } },
+    ], days);
+    expect(result.map(point => [point.activityId, point.dayNumber, point.order])).toEqual([['first', 1, 1], ['second', 3, 2]]);
+    expect(result.every(point => point.colorVar === '--nt-activity-visite')).toBe(true);
+    expect(result[0]).toMatchObject({ latitude: 0, longitude: 0, photoRef: undefined, dayId: days[0].toISOString() });
+  });
+});
 
 describe('convertExpenseItems', () => {
   const item: UnconvertedExpenseItem = {

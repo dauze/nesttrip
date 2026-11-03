@@ -57,13 +57,16 @@
   position: relative;
 }
 
+.trip-summary-map-spotlight-slot {
+  min-height: 4.25rem;
+  margin-top: var(--nt-space-2);
+}
+
 .trip-summary-map-spotlight {
-  position: absolute;
-  left: var(--nt-space-3);
-  bottom: var(--nt-space-3);
-  z-index: 4;
   display: flex;
-  max-width: min(22rem, calc(100% - var(--nt-space-6)));
+  width: 100%;
+  min-width: 0;
+  height: 4.25rem;
   align-items: center;
   gap: var(--nt-space-3);
   padding: var(--nt-space-2) var(--nt-space-3);
@@ -71,7 +74,14 @@
   border-radius: var(--nt-content-border-radius);
   background: var(--nt-content-background);
   box-shadow: var(--nt-shadow-md);
-  pointer-events: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--nt-primary-color);
+    outline-offset: 2px;
+  }
 }
 
 .trip-summary-map-spotlight__photo,

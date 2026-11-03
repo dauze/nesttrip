@@ -29,12 +29,14 @@ import { FlightStatusRefreshService } from '@app/core/services/business/flight-s
 import { SaveStatusBarComponent } from '@app/shared/components/feedback/save-status-bar/save-status-bar.component';
 import { SelectButtonComponent, SelectButtonOption } from '@app/shared/components/form-fields/select-button/select-button.component';
 import { TripCollaboratorsComponent } from './trip-detail/trip-collaborators/trip-collaborators.component';
+import { CheckboxComponent } from '@app/shared/components/form-fields/checkbox/checkbox.component';
+import { GeolocationService } from '@app/core/services/ui/geolocation.service';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule, TripCollaboratorsComponent],
+  imports: [RouterOutlet, ToolbarComponent, ButtonComponent, MenuComponent, SaveStatusBarComponent, SelectButtonComponent, SelectComponent, ReactiveFormsModule, TripCollaboratorsComponent, CheckboxComponent],
   // Services scopés à /trips (pas root) : leur état/leurs écritures n'ont de
   // sens que dans ce sous-arbre de routes (rien en dehors, ex. /login, n'y
   // touche jamais) — voir la revue de portée des services dans CLAUDE.md.
@@ -70,6 +72,7 @@ export class TripsComponent {
   protected readonly chromeService = inject(TripChromeService);
   protected readonly themeService = inject(ThemeService);
   protected readonly userProfileService = inject(UserProfileService);
+  protected readonly geolocation = inject(GeolocationService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly themeOptions: SelectButtonOption<ThemeMode>[] = [

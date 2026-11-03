@@ -7,8 +7,9 @@
       @if (!activeMapComponent()) {
         <app-skeleton height="250px" width="100%" borderRadius="3px" />
       }
+      <div class="trip-summary-map-spotlight-slot">
       @if (mapSpotlight(); as spotlight) {
-        <div class="trip-summary-map-spotlight" role="status" aria-live="polite">
+        <button type="button" class="trip-summary-map-spotlight" (click)="openPlacement(spotlight.point)" [attr.aria-label]="'Ouvrir ' + spotlight.point.name + ', jour ' + spotlight.point.dayNumber">
           @if (spotlight.point.photoRef && (getSpotlightPhotoUrl$(spotlight.point.photoRef) | async); as photoUrl) {
             <img class="trip-summary-map-spotlight__photo" [src]="photoUrl" alt="" />
           } @else {
@@ -16,15 +17,16 @@
               <i class="pi pi-map-marker" [style.color]="'var(' + (spotlight.point.colorVar ?? '--nt-primary-color') + ')'" aria-hidden="true"></i>
             </span>
           }
-          <div class="trip-summary-map-spotlight__details">
+          <span class="trip-summary-map-spotlight__details">
             <span class="trip-summary-map-spotlight__title">{{ spotlight.point.name }}</span>
             @if (spotlight.point.dayId; as dayId) {
-              <span class="trip-summary-map-spotlight__day">{{ dayId | date:'EEE d MMM' }}</span>
+              <span class="trip-summary-map-spotlight__day">J{{ spotlight.point.dayNumber }} · {{ dayId | date:'EEE d MMM' }}</span>
             }
-          </div>
+          </span>
           <span class="trip-summary-map-spotlight__progress">{{ spotlight.index }} / {{ spotlight.total }}</span>
-        </div>
+        </button>
       }
+      </div>
     </app-card>
   } @else {
     <!-- Ancre neutre toujours montée (voir TripSummaryComponent constructor) : sans
@@ -63,7 +65,7 @@
         <div class="trip-summary-total">{{ totalExpense()!.toFixed(2) }} {{ currencySymbol() }}</div>
       }
 
-      <app-button label="Voir toutes les dépenses" [text]="true" size="small" class="w-max" (click)="openExpensesTable()" />
+      <app-button label="Voir toutes les dépenses" [text]="true" size="small" class="w-max" (click)="openExpensesTable($event)" />
     </div>
   </app-card>
 

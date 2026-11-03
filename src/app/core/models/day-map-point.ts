@@ -11,4 +11,5 @@ export interface DayMapPoint {
   colorVar?: string;
   /** ISO du jour de placement — uniquement peuplé en contexte 'general' (pool), pour la navigation au clic (voir TripSummaryComponent). */
   dayId?: string;
+  dayNumber?: number;
 }

@@ -39,7 +39,7 @@ test("modifier l'intervalle de dates depuis Résumé ne doit jamais afficher le 
   await page.getByRole('button', { name: 'Créer le voyage' }).click();
   await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}(#.*)?$/, { timeout: 15_000 });
 
-  await page.locator('button[data-tab-id="summary"]').click();
+  await page.getByRole('tab', { name: 'Général', exact: true }).click();
 
   // Header épuré (ROADMAP.md "Le trip header doit évoluer") : plus de préfixe
   // "Date : ", plus de crayon dédié — le clic sur le header ouvre le menu
@@ -47,7 +47,8 @@ test("modifier l'intervalle de dates depuis Résumé ne doit jamais afficher le 
   const dateLabel = page.locator('app-trip-header').getByText(/^du \d/);
   await expect(dateLabel).toHaveText(`du ${formatFr(start)} au ${formatFr(initialEnd)}`);
 
-  await page.locator('app-trip-header').click();
+  await expect(page.locator('app-trip-header .trip-header__title')).toHaveText(tripTitle);
+  await page.getByRole('button', { name: 'Paramètres du voyage', exact: true }).click();
   await page.getByRole('button', { name: 'Dates' }).click();
 
   const newEnd = daysFromNow(37);

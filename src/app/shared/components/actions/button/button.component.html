@@ -13,9 +13,9 @@
   [attr.aria-disabled]="ariaDisabled() ? 'true' : null"
   [disabled]="isDisabled()">
   @if (loading()) {
-    <i class="pi pi-spin pi-spinner"></i>
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
   } @else if (icon()) {
-    <i [class]="icon()"></i>
+    <i [class]="icon()" aria-hidden="true"></i>
   }
   @if (label()) {
     <span>{{ label() }}</span>

@@ -55,7 +55,8 @@ export class PriceEditDialogComponent implements AfterViewInit {
   }
 
   protected confirm(): void {
-    this.data.onConfirm({ amount: this.amountControl.value ?? 0, currency: this.currencyControl.value });
+    const value = { amount: this.amountControl.value ?? 0, currency: this.currencyControl.value };
     this.dialogRef.close();
+    this.data.onConfirm(value);
   }
 }

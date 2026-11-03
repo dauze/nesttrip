@@ -1,0 +1,26 @@
+{
+  "generation_hash": "804a00c864f57c36baf3",
+  "inputs": {
+    "jinja2_version": "3.1.6",
+    "project_root": "C:\\Users\\ndauzet\\OneDrive - Sopra Steria\\Documents_old\\Kiro\\nesttrip",
+    "renderer_sha256": "d6446c4b1094d788d9ef421876203b8b2576e3dbe1cc08f189a030e3def880ea",
+    "resolved_values": {
+      "customization.workflow.activation_steps_append": [],
+      "customization.workflow.activation_steps_prepend": [],
+      "customization.workflow.on_complete": "",
+      "customization.workflow.persistent_facts": []
+    },
+    "skill_root": "C:\\Users\\ndauzet\\OneDrive - Sopra Steria\\Documents_old\\Kiro\\nesttrip\\.agents\\skills\\bmad-qa-generate-e2e-tests",
+    "source_sha256": {
+      "workflow.md": "835f48e0f013e74bd73c5f0bcb6d6ffcb85c50b18aeb1b89ad693f18df6be3d1"
+    }
+  },
+  "outputs": {
+    "workflow.md": "d64345067389ef00b57207c18090573c7b40619c0d9423d422d8c27b03ea868d"
+  },
+  "project_root": "C:\\Users\\ndauzet\\OneDrive - Sopra Steria\\Documents_old\\Kiro\\nesttrip",
+  "project_slug": "nesttrip",
+  "root_hash": "3e95c962f87a",
+  "schema_version": 1,
+  "skill": "bmad-qa-generate-e2e-tests"
+}

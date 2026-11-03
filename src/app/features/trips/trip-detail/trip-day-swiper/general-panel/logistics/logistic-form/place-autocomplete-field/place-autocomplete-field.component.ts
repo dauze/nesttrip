@@ -87,6 +87,7 @@ export class PlaceAutocompleteFieldComponent {
       {
         data: { initialTitle: this.displayControl.value, placeholder: this.placeholder(), title: this.label() || 'Titre' },
         panelClass: 'app-wide-dialog-panel',
+        autoFocus: '.title-edit-dialog__input',
         viewContainerRef: this.viewContainerRef,
       },
     );

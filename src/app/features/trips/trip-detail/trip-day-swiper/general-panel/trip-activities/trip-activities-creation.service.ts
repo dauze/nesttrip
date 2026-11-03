@@ -98,6 +98,7 @@ export class TripActivitiesCreationService {
       {
         data: { initialTitle: this.config.getSearchTerm() },
         panelClass: 'app-wide-dialog-panel',
+        autoFocus: '.title-edit-dialog__input',
         viewContainerRef: this.config.getViewContainerRef(),
       },
     );

@@ -111,6 +111,7 @@ export class GeneralMapCinematicService implements OnDestroy {
     this.detachMapListeners();
     const containerEl: HTMLElement = map.elementRef.nativeElement;
     this.mapContainerEl = containerEl;
+    containerEl.addEventListener('click', this.onMapAction, { passive: true });
     containerEl.addEventListener('wheel', this.onMapAction, { passive: true });
     containerEl.addEventListener('touchstart', this.onMapAction, { passive: true });
 
@@ -129,6 +130,7 @@ export class GeneralMapCinematicService implements OnDestroy {
   private detachMapListeners(): void {
     this.mapGoogleListeners.forEach(l => l.remove());
     this.mapGoogleListeners = [];
+    this.mapContainerEl?.removeEventListener('click', this.onMapAction);
     this.mapContainerEl?.removeEventListener('wheel', this.onMapAction);
     this.mapContainerEl?.removeEventListener('touchstart', this.onMapAction);
     this.mapContainerEl = null;

@@ -137,7 +137,7 @@
     width: 100vw;
     max-width: 100vw;
     max-height: calc(var(--nt-visual-viewport-height, 100dvh) * 0.9);
-    border-radius: var(--nt-radius-2xl) var(--nt-radius-2xl) 0 0;
+    border-radius: var(--nt-overlay-modal-border-radius) var(--nt-overlay-modal-border-radius) 0 0;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     transition: opacity 200ms ease, transform 260ms var(--nt-ease-standard);
 

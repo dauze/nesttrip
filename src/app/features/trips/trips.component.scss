@@ -65,6 +65,15 @@
 // interne, hors de portée de cette feuille scopée à cause de l'encapsulation
 // de vue d'`app-button`), visuellement équivalent ici puisque le bouton est
 // icon-only.
+.app-settings-btn__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .app-settings-btn {
   display: inline-flex;
   transition: transform 280ms var(--nt-ease-standard);

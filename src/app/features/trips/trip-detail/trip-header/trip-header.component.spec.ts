@@ -6,16 +6,16 @@ import { TripMember } from '@app/features/trips/trip.model';
 import { TripHeaderComponent } from './trip-header.component';
 
 describe('TripHeaderComponent', () => {
-  const destination = signal({ ville: '', placeId: '' });
+  const title = signal('');
   const members = signal<Record<string, TripMember>>({});
 
   const tripFacadeFake = {
-    getTripDestination: () => destination,
+    getTripTitle: () => title,
     getTripMembers: () => members,
   };
 
   beforeEach(() => {
-    destination.set({ ville: '', placeId: '' });
+    title.set('');
     members.set({});
 
     // `TripHeaderComponent` monte désormais son propre `app-menu` local (voir
@@ -40,9 +40,8 @@ describe('TripHeaderComponent', () => {
    * pour toujours après sa première évaluation. Le header épuré (voir
    * ROADMAP.md "Le trip header doit évoluer") ne porte plus de form du tout,
    * juste `dateRange()` (signal d'entrée) directement — ce test garde la
-   * couverture de la régression d'origine sur le nouveau libellé
-   * "{destination} du ... au ...". Aucune destination résolue ici (`ville`
-   * vide) : retombe sur le libellé fixe "Voyage" (voir `dateRangeLabel`).
+  * couverture de la régression d'origine sur le libellé des dates,
+  * désormais séparé du titre du voyage.
    */
   it("dateRangeLabel se met à jour à chaque nouvelle valeur de dateRange() (régression : le libellé restait figé sur la première valeur)", () => {
     const fixture = TestBed.createComponent(TripHeaderComponent);
@@ -50,10 +49,10 @@ describe('TripHeaderComponent', () => {
     fixture.componentRef.setInput('tripId', 'trip-1');
 
     fixture.componentRef.setInput('dateRange', [new Date(2026, 7, 1), new Date(2026, 7, 5)]);
-    expect(component.dateRangeLabel()).toBe('Voyage du 01/08/2026 au 05/08/2026');
+    expect(component.dateRangeLabel()).toBe('du 01/08/2026 au 05/08/2026');
 
     fixture.componentRef.setInput('dateRange', [new Date(2026, 7, 1), new Date(2026, 7, 10)]);
-    expect(component.dateRangeLabel()).toBe('Voyage du 01/08/2026 au 10/08/2026');
+    expect(component.dateRangeLabel()).toBe('du 01/08/2026 au 10/08/2026');
   });
 
   it('dateRangeLabel est vide tant que dateRange() est undefined', () => {
@@ -62,16 +61,18 @@ describe('TripHeaderComponent', () => {
     expect(fixture.componentInstance.dateRangeLabel()).toBe('');
   });
 
-  /** Retour utilisateur (ROADMAP.md "### UI") : la destination principale du trip remplace le libellé fixe "Voyage" dès qu'elle est résolue. */
-  it('dateRangeLabel utilise la destination principale du trip à la place de "Voyage" quand elle est connue', () => {
-    destination.set({ ville: 'Bangkok', placeId: 'abc' });
-
+  it('affiche le titre réel réactif indépendamment des dates avec un repli Voyage', () => {
     const fixture = TestBed.createComponent(TripHeaderComponent);
     const component = fixture.componentInstance;
     fixture.componentRef.setInput('tripId', 'trip-1');
     fixture.componentRef.setInput('dateRange', [new Date(2026, 7, 1), new Date(2026, 7, 5)]);
 
-    expect(component.dateRangeLabel()).toBe('Bangkok du 01/08/2026 au 05/08/2026');
+    expect(component.tripTitle()).toBe('Voyage');
+    title.set('Escapade en Thaïlande');
+    expect(component.tripTitle()).toBe('Escapade en Thaïlande');
+    title.set('Notre voyage');
+    expect(component.tripTitle()).toBe('Notre voyage');
+    expect(component.dateRangeLabel()).toBe('du 01/08/2026 au 05/08/2026');
   });
 
   it('companionNamesLabel liste les noms (ou emails) de tous les membres du trip', () => {

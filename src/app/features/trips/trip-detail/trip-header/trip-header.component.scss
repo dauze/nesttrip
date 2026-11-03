@@ -4,6 +4,13 @@
 // même feedback hover que les autres surfaces cliquables de l'app
 // (`--nt-content-hover-background`, voir `.app-menu-panel__item`).
 .trip-header__row {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   border-radius: var(--nt-radius-sm);
   transition: background var(--nt-transition-duration) ease;
@@ -11,6 +18,28 @@
   &:hover {
     background: var(--nt-content-hover-background);
   }
+}
+
+.trip-header__info {
+  overflow: hidden;
+}
+
+.trip-header__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-header__settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nt-space-1);
+  max-width: 6rem;
+  font-size: 0.75rem;
+  text-align: center;
 }
 
 // Icône décorative (voir la doc du composant) : purement visuelle, aucun

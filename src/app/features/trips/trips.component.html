@@ -25,6 +25,22 @@
       }
       <app-menu #menu [items]="menuItems">
         <div menuTop class="app-menu-theme-picker flex flex-column">
+          <div class="app-menu-theme-picker__label">Géolocalisation</div>
+          <div class="flex align-items-center gap-2">
+            <app-checkbox ariaLabel="Autoriser l’affichage de ma position sur les cartes" [checked]="geolocation.enabled()" (checkedChange)="geolocation.setEnabled($event)" />
+            <span>Autoriser l’affichage de ma position sur les cartes</span>
+          </div>
+          @if (geolocation.locating()) {
+            <span role="status">Localisation en cours…</span>
+          }
+          @if (geolocation.error(); as error) {
+            <span role="status">{{ error }}</span>
+          }
+          @if (geolocation.enabled() && !geolocation.position() && !geolocation.locating()) {
+            <app-button label="Obtenir ma position" [text]="true" (click)="geolocation.requestPosition()" />
+          }
+        </div>
+        <div menuTop class="app-menu-theme-picker flex flex-column">
           <div class="app-menu-theme-picker__label">Thème</div>
           <app-select-button
             [options]="themeOptions"
@@ -42,9 +58,10 @@
         [class.app-settings-btn--open]="menu.isOpen()"
         (click)="menu.toggle($event)"
         icon="pi pi-cog"
+        title="Réglages globaux"
         [rounded]="true"
         [text]="true"
-      />
+      ><span class="app-settings-btn__label">Réglages globaux</span></app-button>
     </div>
   </app-toolbar>
 </div>

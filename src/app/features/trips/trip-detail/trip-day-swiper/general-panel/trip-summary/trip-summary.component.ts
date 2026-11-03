@@ -28,13 +28,12 @@ import { computeTasks } from './trip-tasks-tile/trip-tasks-tile.util';
 import { TripFilesTileComponent } from './trip-files-tile/trip-files-tile.component';
 import { computeFileGroups } from './trip-files-tile/trip-files-tile.util';
 import { ActivityTypeRingsComponent, RingChartEntry } from './activity-type-rings/activity-type-rings.component';
-import { computeExpenseBreakdown, convertExpenseItems, ExpenseItem, UnconvertedExpenseItem } from './trip-summary.util';
+import { computeExpenseBreakdown, computeGeneralMapPoints, convertExpenseItems, ExpenseItem, UnconvertedExpenseItem } from './trip-summary.util';
 import { ACTIVITY_TYPE_META } from '@app/shared/components/activity-card/activity.constants';
 import { LOGISTIC_TYPE_META } from '../logistics/logistic.constants';
 
 /** Type-key/libellé/icône des dépenses libres dans les anneaux — pas de "type" propre (contrairement à activité/logistique), regroupées sous une seule catégorie. `--nt-activity-activite` (pas `--nt-logistic-other`, qui colore désormais la 5ᵉ entrée "Autre" de `computeExpenseBreakdown` — retour utilisateur : les deux ne doivent pas partager la même couleur, sans quoi une "Dépense libre" repliée dans "Autre" se confond visuellement avec le reste des dépenses libres non repliées). */
 const FREE_EXPENSE_META = { label: 'Dépense libre', icon: 'pi pi-wallet', colorVar: '--nt-activity-activite' };
-const DAY_MAP_COLOR_VARS = [...new Set(Object.values(ACTIVITY_TYPE_META).map((meta) => meta.colorVar))];
 
 /** Nombre max d'entrées affichées dans les anneaux : 4 types individuels + 1 entrée fixe "Autre" agrégeant le reliquat (voir `computeExpenseBreakdown`) — voir `TripSummaryComponent.expenseBreakdown`. */
 const MAX_EXPENSE_ENTRIES = 5;
@@ -134,6 +133,10 @@ export class TripSummaryComponent {
 
   protected getSpotlightPhotoUrl$(ref: string) {
     return this.googlePhotoService.getPhotoUrl$(ref, 160);
+  }
+
+  protected openPlacement(point: DayMapPoint): void {
+    if (point.dayId) this.dayActivityFocusService.requestFocus(point.dayId, point.activityId);
   }
 
   readonly currencyOptions = CURRENCY_OPTIONS;
@@ -256,25 +259,7 @@ export class TripSummaryComponent {
 
   /** Points de la carte, ordonnés chronologiquement (par jour) — voir `allPlacedActivities`. */
   readonly generalMapPoints = computed<DayMapPoint[]>(() => {
-    const dayColorIndexes = new Map<string, number>();
-    return this.allPlacedActivities()
-      .filter(({ activity }) => activity.placeId && activity.latitude && activity.longitude)
-      .map(({ dayId, activity: a }, i) => {
-        const dayKey = dayId.toISOString();
-        if (!dayColorIndexes.has(dayKey)) dayColorIndexes.set(dayKey, dayColorIndexes.size);
-        const dayColorIndex = dayColorIndexes.get(dayKey)!;
-        return {
-        activityId: a.id,
-        placeId: a.placeId!,
-        name: a.title,
-        latitude: a.latitude!,
-        longitude: a.longitude!,
-        order: i + 1,
-        photoRef: a.photoRefs?.[0],
-        colorVar: DAY_MAP_COLOR_VARS[dayColorIndex % DAY_MAP_COLOR_VARS.length],
-        dayId: dayKey,
-      };
-      });
+    return computeGeneralMapPoints(this.allPlacedActivities(), this.tripFacade.activeTrip()?.days.map(day => day.id) ?? []);
   });
 
   readonly hasMapPoints = computed(() => this.generalMapPoints().length > 0);
@@ -402,9 +387,11 @@ export class TripSummaryComponent {
   }
 
   /** Tableau détaillé de toutes les dépenses du voyage (voir src/specs/devise.md 3.5) — position/style provisoires, deviendra le lien discret sous l'anneau une fois la refonte visuelle faite. */
-  protected openExpensesTable(): void {
+  protected openExpensesTable(event: Event): void {
+    const trigger = (event.currentTarget as HTMLElement).querySelector('button');
     this.dialogService.open<void, ExpensesTableDialogData>(ExpensesTableDialogComponent, {
       viewContainerRef: this.viewContainerRef,
+      restoreFocus: trigger ?? true,
       data: { tripId: this.tripId() },
     });
   }

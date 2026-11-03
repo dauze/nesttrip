@@ -98,6 +98,7 @@ export class DayScrollSyncService implements OnDestroy {
   private readonly FOCUS_STABLE_FRAMES = 8;
   private readonly FOCUS_SETTLE_MAX_MS = 1200;
   private cancelAutoScroll?: () => void;
+  private destroyed = false;
   private readonly SNAP_DELAY = 500;
   private readonly SNAP_DISTANCE = 60;
 
@@ -141,6 +142,7 @@ export class DayScrollSyncService implements OnDestroy {
     this.slideEl?.addEventListener('scroll', this.onSlideScroll, { passive: true });
     window.addEventListener('touchstart', this.onTouchStart, { passive: true });
     window.addEventListener('touchend', this.onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', this.onTouchEnd, { passive: true });
     window.addEventListener('touchstart', this.wakeLoop, { passive: true });
     window.addEventListener('touchmove', this.wakeLoop, { passive: true });
     window.addEventListener('wheel', this.wakeLoop, { passive: true });
@@ -216,6 +218,7 @@ export class DayScrollSyncService implements OnDestroy {
   }
 
   readonly wakeLoop = (): void => {
+    if (this.destroyed) return;
     this.idleFrames = 0;
     // `frameBudget` n'est volontairement PAS remis à 0 ici : si quelque chose
     // rappelle `wakeLoop()` en continu (ex. un ResizeObserver qui se
@@ -398,6 +401,7 @@ export class DayScrollSyncService implements OnDestroy {
    * quelques frames avant d'abandonner silencieusement.
    */
   focusActivityWhenReady(activityId: string, attemptsLeft = 15): void {
+    if (this.destroyed || !this.config.isActive()) return;
     const found = this.config.getFreshOffsets().some(item => item.card.activity()?.id === activityId);
     if (found || attemptsLeft <= 0) {
       this.focusActivity(activityId);
@@ -465,8 +469,9 @@ export class DayScrollSyncService implements OnDestroy {
     }
 
     this.cancelAutoScroll?.();
-    let cancelled = false;
-    const cancelOnUserInput = () => { cancelled = true; };
+    let finished = false;
+    let animationFrame = 0;
+    const cancelOnUserInput = () => finish(false);
     const userEvents = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
     for (const type of userEvents) window.addEventListener(type, cancelOnUserInput, { passive: true, once: true });
 
@@ -475,14 +480,19 @@ export class DayScrollSyncService implements OnDestroy {
       return top === null ? null : top - this.getTopShield(slideEl) - this.ACTIVITY_SCROLL_GAP;
     };
 
-    const finish = () => {
+    const finish = (completed: boolean) => {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(animationFrame);
       for (const type of userEvents) window.removeEventListener(type, cancelOnUserInput);
       this.cancelAutoScroll = undefined;
       this.isAutoScrolling = false;
-      this.wakeLoop();
-      onComplete?.();
+      if (completed) {
+        this.wakeLoop();
+        onComplete?.();
+      }
     };
-    this.cancelAutoScroll = () => { cancelled = true; };
+    this.cancelAutoScroll = () => finish(false);
 
     this.isAutoScrolling = true;
     const startY = slideEl.scrollTop;
@@ -493,8 +503,9 @@ export class DayScrollSyncService implements OnDestroy {
     let stableFrames = 0;
 
     const animate = (now: number) => {
-      if (cancelled || !this.config.isActive()) {
-        finish();
+      if (finished) return;
+      if (this.destroyed || !this.config.isActive()) {
+        finish(false);
         return;
       }
 
@@ -511,16 +522,16 @@ export class DayScrollSyncService implements OnDestroy {
         // Cible hors bornes (dernière activité) : scrollTop ne bouge plus, c'est stable aussi.
         stableFrames = Math.abs(slideEl.scrollTop - before) <= 1 ? stableFrames + 1 : 0;
         if (stableFrames >= this.FOCUS_STABLE_FRAMES || now - settleStart > this.FOCUS_SETTLE_MAX_MS) {
-          finish();
+          finish(true);
           return;
         }
       }
 
       this.wakeLoop();
-      requestAnimationFrame(animate);
+      animationFrame = requestAnimationFrame(animate);
     };
 
-    requestAnimationFrame(animate);
+    animationFrame = requestAnimationFrame(animate);
   }
 
   private readonly onSlideScroll = (): void => {
@@ -558,7 +569,7 @@ export class DayScrollSyncService implements OnDestroy {
   };
 
   private trySnapActivity(): void {
-    if (!this.config.isActive()) {
+    if (this.destroyed || !this.config.isActive() || this.isTouching || this.isAutoScrolling) {
       return;
     }
     const stickyElement = this.config.getStickyMapEl();
@@ -616,6 +627,7 @@ export class DayScrollSyncService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.cancelAutoScroll?.();
     this.mapSubscription?.unsubscribe();
     this.mapObserver?.disconnect();
@@ -624,6 +636,7 @@ export class DayScrollSyncService implements OnDestroy {
     this.slideEl?.removeEventListener('scroll', this.onSlideScroll);
     window.removeEventListener('touchstart', this.onTouchStart);
     window.removeEventListener('touchend', this.onTouchEnd);
+    window.removeEventListener('touchcancel', this.onTouchEnd);
     window.removeEventListener('touchstart', this.wakeLoop);
     window.removeEventListener('touchmove', this.wakeLoop);
     window.removeEventListener('wheel', this.wakeLoop);

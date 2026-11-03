@@ -37,7 +37,7 @@
             <map-circle [center]="position" [radius]="userPositionAccuracy()" [options]="userAccuracyCircleOptions" />
             <map-circle [center]="position" [radius]="8" [options]="userLocationDotOptions" />
           }
-          @for (point of points(); track point.activityId) {
+          @for (point of points(); track point.activityId + ':' + mapHost.currentOwner()) {
             <map-advanced-marker
               [position]="{ lat: point.latitude, lng: point.longitude }"
               [title]="point.name"
@@ -47,19 +47,18 @@
           }
         </google-map>
       }
-      <div class="map-location-control">
+      @if (geolocation.enabled() && userPosition()) {
+        <div class="map-location-control">
         <button
           type="button"
           class="map-location-control__button"
-          [disabled]="locatingUser()"
-          [attr.aria-label]="locatingUser() ? 'Localisation en cours' : 'Afficher ma position'"
+          aria-label="Recentrer sur ma position"
+          title="Recentrer sur ma position"
           (click)="locateUser()">
-          <i [class]="locatingUser() ? 'pi pi-spinner pi-spin' : 'pi pi-crosshairs'" aria-hidden="true"></i>
+          <i class="pi pi-crosshairs" aria-hidden="true"></i>
         </button>
-        @if (locationError(); as error) {
-          <span class="map-location-control__error" role="status">{{ error }}</span>
-        }
-      </div>
+        </div>
+      }
   </div>
 
   <!--

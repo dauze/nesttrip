@@ -49,15 +49,13 @@ export class TripHeaderComponent {
 
   protected readonly settingsOpened = signal(false);
 
-  /** Destination principale (voir `TripFacade.getTripDestination`) — remplace le libellé fixe "Voyage" (retour utilisateur). */
-  private readonly destination = computed(() => this.tripFacade.getTripDestination(this.tripId())());
+  readonly tripTitle = computed(() => this.tripFacade.getTripTitle(this.tripId())() || 'Voyage');
 
   readonly dateRangeLabel = computed(() => {
     const range = this.dateRange();
     if (!range) return '';
     const [start, end] = range;
-    const label = this.destination().ville || 'Voyage';
-    return `${label} du ${format(start, 'dd/MM/yyyy')} au ${format(end, 'dd/MM/yyyy')}`;
+    return `du ${format(start, 'dd/MM/yyyy')} au ${format(end, 'dd/MM/yyyy')}`;
   });
 
   /** Noms des compagnons de route (voir doc de classe) — les avatars sont désormais dans la toolbar app. */
